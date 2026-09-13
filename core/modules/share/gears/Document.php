@@ -237,7 +237,7 @@ final class Document extends Primitive implements IDocument {
         $dom_documentProperties = $this->doc->createElement('properties');
         foreach ($this->properties as $propName => $propValue) {
             $dom_property =
-                $this->doc->createElement('property', str_replace('&', '&amp;', $propValue));
+                $this->doc->createElement('property', str_replace('&', '&amp;', (string)$propValue));
             $dom_property->setAttribute('name', $propName);
             if ($propName == 'title') {
                 $dom_property->setAttribute('alt', (string)$this->documentInfo['HtmlTitle']);

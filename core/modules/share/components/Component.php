@@ -386,7 +386,7 @@ class Component extends Primitive implements IBlock {
         $result->setAttribute('class', simplifyClassName(get_class($this)));
 
         foreach ($this->properties as $propName => $propValue) {
-            $result->setAttribute($propName, $propValue);
+            $result->setAttribute($propName, (string)$propValue);
         }
 
         /*
@@ -554,6 +554,10 @@ class Component extends Primitive implements IBlock {
      * @param mixed $paramValue Parameter value.
      */
     public function setStateParam($paramName, $paramValue) {
+        // false means "no parameters" (see getStateParams())
+        if (!is_array($this->stateParams)) {
+            $this->stateParams = [];
+        }
         $this->stateParams[$paramName] = $paramValue;
     }
 
