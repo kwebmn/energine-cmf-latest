@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<configuration>
+    <!-- banner place on a page: only what the banner markup needs (ads.xslt) -->
+    <state name="main">
+        <fields>
+            <field name="ads_item_id"/>
+            <field name="ads_type_id"/>
+            <field name="ads_item_name"/>
+            <field name="ads_item_mode" type="string"/>
+            <field name="ads_item_img"/>
+            <field name="ads_item_url"/>
+            <field name="ads_item_html"/>
+        </fields>
+    </state>
+</configuration>

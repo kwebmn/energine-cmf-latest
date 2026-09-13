@@ -28,6 +28,48 @@
 		</div>
 	</xsl:template>
 
+	<!-- Banner place: Energine\ads\components\Ads (the legacy apps Ads component has ad_* fields) -->
+	<xsl:template match="component[@class='Ads'][not(recordset/record/field[starts-with(@name, 'ad_')])]">
+		<xsl:if test="recordset/record">
+			<div class="ads ads_{@type}">
+				<xsl:for-each select="recordset/record">
+					<xsl:variable name="TYPE" select="field[@name='ads_type_id']/options/option[@selected]"/>
+					<div class="ads_item">
+						<xsl:choose>
+							<xsl:when test="field[@name='ads_item_mode'] = 'html'">
+								<xsl:value-of select="field[@name='ads_item_html']" disable-output-escaping="yes"/>
+							</xsl:when>
+							<xsl:when test="field[@name='ads_item_img'] != '' and field[@name='ads_item_url'] != ''">
+								<a href="{field[@name='ads_item_url']}">
+									<xsl:call-template name="ADS_ITEM_IMAGE">
+										<xsl:with-param name="TYPE" select="$TYPE"/>
+									</xsl:call-template>
+								</a>
+							</xsl:when>
+							<xsl:when test="field[@name='ads_item_img'] != ''">
+								<xsl:call-template name="ADS_ITEM_IMAGE">
+									<xsl:with-param name="TYPE" select="$TYPE"/>
+								</xsl:call-template>
+							</xsl:when>
+						</xsl:choose>
+					</div>
+				</xsl:for-each>
+			</div>
+		</xsl:if>
+	</xsl:template>
+
+	<xsl:template name="ADS_ITEM_IMAGE">
+		<xsl:param name="TYPE"/>
+		<img src="{$MEDIA_URL}{field[@name='ads_item_img']}" alt="{field[@name='ads_item_name']}">
+			<xsl:if test="$TYPE/@ads_type_width != ''">
+				<xsl:attribute name="width"><xsl:value-of select="$TYPE/@ads_type_width"/></xsl:attribute>
+			</xsl:if>
+			<xsl:if test="$TYPE/@ads_type_height != ''">
+				<xsl:attribute name="height"><xsl:value-of select="$TYPE/@ads_type_height"/></xsl:attribute>
+			</xsl:if>
+		</img>
+	</xsl:template>
+
 	<xsl:template name="SMAP_ADS_ITEM_TREE">
 		<xsl:param name="NODES"/>
 		<xsl:param name="CURRENT"/>

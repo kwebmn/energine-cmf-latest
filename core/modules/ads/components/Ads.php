@@ -6,8 +6,8 @@ use Energine\share\components\DBDataSet;
 
 class Ads extends DBDataSet {
 
-    public function __construct($name, $module, ?array $params = NULL) {
-        parent::__construct($name, $module, $params);
+    public function __construct($name, ?array $params = NULL) {
+        parent::__construct($name, $params);
         $this->setTableName('ads_items');
     }
 
