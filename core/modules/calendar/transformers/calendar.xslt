@@ -50,9 +50,7 @@
             <xsl:attribute name="class">day<xsl:if test="position() = last()"> last_day</xsl:if><xsl:if test="@today"> current_day</xsl:if><xsl:if test="not(@current)"> foreign_day</xsl:if><xsl:if test="@marked"> active_day</xsl:if><xsl:if test="not(@selected) and not(@marked)"> inactive_day</xsl:if></xsl:attribute>
             <a>
                 <xsl:if test="@selected">
-                    <xsl:attribute name="href">
-                        <xsl:value-of select="$BASE"/><xsl:value-of select="$LANG_ABBR"/><xsl:value-of select="../../../@template"/><xsl:value-of select="@year"/>/<xsl:value-of select="@month"/>/<xsl:value-of select="@day"/>/
-                    </xsl:attribute>
+                    <xsl:attribute name="href"><xsl:value-of select="concat($BASE, $LANG_ABBR, ../../../@template, @year, '/', @month, '/', @day, '/')"/></xsl:attribute>
                 </xsl:if>
                 <xsl:value-of select="."/>
             </a>
