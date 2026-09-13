@@ -113,7 +113,7 @@ namespace Energine\share\gears {
         function dumpLog($var, $append = false) {
             $t = microtime(true);
             $micro = sprintf("%06d", ($t - floor($t)) * 1000000);
-            $d = new \DateTime(date('Y-m-d H:i:s.' . $micro, $t));
+            $d = new \DateTime(date('Y-m-d H:i:s.' . $micro, (int)$t));
 
             $flags = ($append ? FILE_APPEND : null);
             ob_start();

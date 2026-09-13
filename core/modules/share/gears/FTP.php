@@ -112,7 +112,8 @@ class FTP extends Primitive {
      * @return bool
      */
     public function connected() {
-        return is_resource($this->conn_id);
+        // ftp_connect() returns an FTP\Connection object since PHP 8.1
+        return $this->conn_id instanceof \FTP\Connection;
     }
 
     /**
