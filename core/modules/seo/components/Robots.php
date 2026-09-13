@@ -40,7 +40,7 @@ class Robots extends DataSet {
      */
     // Основной стейт генерации robots.txt
     protected function main(){
-        E()->getController()->getTransformer()->setFileName('../core/modules/seo/transformers/robots_txt.xslt', true);
+        E()->getController()->getTransformer()->setFileName(CORE_REL_DIR . '/modules/seo/transformers/robots_txt.xslt', true);
         parent::main();
         $this->setBuilder(new SimpleBuilder());
     }
