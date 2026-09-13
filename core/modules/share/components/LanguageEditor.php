@@ -88,7 +88,8 @@ class LanguageEditor extends Grid {
         if ($this->getState() == 'save' && isset($result[0]['lang_default']) &&
             $result[0]['lang_default'] !== '0'
         ) {
-            $this->dbh->modify(QAL::UPDATE, $this->getTableName(), ['lang_default' => null]);
+            // QAL::modify() writes null as '', which strict SQL mode rejects for the tinyint column
+            $this->dbh->modify(QAL::UPDATE, $this->getTableName(), ['lang_default' => '0']);
         }
 
         return $result;
