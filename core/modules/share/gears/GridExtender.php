@@ -28,10 +28,14 @@ trait GridExtender {
 		 */
 		$dd = parent::createDataDescription();
 		if ($fd = $dd->getFieldDescriptionsByType(FieldDescription::FIELD_TYPE_PHONE)){
-			if(!empty($fd)){
-				$country = E()['EnergineSite\\webworks\\gears\\Countries']->getCountryByID(E()->getSiteManager()->getDefaultSite()->countryId);
+			// phone format of the country of the default site: share_sites.country_id -> site_country (shop module)
+			$countryID = E()->getSiteManager()->getDefaultSite()->countryId;
+			$country = ($countryID && E()->getDB()->tableExists('site_country')) ?
+				E()->getDB()->getRow('site_country', ['country_tel_format', 'country_tel_code'], ['country_id' => $countryID]) : false;
+			if ($country) {
 				array_walk($fd, function($fd) use($country) {
-					$fd->setProperty('phonePlaceholder', $country['TelFormat'])->setProperty('phoneCode', $country['TelCode']);
+					$fd->setProperty('phonePlaceholder', (string)$country['country_tel_format'])
+						->setProperty('phoneCode', preg_replace('/\D/', '', (string)$country['country_tel_code']));
 				});
 			}
 		}

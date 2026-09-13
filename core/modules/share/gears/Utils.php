@@ -27,7 +27,10 @@ namespace Energine\share\gears {
                 }
 
                 $format = str_repeat( '%s', strlen( $countryCode ) ) . $format;
-
+                // a format with more digits than the number has: show the number as is
+                if ( substr_count( $format, '%s' ) > strlen( $fieldValue ) ) {
+                    return $fieldValue;
+                }
 
                 $fieldValue = vsprintf( '+' . $format, str_split( $fieldValue ) );
             }
