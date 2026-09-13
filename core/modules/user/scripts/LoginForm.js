@@ -6,14 +6,12 @@
  *
  * @requires share/Energine
  * @requires share/Form
- * @requires FBAuth
- * @requires VKAuth
  *
  * @author Pavel Dubenko
  *
  * @version 1.0.0
  */
-ScriptLoader.load('ValidForm', 'FBAuth', 'VKAuth');
+ScriptLoader.load('ValidForm');
 
 /**
  * Login form.
@@ -26,13 +24,5 @@ var LoginForm = new Class({
     // constructor
     initialize:function(element) {
         this.parent(element);
-        window.addEvent('domready', function() {
-            var vkAuth = $('vkAuth');
-            if(vkAuth) {
-                vkAuth.addEvent('click', function() {
-                    VK.Auth.login(vkAuth);
-                });
-            }
-        });
     }
 });

@@ -2,7 +2,7 @@
 <content html_class="colset colset2">
     <container name="left" column="column" html_class="col col1">
         <container name="loginFormContainer" block="beta" widget="widget">
-            <component name="loginForm" class="Energine\user\components\SocialLoginForm"/>
+            <component name="loginForm" class="Energine\user\components\LoginForm"/>
         </container>
     </container>
     <container name="center" column="column" html_class="col col2 last_col">

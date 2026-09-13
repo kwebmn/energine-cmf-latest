@@ -81,23 +81,6 @@ class LoginForm extends DataSet implements SampleLoginForm {
 
 		//Во избежание появления empty рекордсета
 		$this->getData()->addField( ( new Field( 'username' ) )->setRowData( 0, '' ) );
-		//Если есть информация о авторизации через фейсбук
-		foreach ( [ 'auth.facebook', 'auth.vk' ] as $configSectionName ) {
-			if ( $this->getToolbar() ) {
-				list( $tbr ) = array_values( $this->getToolbar() );
-				if ( $ctrl = $tbr->getControlByID( $configSectionName ) ) {
-					$ctrl->disable();
-				}
-
-				if ( $ctrl && $this->getConfigValue( $configSectionName ) ) {
-					if ( $appID = $this->getConfigValue( $configSectionName . '.appID' ) ) {
-						$ctrl->setAttribute( 'appID', $appID );
-						$ctrl->enable();
-					}
-
-				}
-			}
-		}
 	}
 
 

@@ -40,9 +40,6 @@
 			<field name="u_person_family_name"/>
 			<field name="u_person_surname"/>
 			<field name="u_bdate"/>			
-			<field name="u_fbid"/>
-			<field name="u_vkid"/>
-			<field name="u_gooid"/>
 			<field name="u_name"/>
 			<field name="u_phone"/>
 			<field name="u_add_phone"/>
@@ -73,9 +70,6 @@
 			<field name="u_person_family_name"/>
 			<field name="u_person_surname"/>
 			<field name="u_bdate"/>
-			<field name="u_fbid"/>
-			<field name="u_vkid"/>
-			<field name="u_gooid"/>
 			<field name="u_name"/>
 			<field name="u_phone"/>
 			<field name="u_add_phone"/>
