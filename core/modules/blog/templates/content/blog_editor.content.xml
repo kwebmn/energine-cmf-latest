@@ -16,23 +16,15 @@
         </container>
     </container>
     <container name="center" column="column" html_class="col col2 last_col">
-        <container name="blogContainer" block="alfa" widget="static">
-            <component name="blogPostAll" class="Energine\blog\components\BlogPost">
+        <container name="blogEditorContainer" block="alfa" widget="static">
+            <component name="childDivisions" class="Energine\share\components\PageList">
                 <params>
-                    <param name="showCalendar">1</param>
-                    <param name="recordsPerPage">10</param>
+                    <param name="id">current</param>
                 </params>
             </component>
-            <component name="commentsForm" class="Energine\comments\components\CommentsForm">
+            <component name="blogEditor" class="Energine\blog\components\BlogEditor">
                 <params>
-                    <param name="active">1</param>
-                    <param name="allows_anonymous">0</param>
-                    <param name="bind">blogPostAll</param>
-                    <param name="bind_state">view</param>
-                    <param name="comment_tables">blog_post_comment</param>
-                    <param name="show_comments">1</param>
-                    <param name="show_form">1</param>
-                    <param name="is_tree">1</param>
+                    <param name="rights">3</param>
                 </params>
             </component>
         </container>

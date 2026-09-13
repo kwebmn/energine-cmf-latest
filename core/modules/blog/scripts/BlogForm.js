@@ -1,22 +1,42 @@
-ScriptLoader.load('Form');
+ScriptLoader.load('ValidForm', 'ckeditor/ckeditor');
 
+/**
+ * Post form on the blogs page: validation and a simple visual editor.
+ * The file repository plugins of the admin editor are left out, post authors are site users.
+ */
 var BlogForm = new Class({
-    Extends: Form,
-    initialize: function(element) {
-        Asset.css('form.css');
-		this.element = $(element);
-		this.singlePath = this.element.getProperty('single_template');
+    Extends: ValidForm,
 
-        this.form = this.element.getParent('form').addClass('form');
+    initialize: function (element) {
+        this.parent(element);
+        this.editors = [];
+        if (!this.form) {
+            return;
+        }
+        this.form.getElements('textarea.richEditor').each(function (textarea) {
+            var editor = CKEDITOR.replace(textarea.get('id'), {
+                language: Energine.lang,
+                removePlugins: 'energineimage,energinevideo,energinefile',
+                toolbar: [
+                    {name: 'basicstyles', items: ['Bold', 'Italic', 'Underline', 'Strike', '-', 'RemoveFormat']},
+                    {name: 'paragraph', items: ['NumberedList', 'BulletedList', 'Blockquote']},
+                    {name: 'links', items: ['Link', 'Unlink']},
+                    {name: 'insert', items: ['Image', 'Table']},
+                    {name: 'document', items: ['Source']}
+                ]
+            });
+            // the validator checks the textarea on submit before the editor copies its text there
+            editor.on('change', function () {
+                editor.updateElement();
+            });
+            this.editors.push(editor);
+        }, this);
+    },
 
-		this.validator = new Validator(this.form);
-
-		this.richEditors = [], this.uploaders = [], this.textBoxes = [], this.dateControls = [];
-
-		this.form.getElements('textarea.richEditor').each(function(textarea) {
-			this.richEditors.push(new Form.RichEditor(textarea, this,
-					this.fallback_ie));
-
-		}, this);
+    validateForm: function (event) {
+        this.editors.each(function (editor) {
+            editor.updateElement();
+        });
+        return this.parent(event);
     }
 });

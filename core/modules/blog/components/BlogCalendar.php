@@ -1,88 +1,91 @@
-<?php 
+<?php
 /**
- * Содержит класс BlogCalendar
+ * @file
+ * BlogCalendar
  *
- * @package energine
- * @subpackage stb
+ * It contains the definition to:
+ * @code
+class BlogCalendar;
+@endcode
+ *
  * @author d.pavka
  * @copyright d.pavka@gmail.com
+ *
+ * @version 1.1.0
  */
+namespace Energine\blog\components;
+
+use Energine\calendar\components\Calendar,
+    Energine\calendar\gears\CalendarObject,
+    Energine\share\gears\SystemException;
 
 /**
- * Новостной календарь
+ * Calendar of blog posts: days with posts are links to the posts of the day.
  *
- * Посты опубликованные в будущем - не публикуются
+ * Posts dated in the future are not marked.
  *
- * @package energine
- * @subpackage blog
- * @author d.pavka@gmail.com
+ * @code
+class BlogCalendar;
+@endcode
  */
 class BlogCalendar extends Calendar {
     /**
-     * Конструктор класса
-     *
-     * @param string $name
-     * @param string $module
-
-     * @param array $params
-     * @access public
+     * @copydoc Calendar::__construct
      */
-    public function __construct($name,   ?array $params = null) {
+    public function __construct($name, ?array $params = null) {
         parent::__construct($name, $params);
         $this->setCalendar(new CalendarObject($this->getParam('month'), $this->getParam('year')));
 
-        //Отмечаем использованные даты календаря
         $range = $this->calendar->getRange();
-
-        $dateFormat = '"Y-m-d"';
-        // Если диапазон календаря заканчивается в будущем - отсекаем до текущего момента
-        if($range->end->getTimestamp() > time()){
-                $endRange = date($dateFormat);
+        $conditions = [
+            'post_created >= ' . $range->start->format('"Y-m-d"') . ' AND post_created < ' . $range->end->format('"Y-m-d"') . ' + INTERVAL 1 DAY',
+            'post_created <= NOW()',
+        ];
+        if ($blogID = (int)$this->getParam('blog_id')) {
+            $conditions['blog_id'] = $blogID;
         }
-        else{
-            $endRange = $range->end->format($dateFormat);
-        }
-
-        $conditions = array_merge(
-            array(
-                'post_created>=' .
-                        $range->start->format($dateFormat) .
-                        ' AND post_created<=' .
-                        $endRange),
-            $this->getParam('filter')
+        $existingDates = $this->dbh->getColumn(
+            'SELECT DISTINCT DATE_FORMAT(post_created, "%Y-%c-%e") FROM blog_post' . $this->dbh->buildWhereCondition($conditions)
         );
-
-        if($blogId = (int)$this->getParam('blog_id')){
-            $conditions['blog_id'] = $blogId;
-        }
-        $existingDates = simplifyDBResult(
-            $this->dbh->select(
-                'SELECT DISTINCT DATE_FORMAT(post_created, "%Y-%c-%e") as post_date FROM blog_post'.
-                $this->dbh->buildWhereCondition($conditions)
-            ),
-            'post_date'
-        );
-
-        if (is_array($existingDates)) {
-            foreach ($existingDates as $date) {
-                $this->calendar->getItemByDate(\DateTime::createFromFormat('Y-m-d', $date))->setProperty('selected', 'selected');
+        foreach ((array)$existingDates as $date) {
+            if ($item = $this->calendar->getItemByDate(\DateTime::createFromFormat('Y-n-j', $date))) {
+                $item->setProperty('selected', 'selected');
             }
+        }
+        if (($date = $this->getParam('date')) && ($item = $this->calendar->getItemByDate($date))) {
+            $item->setProperty('marked', 'marked');
         }
     }
 
+    /**
+     * @copydoc Calendar::defineParams
+     */
     protected function defineParams() {
         return array_merge(
             parent::defineParams(),
-            array(
+            [
                 'month' => false,
                 'year' => false,
-                'date' => new \DateTime(),
-                'filter' => array(),
+                'date' => false,
                 'blog_id' => false,
-                'template'=> 'blogs'
-            )
+                // URL of the posts list relative to the site root, the calendar adds year/month/day/
+                'template' => '',
+            ]
         );
     }
 
-
+    /**
+     * @copydoc Calendar::setParam
+     *
+     * @throws SystemException 'ERR_404'
+     */
+    protected function setParam($name, $value) {
+        if (($name == 'year') && ($value !== false) && (!is_numeric($value) || ($value < 1970) || ($value > date('Y') + 1))) {
+            throw new SystemException('ERR_404', SystemException::ERR_404);
+        }
+        if (($name == 'month') && ($value !== false) && (!is_numeric($value) || ($value < 1) || ($value > 12))) {
+            throw new SystemException('ERR_404', SystemException::ERR_404);
+        }
+        parent::setParam($name, $value);
+    }
 }
