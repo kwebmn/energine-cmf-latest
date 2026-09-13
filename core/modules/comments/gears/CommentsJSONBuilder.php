@@ -30,7 +30,7 @@ class CommentsJSONBuilder;
      * @throws SystemException 'ERR_DEV_NO_DATA_DESCRIPTION'
      */
      public function build() {
-        $result = false;
+        $result = [];
 
         if ($this->dataDescription == false) {
             throw new SystemException('ERR_DEV_NO_DATA_DESCRIPTION', SystemException::ERR_DEVELOPER);

@@ -105,7 +105,7 @@ class Comments extends Primitive{
 	 */
 	public static function createInstanceFor($tableName, $isTree=false){
         //@TODO переделать
-		if($commentTable = E()->getController()->dbh->tableExists($tableName. '_comment')){
+		if($commentTable = E()->getDB()->tableExists($tableName. '_comment')){
 			return new Comments($commentTable, $isTree);
 		}
 		return null;

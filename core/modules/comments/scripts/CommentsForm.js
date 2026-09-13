@@ -109,10 +109,9 @@ var CommentsForm = new Class(/** @lends CommentsForm# */{
      * @param {Object} response Server response.
      */
     show_result: function(response) {
-        try {
-            Recaptcha.reload();
-        } catch (err) {
-            console.warn(err)
+        // reCAPTCHA v2 (the v1 Recaptcha object is gone): a solved captcha can not be sent twice
+        if (window.grecaptcha && this.form.getElement('.g-recaptcha')) {
+            grecaptcha.reset();
         }
 
         if (response.errors) {
