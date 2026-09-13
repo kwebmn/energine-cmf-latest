@@ -452,16 +452,18 @@ final class QAL extends Primitive {
      * @return boolean
      */
     public function commit() {
-        return $this->pdo->commit();
+        // DDL (CREATE/ALTER/DROP TABLE) commits implicitly in MySQL; since PHP 8.0 PDO knows that
+        // and commit() throws "There is no active transaction" instead of doing nothing
+        return $this->pdo->inTransaction() ? $this->pdo->commit() : true;
     }
 
     /**
-     * Open transaction.
+     * Rollback transaction.
      *
      * @return boolean
      */
     public function rollback() {
-        return $this->pdo->rollBack();
+        return $this->pdo->inTransaction() ? $this->pdo->rollBack() : false;
     }
 
     /**

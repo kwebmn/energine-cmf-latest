@@ -291,6 +291,10 @@ class FormEditor extends DataSet {
         $fieldName = key($fieldInfo);
         $tableName = current($fieldInfo);
         if (!strpos($fieldName, '_multi')) {
+            if (empty($tableName['key']['tableName'])) {
+                // only select and multi fields have values
+                throw new SystemException('ERR_BAD_REQUEST', SystemException::ERR_WARNING);
+            }
             $tableName = $tableName['key']['tableName'];
         } else {
             $tableName = FormConstructor::getDatabase() . '.' . $fieldName . '_values';

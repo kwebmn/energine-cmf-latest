@@ -84,13 +84,23 @@ class FormsEditor extends Grid {
      */
     protected function deleteData($id) {
         parent::deleteData($id);
-        $res = $this->dbh->select('SHOW FULL TABLES FROM `' . FormConstructor::getDatabase() . '` LIKE "%form_' . $id . '%"');
-        if (is_array($res)) {
-            $tables = array_map(function($row) { return current($row); }, $res);
-            $this->dbh->modify('SET FOREIGN_KEY_CHECKS=0;');
-            foreach ($tables as $tableName) {
-                $this->dbh->modify('DROP TABLE `' . FormConstructor::getDatabase() . '`.' . $tableName);
+        // Grid::delete() passes a list of ids
+        foreach ((array)$id as $formID) {
+            $formID = (int)$formID;
+            $res = $this->dbh->select('SHOW FULL TABLES FROM `' . FormConstructor::getDatabase() . '` LIKE "form\_' . $formID . '%"');
+            if (is_array($res)) {
+                // only form_<id> and form_<id>_*, not the tables of form <id>0, <id>1, ...
+                $tables = preg_grep('/^form_' . $formID . '(_|$)/', array_map(function ($row) {
+                    return current($row);
+                }, $res));
+                $this->dbh->modify('SET FOREIGN_KEY_CHECKS=0;');
+                foreach ($tables as $tableName) {
+                    $this->dbh->modify('DROP TABLE `' . FormConstructor::getDatabase() . '`.' . $tableName);
+                }
+                $this->dbh->modify('SET FOREIGN_KEY_CHECKS=1;');
             }
+            // field captions created by FormConstructor::save()
+            $this->dbh->modify('DELETE FROM share_lang_tags WHERE ltag_name LIKE %s', 'FIELD_FORM\_' . $formID . '\_%');
         }
     }
 
