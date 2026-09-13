@@ -214,7 +214,8 @@ class DBStructureInfo extends Primitive {
 			'(?:\((?<len>.+)\))?'. //field len
 			'(?:\s+(?<unsigned>unsigned))?'.
 			'(?:\s*(?<is_null>(?:NOT )?NULL))?'.
-			'(?:\s+DEFAULT (?<default>(?:NULL|\'[^\']+\')))?'.
+			// MariaDB 10.2+ prints numeric defaults unquoted (DEFAULT 1), MySQL 5 as strings (DEFAULT '1')
+			'(?:\s+DEFAULT (?<default>(?:NULL|\'[^\']+\'|-?\d+(?:\.\d+)?)))?'.
 			'.*$)';
 		$constraint =
 			'(?:^\s*CONSTRAINT `(?<constraint>\w+)` FOREIGN KEY \(`(?<cname>\w+)`\) REFERENCES `(?<tableName>\w+)` \(`(?<fieldName>\w+)`\)'.
