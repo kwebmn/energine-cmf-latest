@@ -133,7 +133,7 @@ class ComponentContainer extends Primitive implements IBlock, \Iterator {
      * @return bool
      */
     public function isEmpty() {
-        return (boolean)sizeof($this->childs);
+        return !sizeof($this->blocks);
     }
 
     public function getName() {

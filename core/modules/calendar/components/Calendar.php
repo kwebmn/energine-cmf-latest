@@ -14,7 +14,7 @@ class Calendar;
  * @version 1.0.0
  */
 namespace Energine\calendar\components;
-use Energine\share\components\DataSet, Energine\calendar\gears\CalendarObject, CalendarBuilder, Energine\share\gears\DataDescription, Energine\share\gears\FieldDescription, Energine\share\gears\Toolbar, Energine\share\gears\Link, Energine\share\gears\Data, Energine\share\gears\Field;
+use Energine\share\components\DataSet, Energine\calendar\gears\CalendarObject, Energine\calendar\gears\CalendarBuilder, Energine\share\gears\DataDescription, Energine\share\gears\FieldDescription, Energine\share\gears\Toolbar, Energine\share\gears\Link, Energine\share\gears\Data, Energine\share\gears\Field;
 /**
  * Calendar component.
  *

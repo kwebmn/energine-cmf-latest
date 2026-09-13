@@ -263,7 +263,7 @@ class CommentsEditor extends Grid {
         } else {
             $columns = $this->dbh->getColumnsInfo($fkTableName);
             $columns = array_filter($columns,
-                create_function('$value', 'return !($value["type"] == QAL::COLTYPE_TEXT);')
+                function ($value) { return !($value['type'] == QAL::COLTYPE_TEXT); }
             );
             $ordering = $this->getOrderingByTable($fkTableName, $fkValueName);
             $res =

@@ -102,7 +102,6 @@ class OKOAuth extends Primitive {
             CURLOPT_URL => $url
         ));
         $response = curl_exec($ch);
-        curl_close ($ch);
         return $response;
     }
 
@@ -117,7 +116,7 @@ class OKOAuth extends Primitive {
             return json_decode($result);
         }
         parse_str($result, $output);
-        $result = new StdClass();
+        $result = new \stdClass();
         foreach($output as $k => $v) {
             $result->$k = $v;
         }

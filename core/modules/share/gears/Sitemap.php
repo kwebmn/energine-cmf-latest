@@ -132,7 +132,7 @@ final class Sitemap extends Primitive {
         //Кешируем уровни доступа к страницам сайта
         //Формируем матрицу вида
         //[идентификатор раздела][идентификатор роли] = идентификатор уровня доступа
-        $rightsMatrix = $this->dbh->select('share_access_level', true, ['smap_id' => array_map(create_function('$a', 'return $a["smap_id"];'), $res)]);
+        $rightsMatrix = $this->dbh->select('share_access_level', true, ['smap_id' => array_map(function ($a) { return $a['smap_id']; }, $res)]);
 
         if (!$rightsMatrix) {
             throw new SystemException('ERR_404', SystemException::ERR_404);

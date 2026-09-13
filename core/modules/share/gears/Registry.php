@@ -294,7 +294,9 @@ namespace Energine\share\gears {
                     [
                         \PDO::ATTR_PERSISTENT => (bool)$this->getConfigValue('database.persistent'),
                         \PDO::ATTR_EMULATE_PREPARES => true,
-                        \PDO::MYSQL_ATTR_USE_BUFFERED_QUERY => true
+                        \Pdo\Mysql::ATTR_USE_BUFFERED_QUERY => true,
+                        // PHP 8.1+ returns native int/float with emulated prepares, the code expects strings
+                        \PDO::ATTR_STRINGIFY_FETCHES => true
                     ]
                 );
             }

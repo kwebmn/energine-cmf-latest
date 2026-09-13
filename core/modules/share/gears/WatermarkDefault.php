@@ -163,7 +163,6 @@ class WatermarkDefault implements IWatermark {
             $this->transparency
         );
         imagepng($im, $this->destination);
-        imagedestroy($im);
         return $this;
     }
 

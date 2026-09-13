@@ -15,6 +15,7 @@ class PageInfo;
  */
 namespace Energine\share\components;
 
+use Energine\share\gears\AttachmentManager;
 use Energine\share\gears\Data;
 use Energine\share\gears\Field;
 use Energine\share\gears\FieldDescription;

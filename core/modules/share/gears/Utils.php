@@ -412,7 +412,7 @@ namespace Energine\share\gears {
             }
             $date = strtotime($date);
             if (!in_array($format, ['%E', '%f', '%o', '%q'])) {
-                $result = @strftime($format, $date);
+                $result = $this->strftimeFormat($format, $date);
                 if (!$result) {
                     $result = $date;
                 }
@@ -489,6 +489,38 @@ namespace Energine\share\gears {
             }
 
             return $result;
+        }
+
+        /**
+         * strftime() replacement (deprecated since PHP 8.1, removed in 9).
+         * Locale independent, exactly like strftime() ran here: no ru/uk locales are installed.
+         *
+         * @param string $format strftime() format.
+         * @param int $timestamp Timestamp.
+         * @return string
+         */
+        private function strftimeFormat($format, $timestamp) {
+            static $map = [
+                'a' => 'D', 'A' => 'l', 'd' => 'd', 'u' => 'N', 'w' => 'w', 'V' => 'W',
+                'b' => 'M', 'h' => 'M', 'B' => 'F', 'm' => 'm', 'y' => 'y', 'Y' => 'Y', 'G' => 'o',
+                'H' => 'H', 'I' => 'h', 'M' => 'i', 'S' => 's', 'p' => 'A', 'P' => 'a',
+                'r' => 'h:i:s A', 'R' => 'H:i', 'T' => 'H:i:s', 'X' => 'H:i:s', 'D' => 'm/d/y', 'x' => 'm/d/y',
+                'F' => 'Y-m-d', 'c' => 'D M j H:i:s Y', 'z' => 'O', 'Z' => 'T', 's' => 'U',
+            ];
+            return preg_replace_callback('/%([a-zA-Z%])/', function ($m) use ($map, $timestamp) {
+                switch ($m[1]) {
+                    case '%': return '%';
+                    case 'n': return "\n";
+                    case 't': return "\t";
+                    case 'e': return sprintf('%2d', date('j', $timestamp));
+                    case 'k': return sprintf('%2d', date('G', $timestamp));
+                    case 'l': return sprintf('%2d', date('g', $timestamp));
+                    case 'j': return sprintf('%03d', date('z', $timestamp) + 1);
+                    case 'C': return sprintf('%02d', intdiv((int)date('Y', $timestamp), 100));
+                    case 'g': return substr(date('o', $timestamp), -2);
+                }
+                return isset($map[$m[1]]) ? date($map[$m[1]], $timestamp) : $m[0];
+            }, $format);
         }
 
         public function is_PHP_CLI() {

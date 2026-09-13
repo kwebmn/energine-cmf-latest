@@ -251,7 +251,7 @@ final class Document extends Primitive implements IDocument {
         $baseURL = E()->getSiteManager()->getCurrentSite()->base));
         $prop->setAttribute('name', 'base');
         $prop->setAttribute('static', (($staticURL =
-            $this->getConfigValue('site.static') ? $staticURL : $baseURL)));
+            $this->getConfigValue('site.static')) ? $staticURL : $baseURL));
         $prop->setAttribute('media', (($mediaURL =
             $this->getConfigValue('site.media')) ? $mediaURL : $baseURL));
         $prop->setAttribute('resizer', (($resizerURL =

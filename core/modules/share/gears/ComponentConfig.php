@@ -226,7 +226,7 @@ class ComponentConfig {
                     array('(.*)', '\/', '([^\/]+)'),
                     $pattern
                 );
-            } catch (Exception $e) {
+            } catch (\Exception $e) {
                 $resPattern = $pattern;
             }
             $matches = array();

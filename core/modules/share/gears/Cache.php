@@ -48,6 +48,12 @@ class Cache {
      */
     const DB_STRUCTURE_KEY = 'db_structure';
 
+    /**
+     * Is cache enabled.
+     * @var bool $enabled
+     */
+    private $enabled = false;
+
     public function __construct() {
         $this->enabled =
                 (bool)Primitive::getConfigValue('site.cache')

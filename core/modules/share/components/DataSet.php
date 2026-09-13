@@ -17,6 +17,7 @@ abstract class DataSet;
 namespace Energine\share\components;
 
 use Energine\share\gears\Request;
+use Energine\share\gears\XSLTTransformer;
 use Energine\share\gears\Toolbar, Energine\share\gears\QAL, Energine\share\gears\SystemException, Energine\share\gears\DataDescription, Energine\share\gears\FieldDescription, Energine\share\gears\Data, Energine\share\gears\Builder, Energine\share\gears\Primitive, Energine\share\gears\SimpleBuilder, Energine\share\gears\DataSetConfig, Energine\share\gears\Pager;
 
 /**
@@ -769,7 +770,7 @@ abstract class DataSet extends Component
         if (file_exists($file = sprintf(SITE_DIR . XSLTTransformer::MAIN_TRANSFORMER_DIR, E()->getSiteManager()->getCurrentSite()->folder) . $fn)) {
             E()->getController()->getTransformer()->setFileName($fn);
         } else {
-            E()->getController()->getTransformer()->setFileName('core/modules/share/transformers/embed_player.xslt', true);
+            E()->getController()->getTransformer()->setFileName(CORE_REL_DIR . '/modules/share/transformers/embed_player.xslt', true);
         }
 
     }

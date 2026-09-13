@@ -199,7 +199,7 @@ class PageList extends DataSet {
                     TagManager::getFilter($this->getParam('tags'), 'share_sitemap');
 
             reset($data);
-            while (list($key, $value) = each($data)) {
+            foreach ($data as $key => $value) {
                 if (($filteredIDs !== true) && is_array($filteredIDs) && !in_array($key, $filteredIDs)) {
                     unset($data[$key]);
                     continue;

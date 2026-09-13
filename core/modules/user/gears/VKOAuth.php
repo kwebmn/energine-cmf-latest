@@ -85,8 +85,7 @@ class VKOAuth extends Primitive {
     }
 
     public function __destruct() {
-        if(is_resource($this->ch))
-            curl_close($this->ch);
+        $this->ch = null;
     }
 
     /**

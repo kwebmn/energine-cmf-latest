@@ -70,7 +70,7 @@ class TagEditor extends Grid {
         $tags = (!empty($_REQUEST['tags'])) ? $_REQUEST['tags'] : '';
         $tags = array_filter(
             array_map(
-                create_function('$tag', 'return mb_convert_case(trim($tag), MB_CASE_LOWER, "UTF-8");'),
+                function ($tag) { return mb_convert_case(trim($tag), MB_CASE_LOWER, 'UTF-8'); },
                 explode(TagManager::TAG_SEPARATOR, $tags)
             )
         );
@@ -102,7 +102,7 @@ class TagEditor extends Grid {
         $tag_id = (!empty($_REQUEST['tag_id'])) ? $_REQUEST['tag_id'] : '';
         $tag_id = array_filter(
             array_map(
-                create_function('$tag', 'return intval(trim($tag));'),
+                function ($tag) { return intval(trim($tag)); },
                 explode(TagManager::TAG_SEPARATOR, $tag_id)
             )
         );

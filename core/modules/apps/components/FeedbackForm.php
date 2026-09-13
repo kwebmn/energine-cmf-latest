@@ -191,7 +191,7 @@ class FeedbackForm extends DBDataSet {
             $this->response->redirectToCurrentSection('success/');
 
         }
-        catch (Exception $e) {
+        catch (\Exception $e) {
             $this->failure($e->getMessage(), $data[$this->getTableName()]);
         }
     }

@@ -15,7 +15,7 @@ final class CalendarItem
  * @version 1.0.0
  */
 namespace Energine\calendar\gears;
-use Energine\share\gears\Object;
+use Energine\share\gears\Primitive;
 /**
  * Calendar object.
  *
@@ -26,7 +26,7 @@ final class CalendarItem
  *
  * @final
  */
-final class CalendarObject extends Object implements \Iterator {
+final class CalendarObject extends Primitive implements \Iterator {
     /**
      * Current period.
      */
@@ -257,7 +257,7 @@ final class CalendarItem
  * @final
  */
 
-final class CalendarItem extends Object implements \Iterator {
+final class CalendarItem extends Primitive implements \Iterator {
     /**
      * Property iterator position.
      * @var int $position

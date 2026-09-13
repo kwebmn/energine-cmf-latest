@@ -14,7 +14,7 @@ class FeedEditor;
  * @version 1.0.0
  */
 namespace Energine\apps\components;
-use Energine\share\components\LinkingEditor, Energine\share\gears\FieldDescription, Energine\share\gears\SystemException, Energine\share\gears\QAL, Energine\share\gears\JSONCustomBuilder;
+use Energine\share\components\Grid, Energine\share\components\LinkingEditor, Energine\share\gears\FieldDescription, Energine\share\gears\SystemException, Energine\share\gears\QAL, Energine\share\gears\JSONCustomBuilder;
 /**
  * Feed editor.
  * It creates editors that are controlled from control panel.

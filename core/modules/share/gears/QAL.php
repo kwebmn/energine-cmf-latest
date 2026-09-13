@@ -372,7 +372,7 @@ final class QAL extends Primitive {
 
                         if (is_null($v)) $v = 1;
 
-                        return implode(',', array_fill(0, ($s = sizeof($v)) ? $s : 1, '?'));
+                        return implode(',', array_fill(0, is_array($v) ? count($v) : 1, '?'));
                     },
                     $data
                 );
@@ -473,7 +473,7 @@ final class QAL extends Primitive {
      * @return array
      */
     public function getTables() {
-        return $this->getPDO()->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN, 0);
+        return $this->getPDO()->query('SHOW TABLES')->fetchAll(\PDO::FETCH_COLUMN, 0);
     }
 
     /**
@@ -831,7 +831,7 @@ final class QAL extends Primitive {
                         } elseif (is_array($value)) {
                             $value = array_filter($value);
 
-                            $value = implode(',', array_map(create_function('$row', 'return \'"\'.$row.\'"\';'), $value));
+                            $value = implode(',', array_map(function ($row) { return '"' . $row . '"'; }, $value));
 
                             if (!empty($value))
                                 $cond[] = $fieldName . ' IN (' . $value . ')';

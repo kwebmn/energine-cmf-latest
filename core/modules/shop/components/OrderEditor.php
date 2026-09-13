@@ -240,7 +240,7 @@ adr_street as order_street
 		 * @var $b JSONCustomBuilder
 		 */
 		$b = $this->getBuilder();
-		$b->setProperty( 'result', (boolean) $res );
+		$b->setProperty( 'result', (bool) $res );
 		if ( ! $res ) {
 			$res = [
 				'order_user_name' => '',

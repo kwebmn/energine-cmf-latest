@@ -152,7 +152,7 @@ class TagManager extends Primitive {
             throw new SystemException('ERR_WRONG_TABLE_NAME', SystemException::ERR_DEVELOPER, $mapTableName);
         }
         $tags =
-            array_filter(array_map(create_function('$tag', 'return mb_convert_case(trim($tag), MB_CASE_LOWER, "UTF-8");'), explode(self::TAG_SEPARATOR, $tags)));
+            array_filter(array_map(function ($tag) { return mb_convert_case(trim($tag), MB_CASE_LOWER, 'UTF-8'); }, explode(self::TAG_SEPARATOR, $tags)));
         //Анализируем структуру таблицы
         $columns = array_keys($this->dbh->getColumnsInfo($mapTableName));
         unset($columns['tag_id']);

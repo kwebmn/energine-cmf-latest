@@ -94,7 +94,7 @@ final class NavigationMenu extends DataSet {
 
             if (!empty($this->filteredIDs)) {
                 reset($data);
-                while (list($key, $value) = each($data)) {
+                foreach ($data as $key => $value) {
                     if (($this->filteredIDs !== true) && !in_array($key, $this->filteredIDs)) {
                         unset($data[$key]);
                         continue;
@@ -142,11 +142,10 @@ final class NavigationMenu extends DataSet {
 
                 if ($nodeChilds) {
                     $nodeChilds = array_map(
-                        create_function(
-                            '$node',
-                                'if($node["smap_pid"] == ' . $ancestorID . ') $node["smap_pid"] = false;
-                            return $node;'
-                        ),
+                        function ($node) use ($ancestorID) {
+                            if ($node['smap_pid'] == $ancestorID) $node['smap_pid'] = false;
+                            return $node;
+                        },
                         $nodeChilds
                     );
                 }
