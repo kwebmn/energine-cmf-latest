@@ -26,8 +26,8 @@ use Energine\share\gears\JSONCustomBuilder;
  */
 class MailSubscriptionList extends DBDataSet {
 
-    public function __construct($name, $module, ?array $params = NULL) {
-        parent::__construct($name, $module, $params);
+    public function __construct($name, ?array $params = NULL) {
+        parent::__construct($name, $params);
         $this->setTableName('mail_subscriptions');
         $this->setFilter(['subscription_is_active' => '1', 'subscription_is_hidden' => '0']);
         $this->setParam('active', true);
@@ -43,7 +43,8 @@ class MailSubscriptionList extends DBDataSet {
             $data = $this->getData();
             $dd = $this->getDataDescription();
 
-            if ($data) {
+            // no subscriptions to show - no subscription_id field
+            if ($data && $data->getFieldByName('subscription_id')) {
 
                 $fd = new FieldDescription('is_subscribed');
                 $fd->setType(FieldDescription::FIELD_TYPE_BOOL);
@@ -97,6 +98,9 @@ class MailSubscriptionList extends DBDataSet {
     }
 
     protected function doToggle($subscriptionId) {
+        if (!$this->document->getUser()->isAuthenticated()) {
+            throw new SystemException('ERR_403', SystemException::ERR_403);
+        }
         $is_exists = $this->dbh->getScalar(
             'mail_subscriptions2users',
             'subscription_id',

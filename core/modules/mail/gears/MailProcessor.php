@@ -38,7 +38,7 @@ class MailProcessor
     }
 
     protected function log($message, $hilight = false, $finalize = false) {
-        $this->output->write(date('Y-m-d h:i:s') . ': ');
+        $this->output->write(date('Y-m-d H:i:s') . ': ');
         if ($hilight) {
             $this->output->writeln('<comment>' . $message . '</comment>');
         } else {
@@ -107,7 +107,7 @@ class MailProcessor
                 $desired->add(new \DateInterval('PT168H'));
                 break;
             case 'monthly':
-                $desired->add(new \DateInterval('PT5040H'));
+                $desired->add(new \DateInterval('P1M'));
                 break;
         }
 
@@ -159,7 +159,8 @@ class MailProcessor
                         )
                     );
 
-                } catch (\Exception $e) {
+                } catch (\Throwable $e) {
+                    // \Error too (e.g. a missing mail.subscriptions.<type> class): the other subscriptions still run
                     $this -> log('Error processing subscription: ' . (string) $e);
                 }
 

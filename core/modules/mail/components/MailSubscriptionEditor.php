@@ -59,7 +59,7 @@ class MailSubscriptionEditor extends Grid {
 
     protected function usersEditor() {
         $sp = $this->getStateParams(true);
-        $params = ['config' => 'core/modules/mail/config/MailSubscriptionUserEditor.component.xml'];
+        $params = ['config' => 'core/modules/mail/config/MailSubscriptionUserEditor.component.xml', 'title' => 'TAB_SUBSCRIBED_USERS'];
 
         if (isset($sp['subscription_id'])) {
             $this->request->shiftPath(2);
@@ -73,7 +73,7 @@ class MailSubscriptionEditor extends Grid {
     }
     protected function emailsEditor() {
         $sp = $this->getStateParams(true);
-        $params = ['config' => 'core/modules/mail/config/MailSubscriptionEmailEditor.component.xml'];
+        $params = ['config' => 'core/modules/mail/config/MailSubscriptionEmailEditor.component.xml', 'title' => 'TAB_SUBSCRIBED_EMAILS'];
 
         if (isset($sp['subscription_id'])) {
             $this->request->shiftPath(2);
@@ -100,12 +100,15 @@ class MailSubscriptionEditor extends Grid {
 
     protected function saveData() {
         $subscriptionID = parent::saveData();
-        $this->dbh->modify(
-            'UPDATE mail_subscriptions2users
-			SET session_id = NULL, subscription_id=%s
-			WHERE (subscription_id IS NULL and session_id = %s) or (subscription_id = %1$s)',
-            $subscriptionID, session_id()
-        );
+        // users and e-mails added in the tabs before the new subscription got its id
+        foreach (['mail_subscriptions2users', 'mail_email2subscriptions'] as $linkTable) {
+            $this->dbh->modify(
+                'UPDATE ' . $linkTable . '
+                SET session_id = NULL, subscription_id=%s
+                WHERE (subscription_id IS NULL and session_id = %s) or (subscription_id = %1$s)',
+                $subscriptionID, session_id()
+            );
+        }
         return $subscriptionID;
     }
 }

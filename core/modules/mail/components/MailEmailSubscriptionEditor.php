@@ -18,14 +18,16 @@ use Energine\share\gears\QAL;
  * @author dr.Pavka
  */
 class MailEmailSubscriptionEditor extends Grid {
-    public function __construct($name, $module, ?array $params = NULL) {
-        parent::__construct($name, $module, $params);
+    public function __construct($name, ?array $params = NULL) {
+        parent::__construct($name, $params);
         $this->setTableName('mail_email_subscribers');
         $this->setOrder(['me_date' => QAL::ASC]);
     }
 
     protected function getFKData($fkTableName, $fkKeyName) {
         $filter = $order = NULL;
+        // no option lists in the grid itself (as in Grid::getFKData())
+        $result = [];
 
         if ($fkKeyName == 'subscription_id') {
             $filter = ['mail_subscriptions.subscription_is_default' => 1];

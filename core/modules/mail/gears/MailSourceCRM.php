@@ -29,7 +29,7 @@ class MailSourceCRM extends MailSourceAbstract
         $map = E()->getMap();
 
         array_walk($items, function (&$item) use ($map) {
-            $item['description'] = strip_tags($item['description']);
+            $item['description'] = strip_tags((string)$item['description']);
             $d = new \DateTime($item['date']);
             $item['date'] = $d->format('d.m.Y');
         });

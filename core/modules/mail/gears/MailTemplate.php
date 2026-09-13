@@ -49,7 +49,9 @@ class MailTemplate {
     }
 
     protected function parse($string) {
-        return str_replace($this->getKeys(), array_values($this->data), $string);
+        return str_replace($this->getKeys(), array_map(function ($value) {
+            return is_array($value) ? implode(', ', $value) : (string)$value;
+        }, array_values($this->data)), $string);
     }
 
     public function getSubject() {

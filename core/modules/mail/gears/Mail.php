@@ -98,7 +98,7 @@ final class Mail extends Primitive {
      */
 
     public function setFrom($email, $name = false) {
-        $this->sender = ($name)?'=?UTF-8?B?'.base64_encode($name).'?=<'.$email.'>':$email;
+        $this->sender = ($name)?'=?UTF-8?B?'.base64_encode($name).'?= <'.$email.'>':$email;
         return $this;
     }
 
@@ -122,7 +122,7 @@ final class Mail extends Primitive {
      */
     public function addTo($email, $name = false) {
         $email = trim($email);
-        $this->to[$email] = ($name)?'=?UTF-8?B?'.base64_encode($name).'?=<'.$email.'>':$email;
+        $this->to[$email] = ($name)?'=?UTF-8?B?'.base64_encode($name).'?= <'.$email.'>':$email;
         return $this;
     }
 
@@ -145,7 +145,7 @@ final class Mail extends Primitive {
      * @return Mail
      */
     public function addReplyTo($email, $name = false) {
-        $this->replyTo[$email] = ($name)?'=?UTF-8?B?'.base64_encode($name).'?=<'.$email.'>':$email;
+        $this->replyTo[$email] = ($name)?'=?UTF-8?B?'.base64_encode($name).'?= <'.$email.'>':$email;
         return $this;
     }
 

@@ -23,6 +23,7 @@
             <field name="me_id" type="hidden"/>
             <field name="me_name" type="string" tableName="mail_email_subscribers" title="FIELD_ME_NAME"/>
             <field name="subscription_id" type="hidden"/>
+            <field name="session_id" type="hidden"/>
         </fields>
         <javascript>
             <behavior name="Form"/>

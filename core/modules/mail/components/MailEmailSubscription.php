@@ -24,8 +24,8 @@ use Energine\share\gears\QAL;
  * @author dr.Pavka
  */
 class MailEmailSubscription extends DataSet {
-    public function __construct($name, $module, ?array $params = NULL) {
-        parent::__construct($name, $module, $params);
+    public function __construct($name, ?array $params = NULL) {
+        parent::__construct($name, $params);
         $this->setType(self::COMPONENT_TYPE_FORM_ADD);
         /*@todo create smth like StateConfig - descendant of SimpleXML*/
         $this->setAction((string)$this->config->getStateConfig('subscribe')->uri_patterns->pattern, true);

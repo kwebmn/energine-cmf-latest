@@ -29,10 +29,10 @@ class MailSourceNews extends MailSourceAbstract
         $map = E()->getMap();
 
         array_walk($items, function (&$item) use ($map) {
-            $item['url'] = 'http://' . E()->getConfigValue('site.domain') . '/' . $map->getURLByID($item['smap_id']) . $item['segment'] . '/';
+            $item['url'] = 'http://' . E()->getConfigValue('site.domain') . '/' . $map->getURLByID($item['smap_id']) . $item['id'] . '--' . $item['segment'] . '/'; // NewsFeed: /[id]--[segment]/
             unset($item['smap_id']);
             unset($item['segment']);
-            $item['description'] = strip_tags($item['description']);
+            $item['description'] = strip_tags((string)$item['description']);
             $d = new \DateTime($item['date']);
             $item['date'] = $d->format('d.m.Y'); // todo: брать формат из конфига ?
         });

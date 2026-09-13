@@ -34,14 +34,14 @@ class UsersLookup extends Grid {
 			//Добавили к фильтру новое условие
 			$f->add(
 			//Значение фильтра взяли из того что пришло
-				(new FilterField('u_name'))->setValue($f->current()->getValue())
+				(new FilterField('u_fullname'))->setOperator('OR')->setValue($f->current()->getValue())
 					->setCondition('like')
 					->setAttribute('tableName', $this->getTableName()
 					)
 			);
 			//и применили
 			//в результате получилось что то типа
-			//(shop_goods_translation.goods_name LIKE '%условие%' ) OR (shop_goods.goods_code LIKE '%условие%' )"
+			//(user_users.u_name LIKE '%условие%' ) OR (user_users.u_fullname LIKE '%условие%' )
 			//inspect((string)$f);
 			(new Filter($f))->apply($this);
 		}
