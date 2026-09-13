@@ -26,7 +26,7 @@ error_reporting(E_ALL);
 @ini_set('session.auto_start', 0);
 @ini_set('session.use_trans_sid', 0);
 
-@date_default_timezone_set('Europe/Kiev');
+@date_default_timezone_set('Europe/Kyiv');
 /*
  * Определяем константы прав доступа
  * они должны иметь те же значения что и в таблице user_group_rights + ACCESS_NONE = 0
@@ -57,18 +57,22 @@ define('ACCESS_FULL', 3);
 require_once('Registry.php');
 
 /**
- * @fn nrgnErrorHandler($errLevel, $message, $file, $line, $errContext)
+ * @fn nrgnErrorHandler($errLevel, $message, $file, $line)
  * @brief Error handler.
- * It converts all errors to the SystemException with type ERR_DEVELOPER.
+ * It converts all errors except deprecations to the SystemException with type ERR_DEVELOPER.
+ * Deprecations are only logged, so a PHP upgrade does not break the site.
  *
  * @param int $errLevel Error level.
  * @param string $message Error message.
  * @param string $file Error file.
  * @param int $line Error line.
- * @param array $errContext Error context.
  *
  */
-set_error_handler(function ($errLevel, $message, $file, $line, $errContext) {
+set_error_handler(function ($errLevel, $message, $file, $line) {
+        if (in_array($errLevel, [E_DEPRECATED, E_USER_DEPRECATED], true)) {
+            error_log(sprintf('PHP Deprecated: %s in %s on line %d', $message, $file, $line));
+            return true;
+        }
         $e = new Energine\share\gears\SystemException(
             $message,
             Energine\share\gears\SystemException::ERR_DEVELOPER
