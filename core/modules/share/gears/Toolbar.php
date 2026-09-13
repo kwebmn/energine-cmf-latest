@@ -112,7 +112,7 @@ class Toolbar extends Primitive {
      * @param Control $control Control element.
      * @param Control $position Control position. If it is not set than the control will be placed at the end.
      */
-    public function attachControl(Control $control, Control $position = NULL) {
+    public function attachControl(Control $control, ?Control $position = NULL) {
         $control->setIndex(arrayPush($this->controls, $control));
         $control->attach($this);
     }

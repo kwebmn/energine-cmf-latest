@@ -26,7 +26,7 @@ class Branding extends DBDataSet {
     /**
      * @copydoc DBDataSet::__construct
      */
-    public function __construct($name,  array $params = null) {
+    public function __construct($name,  ?array $params = null) {
         $params['active'] = false;
 
         parent::__construct($name, $params);

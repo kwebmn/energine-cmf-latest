@@ -44,7 +44,7 @@ class FilterExpression implements \Iterator {
      * @link http://php.net/manual/en/iterator.current.php
      * @return FilterField
      */
-    public function current() {
+    public function current(): mixed {
         return $this->children[$this->index];
     }
 
@@ -54,7 +54,7 @@ class FilterExpression implements \Iterator {
      * @link http://php.net/manual/en/iterator.next.php
      * @return void Any returned value is ignored.
      */
-    public function next() {
+    public function next(): void {
         $this->index++;
     }
 
@@ -64,7 +64,7 @@ class FilterExpression implements \Iterator {
      * @link http://php.net/manual/en/iterator.key.php
      * @return mixed scalar on success, or null on failure.
      */
-    public function key() {
+    public function key(): mixed {
         return $this->index;
     }
 
@@ -75,7 +75,7 @@ class FilterExpression implements \Iterator {
      * @return boolean The return value will be casted to boolean and then evaluated.
      * Returns true on success or false on failure.
      */
-    public function valid() {
+    public function valid(): bool {
         return isset($this->children[$this->index]);
     }
 
@@ -85,7 +85,7 @@ class FilterExpression implements \Iterator {
      * @link http://php.net/manual/en/iterator.rewind.php
      * @return void Any returned value is ignored.
      */
-    public function rewind() {
+    public function rewind(): void {
         $this->index = 0;
     }
 

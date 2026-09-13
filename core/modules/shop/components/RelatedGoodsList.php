@@ -22,7 +22,7 @@ class RelatedGoodsList extends DBDataSet {
 	 * @param string $name
 	 * @param array $params
 	 */
-	public function __construct($name, array $params = null) {
+	public function __construct($name, ?array $params = null) {
 		parent::__construct($name, $params);
 		$this->setTableName('shop_goods');
 		$this->setOrder(array('goods_price' => QAL::ASC));

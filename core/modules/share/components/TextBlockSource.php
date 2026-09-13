@@ -27,7 +27,7 @@ class TextBlockSource extends DataSet {
     /**
      * @copydoc DataSet::__construct
      */
-    public function __construct($name,    array $params = null) {
+    public function __construct($name,    ?array $params = null) {
         parent::__construct($name, $params);
         $this->addWYSIWYGTranslations();
         $this->setProperty('exttype', 'grid');

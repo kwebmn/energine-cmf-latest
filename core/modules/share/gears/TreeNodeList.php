@@ -141,15 +141,15 @@ class TreeNodeList implements \Iterator{
         return $result;
     }
 
-	public function current() {
+	public function current(): mixed {
 		return $this->nodeList[$this->currentKey];
 	}
 
-	public function key() {
+	public function key(): mixed {
 		return $this->currentKey;
 	}
 
-	public function next() {
+	public function next(): void {
 		//получаем все ключи
 		$keys = array_keys($this->nodeList);
 		//меняем местами ключ со значением, получая индексы
@@ -165,7 +165,7 @@ class TreeNodeList implements \Iterator{
 		}
 	}
 
-	public function rewind() {
+	public function rewind(): void {
 		if(empty($this->nodeList)) return;
 		//получаем все ключи
 		$keys = array_keys($this->nodeList);
@@ -173,7 +173,7 @@ class TreeNodeList implements \Iterator{
 		$this->currentKey = $keys[0];
 	}
 
-	public function valid() {
+	public function valid(): bool {
 		if(!is_null($this->currentKey)){
 			$keys = array_keys($this->nodeList);
 			$indexes = array_flip($keys);
@@ -272,7 +272,7 @@ final class TreeNode implements \IteratorAggregate{
         return $this->children;
     }
 
-    public function getIterator() {
+    public function getIterator(): \Traversable {
         return $this->getChildren();
     }
 

@@ -229,19 +229,19 @@ final class CalendarObject extends Object implements \Iterator {
     }
 	
 
-    function rewind() {
+    function rewind(): void {
         $this->position = 0;
     }
-    function current() {
+    function current(): mixed {
         return /*new IteratorIterator(new ArrayObject(*/$this->calendar[$this->position]/*))*/;
     }
-    function key() {
+    function key(): mixed {
         return $this->position;
     }
-    function next() {
+    function next(): void {
         ++$this->position;
     }
-    function valid() {
+    function valid(): bool {
         return isset($this->calendar[$this->position]);
     }
 }
@@ -349,25 +349,25 @@ final class CalendarItem extends Object implements \Iterator {
         return $this->getTitle();
     }
     
-    function rewind() {
+    function rewind(): void {
         $this->position = 0;
     }
 
-    function current() {
+    function current(): mixed {
     	$values = array_values($this->properties);
         return $values[$this->position];
     }
 
-    function key() {
+    function key(): mixed {
     	$keys = array_keys($this->properties);
         return $keys[$this->position];
     }
 
-    function next() {
+    function next(): void {
         ++$this->position;
     }
 
-    function valid() {
+    function valid(): bool {
     	$values = array_values($this->properties);
         return isset($values[$this->position]);
     }    

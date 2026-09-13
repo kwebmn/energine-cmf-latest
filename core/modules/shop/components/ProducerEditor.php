@@ -10,7 +10,7 @@ use Energine\share\gears\SiteManager;
 use Energine\share\gears\Translit;
 
 class ProducerEditor extends Grid {
-    public function __construct($name, array $params = NULL) {
+    public function __construct($name, ?array $params = NULL) {
         parent::__construct($name, $params);
         $this->setTableName('shop_producers');
     }

@@ -54,7 +54,7 @@ class GoogleSitemap extends SitemapTree {
     /**
      * @copydoc SitemapTree::__construct
      */
-    public function __construct($name, array $params = NULL) {
+    public function __construct($name, ?array $params = NULL) {
         parent::__construct($name, $params);
         E()->getResponse()->setHeader('Content-Type', 'text/xml; charset=utf-8');
         $this->pdoDB = $this->dbh->getPDO();

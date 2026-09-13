@@ -783,7 +783,7 @@ final class QAL extends Primitive {
      *
      * @see QAL::selectRequest()
      */
-    public function buildWhereCondition($condition, array &$args = NULL) {
+    public function buildWhereCondition($condition, ?array &$args = NULL) {
         if (!is_null($args)) {
             $result = '';
             if (!empty($condition)) {

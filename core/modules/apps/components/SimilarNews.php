@@ -50,7 +50,7 @@ class SimilarNews extends DataSet {
     /**
      * @copydoc DBDataSet::__construct
      */
-    public function __construct($name, array $params = NULL) {
+    public function __construct($name, ?array $params = NULL) {
         parent::__construct($name, $params);
         $bindComponentName = ($this->getParam('bind')) ? $this->getParam('bind') : self::DEFAULT_LINK_TO;
         $this->cp =

@@ -12,7 +12,7 @@ class GoodsSort extends DataSet {
 
     protected $sort_data = [];
 
-    public function __construct($name, array $params = NULL) {
+    public function __construct($name, ?array $params = NULL) {
         $params['active'] = false;
         parent::__construct($name, $params);
         $this->setTitle($this->translate('TXT_SORT'));

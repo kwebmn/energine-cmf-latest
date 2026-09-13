@@ -50,7 +50,7 @@ class Filter extends Primitive {
      */
     private $data = null;
 
-    public function __construct(FilterExpression $data = null) {
+    public function __construct(?FilterExpression $data = null) {
         if (!is_null($data)) {
             $this->data = $data;
         }                
@@ -95,7 +95,7 @@ class Filter extends Primitive {
      * @param array $meta Info about table columns
      * @return mixed
      */
-    public function load(\SimpleXMLElement $filterDescription, array $meta = null) {
+    public function load(\SimpleXMLElement $filterDescription, ?array $meta = null) {
         if (!empty($filterDescription)) {
             foreach ($filterDescription->field as $fieldDescription) {
                 if (!isset($fieldDescription['name'])) {
@@ -231,7 +231,7 @@ class FilterConditionConverter implements \ArrayAccess, \Iterator {
      * @link http://php.net/manual/en/iterator.current.php
      * @return mixed Can return any type.
      */
-    public function current() {
+    public function current(): mixed {
         return $this->map[$this->indexedMap[$this->index]];
     }
 
@@ -241,7 +241,7 @@ class FilterConditionConverter implements \ArrayAccess, \Iterator {
      * @link http://php.net/manual/en/iterator.next.php
      * @return void Any returned value is ignored.
      */
-    public function next() {
+    public function next(): void {
         $this->index++;
     }
 
@@ -251,7 +251,7 @@ class FilterConditionConverter implements \ArrayAccess, \Iterator {
      * @link http://php.net/manual/en/iterator.key.php
      * @return mixed scalar on success, or null on failure.
      */
-    public function key() {
+    public function key(): mixed {
         return $this->indexedMap[$this->index];
     }
 
@@ -262,7 +262,7 @@ class FilterConditionConverter implements \ArrayAccess, \Iterator {
      * @return boolean The return value will be casted to boolean and then evaluated.
      * Returns true on success or false on failure.
      */
-    public function valid() {
+    public function valid(): bool {
         return array_key_exists($this->index, $this->indexedMap);
     }
 
@@ -272,7 +272,7 @@ class FilterConditionConverter implements \ArrayAccess, \Iterator {
      * @link http://php.net/manual/en/iterator.rewind.php
      * @return void Any returned value is ignored.
      */
-    public function rewind() {
+    public function rewind(): void {
         $this->index = 0;
     }
 
@@ -288,7 +288,7 @@ class FilterConditionConverter implements \ArrayAccess, \Iterator {
      * <p>
      * The return value will be casted to boolean if non-boolean was returned.
      */
-    public function offsetExists($offset) {
+    public function offsetExists($offset): bool {
         return array_key_exists($offset, $this->map);
     }
 
@@ -301,7 +301,7 @@ class FilterConditionConverter implements \ArrayAccess, \Iterator {
      * </p>
      * @return mixed Can return all value types.
      */
-    public function offsetGet($offset) {
+    public function offsetGet($offset): mixed {
         return $this->map[$offset];
     }
 
@@ -318,7 +318,7 @@ class FilterConditionConverter implements \ArrayAccess, \Iterator {
      * @return void
      * @throws SystemException
      */
-    public function offsetSet($offset, $value) {
+    public function offsetSet($offset, $value): void {
         throw new SystemException('ERR_NO_MODIFICATION');
     }
 
@@ -332,7 +332,7 @@ class FilterConditionConverter implements \ArrayAccess, \Iterator {
      * @return void
      * @throws SystemException
      */
-    public function offsetUnset($offset) {
+    public function offsetUnset($offset): void {
         throw new SystemException('ERR_NO_MODIFICATION');
     }
 

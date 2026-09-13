@@ -15,7 +15,7 @@ use Energine\shop\gears\FeatureFieldFactory;
 use Energine\share\gears\UserSession;
 
 class GoodsCompare extends DataSet implements SampleGoodsCompare {
-    public function __construct($name, array $params = NULL) {
+    public function __construct($name, ?array $params = NULL) {
         parent::__construct($name, $params);
         // active only in single mode
         $this->setParam('active', ($this->getProperty('single') != 'single') ? false : true);
@@ -201,11 +201,11 @@ class GoodsCompare extends DataSet implements SampleGoodsCompare {
             $this->getParam('goodsListClass'),
             $params
         );
-        
+
         //$curr = E()['Energine\\shop\\gears\\Currency'];
         //$this->setProperty('currency', $curr->getInfo()['currency_shortname']);
         //$this->setProperty('currency-order', $curr->getInfo()['currency_shortname_order']);
-        
+
        $this->addToolbar($this->loadToolbar());
         $this->js = $this->buildJS();
         //var_dump($this);die();

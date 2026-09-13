@@ -47,7 +47,7 @@ class GoodsList extends DBDataSet implements SampleGoodsList {
 	 * @param string $name
 	 * @param array $params
 	 */
-	public function __construct( $name, array $params = null ) {
+	public function __construct( $name, ?array $params = null ) {
 		parent::__construct( $name, $params );
 
 		$this->setTableName( 'shop_goods' );
@@ -528,7 +528,7 @@ class GoodsList extends DBDataSet implements SampleGoodsList {
 								$option_ids = [];
 								$options    = $feature->getOptions();
 								if ( empty( $options ) ) {
-									continue;
+									break;
 								}
 
 								foreach ( $options as $option_id => $option_data ) {
@@ -566,7 +566,7 @@ class GoodsList extends DBDataSet implements SampleGoodsList {
 								$options    = $feature->getOptions();
 
 								if ( empty( $options ) ) {
-									continue;
+									break;
 								}
 								foreach ( $feature->getOptions() as $option_id => $option_data ) {
 									if ( in_array( $option_id, $filter_feature['values'] ) ) {

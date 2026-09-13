@@ -19,7 +19,7 @@ class GoodsLastSeen extends DataSet {
      * @param string $name
      * @param array $params
      */
-    public function __construct($name, array $params = null) {
+    public function __construct($name, ?array $params = null) {
         parent::__construct($name, $params);
         $this->bindComponent =
             $this->document->componentManager->getBlockByName($this->getParam('bind'));

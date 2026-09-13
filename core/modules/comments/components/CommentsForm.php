@@ -83,7 +83,7 @@ class CommentsForm extends DataSet {
     /**
      * @copydoc DataSet::__construct
      */
-    public function __construct($name, array $params = NULL) {
+    public function __construct($name, ?array $params = NULL) {
         // если комментарии скрыты то бессмысленно показывать форму
         if (!isset($params['show_comments']) or !$params['show_comments']) {
             $params['show_form'] = 0;

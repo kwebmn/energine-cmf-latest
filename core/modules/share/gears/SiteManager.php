@@ -189,26 +189,26 @@ final class SiteManager extends Primitive implements \Iterator {
         throw new SystemException('ERR_NO_DEFAULT_SITE', SystemException::ERR_DEVELOPER);
     }
 
-    public function current() {
+    public function current(): mixed {
         $siteIDs = array_keys($this->data);
 
         return $this->data[$siteIDs[self::$index]];
     }
 
-    public function key() {
+    public function key(): mixed {
         $siteIDs = array_keys($this->data);
         return $siteIDs[self::$index];
     }
 
-    public function next() {
+    public function next(): void {
         self::$index++;
     }
 
-    public function rewind() {
+    public function rewind(): void {
         self::$index = 0;
     }
 
-    public function valid() {
+    public function valid(): bool {
         $siteIDs = array_keys($this->data);
         return isset($siteIDs[self::$index]);
     }

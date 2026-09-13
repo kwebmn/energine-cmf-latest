@@ -8,7 +8,7 @@ use Energine\share\components\Grid,
 
 class AdsItemEditor extends Grid {
 
-    public function __construct($name,  array $params = null) {
+    public function __construct($name,  ?array $params = null) {
         parent::__construct($name, $params);
         $this->setTableName('ads_items');
         $this->setTitle($this->translate('TXT_ADS_ITEMS_EDITOR'));

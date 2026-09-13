@@ -56,7 +56,7 @@ class Form extends DBDataSet {
     /**
      * @copydoc DBDataSet::__construct
      */
-    public function __construct($name, array $params = NULL) {
+    public function __construct($name, ?array $params = NULL) {
         parent::__construct($name, $params);
         $filter = ['form_is_active' => 1];
         if ($formID = $this->getParam('id')) {

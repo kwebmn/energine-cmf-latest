@@ -27,7 +27,7 @@ class TranslationEditor extends Grid {
     /**
      * @copydoc Grid::__construct
      */
-    public function __construct($name,  array $params = null) {
+    public function __construct($name,  ?array $params = null) {
         parent::__construct($name, $params);
         $this->setTableName('share_lang_tags');
         $this->setOrder(array('ltag_name' => QAL::ASC));

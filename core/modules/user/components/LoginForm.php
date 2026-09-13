@@ -29,7 +29,7 @@ class LoginForm extends DataSet implements SampleLoginForm {
 	/**
 	 * @copydoc DataSet::__construct
 	 */
-	public function __construct( $name, array $params = null ) {
+	public function __construct( $name, ?array $params = null ) {
 		if ( ! isset( $params['state'] ) ) {
 			$params['state'] = E()->getDocument()->user->isAuthenticated() ? 'showLogoutForm' : 'showLoginForm';
 		}

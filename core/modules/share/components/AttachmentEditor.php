@@ -34,7 +34,7 @@ class AttachmentEditor extends Grid {
     /**
      * @copydoc Grid::__construct
      */
-    public function __construct($name, array $params = NULL) {
+    public function __construct($name, ?array $params = NULL) {
         parent::__construct($name, $params);
 
         $linkedID = $this->getParam('linkedID');

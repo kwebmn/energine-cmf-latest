@@ -7,7 +7,7 @@ use Energine\share\components\Grid,
 
 class MailTemplateEditor extends Grid {
 
-    public function __construct($name,  array $params = null) {
+    public function __construct($name,  ?array $params = null) {
         parent::__construct($name, $params);
         $this->setTableName('mail_templates');
         $this->setTitle($this->translate('TXT_MAIL_TEMPLATES_EDITOR'));

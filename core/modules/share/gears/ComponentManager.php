@@ -233,24 +233,24 @@ final class ComponentManager extends Primitive implements \Iterator {
         return call_user_func_array(['Energine\\share\\components\\Component', 'create'], func_get_args());
     }
 
-    public function rewind() {
+    public function rewind(): void {
         $this->blockNames = array_keys($this->blocks);
         $this->iteratorIndex = 0;
     }
 
-    public function valid() {
+    public function valid(): bool {
         return isset($this->blockNames[$this->iteratorIndex]);
     }
 
-    public function key() {
+    public function key(): mixed {
         return $this->blockNames[$this->iteratorIndex];
     }
 
-    public function next() {
+    public function next(): void {
         $this->iteratorIndex++;
     }
 
-    public function current() {
+    public function current(): mixed {
         return $this->blocks[$this->blockNames[$this->iteratorIndex]];
     }
 }

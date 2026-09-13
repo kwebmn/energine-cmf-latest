@@ -29,7 +29,7 @@ class UserEditor extends Grid {
     /**
      * @copydoc Grid::__construct
      */
-    public function __construct($name,  array $params = null) {
+    public function __construct($name,  ?array $params = null) {
         parent::__construct($name, $params);
         $this->setTableName('user_users');
         $this->setTitle($this->translate('TXT_USER_EDITOR'));

@@ -35,7 +35,7 @@ class FeedbackForm extends DBDataSet {
     /**
      * @copydoc DBDataSet::__construct
      */
-    public function __construct($name,  array $params = null) {
+    public function __construct($name,  ?array $params = null) {
         parent::__construct($name, $params);
         //$tableName = $this->getParam('tableName');
 

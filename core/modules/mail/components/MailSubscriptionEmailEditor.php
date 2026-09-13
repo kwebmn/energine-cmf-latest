@@ -11,7 +11,7 @@ use Energine\share\gears\SystemException;
 
 class MailSubscriptionEmailEditor extends Grid {
 
-    public function __construct($name, array $params = NULL) {
+    public function __construct($name, ?array $params = NULL) {
         parent::__construct($name, $params);
         $this->setTableName('mail_email2subscriptions');
 

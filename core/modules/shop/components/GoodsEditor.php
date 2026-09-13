@@ -58,7 +58,7 @@ class GoodsEditor extends Grid implements SampleGoodsEditor {
     /**
      * @copydoc Grid::__construct
      */
-    public function __construct($name, array $params = NULL) {
+    public function __construct($name, ?array $params = NULL) {
         parent::__construct($name, $params);
         $this->setTableName('shop_goods');
         $this->addFilterCondition('smap_id IN (SELECT smap_id FROM share_sitemap WHERE site_id IN (' . implode(',', $this->getSites()) . '))');

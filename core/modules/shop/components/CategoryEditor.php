@@ -8,7 +8,7 @@ use Energine\share\gears\SystemException;
 
 class CategoryEditor extends DivisionEditor {
 
-    public function __construct($name, array $params = NULL) {
+    public function __construct($name, ?array $params = NULL) {
         parent::__construct($name, $params);
         $sp = $this->getStateParams(true);
         if (!isset($sp['site_id'])) {

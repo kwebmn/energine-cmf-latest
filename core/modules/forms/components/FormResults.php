@@ -32,7 +32,7 @@ class FormResults extends Grid {
     /**
      * @copydoc Grid::__construct
      */
-    public function __construct($name,  array $params = null) {
+    public function __construct($name,  ?array $params = null) {
         parent::__construct($name, $params);
         //Якщо ідентифікатор форми вказаний невірно або не вказаний, то не вивалювати помилку, а красиво показати.
         if (!$this->formID = $this->getParam('form_id'))

@@ -37,7 +37,7 @@ class FormsEditor extends Grid {
     /**
      * @copydoc Grid::__construct
      */
-    public function __construct($name,  array $params = null) {
+    public function __construct($name,  ?array $params = null) {
         parent::__construct($name, $params);
         $this->setTableName('frm_forms');
         $this->setSaver(new FormsSaver());

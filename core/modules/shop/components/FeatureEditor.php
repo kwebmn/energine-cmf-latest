@@ -37,7 +37,7 @@ class FeatureEditor extends Grid implements SampleFeatureEditor{
     /**
      * @copydoc Grid::__construct
      */
-    public function __construct($name, array $params = NULL) {
+    public function __construct($name, ?array $params = NULL) {
         parent::__construct($name, $params);
         $this->setTableName('shop_features');
         $this->setOrder(['group_id' => QAL::ASC, 'feature_name' => QAL::ASC]);

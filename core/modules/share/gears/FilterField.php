@@ -125,7 +125,7 @@ class FilterField extends Primitive {
 	 *
 	 * @throws SystemException 'ERR_DEV_NO_CONTROL_TYPE'
 	 */
-	public function load( \SimpleXMLElement $description, array $meta = null ) {
+	public function load( \SimpleXMLElement $description, ?array $meta = null ) {
 		//Получили список аттрибутов заданных в филдах фильтра
 		//Get the attributes list form filter fields
 		$attrs = (array) $description->attributes();

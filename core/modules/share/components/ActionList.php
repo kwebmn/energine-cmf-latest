@@ -22,7 +22,7 @@ use Energine\share\gears\JSONCustomBuilder;
 use Energine\share\gears\QAL;
 
 class ActionList extends Grid{
-    function __construct($name, array $params = NULL) {
+    function __construct($name, ?array $params = NULL) {
         parent::__construct($name, $params);
         $this->setTableName('share_action_log');
         $this->setOrder(['al_date' => QAL::DESC]);

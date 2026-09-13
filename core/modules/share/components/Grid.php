@@ -93,7 +93,7 @@ class Grid extends DBDataSet {
     /**
      * @copydoc DBDataSet::__construct
      */
-    public function __construct($name, array $params = NULL) {
+    public function __construct($name, ?array $params = NULL) {
         parent::__construct($name, $params);
 
         $this->setProperty('exttype', 'grid');

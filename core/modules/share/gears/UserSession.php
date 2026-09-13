@@ -256,7 +256,7 @@ final class UserSession implements \SessionHandlerInterface {
      * @param string $sessionName Session name.
      * @return boolean
      */
-    public function open($savePath, $sessionName) {
+    public function open($savePath, $sessionName): bool {
         return true;
     }
 
@@ -266,7 +266,7 @@ final class UserSession implements \SessionHandlerInterface {
      *
      * @return bool
      */
-    public function close() {
+    public function close(): bool {
         return true;
     }
 
@@ -279,7 +279,7 @@ final class UserSession implements \SessionHandlerInterface {
      *
      * @see UserSession::data
      */
-    public function read($phpSessId) {
+    public function read($phpSessId): string|false {
         return (!empty($this->data))?$this->data:'';
     }
 
@@ -290,7 +290,7 @@ final class UserSession implements \SessionHandlerInterface {
      * @param mixed $data Data.
      * @return mixed
      */
-    public function write($phpSessId, $data) {
+    public function write($phpSessId, $data): bool {
         if (!empty($data)) {
             $this->data = $data;
             $data = ['session_data' => $data];
@@ -308,7 +308,7 @@ final class UserSession implements \SessionHandlerInterface {
      * @param string $phpSessId Session ID.
      * @return bool
      */
-    public function destroy($phpSessId) {
+    public function destroy($phpSessId): bool {
         return $this->dbh->modify(QAL::DELETE, self::$tableName, NULL, ['session_native_id' => $phpSessId]);
     }
 
@@ -320,7 +320,7 @@ final class UserSession implements \SessionHandlerInterface {
      * @param int $maxLifeTime Maximal session lifespan.
      * @return bool
      */
-    public function gc($maxLifeTime) {
+    public function gc($maxLifeTime): int|false {
         $this->dbh->modify(
             QAL::DELETE,
             self::$tableName,

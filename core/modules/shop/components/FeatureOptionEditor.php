@@ -31,7 +31,7 @@ class FeatureOptionEditor extends Grid {
      * @copydoc Grid::__construct
      */
     // На вход параметром получаем ID характеристики, к которой следует привязать вариант множественного выбора.
-    public function __construct($name, array $params = NULL) {
+    public function __construct($name, ?array $params = NULL) {
         parent::__construct($name, $params);
         $this->setTableName('shop_feature_options');
 

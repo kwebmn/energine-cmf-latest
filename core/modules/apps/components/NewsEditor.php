@@ -29,7 +29,7 @@ class NewsEditor extends ExtendedFeedEditor {
     /**
      * @copydoc ExtendedFeedEditor::__construct
      */
-    public function __construct($name, array $params = NULL) {
+    public function __construct($name, ?array $params = NULL) {
         parent::__construct($name, $params);
         $this->setTableName('apps_news');
         $this->setOrder(['news_date' => QAL::DESC]);

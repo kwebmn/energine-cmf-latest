@@ -138,7 +138,7 @@ class Component extends Primitive implements IBlock {
      */
 
 
-    public function __construct($name, array $params = null) {
+    public function __construct($name, ?array $params = null) {
         list(, $this->module) = explode('\\', get_called_class());
 
         $this->name = $name;
@@ -248,7 +248,7 @@ class Component extends Primitive implements IBlock {
      * @todo непонятно то ли это фича то ли бага
      * @final
      */
-    final private function determineState() {
+    private function determineState() {
         //Текущее действие берем из параметров
         //По умолчанию оно равно self::DEFAULT_STATE_NAME
         $this->state = $this->getParam('state');

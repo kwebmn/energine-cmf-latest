@@ -85,7 +85,7 @@ class CommentsList extends DataSet {
      * target_ids array - айдишники комментируемых сущностей
      * is_tree bool - комментарии древовидные?
      */
-    public function __construct($name, array $params = NULL) {
+    public function __construct($name, ?array $params = NULL) {
         parent::__construct($name, $params);
         $this->setProperty('exttype', 'comments');
         $this->setType(self::COMPONENT_TYPE_LIST);

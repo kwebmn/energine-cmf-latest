@@ -27,7 +27,7 @@ class FeedbackList extends Grid {
     /**
      * @copydoc Grid::__construct
      */
-    public function __construct($name,  array $params = null) {
+    public function __construct($name,  ?array $params = null) {
         parent::__construct($name, $params);
         $this->setOrder(array('feed_date' => QAL::DESC));
     }

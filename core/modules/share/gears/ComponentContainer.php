@@ -221,24 +221,24 @@ class ComponentContainer extends Primitive implements IBlock, \Iterator {
         }
     }
 
-    public function rewind() {
+    public function rewind(): void {
         $this->childNames = array_keys($this->blocks);
         $this->iteratorIndex = 0;
     }
 
-    public function valid() {
+    public function valid(): bool {
         return isset($this->childNames[$this->iteratorIndex]);
     }
 
-    public function key() {
+    public function key(): mixed {
         return $this->childNames[$this->iteratorIndex];
     }
 
-    public function next() {
+    public function next(): void {
         $this->iteratorIndex++;
     }
 
-    public function current() {
+    public function current(): mixed {
         return $this->blocks[$this->childNames[$this->iteratorIndex]];
     }
 

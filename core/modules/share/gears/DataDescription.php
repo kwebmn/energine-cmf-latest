@@ -197,14 +197,14 @@ class DataDescription extends Primitive implements \Iterator {
         return $result;
     }
 
-    public function rewind() {
+    public function rewind(): void {
         $this->currentIndex = 0;
     }
 
     /**
      * @return FieldDescription
      */
-    public function current() {
+    public function current(): mixed {
         $fieldNames = $this->getFieldDescriptionList();
         return $this->fieldDescriptions[$fieldNames[$this->currentIndex]];
     }
@@ -212,19 +212,19 @@ class DataDescription extends Primitive implements \Iterator {
     /**
      * @return mixed
      */
-    public function key() {
+    public function key(): mixed {
         $fieldNames = $this->getFieldDescriptionList();
         return $fieldNames[$this->currentIndex];
     }
 
-    public function next() {
+    public function next(): void {
         $this->currentIndex++;
     }
 
     /**
      * @return bool
      */
-    public function valid() {
+    public function valid(): bool {
         $fieldNames = $this->getFieldDescriptionList();
         return isset($fieldNames[$this->currentIndex]);
     }

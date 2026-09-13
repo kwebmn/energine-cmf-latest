@@ -28,7 +28,7 @@ class AltRelatedGoodsList extends DataSet implements SampleGoodsList {
      * @param string $name
      * @param array $params
      */
-    public function __construct($name, array $params = NULL) {
+    public function __construct($name, ?array $params = NULL) {
         parent::__construct($name, $params);
         $this->setParam('recordsPerPage', false);
     }

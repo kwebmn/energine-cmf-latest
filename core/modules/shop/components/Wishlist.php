@@ -18,7 +18,7 @@ use Energine\share\gears\QAL;
  * @author dr.Pavka
  */
 class Wishlist extends DBDataSet implements SampleWishlist {
-    public function __construct($name, $module, array $params = null) {
+    public function __construct($name, $module, ?array $params = null) {
         parent::__construct($name, $module, $params);
         $this->setTableName('shop_wishlist');
         $this->setFilter([

@@ -26,7 +26,7 @@ use Energine\share\gears\JSONCustomBuilder;
  */
 class MailSubscriptionList extends DBDataSet {
 
-    public function __construct($name, $module, array $params = NULL) {
+    public function __construct($name, $module, ?array $params = NULL) {
         parent::__construct($name, $module, $params);
         $this->setTableName('mail_subscriptions');
         $this->setFilter(['subscription_is_active' => '1', 'subscription_is_hidden' => '0']);

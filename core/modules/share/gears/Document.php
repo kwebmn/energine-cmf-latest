@@ -573,7 +573,7 @@ final class Document extends Primitive implements IDocument {
      * @param string $const Translation constant
      * @param Component $component Component object.
      */
-    public function addTranslation($const, Component $component = NULL) {
+    public function addTranslation($const, ?Component $component = NULL) {
         $this->translations[$const] =
             (!is_null($component)) ? $component->getName() : NULL;
     }

@@ -33,7 +33,7 @@ class NewsFeed extends ExtendedFeed {
      * @copydoc ExtendedFeed::__construct
      */
     // Жестко привязываемя к таблице новостей
-    public function __construct($name,  array $params = null) {
+    public function __construct($name,  ?array $params = null) {
         parent::__construct($name, $params);
         $this->setTableName('apps_news');
         $this->setOrder(array('news_date' => QAL::DESC));

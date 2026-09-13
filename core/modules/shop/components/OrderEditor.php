@@ -49,7 +49,7 @@ class OrderEditor extends Grid implements SampleOrderEditor {
 	/**
 	 * @copydoc Grid::__construct
 	 */
-	public function __construct( $name, array $params = null ) {
+	public function __construct( $name, ?array $params = null ) {
 		parent::__construct( $name, $params );
 		$this->setTableName( 'shop_orders' );
 		$this->setOrder( [ 'order_updated' => QAL::DESC ] );

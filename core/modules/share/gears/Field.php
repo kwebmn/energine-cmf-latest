@@ -228,23 +228,23 @@ class Field extends Primitive implements \Iterator {
         return $result;
     }
 
-    public function rewind() {
+    public function rewind(): void {
         $this->currentIndex = 0;
     }
 
-    public function current() {
+    public function current(): mixed {
         return $this->data[$this->currentIndex];
     }
 
-    public function key() {
+    public function key(): mixed {
         return $this->currentIndex;
     }
 
-    public function next() {
+    public function next(): void {
         $this->currentIndex++;
     }
 
-    public function valid() {
+    public function valid(): bool {
         return ($this->currentIndex < $this->getRowCount());
     }
 }

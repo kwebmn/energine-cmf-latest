@@ -16,7 +16,7 @@ use Energine\share\components\Grid;
  * @author andy.karpov
  */
 class FeatureLookup extends Grid {
-	public function __construct($name, array $params = null) {
+	public function __construct($name, ?array $params = null) {
 		parent::__construct($name, $params);
 		$this->setTableName('shop_features');
 	}

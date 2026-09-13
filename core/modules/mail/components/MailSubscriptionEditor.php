@@ -19,7 +19,7 @@ class MailSubscriptionEditor extends Grid {
     private $eEditor;
 
 
-    public function __construct($name, array $params = NULL) {
+    public function __construct($name, ?array $params = NULL) {
         parent::__construct($name, $params);
         $this->setTableName('mail_subscriptions');
         $this->setTitle($this->translate('TXT_MAIL_SUBSCRIPTION_EDITOR'));

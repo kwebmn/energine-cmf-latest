@@ -323,7 +323,7 @@ namespace Energine\share\gears {
          * The return value will be casted to boolean if non-boolean was returned.
          * @since 5.0.0
          */
-        public function offsetExists($entityName) {
+        public function offsetExists($entityName): bool {
             return isset($this->entities[$entityName]);
         }
 
@@ -336,7 +336,7 @@ namespace Energine\share\gears {
          * @return mixed Can return all value types.
          * @since 5.0.0
          */
-        public function offsetGet($fullClassName) {
+        public function offsetGet($fullClassName): mixed {
             $result = NULL;
             $c = explode('\\', $fullClassName);
             $className = array_pop($c);
@@ -365,7 +365,7 @@ namespace Energine\share\gears {
          * @return void
          * @since 5.0.0
          */
-        public function offsetSet($className, $object) {
+        public function offsetSet($className, $object): void {
             if (!isset($this->entities[$className])) {
                 $this->entities[$className] = $object;
             }
@@ -380,7 +380,7 @@ namespace Energine\share\gears {
          * @return void
          * @since 5.0.0
          */
-        public function offsetUnset($offset) {
+        public function offsetUnset($offset): void {
             // nothing to do
             //Manual unsetting is impossible
         }

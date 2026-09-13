@@ -15,7 +15,7 @@ class SearchForm extends DataSet {
 
     const KEYWORD_FIELD_NAME = 'keyword';
 
-    public function __construct($name, array $params = NULL) {
+    public function __construct($name, ?array $params = NULL) {
         parent::__construct($name, $params);
         $this->setAction('search/', true);
         $this->setBuilder(new SimpleBuilder());

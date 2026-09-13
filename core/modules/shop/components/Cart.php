@@ -30,7 +30,7 @@ class Cart extends DBDataSet implements SampleCart {
 
     protected $id = NULL;
 
-    public function __construct($name, $module, array $params = NULL) {
+    public function __construct($name, $module, ?array $params = NULL) {
         if (E()->getDocument()->getProperty('single')) {
             $params['active'] = true;
         }

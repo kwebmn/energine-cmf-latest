@@ -23,7 +23,7 @@ use Energine\share\gears\SimpleBuilder;
  * @author dr.Pavka
  */
 class TopOfThePops extends DataSet {
-    public function __construct($name, $module, array $params = NULL) {
+    public function __construct($name, $module, ?array $params = NULL) {
         $params['active'] = false;
         parent::__construct($name, $module, $params);
         $this->setParam('recordsPerPage', NULL);

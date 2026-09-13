@@ -1028,24 +1028,24 @@ class FieldDescription extends Primitive implements \Iterator {
         return $result;
     }
 
-    public function current() {
+    public function current(): mixed {
         return $this->additionalProperties[$this->additionalPropertiesNames[$this->propertiesIndex]];
     }
 
-    public function key() {
+    public function key(): mixed {
         return $this->additionalPropertiesNames[$this->propertiesIndex];
     }
 
-    public function next() {
+    public function next(): void {
         $this->propertiesIndex++;
     }
 
-    public function rewind() {
+    public function rewind(): void {
         $this->additionalPropertiesNames = array_keys($this->additionalProperties);
         $this->propertiesIndex = 0;
     }
 
-    public function valid() {
+    public function valid(): bool {
         return isset($this->additionalPropertiesNames[$this->propertiesIndex]);
     }
 }

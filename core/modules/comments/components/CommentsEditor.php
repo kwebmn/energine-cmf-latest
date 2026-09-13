@@ -43,7 +43,7 @@ class CommentsEditor extends Grid {
      *
      * @throws SystemException 'Please set `comment_tables` parameter in comments_editor.content.xml file'
      */
-    public function __construct($name, array $params = NULL) {
+    public function __construct($name, ?array $params = NULL) {
         parent::__construct($name, $params);
 
         $this->commentTables = $this->getParam('comment_tables');

@@ -38,7 +38,7 @@ class GoodsFeatureEditor extends Grid {
     /**
      * @copydoc Grid::__construct
      */
-    public function __construct($name, array $params = NULL) {
+    public function __construct($name, ?array $params = NULL) {
         parent::__construct($name, $params);
         $this->setTableName('shop_feature2good_values');
 		if ($this->getParam('goodsID')) {

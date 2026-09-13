@@ -17,7 +17,7 @@ class SearchResults extends DataSet {
 
     protected $keyword = '';
 
-    public function __construct($name, array $params = NULL) {
+    public function __construct($name, ?array $params = NULL) {
         parent::__construct($name, $params);
         $this->bindComponent = $this->document->componentManager->getBlockByName($this->getParam('bind'));
         $curr = E()['Energine\\shop\\gears\\Currency'];

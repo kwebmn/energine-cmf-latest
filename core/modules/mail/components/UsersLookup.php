@@ -20,7 +20,7 @@ use Energine\share\gears\FilterField;
  * @author andy.karpov
  */
 class UsersLookup extends Grid {
-	public function __construct($name, array $params = null) {
+	public function __construct($name, ?array $params = null) {
 		parent::__construct($name, $params);
 		$this->setTableName('user_users');
 	}

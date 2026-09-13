@@ -18,7 +18,7 @@ use Energine\share\gears\QAL;
  * @author dr.Pavka
  */
 class MailEmailSubscriptionEditor extends Grid {
-    public function __construct($name, $module, array $params = NULL) {
+    public function __construct($name, $module, ?array $params = NULL) {
         parent::__construct($name, $module, $params);
         $this->setTableName('mail_email_subscribers');
         $this->setOrder(['me_date' => QAL::ASC]);
