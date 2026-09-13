@@ -116,7 +116,7 @@ final class URI extends Primitive {
 	public static function create( $uriString = '' ) {
 		self::$trick = true;
 		if ( ! $uriString ) {
-			$host       = Primitive::getConfigValue( 'site.domain' );
+			$host       = explode( ':', (string) Primitive::getConfigValue( 'site.domain' ) );
 			$protocol   = 'http';
 			$requestURI = '/';
 			if ( ! E()->Utils->is_PHP_CLI() ) {
