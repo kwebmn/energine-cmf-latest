@@ -231,7 +231,7 @@ class FeedbackForm extends DBDataSet {
      * @throws SystemException
      */
     protected function checkCaptcha() {
-        $gRecaptchaResponse = (isset($_POST['g-recaptcha-response']))?$_POST['g-recaptcha-response']:false;
+        $gRecaptchaResponse = (isset($_POST['g-recaptcha-response']) && is_string($_POST['g-recaptcha-response'])) ? $_POST['g-recaptcha-response'] : '';
 
         $recaptcha = new \ReCaptcha\ReCaptcha($this->getConfigValue('recaptcha.private'));
         $resp = $recaptcha->verify($gRecaptchaResponse, $_SERVER["REMOTE_ADDR"]);
