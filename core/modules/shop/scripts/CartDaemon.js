@@ -5,9 +5,19 @@ var CartDaemon = new Class({
 
         this.request = new Request.HTML({
             'method': 'get',
-            'update': this.el.getElement('.body'),
-            'onSuccess': function(){
-                if(this.afterLoad){
+            'onSuccess': function (tree, elements, html) {
+                // the answer is the cart/wishlist; its data-count is the new number for the informer
+                var counter = this.el.getElement('.count'), body = this.el.getElement('.body'),
+                    list = elements.filter(function (element) {
+                        return element.hasAttribute && element.hasAttribute('data-count');
+                    })[0];
+                if (counter && list) {
+                    counter.set('text', list.getAttribute('data-count') || '0');
+                }
+                if (body) {
+                    body.set('html', html);
+                }
+                if (this.afterLoad) {
                     this.afterLoad();
                 }
             }.bind(this)

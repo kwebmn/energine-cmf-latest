@@ -110,6 +110,22 @@ class RelatedGoodsList extends DBDataSet {
 	 *
 	 * @throws SystemException
 	 */
+	/**
+	 * Category URLs instead of their ids: the goods links of the list (as GoodsList::loadData()).
+	 */
+	protected function loadData() {
+		$result = parent::loadData();
+		if (is_array($result)) {
+			$map = E()->getMap();
+			foreach ($result as &$row) {
+				if (isset($row['smap_id'])) {
+					$row['smap_id'] = $map->getURLByID($row['smap_id']);
+				}
+			}
+		}
+		return $result;
+	}
+
 	protected function buildAttachments() {
 		if ($this->getDataDescription()->getFieldDescriptionByName('attachments')) {
 			$am = new AttachmentManager(

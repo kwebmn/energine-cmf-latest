@@ -30,11 +30,12 @@ class Cart extends DBDataSet implements SampleCart {
 
     protected $id = NULL;
 
-    public function __construct($name, $module, ?array $params = NULL) {
+    public function __construct($name, ?array $params = NULL) {
+        // the cart page has a passive cart (state "show"), its AJAX requests in single mode need the URL states
         if (E()->getDocument()->getProperty('single')) {
             $params['active'] = true;
         }
-        parent::__construct($name, $module, $params);
+        parent::__construct($name, $params);
         $this->setTableName('shop_cart');
         $this->setFilter([
             'site_id' => E()->getSiteManager()->getCurrentSite()->id

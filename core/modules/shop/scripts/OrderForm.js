@@ -251,7 +251,7 @@ Lookup = Class.refactor(Lookup, {
         if (!row.loading) {
             return '<div class="users_acp_list clearfix">' +
 
-                '<div class="image"><img src="' + ((row.image) ? row.image : "images/webworks/default_avatar.jpg" ) + '" /></div>' +
+                '<div class="image"><img src="' + ((row.image) ? row.image : "images/default_90x68.png" ) + '" /></div>' +
                 '<div>' + row.u_fullname + '</div>' +
                 '<div>' + row.u_phone + '</div>' +
                 '<div>' + row.u_name + '</div>' +

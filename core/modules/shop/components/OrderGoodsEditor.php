@@ -18,7 +18,6 @@ namespace Energine\shop\components;
 use Energine\share\components\Grid;
 use Energine\share\gears\FieldDescription;
 use Energine\share\gears\JSONCustomBuilder;
-use EnergineSite\webworks\gears\PriceDecorator;
 
 
 /**
@@ -129,7 +128,7 @@ class OrderGoodsEditor extends Grid {
 
 		$this->setBuilder( new JSONCustomBuilder() );
 		$res = $this->dbh->select(
-			'select g.goods_id, g.goods_price, gt.goods_name, g.goods_code, gt.goods_description_rtf
+			'select g.goods_id, g.goods_price, g.goods_price_old, gt.goods_name, g.goods_code, gt.goods_description_rtf
             from shop_goods g
             left join shop_goods_translation gt on g.goods_id = gt.goods_id and gt.lang_id = %s
             where g.goods_id = %s',
@@ -139,23 +138,14 @@ class OrderGoodsEditor extends Grid {
 		$b   = $this->getBuilder();
 		$b->setProperty( 'result', ( ( $res ) ? true : false ) );
 		if ( $res ) {
-			if ( isset( $_POST['u_id'] ) ) {
-				$uid = (int) $_POST['u_id'];
-			} elseif ( $this->getParam( 'orderID' ) ) {
-				$uid = $this->dbh->getScalar( 'shop_orders', 'u_id', [ 'order_id' => $this->getParam( 'orderID' ) ] );
-			} else {
-				$uid = $this->dbh->getScalar( 'shop_orders', 'u_id',
-					sprintf( ' (order_id IS NULL and session_id="%s") ', session_id() ) );
-			}
-
-			if ( is_null( $uid ) ) {
-				$uid = false;
-			}
-			list( $r ) = PriceDecorator::buildPrice( $res, $uid );
+			// catalogue price; the price without discount is the old price when it is higher
+			// (personal prices came from a site class, EnergineSite\webworks\gears\PriceDecorator)
+			$r = $res[0];
+			$r['goods_price_old'] = max( (float) $r['goods_price'], (float) $r['goods_price_old'] );
 			$b->setProperty( 'goods_price', number_format( $r['goods_price'], 2, '.', '' ) )
 			  ->setProperty( 'goods_real_price', number_format( $r['goods_price_old'], 2, '.', '' ) )
 			  ->setProperty( 'goods_title', $r['goods_name'] )
-			  ->setProperty( 'goods_description', strip_tags( $r['goods_description_rtf'] ) )
+			  ->setProperty( 'goods_description', strip_tags( (string) $r['goods_description_rtf'] ) )
 			  ->setProperty( 'goods_code', $r['goods_code'] )
 			  ->setProperty( 'goods_quantity', 1 )
 			  ->setProperty( 'goods_amount', number_format( $r['goods_price'], 2, '.', '' ) );

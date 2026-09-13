@@ -50,8 +50,12 @@ class ShopEditor extends SiteEditor {
 			$dd->getFieldDescriptionByName( 'currency_id' )->removeProperty( 'nullable' );
 			$dd->getFieldDescriptionByName( 'country_id' )->removeProperty( 'nullable' );
 
-			$dd->removeFieldDescription( $dd->getFieldDescriptionByName( 'site_meta_robots' ) );
-			$dd->removeFieldDescription( $dd->getFieldDescriptionByName( 'site_is_indexed' ) );
+			// site_is_indexed was replaced by site_meta_robots in the core schema
+			foreach ( [ 'site_meta_robots', 'site_is_indexed' ] as $fieldName ) {
+				if ( $fd = $dd->getFieldDescriptionByName( $fieldName ) ) {
+					$dd->removeFieldDescription( $fd );
+				}
+			}
 
 			$fd = new FieldDescription( 'domains' );
 			$fd->setType( FieldDescription::FIELD_TYPE_TAB );

@@ -27,7 +27,7 @@ var GoodsFilter = new Class({
                 var val = encodeURIComponent(val);
                 //console.log(val, name);
                 if ((typeof val != 'undefined') && matches) {
-                    name = matches[1] + matches[2];
+                    name = matches[1] + (matches[2] || '');
                     if ((matches[2] == '[begin]') || (matches[2] == '[end]')) {
                         if (!rangeFilters[matches[1]]) {
                             rangeFilters[matches[1]] = [];

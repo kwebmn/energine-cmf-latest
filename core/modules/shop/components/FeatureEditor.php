@@ -177,7 +177,7 @@ class FeatureEditor extends Grid implements SampleFeatureEditor{
      */
     protected function optionEditor() {
         $sp = $this->getStateParams(true);
-        $params = ['config' => 'core/modules/shop/config/FeatureOptionEditor.component.xml'];
+        $params = ['config' => 'core/modules/shop/config/FeatureOptionEditor.component.xml', 'title' => 'TAB_FEATURE_OPTIONS'];
 
         if (isset($sp['feature_id'])) {
             $this->request->shiftPath(2);

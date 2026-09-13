@@ -26,7 +26,7 @@ class EmptySimpleFormBuilder extends SimpleBuilder {
     protected function createField($fieldName, FieldDescription $fieldInfo, $fieldValue = false, $fieldProperties = false) {
         foreach(
             [
-                'nullable',
+                // 'nullable' stays: filter fields are optional, without it the form marks them as required
                 'pattern',
                 'message',
                 'tabName',

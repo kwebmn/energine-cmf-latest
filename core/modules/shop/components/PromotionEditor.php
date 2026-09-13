@@ -58,7 +58,7 @@ class PromotionEditor extends Grid {
 
     protected function goodsEditor() {
         $sp = $this->getStateParams(true);
-        $params = ['config' => 'core/modules/shop/config/PromotionGoodsEditor.component.xml'];
+        $params = ['config' => 'core/modules/shop/config/PromotionGoodsEditor.component.xml', 'title' => 'TAB_PROMOTION_GOODS'];
 
         if (isset($sp['promotion_id'])) {
             $this->request->shiftPath(2);

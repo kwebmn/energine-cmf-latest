@@ -25,8 +25,8 @@ use Energine\share\gears\SimpleBuilder;
  */
 class OrderList extends DBDataSet implements SampleOrderList {
 
-    public function __construct($name, $module, ?array $params = null) {
-        parent::__construct($name, $module, $params);
+    public function __construct($name, ?array $params = null) {
+        parent::__construct($name, $params);
         $this->setTableName('shop_orders');
         $this->setFilter([
             'site_id' => E()->getSiteManager()->getCurrentSite()->id,

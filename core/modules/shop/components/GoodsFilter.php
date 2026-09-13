@@ -149,12 +149,12 @@ class GoodsFilter extends DataSet
             $fd->setType(FieldDescription::FIELD_TYPE_CUSTOM);
             $fd->setProperty('title', $this->translate('FILTER_PRICE'));
             $fd->setProperty('subtype', FeatureFieldAbstract::FEATURE_FILTER_TYPE_RANGE);
-            $min = ceil($this->dbh->getScalar(
+            $min = ceil((float)$this->dbh->getScalar(
                 'select min(goods_price) from ' .
                 $this->getParam('tableName') .
                 ' where smap_id IN( %s) AND goods_is_active', $this->boundComponent->getCategories()
             ));
-            $max = ceil($this->dbh->getScalar(
+            $max = ceil((float)$this->dbh->getScalar(
                 'select max(goods_price) from ' .
                 $this->getParam('tableName') .
                 ' where smap_id IN (%s) AND goods_is_active', $this->boundComponent->getCategories()
@@ -290,6 +290,8 @@ class GoodsFilter extends DataSet
             $this->setProperty('filter-name', self::FILTER_GET);
             foreach ($this->getDataDescription() as $fd) {
                 $fd->setProperty('tableName', self::FILTER_GET);
+                // filter fields are optional (no "required" marks)
+                $fd->setProperty('nullable', true);
             }
         }
 

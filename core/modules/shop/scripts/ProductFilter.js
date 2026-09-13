@@ -8,13 +8,17 @@ var ProductFilter;
         $('.range', document.id(el)).each(function (idx, el) {
             var el = $(el).prop('slide', null);
 
+            // jQuery.data() keeps "1450.00" a string, noUiSlider needs numbers
+            var num = function (name) {
+                return parseFloat(el.data(name)) || 0;
+            };
             el.noUiSlider({
-                start: [el.data('start') || 0, el.data('end') || 0],
+                start: [num('start'), num('end')],
                 connect: true,
-                step: el.data('step'),
+                step: num('step') || 1,
                 range: {
-                    'min': [el.data('min') || 0],
-                    'max': [el.data('max') || 0]
+                    'min': [num('min')],
+                    'max': [num('max')]
                 }
             });
 

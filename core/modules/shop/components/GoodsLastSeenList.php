@@ -5,6 +5,7 @@ namespace Energine\shop\components;
 use Energine\share\components\DataSet;
 use Energine\share\gears\ComponentProxyBuilder;
 use Energine\share\gears\EmptyBuilder;
+use Energine\share\gears\SimpleBuilder;
 
 class GoodsLastSeenList extends DataSet implements SampleGoodsLastSeenList {
     protected function defineParams() {

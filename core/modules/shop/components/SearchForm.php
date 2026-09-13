@@ -22,7 +22,7 @@ class SearchForm extends DataSet {
     }
 
     protected function main() {
-        $this->setKeyword(isset($_REQUEST[self::KEYWORD_FIELD_NAME]) ? $_REQUEST[self::KEYWORD_FIELD_NAME] : '');
+        $this->setKeyword((isset($_REQUEST[self::KEYWORD_FIELD_NAME]) && is_string($_REQUEST[self::KEYWORD_FIELD_NAME])) ? trim($_REQUEST[self::KEYWORD_FIELD_NAME]) : '');
         parent::main();
         $this->setType(self::COMPONENT_TYPE_FORM);
     }

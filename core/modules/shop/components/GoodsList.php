@@ -386,7 +386,7 @@ class GoodsList extends DBDataSet implements SampleGoodsList {
 				if ( sizeof( $f ) > 1 || strpos( $f[0], '=' ) ) {
 					$prepFilter = [];
 					foreach ( $f as $rawFilter ) {
-						list( $filterName, $filterValues ) = explode( '=', $rawFilter );
+						list( $filterName, $filterValues ) = array_pad( explode( '=', $rawFilter, 2 ), 2, '' );
 						if ( strpos( $filterValues, '-' ) ) {
 							list( $begin, $end ) = explode( '-', $filterValues );
 							$prepFilter[ $filterName ] = compact( 'begin', 'end' );
@@ -410,7 +410,11 @@ class GoodsList extends DBDataSet implements SampleGoodsList {
 
 			}
 			if ( isset( $filter['producers'] ) && ! empty( $filter['producers'] ) ) {
-				$result['producers'] = $filter['producers'];
+				// ids go into the SQL of getFilterWhereConditions()
+				$result['producers'] = array_values( array_filter( array_map( 'intval', (array) $filter['producers'] ) ) );
+				if ( ! $result['producers'] ) {
+					unset( $result['producers'] );
+				}
 			}
 			if ( isset( $filter['divisions'] ) && ! empty( $filter['divisions'] ) ) {
 				$result['divisions'] = $filter['divisions'];

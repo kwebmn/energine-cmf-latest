@@ -7,7 +7,7 @@
                 select="@single_template"/><xsl:value-of select="@delete"/></xsl:variable>
         <xsl:variable name="EDIT_URL"><xsl:value-of select="$BASE"/><xsl:value-of select="$LANG_ABBR"/><xsl:value-of
                 select="@single_template"/><xsl:value-of select="@edit"/></xsl:variable>
-        <div id="{generate-id(recordset)}" data-delete-url="{$DELETE_URL}" data-edit-url="{$EDIT_URL}">
+        <div id="{generate-id(recordset)}" data-delete-url="{$DELETE_URL}" data-edit-url="{$EDIT_URL}" data-count="{@count}">
             <table style="border:1px solid black;">
                 <thead>
                 <tr>
@@ -21,7 +21,7 @@
             <xsl:for-each select="recordset/record">
                 <tr>
                     <td><a href="#" class="delete" data-id="{field[@name='cart_id']}">X</a></td>
-                    <td><img src="{$RESIZER_URL}w300-h200/{field[@name='attachments']/recordset/record[1]/field[@name='file']}" alt=""/></td>
+                    <td><xsl:if test="field[@name='attachments']/recordset/record"><img src="{$RESIZER_URL}w90-h68/{field[@name='attachments']/recordset/record[1]/field[@name='file']}" alt=""/></xsl:if></td>
                     <td><a href="{$BASE}{$LANG_ABBR}{field[@name='smap_id']}view/{field[@name='goods_segment']}/"><xsl:value-of
                             select="field[@name='goods_name']"/></a></td>
                     <td><input type="text" class="edit" data-id="{field[@name='cart_id']}" value="{field[@name='cart_goods_count']}"/></td>
@@ -41,13 +41,17 @@
 
     </xsl:template>
 
+    <!-- informer: CartDaemon.js adds goods by data-add-url and shows the new count (data-count of the answer) -->
     <xsl:template match="component[(@class='Cart') and (@componentAction='main')]">
-        <div id="{generate-id(recordset)}" data-url="{$BASE}{$LANG_ABBR}{@single_template}{@action}">
-            <strong><xsl:value-of select="@title"/>:
-                <a href="{$BASE}{$LANG_ABBR}{$TEMPLATE}">
-                    <xsl:value-of select="@count"/>
-                </a>
-            </strong>
+        <div id="{generate-id(recordset)}" class="cart_informer" data-url="{$BASE}{$LANG_ABBR}{@single_template}{@action}"
+             data-add-url="{$BASE}{$LANG_ABBR}{@single_template}{@action}" data-load-url="{$BASE}{$LANG_ABBR}{@single_template}{@load}">
+            <xsl:value-of select="@title"/>:
+            <a href="{$BASE}{$LANG_ABBR}cart/" class="count">
+                <xsl:choose>
+                    <xsl:when test="@count!=''"><xsl:value-of select="@count"/></xsl:when>
+                    <xsl:otherwise>0</xsl:otherwise>
+                </xsl:choose>
+            </a>
         </div>
     </xsl:template>
 

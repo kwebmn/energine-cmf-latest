@@ -59,13 +59,13 @@ class ProducerEditor extends Grid {
      */
     protected function getFKData($fkTableName, $fkKeyName) {
         $filter = $order = NULL;
+        $result = [];
         if ($fkKeyName == 'site_id') {
             //оставляем только те сайты где есть магазины
             if ($sites = E()->getSiteManager()->getSitesByTag('shop')) {
-                $filter = array_map(function ($site) {
+                $filter = ['share_sites.site_id' => array_map(function ($site) {
                     return (string)$site;
-                }, $sites);
-                $filter['share_sites.site_id'] = $filter;
+                }, $sites)];
                 //$order['share_sites_translation.site_name'] = QAL::ASC;
             }
         }

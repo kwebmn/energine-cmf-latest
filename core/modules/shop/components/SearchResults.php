@@ -38,13 +38,11 @@ class SearchResults extends DataSet {
     protected function main() {
         parent::main();
         $this->setType(self::COMPONENT_TYPE_LIST);
+        // the keyword is a bound value: no SQL from the request, no "%s" taken for a placeholder
         $products = ($this->keyword) ? $this->dbh->getColumn(
-            'shop_goods_translation',
-            'goods_id',
-            [
-                'goods_name LIKE "%' . $this->keyword . '%"',
-                'lang_id' => $this->document->getLang()
-            ]
+            'SELECT goods_id FROM shop_goods_translation WHERE goods_name LIKE %s AND lang_id = %s',
+            '%' . addcslashes($this->keyword, '%_\\') . '%',
+            $this->document->getLang()
         ) : [];
 
         $this->setBuilder($b = new ComponentProxyBuilder());
@@ -65,7 +63,7 @@ class SearchResults extends DataSet {
             $this->keyword = $this->bindComponent->getKeyword();
             parent::prepare();
         } elseif ($this->document->getProperty('single') and $this->getState() == 'main') {
-            $this->keyword = (isset($_REQUEST[SearchForm::KEYWORD_FIELD_NAME])) ? $_REQUEST[SearchForm::KEYWORD_FIELD_NAME] : '';
+            $this->keyword = (isset($_REQUEST[SearchForm::KEYWORD_FIELD_NAME]) && is_string($_REQUEST[SearchForm::KEYWORD_FIELD_NAME])) ? $_REQUEST[SearchForm::KEYWORD_FIELD_NAME] : '';
             $this->setProperty('keyword', $this->keyword);
             $this->setProperty('keyword_name', SearchForm::KEYWORD_FIELD_NAME);
             $this->addTranslation('BTN_VIEW', 'TXT_ALL_SEARCH_RESULTS');

@@ -65,6 +65,34 @@
     </xsl:template>
 
     <xsl:template match="recordset[parent::component[@class='GoodsList' and @type='list']]">
+        <xsl:apply-templates select="." mode="goods_list"/>
+    </xsl:template>
+
+    <!-- related goods under the goods page -->
+    <xsl:template match="component[@class='RelatedGoodsList']">
+        <xsl:if test="recordset/record">
+            <div class="products related_goods">
+                <h3><xsl:value-of select="@title"/></h3>
+                <xsl:apply-templates select="recordset" mode="goods_list"/>
+            </div>
+        </xsl:if>
+    </xsl:template>
+
+    <!-- search results page: the found goods as a list -->
+    <xsl:template match="component[@class='SearchResults']">
+        <div class="products search_results">
+            <xsl:choose>
+                <xsl:when test="recordset/record">
+                    <xsl:apply-templates select="recordset" mode="goods_list"/>
+                </xsl:when>
+                <xsl:otherwise>
+                    <div class="empty_message"><xsl:value-of select="recordset/@empty"/></div>
+                </xsl:otherwise>
+            </xsl:choose>
+        </div>
+    </xsl:template>
+
+    <xsl:template match="recordset" mode="goods_list">
     <div class="goods_list wide_list clearfix"> <!-- клас .wide_list для списка -->
         <xsl:for-each select="record">
             <xsl:variable name="URL">
@@ -74,10 +102,12 @@
             <div class="goods_block">
 	            <div class="goods_block_inner clearfix">
 	                <div class="goods_image">
-	                    <a href="{$URL}">
-	                        <img src="{$RESIZER_URL}w200-h150/{field[@name='attachments']/recordset/record[1]/field[@name='file']}"
-	                             alt="{field[@name='attachments']/recordset/record[1]/field[@name='title']}"/>
-	                    </a>
+	                    <xsl:if test="field[@name='attachments']/recordset/record">
+	                        <a href="{$URL}">
+	                            <img src="{$RESIZER_URL}w200-h150/{field[@name='attachments']/recordset/record[1]/field[@name='file']}"
+	                                 alt="{field[@name='attachments']/recordset/record[1]/field[@name='title']}"/>
+	                        </a>
+	                    </xsl:if>
 	                </div>
                     <div class="goods_info">
                         <div class="goods_name">

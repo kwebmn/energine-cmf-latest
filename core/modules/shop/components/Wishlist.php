@@ -18,8 +18,12 @@ use Energine\share\gears\QAL;
  * @author dr.Pavka
  */
 class Wishlist extends DBDataSet implements SampleWishlist {
-    public function __construct($name, $module, ?array $params = null) {
-        parent::__construct($name, $module, $params);
+    public function __construct($name, ?array $params = null) {
+        // the wishlist page has a passive component (state "show"), its single mode requests need the URL states
+        if (E()->getDocument()->getProperty('single')) {
+            $params['active'] = true;
+        }
+        parent::__construct($name, $params);
         $this->setTableName('shop_wishlist');
         $this->setFilter([
             'site_id' => E()->getSiteManager()->getCurrentSite()->id,
@@ -78,39 +82,52 @@ class Wishlist extends DBDataSet implements SampleWishlist {
     }
 
     protected function deleteState($productID) {
-        if ($wishlistID = $this->dbh->getScalar($this->getTableName(), 'w_id', ['goods_id' => $productID, 'session_id' => E()->UserSession->start()->getID()])) {
-            try {
-                $this->dbh->modify(QAL::DELETE, $this->getTableName(), NULL, ['w_id' => $wishlistID]);
-            } catch (\PDOException $e) {
-                inspect($e->getMessage(), (string)$this->document->getUser()->getID());
-            }
-
-        }
+        $this->removeProduct($productID, false);
         $this->config->setCurrentState('show');
         $this->showState();
     }
 
     protected function basketState($productID) {
-        if ($wishlistID = $this->dbh->getScalar($this->getTableName(), 'w_id', ['goods_id' => $productID, 'session_id' => E()->UserSession->start()->getID()])) {
-            try {
-                $this->dbh->modify(QAL::DELETE, $this->getTableName(), NULL, ['w_id' => $wishlistID]);
+        $this->removeProduct($productID, true);
+        $this->config->setCurrentState('show');
+        $this->showState();
+    }
+
+    /**
+     * Remove goods from the wishlist of the current user, optionally putting them into the cart.
+     * Rows are found by site and user (the filter of the component); session_id is never written to the wishlist.
+     *
+     * @param int $productID
+     * @param bool $toCart
+     */
+    protected function removeProduct($productID, $toCart) {
+        if (!$this->document->getUser()->isAuthenticated()) {
+            return;
+        }
+        if ($wishlistID = $this->dbh->getScalar($this->getTableName(), 'w_id', array_merge($this->getFilter(), ['goods_id' => (int)$productID]))) {
+            $this->dbh->modify(QAL::DELETE, $this->getTableName(), NULL, ['w_id' => $wishlistID]);
+            if ($toCart) {
                 $this->dbh->modify(QAL::INSERT_IGNORE, 'shop_cart', [
-                    'goods_id' => $productID,
+                    'goods_id' => (int)$productID,
                     'session_id' => E()->UserSession->start()->getID(),
                     'u_id' => $this->document->getUser()->getID(),
                     'cart_goods_count' => 1,
                     'cart_date' => date('Y-m-d H:i:s'),
                     'site_id' => E()->getSiteManager()->getCurrentSite()->id
                 ]);
-            } catch (\PDOException $e) {
-                inspect($e->getMessage(), (string)$this->document->getUser()->getID());
             }
         }
-        $this->config->setCurrentState('show');
-        $this->showState();
     }
 
     protected function showState() {
+        // the form of the wishlist page: checked goods and the pressed button (wishlist.xslt)
+        if (($this->getState() == 'show') && isset($_POST['products'], $_POST['action']) && is_array($_POST['products'])
+            && in_array($_POST['action'], ['basket', 'delete'], true)
+        ) {
+            foreach ($_POST['products'] as $productID) {
+                $this->removeProduct($productID, $_POST['action'] == 'basket');
+            }
+        }
         $products = $this->dbh->getColumn($this->getTableName(), 'goods_id', $this->getFilter());
         if (!empty($products)) {
             $this->setProperty('delete', (string)$this->config->getStateConfig('show')->uri_patterns->pattern);

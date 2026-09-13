@@ -1,39 +1,59 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<content layout="main/default.layout.xml">
-    <container name="goodsListContainerWrapper">
-        <!-- фильтры -->
-        <component name="goodsFilter" class="Energine\shop\components\GoodsFilter">
-            <params>
-                <!--<param name="config">site/modules/main/config/DivanGoodsFilter.component.xml</param>-->
-                <param name="bind">goodsList</param>
-                <param name="tableName">shop_goods_view</param>
-            </params>
-        </component>
-
-        <!-- меню с большими кнопками "новинки", "хиты", "распродажа" (позразделы раздела "спецпредложения") -->
-        <!-- goodsTagsMenu -->
-
-
-        <!-- сортировка -->
-        <component name="goodsSort" class="Energine\shop\components\GoodsSort">
-            <params>
-                <!--<param name="config">site/modules/main/config/DivanGoodsSort.component.xml</param>-->
-                <param name="bind">goodsList</param>
-            </params>
-        </component>
-
-        <!-- список всех разделов магазина с большими иконками и цветами -->
-        <component name="goodsList" class="Energine\shop\components\GoodsList">
-            <params>
-                <param name="tableName">shop_goods_view</param>
-				<param name="list_features">any</param>
-                <!--<param name="config">site/modules/main/config/DivanGoodsList.component.xml</param>-->
-            </params>
-        </component>
-
-        <!-- листалка -->
-        <!-- листалка является частью goodsList -->
-
+<content html_class="colset colset2">
+    <container name="left" column="column" html_class="col col1">
+        <container name="mainMenuContainer" block="beta" widget="widget">
+            <component name="mainMenu" class="Energine\share\components\PageList">
+                <params>
+                    <param name="tags">menu</param>
+                    <param name="recursive">1</param>
+                    <param name="config">core/modules/share/config/MainMenu.component.xml</param>
+                </params>
+            </component>
+        </container>
+        <container name="leftAdBlock"/>
+        <container name="goodsFilterContainer" block="beta" widget="static">
+            <component name="goodsFilter" class="Energine\shop\components\GoodsFilter">
+                <params>
+                    <param name="bind">goodsList</param>
+                    <param name="tableName">shop_goods_view</param>
+                </params>
+            </component>
+        </container>
+        <container name="cartContainer" block="beta" widget="static">
+            <component name="cartInformer" class="Energine\shop\components\Cart">
+                <params>
+                    <param name="title">TXT_CART</param>
+                </params>
+            </component>
+            <component name="wishlistInformer" class="Energine\shop\components\Wishlist">
+                <params>
+                    <param name="title">TXT_WISHLIST</param>
+                </params>
+            </component>
+        </container>
+        <container name="loginFormContainer" block="beta" widget="widget">
+            <component name="loginForm" class="Energine\user\components\LoginForm"/>
+        </container>
     </container>
-
+    <container name="center" column="column" html_class="col col2 last_col">
+        <container name="goodsListContainer" block="alfa" widget="static">
+            <component name="goodsSort" class="Energine\shop\components\GoodsSort">
+                <params>
+                    <param name="bind">goodsList</param>
+                </params>
+            </component>
+            <component name="goodsList" class="Energine\shop\components\GoodsList">
+                <params>
+                    <param name="list_features">any</param>
+                </params>
+            </component>
+            <component name="similarGoods" class="Energine\shop\components\RelatedGoodsList">
+                <params>
+                    <param name="bind">goodsList</param>
+                    <param name="relation_type">similar</param>
+                    <param name="title">TXT_SIMILAR_GOODS</param>
+                </params>
+            </component>
+        </container>
+    </container>
 </content>

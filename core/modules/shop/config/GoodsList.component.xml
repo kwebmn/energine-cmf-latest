@@ -40,9 +40,11 @@
         <javascript>
             <behavior name="ProductView" use="jquery"/>
         </javascript>
-<!--        <fields>
+        <fields>
             <field name="goods_id"/>
+            <field name="smap_id"/>
             <field name="goods_name"/>
+            <field name="goods_segment"/>
             <field name="producer_id" type="lookup"/>
             <field name="goods_description_rtf"/>
             <field name="goods_code"/>
@@ -51,7 +53,7 @@
             <field name="attachments"/>
             <field name="features"/>
             <field name="tags"/>
-        </fields>-->
+        </fields>
         <toolbar name="product">
             <control type="button" id="buy" title="BTN_BUY"/>
             <control type="button" id="wishlist" title="BTN_WISHLIST"/>
