@@ -215,7 +215,7 @@ class ComponentConfig {
         }
         //сортируем  по приоритету
         uasort($patterns, function ($a, $b) {
-            return $a['weight'] < $b['weight'];
+            return $b['weight'] <=> $a['weight'];
         });
 
         foreach ($patterns as $pattern => $methodInfo) {

@@ -73,6 +73,8 @@ set_error_handler(function ($errLevel, $message, $file, $line) {
             error_log(sprintf('PHP Deprecated: %s in %s on line %d', $message, $file, $line));
             return true;
         }
+        // components wrap exceptions and lose the original location, keep it in the log
+        error_log(sprintf('PHP error %d thrown as SystemException: %s in %s on line %d', $errLevel, $message, $file, $line));
         $e = new Energine\share\gears\SystemException(
             $message,
             Energine\share\gears\SystemException::ERR_DEVELOPER

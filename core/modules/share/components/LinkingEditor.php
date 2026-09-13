@@ -24,6 +24,12 @@ class LinkingEditor;
  */
 class LinkingEditor extends Grid {
     /**
+     * Is the current document editable.
+     * @var bool $isEditable
+     */
+    protected $isEditable;
+
+    /**
      * @copydoc Grid::__construct
      */
     public function __construct($name,    ?array $params = null) {

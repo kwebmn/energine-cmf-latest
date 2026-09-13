@@ -112,7 +112,7 @@ class Builder extends XMLBuilder {
 	) {
 		$result = $this->document->createElement( 'field' );
 		$result->setAttribute( 'name', $fieldName );
-		$result->setAttribute( 'type', $fieldInfo->getType() );
+		$result->setAttribute( 'type', (string)$fieldInfo->getType() );
 		$length = $fieldInfo->getLength();
 		if ( $length !== true ) {
 			$result->setAttribute( 'length', $length );

@@ -331,10 +331,10 @@ class DBDataSet extends DataSet {
                     if (
                     !($field->getPropertyValue('origType') && ($field->getType() == FieldDescription::FIELD_TYPE_BOOL))
                     ) {
-                        $dbFields[$field->getPropertyValue('tableName')][$fieldName] = $field->getPropertyValue('tableName') . '.' . $fieldName;
+                        $dbFields[(string)$field->getPropertyValue('tableName')][$fieldName] = $field->getPropertyValue('tableName') . '.' . $fieldName;
                     } //поля приведенные к булеану из родного типа данных
                     else {
-                        $dbFields[$field->getPropertyValue('tableName')][$fieldName] =
+                        $dbFields[(string)$field->getPropertyValue('tableName')][$fieldName] =
                             ' IF((' . $field->getPropertyValue('tableName') . '.' . $fieldName . ' IS NOT NULL) AND (' . $field->getPropertyValue('tableName') . '.' . $fieldName . ' <> ""), 1, 0) AS ' . $fieldName;
                     }
                 }
@@ -437,6 +437,7 @@ class DBDataSet extends DataSet {
             foreach ($dbFields as $key => $value) {
                 $dbFields[$key] = '';
             }
+            $data = [];
             foreach (array_keys($lang) as $langID) {
                 $data[$i][$this->getPK()] = null;
                 $data[$i]['lang_id'] = $langID;

@@ -128,6 +128,7 @@ class LoginForm extends DataSet implements SampleLoginForm {
 		$result = false;
 		switch ( $this->getState() ) {
 			case 'showLogoutForm':
+				$result = [];
 				foreach ( $this->getDataDescription()->getFieldDescriptionList() as $fieldName ) {
 					$result[] = [ $fieldName => $this->document->user->getValue( $fieldName ) ];
 				}

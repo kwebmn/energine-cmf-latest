@@ -306,7 +306,7 @@ class DivisionEditor extends Grid implements SampleDivisionEditor {
         }
 
         usort($result, function ($rowA, $rowB) {
-            return $rowA['value'] > $rowB['value'];
+            return $rowA['value'] <=> $rowB['value'];
         });
         return $result;
     }

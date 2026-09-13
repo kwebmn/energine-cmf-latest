@@ -160,7 +160,7 @@ final class Request extends Primitive {
                 $path = array_slice($this->path, 0, $this->offset);
                 break;
             case self::PATH_ACTION:
-                $path = array_slice($this->path, $this->offset);
+                $path = array_slice($this->path, (int)$this->offset);
                 break;
         }
         if ($asString) {

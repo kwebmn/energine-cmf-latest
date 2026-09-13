@@ -180,7 +180,7 @@ class ComponentContainer extends Primitive implements IBlock, \Iterator {
      */
     public function build() {
         $doc = new \DOMDocument('1.0', 'UTF-8');
-        $containerDOM = $doc->createElement($this->properties['tag'], $this->value);
+        $containerDOM = $doc->createElement($this->properties['tag'], (string)$this->value);
         if (in_array($this->properties['tag'], ['page', 'content', 'container']))
             $containerDOM->setAttribute('name', $this->getName());
 
