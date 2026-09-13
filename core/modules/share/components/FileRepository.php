@@ -570,7 +570,7 @@ class FileRepository extends Grid implements SampleFileRepository {
         $c = ''; // первый вариант имени не будет включать символ '0'
         do {
             $filename = time() . rand(1, 10000) . "$c.{$fileExtension}";
-            $c++; // при первом проходе цикла $c приводится к integer(1)
+            $c = (int)$c + 1; // при первом проходе цикла $c приводится к integer(1)
         } while (file_exists($dirPath . $filename));
 
         return $filename;
