@@ -216,8 +216,8 @@ class Saver extends Primitive {
         //Основные данные для сохранения
         $data = [];
         //Данные для сохранения в связанные таблицы или в mysql set
-        //Начальное значение false, поскольку пустой массив будет говорить о том что поле существует. но ничего не выбрано
-        $m2mData = false;
+        //Ключ таблицы появляется, когда поле существует, даже если ничего не выбрано (тогда связи удаляются)
+        $m2mData = [];
         $m2mFDs = $this->getDataDescription()->getFieldDescriptionsByType(FieldDescription::FIELD_TYPE_MULTI);
         if (!empty($m2mFDs)) {
             foreach ($m2mFDs as $fieldInfo) {
@@ -271,7 +271,7 @@ class Saver extends Primitive {
                                     //Определяем имя поля
                                     $m2mInfo = $this->dbh->getColumnsInfo($m2mTableName);
                                     unset($m2mInfo[$m2mPKName]);
-                                    foreach ($m2mValues as $val) {
+                                    foreach ((is_array($m2mValues) ? $m2mValues : []) as $val) {
                                         $m2mData[$m2mTableName]['pk'] = $m2mPKName;
                                         $m2mData[$m2mTableName][key($m2mInfo)][] = $val;
                                     }
