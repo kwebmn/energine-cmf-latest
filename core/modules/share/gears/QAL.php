@@ -321,9 +321,12 @@ final class QAL extends Primitive {
             foreach ($args as $index => &$value) {
                 $stmt->bindParam($index + 1, $value);
             }
-            if (($res = $stmt->execute()) && $stmt->rowCount()) {
+            // rowCount() for CALL returns rows affected inside the procedure (MariaDB),
+            // only a statement with columns has a result set to fetch
+            if (($res = $stmt->execute()) && $stmt->columnCount()) {
                 $res = $stmt->fetchAll(\PDO::FETCH_ASSOC);
             }
+            $stmt->closeCursor();
         }
         return $res;
     }
