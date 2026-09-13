@@ -316,7 +316,8 @@ class Builder extends XMLBuilder {
 				$dom_option->setAttribute( 'id', $key );
 				if ( $option['attributes'] ) {
 					foreach ( $option['attributes'] as $attrName => $attrValue ) {
-						$dom_option->setAttribute( $attrName, $attrValue );
+						// NULL columns (smap_pid of a root page...) become empty attributes as before PHP 8.1
+						$dom_option->setAttribute( $attrName, (string) $attrValue );
 					}
 				}
 				// для поля типа multi-select
