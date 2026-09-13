@@ -244,6 +244,12 @@ class Form extends DBDataSet {
                                 }
 
                             }
+                        } elseif (($fd->getType() == FieldDescription::FIELD_TYPE_SELECT) && is_array($keyInfo = $fd->getPropertyValue('key')) && ($value !== '')) {
+                            // option name instead of its id
+                            list($values, , $valueName) = $this->dbh->getForeignKeyData($keyInfo['tableName'], $keyInfo['fieldName'], E()->getLanguage()->getCurrent(), [$keyInfo['tableName'] . '.' . $keyInfo['fieldName'] => $value]);
+                            if (is_array($values) && $values) {
+                                $data[$key]['value'] = current($values)[$valueName];
+                            }
                         }
                     }
                 }
@@ -280,7 +286,7 @@ class Form extends DBDataSet {
                     $mailer->setFrom($this->getConfigValue('mail.from'))->
                     // TODO: refactor via MailTemplate
                     setSubject($subject)->
-                    setText(strip_tags($body))->
+                    setText(strip_tags(str_replace('<br>', "\n", $body)))->
                     setHtmlText($body)->
                     addTo(($recp =
                         $this->getRecipientEmail()) ? $recp
