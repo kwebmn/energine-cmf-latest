@@ -19,6 +19,9 @@
                 </params>
             </component>
         </container>
+        <container name="currencyContainer" block="beta" widget="static">
+            <component name="currencies" class="Energine\shop\components\Currencies"/>
+        </container>
         <container name="cartContainer" block="beta" widget="static">
             <component name="cartInformer" class="Energine\shop\components\Cart">
                 <params>

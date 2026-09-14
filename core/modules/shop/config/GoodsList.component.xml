@@ -18,6 +18,8 @@
             <field name="goods_code"/>
             <field name="goods_segment"/>
             <field name="goods_price"/>
+            <field name="goods_price_old"/>
+            <field name="currency_id"/>
             <field name="sell_status_id" type="lookup"/>
             <field name="producer_id" type="lookup"/>
             <field name="attachments"/>
@@ -50,6 +52,8 @@
             <field name="goods_code"/>
             <field name="sell_status_id" type="lookup"/>
             <field name="goods_price"/>
+            <field name="goods_price_old"/>
+            <field name="currency_id"/>
             <field name="attachments"/>
             <field name="features"/>
             <field name="tags"/>

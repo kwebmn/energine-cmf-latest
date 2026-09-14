@@ -4,16 +4,45 @@
         xmlns:set="http://exslt.org/sets"
         extension-element-prefixes="set"
         version="1.0">
+    <!-- Разделители для цен: пробел между разрядами -->
+    <xsl:decimal-format name="price" grouping-separator="&#160;" decimal-separator="."/>
+
+    <!-- Цена с обозначением валюты. Компонент отдаёт обозначение и его сторону
+         в свойствах currency / currency-order, но раньше шаблоны их не читали
+         и цена выводилась как «9999.00». -->
+    <xsl:template name="PRICE">
+        <xsl:param name="VALUE"/>
+        <xsl:variable name="CUR" select="ancestor-or-self::component[@currency][1]/@currency"/>
+        <xsl:variable name="ORDER" select="ancestor-or-self::component[@currency][1]/@currency-order"/>
+        <xsl:variable name="NUM" select="format-number($VALUE, '#&#160;##0.##', 'price')"/>
+        <xsl:choose>
+            <xsl:when test="$CUR != '' and $ORDER = 'before'">
+                <xsl:value-of select="concat($CUR, '&#160;', $NUM)"/>
+            </xsl:when>
+            <xsl:when test="$CUR != ''">
+                <xsl:value-of select="concat($NUM, '&#160;', $CUR)"/>
+            </xsl:when>
+            <xsl:otherwise><xsl:value-of select="$NUM"/></xsl:otherwise>
+        </xsl:choose>
+    </xsl:template>
+
+    <!-- Переключатель валют: ссылка задаёт валюту на время сессии -->
     <xsl:template match="component[@class='Currencies']">
-        <ul>
-            <xsl:for-each select="recordset/record">
-                <li>
-                    <a>
-                        <xsl:value-of select="field[@name='currency_code']"/>
-                    </a>
-                </li>
-            </xsl:for-each>
-        </ul>
+        <xsl:if test="count(recordset/record) &gt; 1">
+            <ul class="currencies">
+                <xsl:for-each select="recordset/record">
+                    <li>
+                        <xsl:if test="field[@name='currency_is_current'] = 1">
+                            <xsl:attribute name="class">current</xsl:attribute>
+                        </xsl:if>
+                        <a href="{$BASE}{$LANG_ABBR}{ancestor::component/@single_template}set/{field[@name='currency_id']}/"
+                           title="{field[@name='currency_name']}">
+                            <xsl:value-of select="field[@name='currency_code']"/>
+                        </a>
+                    </li>
+                </xsl:for-each>
+            </ul>
+        </xsl:if>
     </xsl:template>
 
     <xsl:template match="component[@class='GoodsList' and @type='list']">
@@ -122,7 +151,16 @@
                             <xsl:value-of select="field[@name='sell_status_id']/value"/>
                         </div>
                         <div class="goods_price">
-                            <xsl:value-of select="field[@name='goods_price']"/>
+                            <xsl:if test="field[@name='goods_price_old'] &gt; 0">
+                                <span class="goods_price_old">
+                                    <xsl:call-template name="PRICE">
+                                        <xsl:with-param name="VALUE" select="field[@name='goods_price_old']"/>
+                                    </xsl:call-template>
+                                </span>
+                            </xsl:if>
+                            <xsl:call-template name="PRICE">
+                                <xsl:with-param name="VALUE" select="field[@name='goods_price']"/>
+                            </xsl:call-template>
                         </div>
                         <xsl:apply-templates select="../../toolbar[@name='product']" mode="list">
                             <xsl:with-param name="ID" select="field[@name='goods_id']"/>
@@ -158,7 +196,9 @@
                                 <xsl:value-of select="field[@name='goods_name']"/>
                             </div>
                             <div class="goods_price">
-                                <xsl:value-of select="field[@name='goods_price']"/>
+                                <xsl:call-template name="PRICE">
+                                    <xsl:with-param name="VALUE" select="field[@name='goods_price']"/>
+                                </xsl:call-template>
                             </div>
                         </a>
                     </div>
@@ -249,7 +289,16 @@
                         <xsl:value-of select="field[@name='goods_name']" />
                     </div>
                     <div class="goods_price">
-                        <xsl:value-of select="field[@name='goods_price']" />
+                        <xsl:if test="field[@name='goods_price_old'] &gt; 0">
+                            <span class="goods_price_old">
+                                <xsl:call-template name="PRICE">
+                                    <xsl:with-param name="VALUE" select="field[@name='goods_price_old']"/>
+                                </xsl:call-template>
+                            </span>
+                        </xsl:if>
+                        <xsl:call-template name="PRICE">
+                            <xsl:with-param name="VALUE" select="field[@name='goods_price']" />
+                        </xsl:call-template>
                     </div>
                     <div class="goods_status available">
                         <xsl:value-of select="field[@name='sell_status_id']/value" />

@@ -37,7 +37,18 @@ class Currency extends Primitive {
         $this->data = $this->dbh->select('SELECT * FROM shop_currencies c LEFT JOIN shop_currencies_translation ct USING(currency_id) WHERE  currency_is_active AND lang_id = %s', E()->Language->getCurrent());
         if (empty($this->data)) throw new \InvalidArgumentException("ERR_NO_CURR_DATA");
 
-        if (E()->SiteManager->getCurrentSite()->currencyId) {
+        // валюта, выбранная посетителем, важнее валюты сайта
+        if (!empty($_SESSION[\Energine\shop\components\Currencies::SESSION_KEY])) {
+            $chosen = (int)$_SESSION[\Energine\shop\components\Currencies::SESSION_KEY];
+            foreach ($this->data as $row) {
+                if ($row['currency_id'] == $chosen) {
+                    $this->currentID = $chosen;
+                    break;
+                }
+            }
+        }
+
+        if (!$this->currentID && E()->SiteManager->getCurrentSite()->currencyId) {
             $this->currentID = E()->SiteManager->getCurrentSite()->currencyId;
         }
 
@@ -85,6 +96,10 @@ class Currency extends Primitive {
         $dd->getFieldDescriptionByName('currency_shortname_order')->setType(FieldDescription::FIELD_TYPE_VALUE);
         $fd = new FieldDescription('currency_is_current');
         $fd->setType(FieldDescription::FIELD_TYPE_BOOL);
+        $dd->addFieldDescription($fd);
+        // название приходит из таблицы переводов, в списке колонок shop_currencies его нет
+        $fd = new FieldDescription('currency_name');
+        $fd->setType(FieldDescription::FIELD_TYPE_STRING);
         $dd->addFieldDescription($fd);
 
         return $dd;

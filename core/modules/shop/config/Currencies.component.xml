@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<configuration>
+    <state name="main"/>
+    <!-- выбор валюты запоминается на время сессии -->
+    <state name="set">
+        <uri_patterns>
+            <pattern>/set/[currencyID]/</pattern>
+        </uri_patterns>
+    </state>
+</configuration>

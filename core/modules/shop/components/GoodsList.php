@@ -330,6 +330,21 @@ class GoodsList extends DBDataSet implements SampleGoodsList {
 			$this->addFilterCondition( [ $this->getTableName() . '.' . $this->getPK() => $tagFilter ] );
 		}
 		$result = parent::loadData();
+		// цены хранятся в валюте товара, а показываются в выбранной посетителем
+		if ( ! empty( $result ) ) {
+			$curr = E()['Energine\\shop\\gears\\Currency'];
+			$result = array_map( function ( $row ) use ( $curr ) {
+				if ( isset( $row['currency_id'] ) ) {
+					foreach ( [ 'goods_price', 'goods_price_old' ] as $priceField ) {
+						if ( isset( $row[ $priceField ] ) && $row[ $priceField ] !== null && $row[ $priceField ] !== '' ) {
+							$row[ $priceField ] = $curr->convert( $row[ $priceField ], $row['currency_id'] );
+						}
+					}
+				}
+
+				return $row;
+			}, $result );
+		}
 		if ( ! empty( $result ) && ( $this->getDataDescription()->getFieldDescriptionByName( 'smap_id' ) ) ) {
 			$map    = E()->getMap();
 			$result = array_map( function ( $row ) use ( $map ) {
