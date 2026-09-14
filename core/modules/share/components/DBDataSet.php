@@ -254,7 +254,8 @@ class DBDataSet extends DataSet {
             unset($lookupField, $langTable, $relInfo);
             foreach ($data as $key => $row) {
                 foreach ($row as $name => $value) {
-                    if (in_array($name, array_keys($relations)) && is_array($values[$name]) && array_key_exists($value,
+                    // an empty lookup (NULL) has no name; null as an array key is deprecated since PHP 8.5
+                    if (in_array($name, array_keys($relations)) && is_array($values[$name]) && ($value !== null) && array_key_exists($value,
                             $values[$name])
                     ) {
                         $data[$key][$name] = [

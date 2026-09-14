@@ -41,6 +41,11 @@ class OrderEditor extends Grid implements SampleOrderEditor {
 	 * @var OrderGoodsEditor $orderGoodsEditor
 	 */
 	protected $orderGoodsEditor;
+	/**
+	 * CSV file of the export.
+	 * @var resource|null $file
+	 */
+	private $file = null;
         const TEMP_TILE = '/uploads/tmp/order_editor_export.csv';
         const XLS_TEMP_FILE = '/uploads/tmp/order_editor_export.xlsx';
 //         const TEMP_SELECTED_FILE = '/uploads/tmp/order_editor_selected_export.csv';
@@ -190,13 +195,14 @@ class OrderEditor extends Grid implements SampleOrderEditor {
 
 		$this->setBuilder( new JSONCustomBuilder() );
 
-		$goods_total = $this->dbh->getScalar(
+		// SUM() of an order without lines is NULL
+		$goods_total = (float) $this->dbh->getScalar(
 			'select SUM(goods_real_price*goods_quantity) from shop_orders_goods
              where (order_id = %s) or (order_id is NULL and session_id = %s)',
 			$orderID, session_id()
 		);
 
-		$total          = $this->dbh->getScalar(
+		$total          = (float) $this->dbh->getScalar(
 			'select SUM(goods_price*goods_quantity) from shop_orders_goods
              where (order_id = %s) or (order_id is NULL and session_id = %s)',
 			$orderID, session_id()
@@ -463,9 +469,9 @@ adr_street as order_street
     private function writeLineToFile($row)
     {
         if (is_array($row)) {
-        fputcsv($this->getFile(), array_values($row));
+        fputcsv($this->getFile(), array_values($row), escape: '\\');
         } else {
-          fputcsv($this->getFile(), [$row]);
+          fputcsv($this->getFile(), [$row], escape: '\\');
         }
     }
 

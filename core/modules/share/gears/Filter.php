@@ -289,7 +289,8 @@ class FilterConditionConverter implements \ArrayAccess, \Iterator {
      * The return value will be casted to boolean if non-boolean was returned.
      */
     public function offsetExists($offset): bool {
-        return array_key_exists($offset, $this->map);
+        // isset($filter[null]) means the key '' as for arrays; null as an array key is deprecated since PHP 8.5
+        return array_key_exists($offset ?? '', $this->map);
     }
 
     /**

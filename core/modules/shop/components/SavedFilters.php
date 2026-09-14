@@ -52,7 +52,7 @@ class SavedFilters extends DBDataSet {
             if (!isset($_POST['id']) && !isset($_POST['name'])) {
                 throw new \InvalidArgumentException(E()->Utils->translate('ERR_NO_DATA'));
             }
-            $this->dbh->modify(QAL::UPDATE, $this->getTableName(), ['sf_name' => $realName = filter_var($_POST['name'], FILTER_SANITIZE_STRING)], ['u_id' => E()->getUser()->getID(), 'site_id' => E()->getSiteManager()->getCurrentSite()->id, 'sf_id' => (int)$_POST['id']]);
+            $this->dbh->modify(QAL::UPDATE, $this->getTableName(), ['sf_name' => $realName = trim(strip_tags((string)$_POST['name']))], ['u_id' => E()->getUser()->getID(), 'site_id' => E()->getSiteManager()->getCurrentSite()->id, 'sf_id' => (int)$_POST['id']]);
 
             $this->dbh->commit();
             $b->setProperty('name', $realName);
