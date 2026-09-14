@@ -23,8 +23,8 @@
             <field name="sell_status_id" type="lookup"/>
             <field name="producer_id" type="lookup"/>
             <field name="attachments"/>
-            <!--<field name="features"/>
-            <field name="tags"/>-->
+            <field name="features"/>
+            <!--<field name="tags"/>-->
         </fields>
         <toolbar name="list_type">
             <control type="link" id="tile" onclick="asTile" title="SHOW_AS_TILE"/>
@@ -33,6 +33,7 @@
         <toolbar name="product">
             <control type="button" id="buy" title="BTN_BUY"/>
             <control type="link" id="wishlist" title="BTN_WISHLIST" authorized="authorized"/>
+            <control type="link" id="compare" title="TXT_ADD_TO_COMPARE"/>
         </toolbar>
     </state>
     <state name="view">
@@ -61,6 +62,7 @@
         <toolbar name="product">
             <control type="button" id="buy" title="BTN_BUY"/>
             <control type="button" id="wishlist" title="BTN_WISHLIST"/>
+            <control type="button" id="compare" title="TXT_ADD_TO_COMPARE"/>
         </toolbar>
     </state>
 </configuration>

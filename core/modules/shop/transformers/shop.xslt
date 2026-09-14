@@ -65,6 +65,12 @@
         </div>
     </xsl:template>
 
+    <!-- GoodsCompare.js слушает ссылки с name=to_compare и data-goods-id -->
+    <xsl:template match="control[@id='compare' and ancestor::component[@sample='GoodsList']]">
+        <xsl:param name="ID"/>
+        <a href="#" name="to_compare" data-goods-id="{$ID}" class="to_compare"><xsl:value-of select="@title"/></a>
+    </xsl:template>
+
     <xsl:template match="control[@id='wishlist' and ancestor::component[@sample='GoodsList']]">
         <xsl:param name="ID"/>
         <a href="#" onClick="{generate-id($COMPONENTS[@sample='Wishlist' and @componentAction='main']/recordset)}.add(event, {$ID});"><xsl:value-of select="@title"/></a>

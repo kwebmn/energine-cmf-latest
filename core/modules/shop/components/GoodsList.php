@@ -86,6 +86,8 @@ class GoodsList extends DBDataSet implements SampleGoodsList {
 				'id'                       => false,
 				'list_features'            => false, // false | any | feature_sysname1,feature_sysname2,..
 				'list_features_onlyfilter' => false,
+				// в обычном списке показываем только главные характеристики, в сравнении - все
+				'list_features_onlymain'   => true,
 			]
 		);
 	}
@@ -698,7 +700,7 @@ class GoodsList extends DBDataSet implements SampleGoodsList {
 			$goods_ids = $field_goods_id->getData();
 
 			// features
-			$this->buildFeatures( $field_goods_id, $goods_ids, true );
+			$this->buildFeatures( $field_goods_id, $goods_ids, (bool) $this->getParam( 'list_features_onlymain' ) );
 			$this->buildPromotions( $field_goods_id );
 		}
 

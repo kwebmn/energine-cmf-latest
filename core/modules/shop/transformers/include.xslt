@@ -7,5 +7,6 @@
 	<xsl:include href="shop.xslt"/>
 	<xsl:include href="wishlist.xslt"/>
 	<xsl:include href="cart.xslt"/>
+	<xsl:include href="compare.xslt"/>
 
 </xsl:stylesheet>

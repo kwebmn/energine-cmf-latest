@@ -16,10 +16,18 @@ use Energine\share\gears\UserSession;
 
 class GoodsCompare extends DataSet implements SampleGoodsCompare {
     public function __construct($name, ?array $params = NULL) {
+        // состояние определяется в конструкторе родителя и только у активного компонента,
+        // поэтому признак надо выставить ДО него. Раньше проверялось свойство самого
+        // компонента вместо свойства документа, и оно всегда было пустым: AJAX-состояния
+        // информера и таблицы сравнения отвечали 404
+        if (E()->getDocument()->getProperty('single')) {
+            $params['active'] = true;
+        }
         parent::__construct($name, $params);
-        // active only in single mode
-        $this->setParam('active', ($this->getProperty('single') != 'single') ? false : true);
         $this->setTitle($this->translate('TXT_COMPARE'));
+        // строки информера и таблицы сравнения были вписаны в шаблон по-русски
+        $this->addTranslation('TXT_COMPARE', 'TXT_COMPARE_SELECTED', 'TXT_COMPARE_CLEAR',
+            'BTN_COMPARE', 'TXT_COMPARE_EMPTY');
         $this->setParam('recordsPerPage', false);
     }
 
@@ -187,6 +195,10 @@ class GoodsCompare extends DataSet implements SampleGoodsCompare {
 
     protected function compare() {
         $this->setType(self::COMPONENT_TYPE_LIST);
+        // обозначение валюты для шаблона цены: таблицу сравнения отдаёт эта обёртка
+        $curr = E()['Energine\\shop\\gears\\Currency'];
+        $this->setProperty('currency', $curr->getInfo()['currency_shortname']);
+        $this->setProperty('currency-order', $curr->getInfo()['currency_shortname_order']);
         $this->setBuilder($b = new ComponentProxyBuilder());
         list($sp) = $this->getStateParams();
 
@@ -194,7 +206,8 @@ class GoodsCompare extends DataSet implements SampleGoodsCompare {
             'active' => false,
             'state' => 'main',
             'id' => implode(',', array_filter(explode(',', $sp), 'is_numeric')), // вывод только заданных id
-            'list_features' => 'any' // вывод всех фич товаров в списке
+            'list_features' => 'any', // вывод всех фич товаров в списке
+            'list_features_onlymain' => false // в сравнении нужны все характеристики, а не только главные
         ];
         $b->setComponent(
             'compareGoodsList',

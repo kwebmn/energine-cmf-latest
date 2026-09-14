@@ -435,3 +435,37 @@ a.goods_block_inner:hover {
     vertical-align:baseline;
     font-size:10px;
 }
+/* ----- старая цена и сравнение ----- */
+.goods_price_old {
+    margin-right: 8px;
+    color: rgb(150, 150, 150);
+    text-decoration: line-through;
+    font-weight: normal;
+}
+.header_compare_block .popup_compare.hidden {
+    display: none;
+}
+.header_compare_block .compare_sections {
+    margin: 8px 0 0;
+    padding: 0;
+    list-style: none;
+}
+.compare_table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.compare_table th,
+.compare_table td {
+    padding: 8px 10px;
+    border: 1px solid rgb(225, 225, 225);
+    vertical-align: top;
+    text-align: left;
+}
+.compare_table .compare_feature_name {
+    width: 20%;
+    background: rgb(248, 248, 248);
+}
+.compare_table .compare_goods img {
+    display: block;
+    margin-bottom: 6px;
+}
