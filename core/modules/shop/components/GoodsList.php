@@ -451,6 +451,12 @@ class GoodsList extends DBDataSet implements SampleGoodsList {
 						case FeatureFieldAbstract::FEATURE_FILTER_TYPE_RADIOGROUP:
 						case FeatureFieldAbstract::FEATURE_FILTER_TYPE_SELECT:
 							$selected_id = ( ! empty( $filter[ $feature_name ] ) ) ? $filter[ $feature_name ] : false;
+							// значение фильтра всегда разбирается в массив (explode выше), а ниже
+							// сравнивается со скаляром: без этого одиночный выбор никогда не совпадал
+							// и фильтры типа RADIOGROUP/SELECT не отсеивали ничего
+							if ( is_array( $selected_id ) ) {
+								$selected_id = reset( $selected_id );
+							}
 							if ( ! empty( $selected_id ) ) {
 								$result['features'][ $feature_name ] = [
 									'feature' => $feature,
