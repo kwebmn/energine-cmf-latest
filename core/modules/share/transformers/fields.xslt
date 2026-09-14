@@ -816,7 +816,7 @@
                 </xsl:otherwise>
             </xsl:choose>
         </img>
-        <xsl:if test="recordset/record[1]/field[@name='file']/video">
+        <xsl:if test="recordset/record[1]/field[@name='file']/video or recordset/record[1]/field[@name='type'] = 'video'">
             <i class="play_button"></i>
             <span class="image_info">00:00</span>
         </xsl:if>
@@ -838,12 +838,13 @@
     </xsl:template>
 
     <!-- в виде карусели -->
+    <!-- тип вложения: поле type (текущий AttachmentManager) или дочерний элемент image/video поля file (старый формат) -->
     <xsl:template match="field[@name='attachments']" mode="carousel">
-        <xsl:param name="PREVIEW_WIDTH"/>
-        <xsl:param name="PREVIEW_HEIGHT"/>
-        <xsl:if test="(count(recordset/record) &gt; 1) or not(recordset/record/field[@name='file']/image)">
+        <xsl:param name="PREVIEW_WIDTH">90</xsl:param>
+        <xsl:param name="PREVIEW_HEIGHT">68</xsl:param>
+        <xsl:if test="(count(recordset/record) &gt; 1) or recordset/record[concat(field[@name='type'], name(field[@name='file']/*[1])) != 'image']">
             <div class="carousel_box">
-                <xsl:if test="not(recordset/record/field[@name='file']/image)">
+                <xsl:if test="not(recordset/record[concat(field[@name='type'], name(field[@name='file']/*[1])) = 'image'])">
                     <xsl:attribute name="style">display:none;</xsl:attribute>
                 </xsl:if>
                 <!--<div class="carousel_title">
@@ -853,14 +854,24 @@
                     <div class="carousel_viewbox viewbox">
                         <ul>
                             <xsl:for-each select="recordset/record">
+                                <xsl:variable name="TYPE" select="concat(field[@name='type'], name(field[@name='file']/*[1]))"/>
+                                <xsl:variable name="FILE">
+                                    <xsl:choose>
+                                        <xsl:when test="field[@name='file']/*"><xsl:value-of select="field[@name='file']/*[1]"/></xsl:when>
+                                        <xsl:otherwise><xsl:value-of select="field[@name='file']"/></xsl:otherwise>
+                                    </xsl:choose>
+                                </xsl:variable>
+                                <xsl:variable name="PREVIEW">
+                                    <xsl:choose>
+                                        <xsl:when test="field[@name='file']/*/@image"><xsl:value-of select="field[@name='file']/*[1]/@image"/></xsl:when>
+                                        <xsl:otherwise><xsl:value-of select="$FILE"/></xsl:otherwise>
+                                    </xsl:choose>
+                                </xsl:variable>
                                 <li>
                                     <div class="carousel_image" id="{field[@name='id']}_imgc">
-                                        <a href="{field[@name='file']/video | field[@name='file']/image}" xmlns:nrgn="http://energine.org" nrgn:media_type="{name(field[@name='file']/*[1])}">
-                                            <xsl:choose>
-                                                <xsl:when test="field[@name='file']/video"><img src="{$RESIZER_URL}w{$PREVIEW_WIDTH}-h{$PREVIEW_HEIGHT}/{field[@name='file']/*[1]/@image}" alt="{field[@name='name']}" width="{$PREVIEW_WIDTH}" height="{$PREVIEW_HEIGHT}"/></xsl:when>
-                                                <xsl:otherwise><img src="{$RESIZER_URL}w{$PREVIEW_WIDTH}-h{$PREVIEW_HEIGHT}/{field[@name='file']/*[1]/@image}" alt="{field[@name='name']}" width="{$PREVIEW_WIDTH}" height="{$PREVIEW_HEIGHT}"/></xsl:otherwise>
-                                            </xsl:choose>
-                                             <xsl:if test="field[@name='file']/video">
+                                        <a href="{$FILE}" xmlns:nrgn="http://energine.org" nrgn:media_type="{$TYPE}">
+                                            <img src="{$RESIZER_URL}w{$PREVIEW_WIDTH}-h{$PREVIEW_HEIGHT}/{$PREVIEW}" alt="{field[@name='name']}" width="{$PREVIEW_WIDTH}" height="{$PREVIEW_HEIGHT}"/>
+                                             <xsl:if test="$TYPE = 'video'">
                                                  <i class="icon play_icon"></i>
                                              </xsl:if>
                                          </a>
