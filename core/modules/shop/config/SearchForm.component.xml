@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<configuration>
+    <!-- без конфига у формы не было кнопки отправки -->
+    <state name="main">
+        <toolbar>
+            <control id="search" title="BTN_SEARCH" type="submit"/>
+        </toolbar>
+    </state>
+</configuration>

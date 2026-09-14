@@ -17,7 +17,9 @@ class SearchForm extends DataSet {
 
     public function __construct($name, ?array $params = NULL) {
         parent::__construct($name, $params);
-        $this->setAction('search/', true);
+        // адрес страницы поиска от корня сайта: относительный 'search/' от каталога
+        // разрешался в /catalog/search/, а языковой префикс терялся
+        $this->setAction($this->request->getLangSegment() . 'search/', true);
         $this->setBuilder(new SimpleBuilder());
     }
 
@@ -45,7 +47,8 @@ class SearchForm extends DataSet {
     protected function createDataDescription() {
         $dd = new DataDescription();
         $fd = new FieldDescription(self::KEYWORD_FIELD_NAME);
-        $fd->setType(FieldDescription::FIELD_TYPE_TEXT);
+        // TEXT выводится как textarea, а строка поиска - однострочное поле
+        $fd->setType(FieldDescription::FIELD_TYPE_STRING);
         $dd->addFieldDescription($fd);
 
         return $dd;
