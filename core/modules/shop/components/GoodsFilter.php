@@ -5,6 +5,7 @@ namespace Energine\shop\components;
 use Energine\share\components\DataSet;
 use Energine\share\gears\Button;
 use Energine\share\gears\Data;
+use Energine\share\gears\EmptyBuilder;
 use Energine\share\gears\DataDescription;
 use Energine\share\gears\Field;
 use Energine\share\gears\FieldDescription;
@@ -21,6 +22,12 @@ use Energine\shop\gears\FeatureFieldFactory;
 
 class GoodsFilter extends DataSet
 {
+    /**
+     * Ключ сессии с результатом сохранения фильтра.
+     * @var string SAVE_MESSAGE_KEY
+     */
+    const SAVE_MESSAGE_KEY = 'saved_filter_message';
+
     const FILTER_GET = 'filter';
     public $whereFilter;
     protected $filter_data = [];
@@ -33,6 +40,11 @@ class GoodsFilter extends DataSet
 
     public function __construct($name, ?array $params = NULL)
     {
+        // состояния из URL разбираются только у активного компонента, а на странице
+        // каталога URL принадлежит списку товаров; в single-режиме фильтр остаётся один
+        if (E()->getDocument()->getProperty('single')) {
+            $params['active'] = true;
+        }
         parent::__construct($name, $params);
 
         $this->setTitle($this->translate('TXT_FILTER'));
@@ -70,29 +82,46 @@ class GoodsFilter extends DataSet
         E()->getController()->getTransformer()->setFileName('single_products.xslt');
     }
 
+    /**
+     * Сохранить текущий фильтр под именем.
+     *
+     * Состояние вызывается обычной формой (без AJAX), поэтому результат
+     * кладётся в сессию и показывается рядом с формой, а посетитель
+     * возвращается к отфильтрованному списку.
+     */
     protected function saveFilterForm()
     {
-        $this->setBuilder($b = new JSONCustomBuilder());
+        $this->setBuilder(new EmptyBuilder());
         try {
-            if(!E()->getUser()->isAuthenticated()){
+            if (!E()->getUser()->isAuthenticated()) {
                 throw new \InvalidArgumentException(E()->Utils->translate('ERR_BAD_USER'));
             }
-            if(!isset($_POST['name']) || !isset($_GET[self::FILTER_GET]) || empty($_POST['name']) || empty($_GET[self::FILTER_GET])){
+            if (empty($_POST['name']) || empty($_GET[self::FILTER_GET])) {
                 throw new \InvalidArgumentException(E()->Utils->translate('ERR_NO_FILTER_NAME'));
             }
-            $name= $_POST['name'];
-            if($this->dbh->getScalar('shop_saved_filters', 'COUNT(*)', ['sf_name' => $name, 'u_id' => E()->getUser()->getID(), 'site_id' => E()->getSiteManager()->getCurrentSite()->id])){
+            $name = trim(strip_tags((string)$_POST['name']));
+            $owner = ['u_id' => E()->getUser()->getID(), 'site_id' => E()->getSiteManager()->getCurrentSite()->id];
+
+            if ($this->dbh->getScalar('shop_saved_filters', 'COUNT(*)', $owner + ['sf_name' => $name])) {
                 throw new \InvalidArgumentException(E()->Utils->translate('ERR_DUPLICATE_FILTER_NAME'));
             }
-            if($this->dbh->getScalar('shop_saved_filters', 'COUNT(*)', ['sf_data' => $_GET[self::FILTER_GET], 'u_id' => E()->getUser()->getID(), 'smap_id' => $this->document->getID(), 'site_id' => E()->getSiteManager()->getCurrentSite()->id])){
+            if ($this->dbh->getScalar('shop_saved_filters', 'COUNT(*)',
+                $owner + ['sf_data' => $_GET[self::FILTER_GET], 'smap_id' => $this->document->getID()])
+            ) {
                 throw new \InvalidArgumentException(E()->Utils->translate('ERR_DUPLICATE_FILTER_DATA'));
             }
-            $this->dbh->modify(QAL::INSERT, 'shop_saved_filters', ['sf_name' => $name, 'sf_data' => $_GET[self::FILTER_GET], 'smap_id' => $this->document->getID(), 'u_id' => E()->getUser()->getID(), 'site_id' => E()->getSiteManager()->getCurrentSite()->id]);
+
+            $this->dbh->modify(QAL::INSERT, 'shop_saved_filters',
+                $owner + [
+                    'sf_name' => $name,
+                    'sf_data' => $_GET[self::FILTER_GET],
+                    'smap_id' => $this->document->getID(),
+                ]);
+        } catch (\Exception $e) {
+            $_SESSION[self::SAVE_MESSAGE_KEY] = $e->getMessage();
         }
-        catch(\Exception $e){
-            $b->setProperty('result', false);
-            $b->setProperty('message', $e->getMessage());
-        }
+
+        $this->response->redirectToReferer();
     }
 
     protected function showSaveFilterForm()

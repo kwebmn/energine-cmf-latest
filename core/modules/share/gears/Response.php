@@ -195,6 +195,27 @@ final class Response extends Primitive {
     }
 
     /**
+     * Redirect back to the page the visitor came from.
+     *
+     * Used by the states that only change something and have nothing to show:
+     * the currency switcher, saving and deleting a filter. The referer is
+     * followed only when it belongs to this site, otherwise the current
+     * section is used - an unchecked referer is an open redirect.
+     *
+     * @param string $action Action appended to the current section when the referer is unusable.
+     */
+    public function redirectToReferer($action = '') {
+        $base = E()->getSiteManager()->getCurrentSite()->base;
+        $referer = isset($_SERVER['HTTP_REFERER']) ? (string)$_SERVER['HTTP_REFERER'] : '';
+
+        if ($referer !== '' && strpos($referer, $base) === 0) {
+            $this->setRedirect($referer);
+        } else {
+            $this->redirectToCurrentSection($action);
+        }
+    }
+
+    /**
      * Redirect to current section.
      *
      * @param string $action Action name.

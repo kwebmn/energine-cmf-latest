@@ -66,13 +66,6 @@ class Currencies extends DataSet {
             $_SESSION[self::SESSION_KEY] = $id;
         }
 
-        // возвращаемся туда, откуда пришли, но только в пределах этого сайта
-        $base = E()->getSiteManager()->getCurrentSite()->base;
-        $referer = isset($_SERVER['HTTP_REFERER']) ? (string)$_SERVER['HTTP_REFERER'] : '';
-        if ($referer !== '' && strpos($referer, $base) === 0) {
-            $this->response->setRedirect($referer);
-        } else {
-            $this->response->redirectToCurrentSection();
-        }
+        $this->response->redirectToReferer();
     }
 }

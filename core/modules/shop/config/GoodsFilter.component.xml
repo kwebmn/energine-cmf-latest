@@ -15,4 +15,12 @@
 			<control id="reset" title="BTN_RESET_FILTER" type="button"/>
 		</toolbar>
 	</state>
+
+	<!-- Сохранение текущего фильтра. Метод был в компоненте, но состояния не было,
+	     поэтому сохранить фильтр было нельзя. -->
+	<state name="saveFilterForm">
+		<uri_patterns>
+			<pattern>/save-filter/</pattern>
+		</uri_patterns>
+	</state>
 </configuration>

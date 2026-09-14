@@ -25,6 +25,9 @@
         <container name="compareContainer" block="beta" widget="static">
             <component name="goodsCompare" class="Energine\shop\components\GoodsCompare"/>
         </container>
+        <container name="savedFiltersContainer" block="beta" widget="static">
+            <component name="savedFilters" class="Energine\shop\components\SavedFilters"/>
+        </container>
         <container name="cartContainer" block="beta" widget="static">
             <component name="cartInformer" class="Energine\shop\components\Cart">
                 <params>

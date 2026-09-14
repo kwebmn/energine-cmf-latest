@@ -103,6 +103,39 @@
         <xsl:apply-templates select="." mode="goods_list"/>
     </xsl:template>
 
+    <!-- Сохранённые фильтры пользователя: ссылки на отфильтрованный список -->
+    <xsl:template match="component[@class='SavedFilters']">
+        <div class="saved_filters">
+            <h3><xsl:value-of select="$TRANSLATION[@const='TXT_SAVED_FILTERS']"/></h3>
+            <xsl:if test="recordset/record">
+                <ul class="saved_filters_list">
+                    <xsl:for-each select="recordset/record">
+                        <li>
+                            <a href="{$BASE}{$LANG_ABBR}{field[@name='sf_link']}">
+                                <xsl:value-of select="field[@name='sf_name']"/>
+                            </a>
+                            <a class="saved_filter_delete"
+                               href="{$BASE}{$LANG_ABBR}{ancestor::component/@single_template}{field[@name='sf_id']}/delete/"
+                               title="{$TRANSLATION[@const='BTN_DELETE']}">×</a>
+                        </li>
+                    </xsl:for-each>
+                </ul>
+            </xsl:if>
+        </div>
+    </xsl:template>
+
+    <!-- форма сохранения текущего фильтра: видна авторизованному пользователю,
+         когда фильтр применён -->
+    <xsl:template match="component[@class='GoodsFilter']" mode="save_form">
+        <xsl:if test="$COMPONENTS[@class='SavedFilters'] and contains($DOC_PROPS[@name='url'], 'filter=')">
+            <form class="save_filter_form" method="post"
+                  action="{$BASE}{$LANG_ABBR}{@single_template}save-filter/?{substring-after($DOC_PROPS[@name='url'], '?')}">
+                <input type="text" name="name" placeholder="{$TRANSLATION[@const='TXT_SAVE_FILTER_NAME']}"/>
+                <button type="submit"><xsl:value-of select="$TRANSLATION[@const='BTN_SAVE_FILTER']"/></button>
+            </form>
+        </xsl:if>
+    </xsl:template>
+
     <!-- «вы недавно смотрели»: прокси-билдер отдаёт записи списка товаров,
          обёртка остаётся GoodsLastSeenList, поэтому шаблон нужен отдельный -->
     <xsl:template match="component[@class='GoodsLastSeenList']">
@@ -250,6 +283,7 @@
             <form method="get" action="{$BASE}{$LANG_ABBR}{$TEMPLATE}{@action}" data-filter-name="{@filter-name}">
                 <xsl:apply-templates/>
             </form>
+            <xsl:apply-templates select="." mode="save_form"/>
         </xsl:if>
     </xsl:template>
 
