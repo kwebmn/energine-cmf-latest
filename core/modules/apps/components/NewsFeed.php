@@ -294,8 +294,13 @@ class NewsFeed extends ExtendedFeed {
         $this->setParam('recordsPerPage', self::RECORD_PER_PAGE);
         $this->main();
         if ($this->getData()->getFieldByName('news_date')) {
+            // иначе билдер переформатирует дату по типу поля и формат RSS потеряется
+            if ($fd = $this->getDataDescription()->getFieldDescriptionByName('news_date')) {
+                $fd->setType(FieldDescription::FIELD_TYPE_STRING);
+            }
             foreach ($field = $this->getData()->getFieldByName('news_date') as $key => $value) {
-                $field->setRowData($key, date('D, d M Y H:i:m +0300', strtotime($value)));
+                // формат RSS (RFC 2822); раньше вместо секунд подставлялся месяц, а смещение было жёстко +0300
+                $field->setRowData($key, date('r', strtotime($value)));
             }
         }
         if ($this->getData()->getFieldByName('news_announce_rtf')) {
@@ -305,7 +310,7 @@ class NewsFeed extends ExtendedFeed {
         }
         $this->pager->setRecordsCount(self::RECORD_PER_PAGE);
 
-        E()->getController()->getTransformer()->setFileName('core/modules/apps/transformers/rss.xslt', true);
+        E()->getController()->getTransformer()->setFileName(CORE_REL_DIR . '/modules/apps/transformers/rss.xslt', true);
         E()->getResponse()->setHeader('Content-Type', 'text/xml; charset=utf-8');
     }
 }

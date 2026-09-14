@@ -37,6 +37,8 @@
             <field name="news_segment"/>
             <field name="news_title"/>
             <field name="news_announce_rtf"/>
+            <!-- даёт @url раздела, из которого собирается ссылка на новость -->
+            <field name="category"/>
         </fields>
         <translations>
             <translation const="TXT_RSS_NEWS_TITLE"/>

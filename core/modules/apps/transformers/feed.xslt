@@ -119,6 +119,16 @@
         </div>
     </xsl:template>
 
+    <!-- ссылка на ленту RSS: без неё состояние rss ниоткуда не достижимо -->
+    <xsl:template match="recordset[parent::component[@class='NewsFeed'][@type='list']]">
+        <ul id="{generate-id(.)}" class="feed_list">
+            <xsl:apply-templates/>
+        </ul>
+        <div class="feed_rss">
+            <a href="{$BASE}{$LANG_ABBR}{$TEMPLATE}rss/" type="application/rss+xml">RSS</a>
+        </div>
+    </xsl:template>
+
     <xsl:template match="record[ancestor::component[@class='NewsFeed'][@type='list']]">
         <li class="feed_item">
             <xsl:if test="$COMPONENTS[@editable]">
