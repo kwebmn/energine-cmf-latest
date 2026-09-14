@@ -101,13 +101,14 @@ class UserProfile extends DBDataSet {
 
         if ($dd->getFieldDescriptionByName('u_password')) {
             if (!password_verify($this->document->user->getValue('u_password'), password_hash($_POST[$this->getTableName()]['u_password'], PASSWORD_DEFAULT))) {
-                $_SESSION['error'] = true;
-                $this->response->redirectToCurrentSection('error/');
+                $this->fail('TXT_USER_PROFILE_WRONG_PWD');
             }
 
             if (!empty($_POST[$this->getTableName()]['u_password'])) {
                 if ($_POST[$this->getTableName()]['u_password'] != $_POST['u_password2']) {
-                    $this->generateError(SystemException::ERR_WARNING, 'ERR_PWD_MISMATCH');
+                    // здесь вызывался generateError(), которого у DBDataSet нет: трейт DBWorker
+                    // молча возвращал false, и несовпавший пароль всё равно сохранялся
+                    $this->fail('ERR_PWD_MISMATCH');
                 }
                 unset($_POST['u_password2']);
                 $_POST[$this->getTableName()]['u_password'] = password_hash($_POST[$this->getTableName()]['u_password'], PASSWORD_DEFAULT);
@@ -189,6 +190,16 @@ class UserProfile extends DBDataSet {
 
 
     /**
+     * Remember why saving failed and show it on the error state.
+     *
+     * @param string $messageConst Translation constant of the message.
+     */
+    private function fail($messageConst) {
+        $_SESSION['error'] = $messageConst;
+        $this->response->redirectToCurrentSection('error/');
+    }
+
+    /**
      * Show message about incorrect password.
      *
      * @throws SystemException 'ERR_404'
@@ -198,6 +209,8 @@ class UserProfile extends DBDataSet {
         if (!isset($_SESSION['error'])) {
             throw new SystemException('ERR_404', SystemException::ERR_404);
         }
+        // причина: константа перевода, положенная fail(); раньше сюда попадал только неверный пароль
+        $messageConst = is_string($_SESSION['error']) ? $_SESSION['error'] : 'TXT_USER_PROFILE_WRONG_PWD';
         //Мавр сделал свое дело...
         unset($_SESSION['error']);
 
@@ -215,8 +228,11 @@ class UserProfile extends DBDataSet {
         $d = new Data();
         $this->setData($d);
 
+        $this->setTitle($this->translate('TXT_USER_PROFILE'));
+        $this->addTranslation('TXT_USER_PROFILE');
+
         $di = new Field('error_message');
-        $di->setData($this->translate('TXT_USER_PROFILE_WRONG_PWD'));
+        $di->setData($this->translate($messageConst));
         $d->addField($di);
 
         $this->document->componentManager->getBlockByName('breadCrumbs')->addCrumb();

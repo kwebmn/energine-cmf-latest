@@ -21,4 +21,10 @@
 			<pattern>/success/</pattern>
 		</uri_patterns>
 	</state>
+	<!-- метод error() был, а состояния не было: сохранение уводило на несуществующий адрес -->
+	<state name="error">
+		<uri_patterns>
+			<pattern>/error/</pattern>
+		</uri_patterns>
+	</state>
 </configuration>

@@ -71,6 +71,15 @@
             <xsl:value-of select="recordset/record/field" disable-output-escaping="yes"/>
         </div>
     </xsl:template>
+
+    <xsl:template match="component[@class='UserProfile'][@componentAction='error']">
+        <div class="result_message error_message">
+            <xsl:value-of select="recordset/record/field" disable-output-escaping="yes"/>
+        </div>
+        <p class="error_back">
+            <a href="{$BASE}{$LANG_ABBR}{$TEMPLATE}"><xsl:value-of select="$TRANSLATION[@const='TXT_USER_PROFILE']"/></a>
+        </p>
+    </xsl:template>
     <!-- /компонент UserProfile -->
 
     <!-- компонент RoleEditor -->
