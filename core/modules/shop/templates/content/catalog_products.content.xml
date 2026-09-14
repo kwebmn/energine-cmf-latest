@@ -19,6 +19,15 @@
                 </params>
             </component>
         </container>
+        <container name="sidebarBannerContainer" block="beta" widget="static">
+            <component name="sidebarBanner" class="Energine\ads\components\Ads">
+                <params>
+                    <param name="type">sidebar</param>
+                    <param name="limit">1</param>
+                    <param name="order">rand</param>
+                </params>
+            </component>
+        </container>
         <container name="currencyContainer" block="beta" widget="static">
             <component name="currencies" class="Energine\shop\components\Currencies"/>
         </container>

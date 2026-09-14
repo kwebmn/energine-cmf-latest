@@ -17,6 +17,13 @@
     </container>
     <container name="center" column="column" html_class="col col2 last_col">
         <container name="blogContainer" block="alfa" widget="static">
+            <component name="centerBanner" class="Energine\ads\components\Ads">
+                <params>
+                    <param name="type">center</param>
+                    <param name="limit">1</param>
+                    <param name="order">rand</param>
+                </params>
+            </component>
             <component name="blogPostAll" class="Energine\blog\components\BlogPost">
                 <params>
                     <param name="showCalendar">1</param>

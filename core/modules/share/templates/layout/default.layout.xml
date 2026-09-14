@@ -1,6 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <page>
 	<component name="langSwitcher" class="Energine\share\components\LangSwitcher"/>
+	<!-- баннер в шапке: выводится макетом сайта, если для страницы есть подходящий -->
+	<component name="topBanner" class="Energine\ads\components\Ads">
+		<params>
+			<param name="type">top</param>
+			<param name="limit">1</param>
+			<param name="order">rand</param>
+		</params>
+	</component>
 	<component name="footerTextBlock" class="Energine\share\components\TextBlock">
 		<params>
 			<param name="num">footerTextBlock</param> 

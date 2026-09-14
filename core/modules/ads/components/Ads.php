@@ -28,9 +28,18 @@ class Ads extends DBDataSet {
         $this->setProperty('type', $type);
         $type_id = $this->dbh->getScalar('ads_types', 'ads_type_id', array('ads_type_sysname' => $type));
 
+        // Привязки к сайтам и страницам раньше не учитывались: баннер выводился всюду,
+        // где стоит его место. Баннер без привязок считается общим.
+        $siteID = (int)E()->getSiteManager()->getCurrentSite()->id;
+        $smapID = (int)$this->document->getID();
+
         $this->setFilter([
             'ads_type_id' => $type_id,
-            'ads_item_is_active' => 1
+            'ads_item_is_active' => 1,
+            '(NOT EXISTS (SELECT 1 FROM ads_items2sites s WHERE s.ads_item_id = ads_items.ads_item_id)'
+            . " OR EXISTS (SELECT 1 FROM ads_items2sites s WHERE s.ads_item_id = ads_items.ads_item_id AND s.site_id = $siteID))",
+            '(NOT EXISTS (SELECT 1 FROM ads_items2sitemap m WHERE m.ads_item_id = ads_items.ads_item_id)'
+            . " OR EXISTS (SELECT 1 FROM ads_items2sitemap m WHERE m.ads_item_id = ads_items.ads_item_id AND m.smap_id = $smapID))",
         ]);
 
         if ($limit = $this->getParam('limit')) {
