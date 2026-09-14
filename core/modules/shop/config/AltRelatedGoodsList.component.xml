@@ -2,7 +2,7 @@
 <configuration>
     <state name="init">
         <javascript>
-            <behavior name="ProductList"/>
+            <behavior name="AltRelatedGoodsList"/>
         </javascript>
         <uri_patterns>
             <pattern>/</pattern>
@@ -10,7 +10,7 @@
     </state>
     <state name="main">
         <uri_patterns>
-            <pattern>/show/</pattern>
+            <pattern>/show/[goodsId]/</pattern>
         </uri_patterns>
     </state>
 </configuration>

@@ -52,9 +52,13 @@ class AltRelatedGoodsList extends DataSet implements SampleGoodsList {
             $this->document->componentManager->getBlockByName($this->getParam('bind'));
         if ($this->bindComponent && $this->bindComponent->getState() == $this->getParam('bind_state')) {
             $params = $this->bindComponent->getStateParams(true);
-            $path = substr(str_replace('['.key($params).']', current($params), (string)$this->bindComponent->config->getStateConfig('view')->uri_patterns->pattern), 1);
             $this->setBuilder(new EmptyBuilder());
-            $this->setProperty('single_template', str_replace(Document::SINGLE_SEGMENT, $path.Document::SINGLE_SEGMENT, $this->getProperty('single_template')) . 'show/');
+            // Товар передаётся параметром состояния. Раньше сегменты открытого товара
+            // вставлялись в адрес перед single, и движок отвечал 404: в single-режиме
+            // эти сегменты никто не разбирает, а проверка «все ли сегменты использованы»
+            // не проходила.
+            $this->setProperty('single_template',
+                $this->getProperty('single_template') . 'show/' . rawurlencode((string)current($params)) . '/');
             $this->js = $this->buildJS();
         } else {
             $this->disable();
@@ -67,12 +71,17 @@ class AltRelatedGoodsList extends DataSet implements SampleGoodsList {
                 $this->setProperty('currency', $curr->getInfo()['currency_shortname']);
                 $this->setProperty('currency-order', $curr->getInfo()['currency_shortname_order']);
         $this->setType(self::COMPONENT_TYPE_LIST);
-        $segments = array_reverse($this->request->getPath());
-        list($segment) = array_slice($segments, array_search(Document::SINGLE_SEGMENT, $segments) + 1, 1);
+        list($segment) = $this->getStateParams();
 
-        if (
-        $productID = $this->dbh->getScalar('shop_goods', 'goods_id', ['goods_id' => $segment, 'goods_is_active' => true])
-        ) {
+        // параметр может быть и числовым идентификатором, и сегментом товара
+        $productID = $this->dbh->getScalar('shop_goods', 'goods_id',
+            ['goods_id' => (int)$segment, 'goods_is_active' => true]);
+        if (!$productID) {
+            $productID = $this->dbh->getScalar('shop_goods', 'goods_id',
+                ['goods_segment' => (string)$segment, 'goods_is_active' => true]);
+        }
+
+        if ($productID) {
             // получаем список goods_id связи
             $goods_ids = $this->dbh->getColumn(
                 'shop_goods_relations',

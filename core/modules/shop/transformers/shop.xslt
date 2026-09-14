@@ -103,6 +103,22 @@
         <xsl:apply-templates select="." mode="goods_list"/>
     </xsl:template>
 
+    <!-- Связанные товары с отложенной загрузкой: контейнер и адрес содержимого -->
+    <xsl:template match="component[@class='AltRelatedGoodsList'][@componentAction='init']">
+        <div id="{generate-id(recordset)}" class="products alt_related_goods"
+             data-load-url="{$BASE}{$LANG_ABBR}{@single_template}">
+            <!-- содержимое подгружает AltRelatedGoodsList.js -->
+        </div>
+        <xsl:apply-templates select="javascript"/>
+    </xsl:template>
+
+    <xsl:template match="component[@class='AltRelatedGoodsList'][@componentAction='main']">
+        <xsl:if test="recordset/record">
+            <h3><xsl:value-of select="@title"/></h3>
+            <xsl:apply-templates select="recordset" mode="goods_list"/>
+        </xsl:if>
+    </xsl:template>
+
     <!-- Сохранённые фильтры пользователя: ссылки на отфильтрованный список -->
     <xsl:template match="component[@class='SavedFilters']">
         <div class="saved_filters">
