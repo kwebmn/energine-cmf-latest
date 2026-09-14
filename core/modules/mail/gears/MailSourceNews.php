@@ -20,7 +20,7 @@ class MailSourceNews extends MailSourceAbstract
                 n.news_date as `date`
             from apps_news n
             left join apps_news_translation nt on n.news_id = nt.news_id and nt.lang_id = %s
-            where n.news_is_active = 1 and news_date >= %s
+            where n.news_is_active = 1 and news_date >= %s and news_date <= NOW()
             order by n.news_date desc LIMIT 100',
             $this->lang_id,
             $date->format('Y-m-d H:i:s')

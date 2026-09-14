@@ -130,6 +130,13 @@ class MailProcessor
                     $items = $source->getItemsSinceDate($since_date);
                     $this->log(sprintf('Found %s items in subscription', count($items)));
 
+                    // рассылать нечего: пустой выпуск не отправляем, но дату сдвигаем -
+                    // за прошедший период материалов не было, и повторять попытку незачем
+                    if (empty($items)) {
+                        $this->log('Nothing new, only the sent date is moved');
+                        $subscribers = [];
+                    }
+
                     foreach ($subscribers as $email => $name) {
 
                         $this->log(sprintf('Sending %s mail to %s (%s)', $subscription['type'], $email, $name));

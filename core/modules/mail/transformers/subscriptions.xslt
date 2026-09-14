@@ -9,6 +9,14 @@
 		</div>
 	</xsl:template>
 
+	<!-- при пустой таблице движок всё равно отдаёт одну пустую запись,
+	     и на странице появлялся чекбокс без подписи -->
+	<xsl:template match="recordset[parent::component[@class='MailSubscriptionList' and @componentAction='main']][@empty]" priority="1">
+		<div class="subscriptions_list empty_message">
+			<xsl:value-of select="@empty" disable-output-escaping="yes"/>
+		</div>
+	</xsl:template>
+
 	<xsl:template match="recordset[parent::component[@class='MailSubscriptionList' and @componentAction='main']]">
 		<div class="subscriptions_list clearfix">
 			<xsl:for-each select="record">

@@ -20,7 +20,7 @@ class MailSourceCRM extends MailSourceAbstract
                 c.crm_date as `date`
             from mail_crm c
             left join mail_crm_translation ct on c.crm_id = ct.crm_id and ct.lang_id = %s
-            where c.crm_is_active = 1 and crm_date >= %s
+            where c.crm_is_active = 1 and crm_date >= %s and crm_date <= NOW()
             order by c.crm_date desc LIMIT 100',
             $this->lang_id,
             $date->format('Y-m-d H:i:s')
