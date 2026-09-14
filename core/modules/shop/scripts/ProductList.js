@@ -1,5 +1,7 @@
 var ProductList = new Class({
     initialize: function (el) {
+        // без этого публичный магазин остаётся без оформления: файл стилей есть, но на него никто не ссылался
+        Asset.css('shop.css');
         this.element = $(el);
         this.productList = this.element.getElement('.goods_list');
         this.element.getElements('.goods_view_type a').addEvent('click', function (e) {

@@ -1,5 +1,6 @@
 var Cart = new Class({
     initialize: function (el) {
+        Asset.css('shop.css');
         if (this.el = $(el)) {
             this.deleteButtons = this.el.getElements('.delete');
             this.editFields = this.el.getElements('.edit');

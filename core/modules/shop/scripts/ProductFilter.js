@@ -1,5 +1,6 @@
 ScriptLoader.load('scripts/jquery.nouislider.all.js');
 Asset.css('jquery.nouislider.min.css');
+Asset.css('shop.css');
 var ProductFilter;
 (function ($, window, document) {
 

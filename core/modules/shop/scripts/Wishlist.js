@@ -1,5 +1,6 @@
 var Wishlist = new Class({
     initialize: function (el) {
+        Asset.css('shop.css');
         if (this.form = $(el)) {
             var content = this.form.getElements('input[type=checkbox]'), buttons = this.form.getElements('button');
             content.addEvent('change', function (e) {
