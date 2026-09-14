@@ -108,6 +108,17 @@ final class ComponentManager extends Primitive implements \Iterator {
     }
 
     /**
+     * Forget every block.
+     * The document is a singleton, so after an error the page it had already assembled
+     * has to be dropped before the error layout is loaded into it.
+     */
+    public function clear() {
+        $this->blocks = [];
+        $this->blockNames = [];
+        $this->iteratorIndex = 0;
+    }
+
+    /**
      * Find block in the component XML description by his name.
      * @param \SimpleXMLElement $containerXMLDescription Component descriptions.
      * @param string $blockName Block name.

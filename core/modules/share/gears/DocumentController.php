@@ -147,7 +147,10 @@ class DocumentController extends Primitive {
                  * Errors 404 & 403 goes here
                  */
                 $document =E()->getDocument();
-                //$document = new Document();
+                // документ - синглтон и уже собрал страницу, найденную до выброса 404/403
+                // (Sitemap::getIDByURI отдаёт главную для неизвестного адреса).
+                // Без сброса error.layout.xml добавлялся к ней, и посетитель видел главную с кодом 404.
+                $document->componentManager->clear();
 
                 $document->loadComponents(function () use ($e){
                     if (

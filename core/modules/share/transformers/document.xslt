@@ -26,6 +26,11 @@
 
     <xsl:template match="/" mode="title">
         <title><xsl:choose>
+            <!-- на странице ошибки крошки ведут на страницу, найденную до ошибки,
+                 поэтому заголовок берём из свойства документа -->
+            <xsl:when test="$COMPONENTS[@class='ErrorComponent']">
+                <xsl:value-of select="$DOC_PROPS[@name='title']"/>
+            </xsl:when>
             <xsl:when test="$DOC_PROPS[@name='title']/@alt = ''">
                 <xsl:for-each select="$COMPONENTS[@name='breadCrumbs']/recordset/record">
                     <xsl:sort data-type="text" order="descending" select="position()"/>

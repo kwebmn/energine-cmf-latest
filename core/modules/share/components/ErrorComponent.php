@@ -39,6 +39,8 @@ class ErrorComponent extends DataSet {
                 $statusCode = 500;
         }
         $this->title = E()->Utils->translate('TXT_ERROR').' '.$statusCode;
+        // иначе в <title> остаётся имя страницы, найденной до ошибки (для неизвестного адреса - главной)
+        $this->document->setProperty('title', $this->title);
         E()->getResponse()->setStatus($statusCode);
 
     }
