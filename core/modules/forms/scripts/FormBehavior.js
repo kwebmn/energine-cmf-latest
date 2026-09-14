@@ -28,22 +28,5 @@ var FormBehavior = new Class(/** @lends FormBehavior# */{
     // constructor
     initialize: function(element){
         this.parent(element);
-    },
-
-    /**
-     * Overridden parent [validateForm]{@link ValidForm#validateForm} method.
-     * @function
-     * @public
-     * @param {Object} event Event.
-     */
-    validateForm: function(event){
-        //NOTE: Recaptcha comes from Google.
-        if((typeof Recaptcha !== 'undefined') && !Recaptcha.get_response()) {
-            this.validator.showError($('recaptcha_widget_div'), 'Необходимо ввести значения');
-            event.stop();
-            return false;
-        }
-        
-        return this.parent(event);
     }
 });

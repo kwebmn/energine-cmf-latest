@@ -46,7 +46,6 @@ class FeedbackForm extends DBDataSet {
         }*/
         $this->setType(self::COMPONENT_TYPE_FORM_ADD);
         $this->setAction('send');
-        $this->addTranslation('TXT_ENTER_CAPTCHA');
     }
 
     /**
@@ -63,8 +62,7 @@ class FeedbackForm extends DBDataSet {
                 'userSubject' => 'TXT_SUBJ_FEEDBACK_USER',
                 'userBody' => 'TXT_BODY_FEEDBACK_USER',
                 'adminSubject' => 'TXT_SUBJ_FEEDBACK_ADMIN',
-                'adminBody' => 'TXT_BODY_FEEDBACK_ADMIN',
-                'noCaptcha' => false
+                'adminBody' => 'TXT_BODY_FEEDBACK_ADMIN'
             ));
         return $result;
     }
@@ -134,9 +132,6 @@ class FeedbackForm extends DBDataSet {
         try {
             $data[$this->getTableName()] = $_POST[$this->getTableName()];
             
-            if (!$this->document->getUser()->isAuthenticated() && !$this->getParam('noCaptcha')) {
-                $this->checkCaptcha();
-            }
             if ($result = $this->saveData($data)) {
                 $data = $data[$this->getTableName()];
                 $senderEmail = '';
@@ -213,7 +208,7 @@ class FeedbackForm extends DBDataSet {
      * @param string $errorMessage Error message.
      * @param mixed $data Data.
      */
-    // Викликаємо у випадку помилки з captcha
+    // Викликаємо у випадку помилки перевірки або збереження форми
     protected function failure($errorMessage, $data) {
         $this->getConfig()->setCurrentState('main');
         $this->prepare();
@@ -223,34 +218,6 @@ class FeedbackForm extends DBDataSet {
         $this->getDataDescription()->addFieldDescription($eFD);
         $this->getData()->load(array(array_merge(array('error_message' => $errorMessage), $data)));
         $this->getDataDescription()->getFieldDescriptionByName('error_message')->removeProperty('title');
-    }
-
-    /**
-     * Check captcha.
-     *
-     * @throws SystemException
-     */
-    protected function checkCaptcha() {
-        $gRecaptchaResponse = (isset($_POST['g-recaptcha-response']) && is_string($_POST['g-recaptcha-response'])) ? $_POST['g-recaptcha-response'] : '';
-
-        $recaptcha = new \ReCaptcha\ReCaptcha($this->getConfigValue('recaptcha.private'));
-        $resp = $recaptcha->verify($gRecaptchaResponse, $_SERVER["REMOTE_ADDR"]);
-        if (!$resp->isSuccess()) {
-            throw new SystemException($this->translate('TXT_BAD_CAPTCHA'), SystemException::ERR_CRITICAL, $resp->getErrorCodes());
-        }
-    }
-
-    /**
-     * @copydoc DBDataSet::prepare
-     */
-    protected function prepare() {
-        parent::prepare();
-        if ($this->document->getUser()->isAuthenticated()
-            && ($captcha =
-                    $this->getDataDescription()->getFieldDescriptionByName('captcha'))
-        ) {
-            $this->getDataDescription()->removeFieldDescription($captcha);
-        }
     }
 
     /**

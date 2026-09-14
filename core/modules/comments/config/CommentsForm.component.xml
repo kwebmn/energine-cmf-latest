@@ -20,7 +20,6 @@
                    title="FIELD_COMMENT_NICK"/>
             <field name="comment_name" type="text" pattern="/^.+$/m" message="MSG_FIELD_IS_NOT_NULL"
                    title="FIELD_COMMENT_NAME"/>
-            <field name="captcha" type="captcha"/>
         </fields>
         <toolbar>
             <control id="saveComment" title="BTN_SEND" type="submit"/>

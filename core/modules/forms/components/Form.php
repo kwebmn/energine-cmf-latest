@@ -77,7 +77,6 @@ class Form extends DBDataSet {
 
         $this->setType(self::COMPONENT_TYPE_FORM_ADD);
         $this->setAction('send');
-        $this->addTranslation('TXT_ENTER_CAPTCHA');
     }
 
     /**
@@ -88,14 +87,13 @@ class Form extends DBDataSet {
             parent::defineParams(),
             [
                 'id' => false,
-                'active' => true,
-                'noCaptcha' => false
+                'active' => true
             ]
         );
     }
 
     /**
-     * Call this by failure with captcha.
+     * Show the form again with the error message.
      */
     protected function failure($errorMessage, $data) {
         $data = array_values($data);
@@ -210,10 +208,6 @@ class Form extends DBDataSet {
         try {
             $data[$this->getTableName()] = $_POST[$postTableName];
 
-            if (!$this->document->getUser()->isAuthenticated() && !$this->getParam('noCaptcha')) {
-                $this->checkCaptcha();
-            }
-
             if ($result = $this->saveData($data)) {
 
                 $data = $data[$this->getTableName()];
@@ -305,22 +299,7 @@ class Form extends DBDataSet {
     }
 
     /**
-     * Check captcha.
-     *
-     * @throws SystemException
-     */
-    protected function checkCaptcha() {
-        $gRecaptchaResponse = (isset($_POST['g-recaptcha-response']) && is_string($_POST['g-recaptcha-response'])) ? $_POST['g-recaptcha-response'] : '';
-
-        $recaptcha = new \ReCaptcha\ReCaptcha($this->getConfigValue('recaptcha.private'));
-        $resp = $recaptcha->verify($gRecaptchaResponse, $_SERVER["REMOTE_ADDR"]);
-        if (!$resp->isSuccess()) {
-            throw new SystemException($this->translate('TXT_BAD_CAPTCHA'), SystemException::ERR_CRITICAL, $resp->getErrorCodes());
-        }
-    }
-
-    /**
-     * Call this by successful captcha.
+     * Show the message about the sent form.
      */
     protected function success() {
         $this->setBuilder($this->createBuilder());
@@ -437,16 +416,6 @@ class Form extends DBDataSet {
             $this->getData()->addField($f);
             $this->getDataDescription()->addFieldDescription($fd);
 
-
-            if (
-            !($this->document->getUser()->isAuthenticated()
-                ||
-                $this->getParam('noCaptcha'))
-            ) {
-                $fd = new FieldDescription('captcha');
-                $fd->setType(FieldDescription::FIELD_TYPE_CAPTCHA);
-                $this->getDataDescription()->addFieldDescription($fd);
-            }
             foreach ($this->getDataDescription() as $fd) {
                 if ($fd->getType() == FieldDescription::FIELD_TYPE_BOOL) {
                     $fd->setProperty('yes', $this->translate('TXT_YES'))->setProperty('no', $this->translate('TXT_NO'));

@@ -735,15 +735,6 @@
         </input>
     </xsl:template>
 
-    <!-- поле типа captcha -->
-    <xsl:template match="field[@type='captcha'][ancestor::component[@type='list']]"/>
-
-    <xsl:template match="field[@type='captcha'][ancestor::component[@type='form']]">
-        <div class="field">
-            <div class="g-recaptcha" data-sitekey="{.}"></div>
-        </div>
-    </xsl:template>
-
     <!-- поле error -->
     <xsl:template match="field[@name='error_message'][ancestor::component[@type='form']]">
         <div class="error"><xsl:value-of select="." disable-output-escaping="yes"/></div>

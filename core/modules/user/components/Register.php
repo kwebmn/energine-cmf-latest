@@ -49,7 +49,6 @@ class Register extends DBDataSet {
         $this->setType(self::COMPONENT_TYPE_FORM_ADD);
         $this->user = new User();
         $this->setTableName(User::USER_TABLE_NAME);
-        $this->addTranslation('TXT_ENTER_CAPTCHA');
         if (!$this->getTitle())
             $this->setTitle($this->translate(
                 'TXT_' . strtoupper($this->getName())));
@@ -62,8 +61,7 @@ class Register extends DBDataSet {
     protected function defineParams() {
         $result = array_merge(parent::defineParams(),
             [
-                'active' => true,
-                'noCaptcha' => false
+                'active' => true
             ]);
         return $result;
     }
@@ -103,29 +101,11 @@ class Register extends DBDataSet {
     protected function save() {
         //inspect($_SESSION);
         try {
-            if (!$this->document->getUser()->isAuthenticated() && !$this->getParam('noCaptcha')) {
-                $this->checkCaptcha();
-            }
             $this->saveData();
 
             $this->response->redirectToCurrentSection('success/');
         } catch (SystemException $e) {
             $this->failure($e->getMessage(), $_POST[$this->getTableName()]);
-        }
-    }
-
-    /**
-     * Check captcha.
-     *
-     * @throws SystemException
-     */
-    protected function checkCaptcha() {
-        $gRecaptchaResponse = (isset($_POST['g-recaptcha-response']) && is_string($_POST['g-recaptcha-response'])) ? $_POST['g-recaptcha-response'] : '';
-
-        $recaptcha = new \ReCaptcha\ReCaptcha($this->getConfigValue('recaptcha.private'));
-        $resp = $recaptcha->verify($gRecaptchaResponse, $_SERVER["REMOTE_ADDR"]);
-        if (!$resp->isSuccess()) {
-            throw new SystemException($this->translate('TXT_BAD_CAPTCHA'), SystemException::ERR_CRITICAL, $resp->getErrorCodes());
         }
     }
 

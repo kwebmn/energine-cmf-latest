@@ -11,7 +11,6 @@
             <field name="u_country"/>
             <field name="u_city"/>
             <field name="u_address"/>
-            <field name="captcha" type="captcha"/>
         </fields>
         <toolbar>
             <control id="register" title="BTN_REGISTER" type="submit"/>

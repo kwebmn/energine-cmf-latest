@@ -79,12 +79,6 @@ class FieldDescription extends Primitive implements \Iterator {
      */
     const FIELD_TYPE_COLOR = 'color';
     /**
-     * Visual field type for captcha.
-     * @var string FIELD_TYPE_CAPTCHA
-     */
-    const FIELD_TYPE_CAPTCHA = 'captcha';
-
-    /**
      * Visual field type for phone.
      * @var string FIELD_TYPE_PHONE
      */
@@ -564,9 +558,6 @@ class FieldDescription extends Primitive implements \Iterator {
                 $this->length = true;
                 $this->setProperty('outputFormat', '%s');
                 $this->setProperty('sort', 1);
-                break;
-            case self::FIELD_TYPE_CAPTCHA:
-                $this->setProperty('customField', 'customField');
                 break;
             case self::FIELD_TYPE_SELECT:
                 $this->length = true;

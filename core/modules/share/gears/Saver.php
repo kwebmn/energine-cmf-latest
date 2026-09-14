@@ -165,7 +165,6 @@ class Saver extends Primitive {
                 $fieldDescription->getType() == FieldDescription::FIELD_TYPE_PHONE ||
                 //$fieldDescription->getType() == FieldDescription::FIELD_TYPE_PFILE ||
                 $fieldDescription->getType() == FieldDescription::FIELD_TYPE_FILE ||
-                $fieldDescription->getType() == FieldDescription::FIELD_TYPE_CAPTCHA ||
                 $fieldName == 'lang_id' ||
                 !is_null($fieldDescription->getPropertyValue('customField'))
                 || $fieldDescription->getPropertyValue('nullable')

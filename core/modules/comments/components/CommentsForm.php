@@ -100,10 +100,6 @@ class CommentsForm extends DataSet {
         $this->setProperty('limit', $this->getParam('textLimit'));
 
         $this->setProperty('is_anonymous', (string)!$this->document->user->isAuthenticated());
-
-        $this->setProperty('use_captcha', (string)$this->getParam('use_captcha'));
-
-        $this->addTranslation('TXT_ENTER_CAPTCHA');
     }
 
     /**
@@ -154,10 +150,6 @@ class CommentsForm extends DataSet {
 
             if (!$this->document->getUser()->isAuthenticated() && empty($_POST['comment_nick'])) {
                 throw new SystemException('TXT_COMMENT_NICK_IS_REQUIRED');
-            }
-
-            if ($this->getParam('use_captcha') and !$this->document->getUser()->isAuthenticated()) {
-                $this->checkCaptcha();
             }
 
             if (isset($_POST['comment_name']) and
@@ -351,8 +343,7 @@ class CommentsForm extends DataSet {
             'show_form' => false,
             'textLimit' => 250,
             'allows_anonymous' => true,
-            'premoderated' => true,
-            'use_captcha' => true
+            'premoderated' => true
         ]);
         return $result;
     }
@@ -373,15 +364,6 @@ class CommentsForm extends DataSet {
                 && $this->isExistsNeedTables()
             ) {
                 parent::prepare();
-
-                if (
-                    ($this->document->getUser()->isAuthenticated() or !$this->getParam('use_captcha'))
-                    &&
-                    ($captcha =
-                        $this->getDataDescription()->getFieldDescriptionByName('captcha'))
-                ) {
-                    $this->getDataDescription()->removeFieldDescription($captcha);
-                }
 
                 //ID комментируемого элемента
                 $ap = $this->bindComponent->getStateParams(true);
@@ -630,21 +612,6 @@ class CommentsForm extends DataSet {
         $this->request->setPathOffset($this->request->getPathOffset() + 1);
         $this->banIPEditor = $this->document->componentManager->createComponent('bie', 'Energine\user\components\BanIPEditor');
         $this->banIPEditor->run();
-    }
-
-    /**
-     * Check captcha.
-     *
-     * @throws SystemException 'TXT_BAD_CAPTCHA'
-     */
-    protected function checkCaptcha() {
-        $gRecaptchaResponse = (isset($_POST['g-recaptcha-response']) && is_string($_POST['g-recaptcha-response'])) ? $_POST['g-recaptcha-response'] : '';
-
-        $recaptcha = new \ReCaptcha\ReCaptcha($this->getConfigValue('recaptcha.private'));
-        $resp = $recaptcha->verify($gRecaptchaResponse, $_SERVER["REMOTE_ADDR"]);
-        if (!$resp->isSuccess()) {
-            throw new SystemException($this->translate('TXT_BAD_CAPTCHA'), SystemException::ERR_CRITICAL, $resp->getErrorCodes());
-        }
     }
 
 }

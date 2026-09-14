@@ -179,8 +179,6 @@ class Builder extends XMLBuilder {
 			$result->setAttribute( 'smap_name',
 				E()->getSiteManager()->getSiteByPage( $fieldValue )->name . ' : ' . $this->dbh->getScalar( 'share_sitemap_translation',
 					'smap_name', [ 'smap_id' => $fieldValue, 'lang_id' => E()->getLanguage()->getCurrent() ] ) );
-		} elseif ( $fieldInfo->getType() == FieldDescription::FIELD_TYPE_CAPTCHA ) {
-			$fieldValue = $this->getConfigValue( 'recaptcha.public' );
 		} elseif ( $fieldInfo->getType() == FieldDescription::FIELD_TYPE_LOOKUP && $fieldValue ) {
                         if (isset($fieldValue['value'])) {
                             $value = $this->document->createElement( 'value', $fieldValue['value'] );

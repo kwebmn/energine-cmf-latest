@@ -20,7 +20,6 @@
             <component name="form" class="Energine\forms\components\Form">
                 <params>
                     <param name="id">0</param>
-                    <param name="noCaptcha">1</param>
                 </params>
             </component>
         </container>

@@ -104,11 +104,6 @@
                     </label>
                     <textarea rows="10" cols="10" id="comment_name" name="comment_name" nrgn:message="{recordset/record/field[@name='comment_name']/@message}" nrgn:pattern="{recordset/record/field[@name='comment_name']/@pattern}" xmlns:nrgn="http://energine.org"></textarea>
                 </div>
-                <xsl:if test="@is_anonymous='1'">
-                    <div class="comment_field">
-                        <xsl:apply-templates select="recordset/record/field[@name='captcha']"/>
-                    </div>
-                </xsl:if>
                 <div class="comment_controlset">
                     <xsl:call-template name="BUILD_COMMENT_BUTTON">
                         <xsl:with-param name="CONTENT">

@@ -52,18 +52,6 @@ var Register = new Class(/** @lends Register# */{
                     }
                 }
             }.bind(this));
-
-            /**
-             * Captcha field.
-             * @type {Element}
-             */
-            this.captchaField = this.form.getElementById('captcha');
-
-            /**
-             * Captcha image.
-             * @type {Element}
-             */
-            this.captchaImage = this.form.getElementById('captchaImage');
         }
     },
 
