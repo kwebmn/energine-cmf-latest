@@ -17,6 +17,7 @@ use Energine\share\gears\DataDescription;
 use Energine\share\gears\Field;
 use Energine\share\gears\FieldDescription;
 use Energine\share\gears\FileRepoInfo;
+use Energine\share\gears\FileUploader;
 use Energine\share\gears\IFileRepository;
 use Energine\share\gears\JSONCustomBuilder;
 use Energine\share\gears\JSONRepoBuilder;
@@ -462,6 +463,7 @@ class FileRepository extends Grid implements SampleFileRepository {
 
                 unset($data[$this->getPK()]);
 
+                FileUploader::assertNotExecutable($data['upl_filename']);
                 $data['upl_filename'] = self::generateFilename($uplPath,
                     pathinfo($data['upl_filename'], PATHINFO_EXTENSION));
                 $data['upl_path'] = $uplPath . ((substr($uplPath, -1) != '/') ? '/' : '') . $data['upl_filename'];
@@ -945,6 +947,8 @@ class FileRepository extends Grid implements SampleFileRepository {
                 // $pid = (isset($_POST['pid'])) ? (int) $_POST['pid']: false;
                 // $repo = $this->getRepositoryInstance($pid);
                 if (isset($_FILES[$key]) and is_uploaded_file($_FILES[$key]['tmp_name'])) {
+                    // the temporary directory is served by the web server, so a script must not land there
+                    FileUploader::assertNotExecutable($_FILES[$key]['name']);
                     $tmp_name = $this->getTmpFilePath($_FILES[$key]['name']);
                     if (!is_writeable(dirname($tmp_name))) {
                         throw new SystemException('ERR_TEMP_DIR_WRITE', SystemException::ERR_CRITICAL,

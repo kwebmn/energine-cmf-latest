@@ -245,7 +245,9 @@ class CommentsForm extends DataSet {
                 return false;
             }
             $comment = $comments[0];
-            if (E()->getUser()->getID() != $comment['u_id']) {
+            // у анонимного комментария u_id = NULL, а getID() гостя = false: нестрогое сравнение
+            // считало бы гостя автором любого анонимного комментария
+            if (!$comment['u_id'] || (int)E()->getUser()->getID() !== (int)$comment['u_id']) {
                 // не автор - запретить!
                 return false;
             }
@@ -318,7 +320,9 @@ class CommentsForm extends DataSet {
                 return true;
             }
             $comment = $comments[0];
-            if (!E()->getUser() || E()->getUser()->getID() != $comment['u_id']) {
+            if (!E()->getUser() || !$comment['u_id']
+                || (int)E()->getUser()->getID() !== (int)$comment['u_id']
+            ) {
                 // не автор - запретить!
                 return false;
             }

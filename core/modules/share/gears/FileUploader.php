@@ -24,6 +24,18 @@ class FileUploader;
  */
 class FileUploader extends Primitive {
     /**
+     * Extensions the web server hands to an interpreter.
+     * The repository lies under the document root, so a file with such an extension
+     * would be reachable by URL and executed. Refused regardless of @link FileUploader::$restrictions restrictions @endlink.
+     *
+     * @var array EXECUTABLE_EXTENSIONS
+     */
+    const EXECUTABLE_EXTENSIONS = array(
+        'php', 'php3', 'php4', 'php5', 'php7', 'php8', 'phps', 'pht', 'phtml', 'phar',
+        'cgi', 'fcgi', 'pl', 'py', 'sh', 'htaccess', 'htpasswd'
+    );
+
+    /**
      * Description of uploaded file.
      * $_FILES
      *
@@ -76,6 +88,20 @@ class FileUploader extends Primitive {
      */
     public function __construct(Array $restrictions = array()) {
         $this->restrictions = $restrictions;
+    }
+
+    /**
+     * Refuse a file the web server would execute.
+     *
+     * @param string $filename Filename on the client side.
+     *
+     * @throws SystemException 'ERR_EXECUTABLE_FILE_TYPE'
+     */
+    public static function assertNotExecutable($filename) {
+        $ext = strtolower((string)pathinfo((string)$filename, PATHINFO_EXTENSION));
+        if (in_array($ext, self::EXECUTABLE_EXTENSIONS, true)) {
+            throw new SystemException('ERR_EXECUTABLE_FILE_TYPE', SystemException::ERR_WARNING, $filename);
+        }
     }
 
     //todo VZ: For what is that array example?
@@ -136,7 +162,9 @@ array(
         
         $dummy = explode('.', $this->file['name']);
         $this->ext = array_pop($dummy);
-        
+
+        self::assertNotExecutable($this->file['name']);
+
         if(isset($this->restrictions['ext'])){
         	if(!in_array($this->ext, $this->restrictions['ext'])){
         		throw new SystemException('ERR_BAD_FILE_TYPE', SystemException::ERR_DEVELOPER, $this->file['name']);
