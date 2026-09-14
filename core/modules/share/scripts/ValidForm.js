@@ -12,7 +12,9 @@
  * @version 1.0.0
  */
 
-ScriptLoader.load('Validator');
+// datepicker нужен полям даты: Energine._createDatePickerObject() создаёт DatePicker,
+// но сам скрипт подгружал только админский Form
+ScriptLoader.load('Validator', 'datepicker');
 
 /**
  * ValidForm
