@@ -61,7 +61,8 @@ class MailSourceAbstract implements IMailSource
     {
         $items_body = $this->getItemsHTMLBody($items);
         $data = array_merge($subscriber, array('items' => $items_body));
-        $template = new MailTemplate($this->template_name, $data);
+        // the items are HTML of the item template (their values are escaped there)
+        $template = (new MailTemplate($this->template_name, $data))->setHTMLKeys(['items']);
         return $template->getHTMLBody();
     }
 }

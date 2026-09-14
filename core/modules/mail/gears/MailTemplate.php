@@ -13,6 +13,11 @@ class MailTemplate {
     protected $lang_id;
     protected $data = [];
     protected $template = [];
+    /**
+     * Macros whose values are HTML already: they go into the HTML body as they are.
+     * @var string[]
+     */
+    protected $htmlKeys = [];
 
     public function __construct($name, $data = [], $lang_id = null) {
         $this->name = $name;
@@ -39,19 +44,36 @@ class MailTemplate {
         $this->template = ($res) ? ($res[0]) : array();
     }
 
-    protected function getKeys() {
-        return array_map(
-            function($item){
-                return '[' . $item . ']';
-            },
-            array_keys($this->data)
-        );
+    /**
+     * Values of these macros are inserted into the HTML body without escaping.
+     *
+     * @param string[] $keys Macro names without brackets, e.g. ['items'].
+     * @return MailTemplate
+     */
+    public function setHTMLKeys(array $keys) {
+        $this->htmlKeys = $keys;
+        return $this;
     }
 
-    protected function parse($string) {
-        return str_replace($this->getKeys(), array_map(function ($value) {
-            return is_array($value) ? implode(', ', $value) : (string)$value;
-        }, array_values($this->data)), $string);
+    /**
+     * Replace the macros [key] with their values.
+     * One pass: a value (it may come from a visitor) is never searched for other macros.
+     * In HTML a value is plain text: it is escaped and keeps its line breaks.
+     *
+     * @param string $string Template text.
+     * @param bool $html The text is the HTML body.
+     * @return string
+     */
+    protected function parse($string, $html = false) {
+        $replacements = [];
+        foreach ($this->data as $key => $value) {
+            $value = is_array($value) ? implode(', ', array_filter($value, 'is_scalar')) : (string)$value;
+            if ($html && !in_array($key, $this->htmlKeys, true)) {
+                $value = nl2br(htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), false);
+            }
+            $replacements['[' . $key . ']'] = $value;
+        }
+        return strtr($string, $replacements);
     }
 
     public function getSubject() {
@@ -63,6 +85,6 @@ class MailTemplate {
     }
 
     public function getHTMLBody() {
-        return (!empty($this->template['template_body_rtf'])) ? $this->parse($this->template['template_body_rtf']) : '';
+        return (!empty($this->template['template_body_rtf'])) ? $this->parse($this->template['template_body_rtf'], true) : '';
     }
 }

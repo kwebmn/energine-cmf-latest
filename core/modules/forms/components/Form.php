@@ -260,27 +260,36 @@ class Form extends DBDataSet {
                         $subject;
 
                     //Create text to send. The last one will contain: translations of variables and  variables.
-                    $body = '';
+                    // Field names are translations and may contain markup, as on the site. The values come from
+                    // the visitor: escaped in the HTML part, as they are in the text part.
+                    $body = $text = '';
 //                    if (!($url = $this->getConfigValue('site.media')))
                     $url = E()->getSiteManager()->getCurrentSite()->base;
                     foreach ($data as $fieldname => $value) {
-                        $type = $this->getDataDescription()->getFieldDescriptionByName($fieldname)->getType();
+                        // the POST may carry fields the form does not have
+                        if (!($fd = $this->getDataDescription()->getFieldDescriptionByName($fieldname))) {
+                            continue;
+                        }
+                        $type = $fd->getType();
+                        $raw = is_array($value['value']) ? implode(',', array_filter($value['value'], 'is_scalar')) : (string)$value['value'];
                         if ($type == FieldDescription::FIELD_TYPE_FILE) {
-                            $val = $url . $value['value'];
+                            $val = $url . $raw;
                         } elseif ($type == FieldDescription::FIELD_TYPE_BOOL) {
-                            $val = $this->translate(((int)$value['value'] === 0) ? 'TXT_NO' : 'TXT_YES');
+                            $val = $this->translate(((int)$raw === 0) ? 'TXT_NO' : 'TXT_YES');
                         } else {
-                            $val = $value['value'];
+                            $val = $raw;
                         }
 
                         $body .=
-                            '<strong>' . $value['translation'] . '</strong>: ' . $val .
+                            '<strong>' . $value['translation'] . '</strong>: ' .
+                            nl2br(htmlspecialchars($val, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), false) .
                             '<br>';
+                        $text .= html_entity_decode(strip_tags($value['translation']), ENT_QUOTES | ENT_HTML5, 'UTF-8') . ': ' . $val . "\n";
                     }
                     $mailer->setFrom($this->getConfigValue('mail.from'))->
                     // TODO: refactor via MailTemplate
                     setSubject($subject)->
-                    setText(strip_tags(str_replace('<br>', "\n", $body)))->
+                    setText($text)->
                     setHtmlText($body)->
                     addTo(($recp =
                         $this->getRecipientEmail()) ? $recp

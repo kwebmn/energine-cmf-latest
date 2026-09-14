@@ -32,7 +32,8 @@ class MailSourceNews extends MailSourceAbstract
             $item['url'] = 'http://' . E()->getConfigValue('site.domain') . '/' . $map->getURLByID($item['smap_id']) . $item['id'] . '--' . $item['segment'] . '/'; // NewsFeed: /[id]--[segment]/
             unset($item['smap_id']);
             unset($item['segment']);
-            $item['description'] = strip_tags((string)$item['description']);
+            // plain text: MailTemplate escapes it for the HTML body
+            $item['description'] = html_entity_decode(strip_tags((string)$item['description']), ENT_QUOTES | ENT_HTML5, 'UTF-8');
             $d = new \DateTime($item['date']);
             $item['date'] = $d->format('d.m.Y'); // todo: брать формат из конфига ?
         });

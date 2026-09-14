@@ -153,20 +153,9 @@ final class Mail extends Primitive {
      * Set message text.
      *
      * @param string $text Text.
-     * @param mixed $data Data templating.
      * @return Mail
      */
-    public function setText($text, $data = false) {
-        if ($data) {
-            if (is_array($data)) {
-                extract($data);
-            }
-            $host = E()->getSiteManager()->getDefaultSite()->base;
-            $errorLevel = error_reporting(E_ERROR);
-            $text = addslashes($text);
-            eval("\$text = \"$text\";");
-            error_reporting($errorLevel);
-        }
+    public function setText($text) {
         $this->text = $text;
         return $this;
     }

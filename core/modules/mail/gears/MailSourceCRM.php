@@ -29,7 +29,8 @@ class MailSourceCRM extends MailSourceAbstract
         $map = E()->getMap();
 
         array_walk($items, function (&$item) use ($map) {
-            $item['description'] = strip_tags((string)$item['description']);
+            // plain text: MailTemplate escapes it for the HTML body
+            $item['description'] = html_entity_decode(strip_tags((string)$item['description']), ENT_QUOTES | ENT_HTML5, 'UTF-8');
             $d = new \DateTime($item['date']);
             $item['date'] = $d->format('d.m.Y');
         });
