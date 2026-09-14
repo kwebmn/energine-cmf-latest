@@ -5,5 +5,6 @@
     
     <xsl:include href="feed.xslt"/>
     <xsl:include href="tagcloud.xslt"/>
+    <xsl:include href="branding.xslt"/>
     <xsl:include href="totp.xslt"/>
 </xsl:stylesheet>
