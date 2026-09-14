@@ -134,8 +134,11 @@ class GoogleSitemap extends SitemapTree {
         $sitemap = E()->getMap();
         $res = $sitemap->getInfo();
 
+        // ключа IsIndexed в описании страницы нет (preparePageInfo его не создаёт) - его чтение роняло
+        // карту. Признак индексации - отсутствие NOINDEX в meta robots. $result тоже не был объявлен.
+        $result = [];
         foreach ($res as $id => $info) {
-            if ($info['IsIndexed']) {
+            if (!in_array('NOINDEX', (array)($info['MetaRobots'] ?? []), true)) {
                 $result [] = [
                     'Id' => $id,
                     'Name' => $info['Name'],
