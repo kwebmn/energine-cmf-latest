@@ -74,7 +74,8 @@ class NewsCalendar extends Calendar {
                 'year' => false,
                 'date' => new \DateTime(),
                 'filter' => array(),
-                //'template' => 'news',
+                // URL ленты относительно корня сайта, календарь дописывает год/месяц/день
+                'template' => '',
                 'tableName' => false,
             )
         );

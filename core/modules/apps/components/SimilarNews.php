@@ -85,6 +85,8 @@ class SimilarNews extends DataSet {
         $tags = $this->dbh->getColumn($this->dbh->getTagsTablename($this->cp->getTableName()), 'tag_id', ['news_id' => (int)$ap['id']]);
 
         $this->setType(self::COMPONENT_TYPE_LIST);
+        // заголовок блока: параметр title, иначе эта константа (см. feed.xslt)
+        $this->addTranslation('TXT_SIMILAR_NEWS');
         $this->setBuilder($b = new ComponentProxyBuilder());
         $params = [
             'active' => false,

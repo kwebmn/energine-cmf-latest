@@ -14,7 +14,7 @@ class NewsFeed;
  * @version 1.0.0
  */
 namespace Energine\apps\components;
-use Energine\share\gears\QAL, Energine\share\gears\SystemException, Energine\share\gears\AttachmentManager, Energine\share\gears\FieldDescription, Energine\share\gears\SimpleBuilder, Energine\share\gears\Data, Energine\share\gears\TagManager;
+use Energine\share\gears\QAL, Energine\share\gears\SystemException, Energine\share\gears\AttachmentManager, Energine\share\gears\FieldDescription, Energine\share\gears\SimpleBuilder, Energine\share\gears\Data, Energine\share\gears\TagManager, Energine\share\gears\Request;
 /**
  * News line.
  *
@@ -259,20 +259,30 @@ class NewsFeed extends ExtendedFeed {
         } elseif (($this->getState() == 'view') &&
             ($this->getParam('hasCalendar'))
         ) {
-            $calendarParams['month'] = $ap['month'];
-            $calendarParams['year'] = $ap['year'];
-            $calendarParams['date'] = \DateTime::createFromFormat('Y-m-d',
-                $ap['year'] . '-' . $ap['month'] . '-' . $ap['day']);
+            // в режиме просмотра параметров года, месяца и дня нет — их чтение роняло страницу новости.
+            // Показываем месяц открытой новости, иначе календарь остаётся на текущем месяце.
+            if (!empty($ap['id'])
+                && ($newsDate = $this->dbh->getScalar($this->getTableName(), 'news_date', ['news_id' => (int)$ap['id']]))
+                && ($newsDateTime = \DateTime::createFromFormat('Y-m-d H:i:s', $newsDate))
+            ) {
+                $calendarParams['year'] = $newsDateTime->format('Y');
+                $calendarParams['month'] = $newsDateTime->format('n');
+                $calendarParams['date'] = $newsDateTime;
+            }
         }
 
         if ($this->getParam('hasCalendar')) {
             $calendarParams['filter'] = $this->getFilter();
             $calendarParams['tableName'] = $this->getTableName();
+            // адрес ленты для ссылок календаря: без него дни вели в корень сайта.
+            // DataSet дописывает к параметру завершающий слеш
+            $calendarParams['template'] = rtrim($this->request->getPath(Request::PATH_TEMPLATE, true), '/');
             //Создаем компонент календаря новостей
             $this->document->componentManager->addComponent(
                 $this->calendar =
                     $this->document->componentManager->createComponent('calendar', 'Energine\apps\components\NewsCalendar', $calendarParams)
             );
+            $this->calendar->run();
         }
 
         if (isset($additionalFilter)) {
