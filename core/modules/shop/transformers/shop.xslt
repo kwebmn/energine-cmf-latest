@@ -103,6 +103,20 @@
         <xsl:apply-templates select="." mode="goods_list"/>
     </xsl:template>
 
+    <!-- «вы недавно смотрели»: прокси-билдер отдаёт записи списка товаров,
+         обёртка остаётся GoodsLastSeenList, поэтому шаблон нужен отдельный -->
+    <xsl:template match="component[@class='GoodsLastSeenList']">
+        <xsl:if test="recordset/record">
+            <div class="products last_seen_goods">
+                <h3><xsl:value-of select="$TRANSLATION[@const='TXT_LAST_SEEN_GOODS']"/></h3>
+                <xsl:apply-templates select="recordset" mode="goods_list"/>
+            </div>
+        </xsl:if>
+    </xsl:template>
+
+    <!-- GoodsLastSeen только запоминает просмотр, выводить его нечего -->
+    <xsl:template match="component[@class='GoodsLastSeen']"/>
+
     <!-- related goods under the goods page -->
     <xsl:template match="component[@class='RelatedGoodsList']">
         <xsl:if test="recordset/record">

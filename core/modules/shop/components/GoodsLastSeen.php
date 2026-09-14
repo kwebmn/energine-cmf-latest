@@ -51,9 +51,10 @@ class GoodsLastSeen extends DataSet {
 
             // добавляем в список
             E()->UserSession->start();
-            $_SESSION['last_seen_goods'][] = $goods_id;
-            $_SESSION['last_seen_goods'] = array_unique($_SESSION['last_seen_goods']);
-            $_SESSION['last_seen_goods'] = array_slice($_SESSION['last_seen_goods'], 0, 50);
+            // последний просмотренный - первым, и хранятся последние 50, а не первые
+            $seen = isset($_SESSION['last_seen_goods']) ? (array)$_SESSION['last_seen_goods'] : [];
+            array_unshift($seen, $goods_id);
+            $_SESSION['last_seen_goods'] = array_slice(array_values(array_unique($seen)), 0, 50);
 
             parent::prepare();
 

@@ -67,6 +67,15 @@
                     <param name="title">TXT_ACCESSORIES</param>
                 </params>
             </component>
+            <!-- список ранее просмотренных; идёт до регистратора, поэтому не содержит
+                 товар, открытый прямо сейчас -->
+            <component name="goodsLastSeenList" class="Energine\shop\components\GoodsLastSeenList"/>
+            <!-- запоминает просмотренный товар -->
+            <component name="goodsLastSeen" class="Energine\shop\components\GoodsLastSeen">
+                <params>
+                    <param name="bind">goodsList</param>
+                </params>
+            </component>
         </container>
     </container>
 </content>
