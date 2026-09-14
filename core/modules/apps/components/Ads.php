@@ -41,30 +41,24 @@ class Ads extends DataSet{
      */
     protected function main(){
         parent::main();
-        //Сначала проверили есть ли свой код баннера
-        $result = $this->dbh->select(AdsManager::TABLE_NAME, true, array('smap_id' => $this->document->getID()), array('smap_id' => QAL::DESC), 1);
-        //Если нет собственного  - ищем у родителей
-        if(!is_array($result)){
-            $result = false;
-            //Список идентфикаторов родителей в порядке увелечения уровня
-            $IDs =  array_reverse(array_keys(E()->getMap()->getParents($this->document->getID())));
-            $tmp = $this->dbh->select(AdsManager::TABLE_NAME, true, array('smap_id' => $IDs));
-            if(is_array($tmp)){
-                $tmp = convertDBResult($tmp, 'smap_id');
-            }
 
-            //перебираем записи родителей
-            foreach($IDs as $id){
-                //если есть родитель с рекламой
-                if(isset($tmp[$id])){
-                    $result = array($tmp[$id]);
-                    //дальше смотреть нет смысла
-                    break;
-                }
-            }
+        // Берём врезку самой страницы, а если её нет - ближайшего предка, у которого
+        // она задана. Прежний перебор родителей в PHP не срабатывал; здесь порядок
+        // «текущая страница, затем предки от ближнего к корню» задаётся явно.
+        $ids = [(int)$this->document->getID()];
+        foreach (array_reverse(array_keys((array)E()->getMap()->getParents($this->document->getID()))) as $parentID) {
+            $ids[] = (int)$parentID;
         }
+        $ids = array_values(array_unique($ids));
 
-        if(is_array($result)){
+        $result = $this->dbh->select(
+            'SELECT * FROM ' . AdsManager::TABLE_NAME
+            . ' WHERE smap_id IN (' . implode(',', $ids) . ')'
+            . ' ORDER BY FIELD(smap_id, ' . implode(',', $ids) . ') LIMIT 1'
+        );
+
+        // при отсутствии строк select возвращает то true, то пустой массив
+        if(is_array($result) && !empty($result[0])){
             //We don't need smap_id, so don't write it to Data
             unset($result[0]['smap_id']);
             foreach ($result[0] as $key => $value) {

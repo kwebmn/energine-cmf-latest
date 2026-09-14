@@ -101,12 +101,12 @@ class DivisionSaver extends ExtendedSaver {
         /**
          * @todo remove
          */
-        if (class_exists('AdsManager', false)
-            && AdsManager::isActive()
-            && isset($_POST[AdsManager::TABLE_NAME])
-            && is_array($adsData = $_POST[AdsManager::TABLE_NAME])
+        if (class_exists('Energine\\apps\\gears\\AdsManager')
+            && \Energine\apps\gears\AdsManager::isActive()
+            && isset($_POST[\Energine\apps\gears\AdsManager::TABLE_NAME])
+            && is_array($adsData = $_POST[\Energine\apps\gears\AdsManager::TABLE_NAME])
         ) {
-            $ads = new AdsManager();
+            $ads = new \Energine\apps\gears\AdsManager();
             $adsData['smap_id'] = $smapID;
             $ads->save($adsData);
         }

@@ -472,10 +472,10 @@ class DivisionEditor extends Grid implements SampleDivisionEditor {
         $tm->createField('menu');
 
         //Ads
-        if (class_exists('AdsManager', false)
-            && AdsManager::isActive()
+        if (class_exists('Energine\\apps\\gears\\AdsManager')
+            && \Energine\apps\gears\AdsManager::isActive()
         ) {
-            $ads = new AdsManager();
+            $ads = new \Energine\apps\gears\AdsManager();
             $ads->add($this->getDataDescription());
         }
     }
@@ -578,10 +578,10 @@ class DivisionEditor extends Grid implements SampleDivisionEditor {
 
         $this->getDataDescription()->getFieldDescriptionByName('smap_id')->setType(FieldDescription::FIELD_TYPE_INT)->setMode(FieldDescription::FIELD_MODE_READ);
 
-        if (class_exists('AdsManager', false)
-            && AdsManager::isActive()
+        if (class_exists('Energine\\apps\\gears\\AdsManager')
+            && \Energine\apps\gears\AdsManager::isActive()
         ) {
-            $ads = new AdsManager();
+            $ads = new \Energine\apps\gears\AdsManager();
             $ads->edit($this->getData(), $this->getDataDescription());
         }
     }

@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <page>
 	<component name="langSwitcher" class="Energine\share\components\LangSwitcher"/>
+	<!-- HTML-врезки, заданные прямо на странице (наследуются дочерними) -->
+	<component name="pageAds" class="Energine\apps\components\Ads"/>
 	<!-- оформление раздела: берётся у ближайшего родителя, которому назначен бренд -->
 	<component name="branding" class="Energine\apps\components\Branding"/>
 	<!-- баннер в шапке: выводится макетом сайта, если для страницы есть подходящий -->
