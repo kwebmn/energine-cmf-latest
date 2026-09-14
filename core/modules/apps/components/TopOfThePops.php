@@ -23,9 +23,11 @@ use Energine\share\gears\SimpleBuilder;
  * @author dr.Pavka
  */
 class TopOfThePops extends DataSet {
-    public function __construct($name, $module, ?array $params = NULL) {
+    public function __construct($name, ?array $params = NULL) {
+        // сигнатура была от старого ядра, с отдельным параметром модуля:
+        // движок передавал массив параметров вторым аргументом, и он терялся
         $params['active'] = false;
-        parent::__construct($name, $module, $params);
+        parent::__construct($name, $params);
         $this->setParam('recordsPerPage', NULL);
         $this->setBuilder(new SimpleBuilder());
         $this->setType(self::COMPONENT_TYPE_LIST);
@@ -45,7 +47,8 @@ class TopOfThePops extends DataSet {
         $fd->setType(FieldDescription::FIELD_TYPE_CUSTOM);
         $dd->addFieldDescription($fd);
         $d = new Data();
-        $d->load($this->dbh->select('SELECT t.tg_id as id, tg_name as `name`, t.tg_id as data FROM apps_top_groups t LEFT JOIN apps_top_groups_translation tt ON (tt.tg_id = t.tg_id) AND (lang_id=%s) WHERE site_id = %s ORDER by tg_order_num', $this->document->getLang(), E()->getSiteManager()->getCurrentSite()->id));
+        // в apps_top_groups нет колонки site_id - выборка падала с ошибкой SQL
+        $d->load($this->dbh->select('SELECT t.tg_id as id, tg_name as `name`, t.tg_id as data FROM apps_top_groups t LEFT JOIN apps_top_groups_translation tt ON (tt.tg_id = t.tg_id) AND (lang_id=%s) ORDER by tg_order_num', $this->document->getLang()));
         $this->setData($d);
         $this->setDataDescription($dd);
         $this->js = $this->buildJS();
