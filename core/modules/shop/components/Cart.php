@@ -199,6 +199,10 @@ class Cart extends DBDataSet implements SampleCart {
 
     protected function showState() {
         $this->prepare();
+        // обозначение валюты для общего шаблона цены, как в списке товаров
+        $curr = E()['Energine\\shop\\gears\\Currency'];
+        $this->setProperty('currency', $curr->getInfo()['currency_shortname']);
+        $this->setProperty('currency-order', $curr->getInfo()['currency_shortname_order']);
         $am = new AttachmentManager($this->getDataDescription(), $this->getData(), 'shop_goods');
         $am->createFieldDescription();
         $am->createField('goods_id');

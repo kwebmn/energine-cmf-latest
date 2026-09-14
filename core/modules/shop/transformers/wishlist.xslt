@@ -59,7 +59,7 @@
                                 <xsl:value-of select="field[@name='sell_status_id']/value"/>
                             </div>
                             <div class="goods_price">
-                                <xsl:value-of select="field[@name='goods_price']"/>
+                                <xsl:call-template name="PRICE"><xsl:with-param name="VALUE" select="field[@name='goods_price']"/></xsl:call-template>
                             </div>
                         </div>
 

@@ -4,5 +4,6 @@
     version="1.0">
     <xsl:include href="../../share/transformers/single.xslt"/>
     <xsl:include href="../../share/transformers/toolbar.xslt"/>
+    <xsl:include href="price.xslt"/>
     <xsl:include href="cart.xslt"/>
 </xsl:stylesheet>

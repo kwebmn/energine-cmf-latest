@@ -25,14 +25,14 @@
                     <td><a href="{$BASE}{$LANG_ABBR}{field[@name='smap_id']}view/{field[@name='goods_segment']}/"><xsl:value-of
                             select="field[@name='goods_name']"/></a></td>
                     <td><input type="text" class="edit" data-id="{field[@name='cart_id']}" value="{field[@name='cart_goods_count']}"/></td>
-                    <td><xsl:value-of select="field[@name='goods_price']"/></td>
-                    <td><xsl:value-of select="field[@name='cart_goods_sum']"/></td>
+                    <td><xsl:call-template name="PRICE"><xsl:with-param name="VALUE" select="field[@name='goods_price']"/></xsl:call-template></td>
+                    <td><xsl:call-template name="PRICE"><xsl:with-param name="VALUE" select="field[@name='cart_goods_sum']"/></xsl:call-template></td>
                 </tr>
             </xsl:for-each>
                 <tfoot>
                     <tr>
                         <td colspan="5"><xsl:value-of select="recordset/record[1]/field[@name='cart_goods_sum']/@title"/>:</td>
-                        <td><xsl:value-of select="sum(recordset/record/field[@name='cart_goods_sum'])"/></td>
+                        <td><xsl:call-template name="PRICE"><xsl:with-param name="VALUE" select="sum(recordset/record/field[@name='cart_goods_sum'])"/></xsl:call-template></td>
                     </tr>
                 </tfoot>
             </table>

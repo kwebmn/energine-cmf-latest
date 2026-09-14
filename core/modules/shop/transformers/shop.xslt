@@ -4,27 +4,7 @@
         xmlns:set="http://exslt.org/sets"
         extension-element-prefixes="set"
         version="1.0">
-    <!-- Разделители для цен: пробел между разрядами -->
-    <xsl:decimal-format name="price" grouping-separator="&#160;" decimal-separator="."/>
-
-    <!-- Цена с обозначением валюты. Компонент отдаёт обозначение и его сторону
-         в свойствах currency / currency-order, но раньше шаблоны их не читали
-         и цена выводилась как «9999.00». -->
-    <xsl:template name="PRICE">
-        <xsl:param name="VALUE"/>
-        <xsl:variable name="CUR" select="ancestor-or-self::component[@currency][1]/@currency"/>
-        <xsl:variable name="ORDER" select="ancestor-or-self::component[@currency][1]/@currency-order"/>
-        <xsl:variable name="NUM" select="format-number($VALUE, '#&#160;##0.##', 'price')"/>
-        <xsl:choose>
-            <xsl:when test="$CUR != '' and $ORDER = 'before'">
-                <xsl:value-of select="concat($CUR, '&#160;', $NUM)"/>
-            </xsl:when>
-            <xsl:when test="$CUR != ''">
-                <xsl:value-of select="concat($NUM, '&#160;', $CUR)"/>
-            </xsl:when>
-            <xsl:otherwise><xsl:value-of select="$NUM"/></xsl:otherwise>
-        </xsl:choose>
-    </xsl:template>
+    <xsl:include href="price.xslt"/>
 
     <!-- Переключатель валют: ссылка задаёт валюту на время сессии -->
     <xsl:template match="component[@class='Currencies']">
