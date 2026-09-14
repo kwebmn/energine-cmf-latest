@@ -47,6 +47,18 @@ class OrderList extends DBDataSet implements SampleOrderList {
     protected function main() {
         parent::main();
         $this->buildOrderGoods();
+
+        // Заказ хранит валюту, в которой был оформлен: пересчитывать историю в валюту,
+        // выбранную посетителем сейчас, нельзя. Берём валюту самого заказа.
+        $curr = E()['Energine\\shop\\gears\\Currency'];
+        $currencyId = $this->dbh->getScalar(
+            'SELECT currency_id FROM shop_orders WHERE site_id = %s AND u_id = %s ORDER BY order_created DESC LIMIT 1',
+            E()->getSiteManager()->getCurrentSite()->id,
+            (int) $this->document->getUser()->getID()
+        );
+        $info = $curr->getInfo($currencyId ?: NULL);
+        $this->setProperty('currency', $info['currency_shortname']);
+        $this->setProperty('currency-order', $info['currency_shortname_order']);
     }
 
     protected function buildOrderGoods() {

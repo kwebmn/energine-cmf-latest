@@ -4,5 +4,23 @@
         <uri_patterns>
             <pattern>/</pattern>
         </uri_patterns>
+        <!-- Без явного списка полей выводились все колонки shop_orders, включая
+             session_id, а поля-справочники разворачивались в <options> со всем
+             содержимым связанных таблиц: на публичной странице «Мои заказы»
+             оказывались все пользователи вместе с хэшами паролей. -->
+        <fields>
+            <field name="order_id"/>
+            <field name="order_created" outputFormat="%E"/>
+            <field name="status_id" type="lookup"/>
+            <field name="delivery_type_id" type="lookup"/>
+            <field name="payment_type_id" type="lookup"/>
+            <field name="order_goods_count"/>
+            <field name="order_total"/>
+            <field name="order_city"/>
+            <field name="order_address"/>
+        </fields>
+        <translations>
+            <translation const="TXT_MY_ORDERS_EMPTY"/>
+        </translations>
     </state>
 </configuration>

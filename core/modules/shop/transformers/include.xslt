@@ -8,5 +8,6 @@
 	<xsl:include href="wishlist.xslt"/>
 	<xsl:include href="cart.xslt"/>
 	<xsl:include href="compare.xslt"/>
+	<xsl:include href="order_list.xslt"/>
 
 </xsl:stylesheet>
