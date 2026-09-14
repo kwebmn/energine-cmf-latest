@@ -57,6 +57,13 @@
                     <param name="title">TXT_SIMILAR_GOODS</param>
                 </params>
             </component>
+            <component name="accessoryGoods" class="Energine\shop\components\RelatedGoodsList">
+                <params>
+                    <param name="bind">goodsList</param>
+                    <param name="relation_type">accessory</param>
+                    <param name="title">TXT_ACCESSORIES</param>
+                </params>
+            </component>
         </container>
     </container>
 </content>

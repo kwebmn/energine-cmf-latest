@@ -95,6 +95,11 @@ class RelatedGoodsList extends DBDataSet {
 
 		parent::main();
 
+		// как и в GoodsList: обозначение валюты для шаблона цены
+		$curr = E()['Energine\\shop\\gears\\Currency'];
+		$this->setProperty('currency', $curr->getInfo()['currency_shortname']);
+		$this->setProperty('currency-order', $curr->getInfo()['currency_shortname_order']);
+
 		if ($this -> getData()) {
 
 			// attachments in list
@@ -117,9 +122,14 @@ class RelatedGoodsList extends DBDataSet {
 		$result = parent::loadData();
 		if (is_array($result)) {
 			$map = E()->getMap();
+			$curr = E()['Energine\\shop\\gears\\Currency'];
 			foreach ($result as &$row) {
 				if (isset($row['smap_id'])) {
 					$row['smap_id'] = $map->getURLByID($row['smap_id']);
+				}
+				// цена хранится в валюте товара, показывается в выбранной посетителем
+				if (isset($row['currency_id'], $row['goods_price'])) {
+					$row['goods_price'] = $curr->convert($row['goods_price'], $row['currency_id']);
 				}
 			}
 		}

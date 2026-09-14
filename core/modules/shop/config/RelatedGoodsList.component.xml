@@ -8,6 +8,7 @@
             <field name="goods_name"/>
             <field name="goods_segment"/>
             <field name="goods_price"/>
+            <field name="currency_id"/>
             <field name="sell_status_id" type="lookup"/>
             <field name="producer_id" type="lookup"/>
             <field name="attachments"/>
