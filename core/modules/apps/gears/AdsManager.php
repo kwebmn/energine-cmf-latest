@@ -62,9 +62,15 @@ class AdsManager extends Primitive {
             $fds[$key]['tabName'] = 'TXT_ADS';
         $dd->load($fds);
 
-        $data = $this->dbh->select(self::TABLE_NAME, array_keys($fds), array('smap_id' => $d->getFieldByName('smap_id')->getRowData(0)));
+        // у формы добавления раздела идентификатора ещё нет: поле есть, строки в нём нет
+        $smapField = $d->getFieldByName('smap_id');
+        $smapID = ($smapField && $smapField->getRowCount()) ? $smapField->getRowData(0) : false;
+        $data = $smapID
+            ? $this->dbh->select(self::TABLE_NAME, array_keys($fds), array('smap_id' => $smapID))
+            : false;
 
-        if(is_array($data)){
+        // при отсутствии строк select возвращает то true, то пустой массив
+        if(is_array($data) && !empty($data[0])){
             //Тут как всегда проблема с загрузкой значений в мультиязычный билдер
             foreach($data[0] as $fieldName => $fieldData){
                 $f = new Field($fieldName);

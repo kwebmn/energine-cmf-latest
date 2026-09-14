@@ -30,11 +30,17 @@ class DivisionSaver extends ExtendedSaver {
      * @copydoc ExtendedSaver::validate
      */
     public function validate() {
-        // Для метода редактирования заглавной страницы удаляем описание
-        if (!$this->getData()->getFieldByName('smap_pid')->getRowData(0)) {
-            $this->getDataDescription()->removeFieldDescription(
-                $this->getDataDescription()->getFieldDescriptionByName('smap_segment')
-            );
+        // Для метода редактирования заглавной страницы удаляем описание.
+        // Поле родителя приходит не из каждой формы: редакторы, которые правят
+        // только часть свойств раздела (категории каталога, например), его не
+        // выводят. Прежний код звал getRowData() прямо у результата
+        // getFieldByName(), а тот при отсутствии поля возвращает false, и
+        // сохранение обрывалось фатальной ошибкой.
+        $pidField = $this->getData()->getFieldByName('smap_pid');
+        if (!$pidField || !$pidField->getRowData(0)) {
+            if ($segment = $this->getDataDescription()->getFieldDescriptionByName('smap_segment')) {
+                $this->getDataDescription()->removeFieldDescription($segment);
+            }
         }
         return parent::validate();
     }
@@ -47,12 +53,6 @@ class DivisionSaver extends ExtendedSaver {
             $f->setData(Translit::asURLSegment($this->getData()->getFieldByName('smap_name')->getRowData(0)), true);
         }
 
-        //Выставляем фильтр для родительского идентификатора
-        $PID = $this->getData()->getFieldByName('smap_pid')->getRowData(0);
-        if (empty($PID)) {
-            $PID = NULL;
-        }
-        //$this->setFilter(array('smap_pid'=>$PID));
         //Проверяем изменился ли лейаут или контент
 
         //Значит - редактирование
@@ -72,14 +72,16 @@ class DivisionSaver extends ExtendedSaver {
                 $data['smap_content_xml'] = $_POST[$this->getTableName()]['smap_content_xml'];
             }
 
-            //Для апдейта - проверяем не изменился ли лейаут
-            if ($prevTemplateData['smap_layout'] !=
-                $this->getData()->getFieldByName('smap_layout')->getRowData(0)
+            // Для апдейта - проверяем не изменился ли лейаут или контент.
+            // Поля шаблонов есть только в полном редакторе структуры, поэтому
+            // проверяем их наличие: у сокращённых форм их нет.
+            if (($layout = $this->getData()->getFieldByName('smap_layout'))
+                && $prevTemplateData['smap_layout'] != $layout->getRowData(0)
             ) {
                 $data['smap_layout_xml'] = '';
             }
-            //а может изменился контент
-            if ($prevTemplateData['smap_content'] != $this->getData()->getFieldByName('smap_content')->getRowData(0)
+            if (($content = $this->getData()->getFieldByName('smap_content'))
+                && $prevTemplateData['smap_content'] != $content->getRowData(0)
             ) {
                 $data['smap_content_xml'] = '';
             }
@@ -89,13 +91,16 @@ class DivisionSaver extends ExtendedSaver {
             }
         }
 
-        $rights = $_POST['right_id'];
-
-        //Удаляем все предыдущие записи в таблице прав
-        $this->dbh->modify(QAL::DELETE, 'share_access_level', NULL, ['smap_id' => $smapID]);
-        foreach ($rights as $groupID => $rightID) {
-            if ($rightID != ACCESS_NONE) {
-                $this->dbh->modify(QAL::INSERT, 'share_access_level', ['smap_id' => $smapID, 'right_id' => $rightID, 'group_id' => $groupID]);
+        // Права переписываем только если форма их прислала: у сокращённых
+        // редакторов вкладки прав нет, и прежний безусловный DELETE стирал
+        // права раздела, а обращение к $_POST['right_id'] падало.
+        if (isset($_POST['right_id']) && is_array($_POST['right_id'])) {
+            //Удаляем все предыдущие записи в таблице прав
+            $this->dbh->modify(QAL::DELETE, 'share_access_level', NULL, ['smap_id' => $smapID]);
+            foreach ($_POST['right_id'] as $groupID => $rightID) {
+                if ($rightID != ACCESS_NONE) {
+                    $this->dbh->modify(QAL::INSERT, 'share_access_level', ['smap_id' => $smapID, 'right_id' => $rightID, 'group_id' => $groupID]);
+                }
             }
         }
         /**

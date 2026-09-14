@@ -368,7 +368,10 @@ class DivisionEditor extends Grid implements SampleDivisionEditor {
         if (in_array($this->getState(), ['add', 'edit'])) {
             $this->addTranslation('ERR_NO_DIV_NAME');
             list($pageID) = $this->getStateParams();
-            $this->getDataDescription()->getFieldDescriptionByName('smap_pid')->setProperty('base', E()->getSiteManager()->getSiteByPage($pageID)->base);
+            // у несуществующего раздела сайта нет: раньше это было фатальной ошибкой
+            if ($site = E()->getSiteManager()->getSiteByPage($pageID)) {
+                $this->getDataDescription()->getFieldDescriptionByName('smap_pid')->setProperty('base', $site->base);
+            }
         }
     }
 
@@ -429,6 +432,11 @@ class DivisionEditor extends Grid implements SampleDivisionEditor {
 
         //@todo Тут пришлось пойти на извращение
         $actionParams = $this->getStateParams(true);
+        // раздел-родитель должен существовать: без него дальше идёт обращение
+        // к свойствам несуществующего сайта, то есть фатальная ошибка
+        if (!E()->getSiteManager()->getSiteByPage($actionParams['pid'])) {
+            throw new SystemException('ERR_404', SystemException::ERR_404, $actionParams['pid']);
+        }
         $this->buildRightsTab($actionParams['pid']);
 
         $this->getDataDescription()->getFieldDescriptionByName('smap_segment')->removeProperty('nullable');

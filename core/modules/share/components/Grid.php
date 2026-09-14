@@ -600,7 +600,13 @@ class Grid extends DBDataSet {
                 }
                 $result = [];
                 $multidata = $_POST[$this->getTranslationTableName()];
-                foreach ($multidata as $langID => $langValues) {
+                foreach ((array)$multidata as $langID => $langValues) {
+                    // переводы приходят как [идентификатор языка][поле];
+                    // испорченный запрос без вложенного массива раньше валил
+                    // сохранение фатальной ошибкой вместо сообщения об ошибке
+                    if (!is_array($langValues)) {
+                        throw new SystemException('ERR_NO_DATA', SystemException::ERR_CRITICAL);
+                    }
                     $idx = arrayPush($result, $data);
                     $result[$idx]['lang_id'] = $langID;
                     foreach ($langValues as $fieldName => $fieldValue) {
