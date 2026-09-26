@@ -130,21 +130,6 @@ return array(
         'sitemapTemplate' => 'google_sitemap'
     ),
 
-    // параметри пользовательских стилей RichText редактора
-    /*'wysiwyg' => array(
-        'styles' => array(
-            'p.red' => array(
-                'element' => 'p',
-                'class' => 'red',
-                'caption' => 'TXT_RED_PARAGRAPH'
-            ),
-            'p.underline' => array(
-                'element' => 'p',
-                'class' => 'underline',
-                'caption' => 'TXT_TEXT_UNDERLINE'
-            )
-        )
-    ),*/
 
 );
 

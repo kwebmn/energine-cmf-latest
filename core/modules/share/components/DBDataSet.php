@@ -684,22 +684,6 @@ class DBDataSet extends DataSet {
                 $this->setProperty('editable', 'editable');
             }
 
-            $this->addWYSIWYGTranslations();
-            if ($config = E()->getConfigValue('wysiwyg.styles')) {
-                if (!$result) {
-                    $result = $this->doc->createElement('javascript');
-                }
-                $JSObjectXML = $this->doc->createElement('variable');
-                $JSObjectXML->setAttribute('name', 'wysiwyg_styles');
-                $JSObjectXML->setAttribute('type', 'json');
-                foreach ($config as $key => $value) {
-                    if (isset($value['caption'])) {
-                        $config[$key]['caption'] = $this->translate($value['caption']);
-                    }
-                }
-                $JSObjectXML->appendChild(new \DomText(json_encode($config)));
-                $result->appendChild($JSObjectXML);
-            }
         }
 
 

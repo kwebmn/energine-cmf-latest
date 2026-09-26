@@ -12,7 +12,7 @@ ScriptLoader.load('jodit/jodit.min', 'ModalBox');
 
 var EnergineEditor = {
     /**
-     * Подписи своих кнопок (раньше — языковые файлы плагинов CKEditor energineimage и energinefile).
+     * Подписи своих кнопок (те же, что были у прежних кнопок вставки из медиа-библиотеки).
      */
     labels: {
         ru: {image: 'Вставка изображения из медиа-библиотеки', file: 'Вставка файла из медиа-библиотеки'},

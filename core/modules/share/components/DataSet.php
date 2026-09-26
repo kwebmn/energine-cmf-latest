@@ -641,45 +641,6 @@ abstract class DataSet extends Component
     }
 
     /**
-     * Add translations for WYSIWYG toolbar.
-     *
-     * @note It is called from children.
-     *
-     * @final
-     */
-    final protected function addWYSIWYGTranslations()
-    {
-        $translations = [
-            'BTN_ITALIC',
-            'BTN_HREF',
-            'BTN_UL',
-            'BTN_OL',
-            'BTN_ALIGN_LEFT',
-            'TXT_PREVIEW',
-            'BTN_FILE_LIBRARY',
-            'BTN_INSERT_IMAGE',
-            'BTN_INSERT_IMAGE_URL',
-            'BTN_VIEWSOURCE',
-            'TXT_PREVIEW',
-            'TXT_RESET',
-            'TXT_H1',
-            'TXT_H2',
-            'TXT_H3',
-            'TXT_H4',
-            'TXT_H5',
-            'TXT_H6',
-            'TXT_ADDRESS',
-            'BTN_SAVE',
-            'BTN_BOLD',
-            'BTN_ALIGN_CENTER',
-            'BTN_ALIGN_RIGHT',
-            'BTN_ALIGN_JUSTIFY',
-            'BTN_ACTIVATE'
-        ];
-        call_user_func_array([$this, 'addTranslation'], $translations);
-    }
-
-    /**
      * Get file library.
      */
     protected function fileLibrary()

@@ -24,7 +24,7 @@ CODE_DIRS=(core site htdocs configs cli setup tests)
 # каталоги ловит проверка FILES. Артефакты прогонов тестов (вне git) тоже не код.
 EXCLUDE=(--exclude=no-traces.sh --exclude-dir=tools
          --exclude-dir=ckeditor --exclude-dir=codemirror --exclude-dir=FileAPI --exclude-dir=select2
-         --exclude-dir=jwplayer --exclude-dir=resizer
+         --exclude-dir=jwplayer --exclude-dir=resizer --exclude-dir=jodit
          --exclude='*.out' --exclude='*cookies.txt' --exclude=smoke-write.json)
 KEPT_DIRS=(core/modules/share core/modules/user core/modules/apps core/modules/seo site htdocs configs tests)
 

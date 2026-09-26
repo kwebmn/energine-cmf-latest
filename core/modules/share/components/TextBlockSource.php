@@ -29,7 +29,6 @@ class TextBlockSource extends DataSet {
      */
     public function __construct($name,    ?array $params = null) {
         parent::__construct($name, $params);
-        $this->addWYSIWYGTranslations();
         $this->setProperty('exttype', 'grid');
     }
 }

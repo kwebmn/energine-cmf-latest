@@ -152,7 +152,6 @@ class Grid extends DBDataSet {
     protected function add() {
         $this->setType(self::COMPONENT_TYPE_FORM_ADD);
         $this->prepare();
-        $this->addToolbarTranslations();
         $this->linkExtraManagers($this->getTableName());
         foreach ($this->getDataDescription() as $fdName => $fieldDescription) {
             if (($default = $fieldDescription->getPropertyValue('default')) || ($default === '0')) {
@@ -179,7 +178,6 @@ class Grid extends DBDataSet {
         }
         $this->setFilter($id);
         $this->prepare();
-        $this->addToolbarTranslations();
         $this->linkExtraManagers($this->getTableName());
     }
 
@@ -1151,18 +1149,6 @@ class Grid extends DBDataSet {
         ) { 
             //подразумевается что sortDir - тоже существует
             $this->setOrder([$actionParams['sortField'] => $actionParams['sortDir']]);
-        }
-    }
-
-    /**
-     * Add translations for WYSIWYG.
-     */
-    private function addToolbarTranslations() {
-        foreach ($this->getDataDescription() as $fd) {
-            if (($fd->getType() == FieldDescription::FIELD_TYPE_HTML_BLOCK)) {
-                $this->addWYSIWYGTranslations();
-                break;
-            }
         }
     }
 

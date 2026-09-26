@@ -257,7 +257,7 @@ ul.main_toolbar {
     padding-left: 30px !important;
 }
 
-.e-has-sideframe ul.wysiwyg_toolbar, .e-has-sideframe ul.feed_toolbar {
+.e-has-sideframe ul.feed_toolbar {
     margin-left: 300px !important;
 }
 

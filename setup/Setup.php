@@ -1009,8 +1009,6 @@ final class Setup {
                                     &&
                                     (strpos($pi['filename'], 'mootools-ext') === false)
                                     &&
-                                    (strpos($pi['dirname'], 'ckeditor') === false)
-                                    &&
                                     (strpos($pi['dirname'], 'jodit') === false)
                                     &&
                                     (strpos($pi['dirname'], 'codemirror') === false)
