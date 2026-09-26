@@ -5,11 +5,6 @@
             <pattern>/translation/[any]/</pattern>
         </uri_patterns>
     </state>
-    <state name="showWidgetEditor" rights="3">
-        <uri_patterns>
-            <pattern>/widgets/[any]/</pattern>
-        </uri_patterns>
-    </state>
     <state name="showUserEditor" rights="3">
         <uri_patterns>
             <pattern>/user/[any]/</pattern>
@@ -91,11 +86,6 @@
     <state name="getProperties" rights="3">
         <uri_patterns>
             <pattern>/get-node-data/</pattern>
-        </uri_patterns>
-    </state>
-    <state name="getTemplateInfo" rights="3">
-        <uri_patterns>
-            <pattern>/get-template-info/</pattern>
         </uri_patterns>
     </state>
     <state name="add" rights="3">
@@ -200,9 +190,6 @@
             <!--<control id="sep1" type="separator"/>-->
             <control id="editMode" title="BTN_EDIT_MODE" type="switcher" onclick="editMode"/>
             <control id="sep2" type="separator"/>
-            <control id="editBlocks" title="BTN_EDIT_BLOCKS" type="switcher" onclick="editBlocks"/>
-            <!--disabled="disabled"-->
-            <control id="sep3" type="separator"/>
             <control id="transEditor" title="BTN_TRANS_EDITOR" type="button" onclick="showTransEditor"/>
             <control id="language" title="BTN_LANG_EDITOR" type="button" onclick="showLangEditor"/>
             <control id="sep4" type="separator"/>

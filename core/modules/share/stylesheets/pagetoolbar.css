@@ -425,8 +425,7 @@ ul.toolbar.docked_toolbar /*.block_management_toolbar*/ li select {
         top: 100%;
     }
 
-    .editMode_btn,
-    .editBlocks_btn {
+    .editMode_btn {
         display: none;
     }
 

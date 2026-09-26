@@ -57,7 +57,6 @@ $editors = [
     'site'                => '/admin/structure/sites/single/siteEditor/1/edit/',
     'language'            => '/admin/translations/languages/single/langEditor/1/edit/',
     'role'                => '/admin/users/roles/single/roleEditor/1/edit/',
-    'widget'              => '/admin/widgets/single/widgetsRepository/1/edit/',
     'feedback recipient'  => '/admin/feedback-editor/recipients/single/feedbackRecipientsEditor/5/edit/',
     'page (division)'     => '/admin/structure/single/divEditor/3594/edit/',
     'user'                => '/admin/users/single/userEditor/22/edit/',

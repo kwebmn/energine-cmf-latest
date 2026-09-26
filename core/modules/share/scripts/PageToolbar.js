@@ -6,14 +6,13 @@
  *
  * @requires Toolbar
  * @requires ModalBox
- * @requires LayoutManager
  *
  * @author Pavel Dubenko
  *
  * @version 1.0.0
  */
 
-ScriptLoader.load('Toolbar', 'ModalBox', 'LayoutManager');
+ScriptLoader.load('Toolbar', 'ModalBox');
 
 /**
  * PageToolbar
@@ -46,12 +45,6 @@ var PageToolbar = new Class(/** @lends PageToolbar# */{
          * @type {number}
          */
         this.documentId = documentId;
-
-        /**
-         * Layout manager.
-         * @type {LayoutManager}
-         */
-        this.layoutManager = null;
 
         this.dock();
         this.bindTo(this);
@@ -99,12 +92,6 @@ var PageToolbar = new Class(/** @lends PageToolbar# */{
                 'frameBorder': '0'
             }).inject(sidebarFrameContent);
             gear.addEvent('click', this.toggleSidebar);
-        }
-
-
-        var editBlocksButton = this.getControlById('editBlocks');
-        if (this.getControlById('editMode') && this.getControlById('editMode').getState() && editBlocksButton) {
-            editBlocksButton.disable();
         }
 
     },
@@ -233,29 +220,6 @@ var PageToolbar = new Class(/** @lends PageToolbar# */{
      */
     showSiteEditor: function () {
         ModalBox.open({'url': this.componentPath + 'sites'});
-    },
-
-    /**
-     * Edit blocks.
-     * @function
-     * @public
-     */
-    editBlocks: function () {
-        if (!this.getControlById('editBlocks').getState()) {
-            /**
-             * Layout manager.
-             * @type {LayoutManager}
-             */
-            this.layoutManager = new LayoutManager(this.componentPath);
-        } else {
-            if (this.layoutManager && LayoutManager.changed) {
-                if (!confirm('The page has unsaved changes. Are you sure you want to quit and lost all changes?')) {
-                    return;
-                }
-            }
-
-            document.location = document.location.href;
-        }
     },
 
     //todo: Why not to inject this to the editMode() method? - try

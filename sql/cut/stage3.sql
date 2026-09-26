@@ -58,3 +58,32 @@ UPDATE `share_textblocks_translation` SET `tb_content` = REPLACE(`tb_content`,
 UPDATE `share_textblocks_translation` SET `tb_content` = REPLACE(`tb_content`,
        '<li><a href="/ua/news/tag/13/">Новини за тегом</a></li>', '')
  WHERE `tb_id` = 62 AND `lang_id` = 2;
+
+-- 5. Виджеты и редактор блоков: таблица, раздел админки (родитель ищется от корня), атрибуты
+--    редактора блоков в XML страниц (widget="widget|static", column="column" — выражением,
+--    а не точной строкой), путеводитель «Структура и тексты».
+DROP TABLE IF EXISTS `share_widgets`;
+CREATE TEMPORARY TABLE `cut_pages` (`smap_id` INT UNSIGNED NOT NULL PRIMARY KEY);
+INSERT IGNORE INTO `cut_pages`
+    SELECT s.`smap_id` FROM `share_sitemap` s
+      JOIN `share_sitemap` p ON p.`smap_id` = s.`smap_pid` AND p.`smap_segment` = 'admin'
+      JOIN `share_sitemap` root ON root.`smap_id` = p.`smap_pid` AND root.`smap_pid` IS NULL
+     WHERE s.`smap_segment` = 'widgets';
+DELETE s FROM `share_sitemap` s JOIN `cut_pages` c USING (`smap_id`);
+DROP TEMPORARY TABLE `cut_pages`;
+UPDATE `share_sitemap`
+   SET `smap_content_xml` = REGEXP_REPLACE(`smap_content_xml`, ' (widget|column)="[a-z]+"', ''),
+       `smap_layout_xml` = REGEXP_REPLACE(`smap_layout_xml`, ' (widget|column)="[a-z]+"', '')
+ WHERE CONCAT_WS(' ', `smap_content_xml`, `smap_layout_xml`) REGEXP ' (widget|column)="';
+UPDATE `share_textblocks_translation` SET `tb_content` = REPLACE(`tb_content`,
+       '<p>Блоки можно перетаскивать между колонками и добавлять из набора виджетов — текстовый блок.</p>', '')
+ WHERE `tb_id` = 61 AND `lang_id` = 1;
+UPDATE `share_textblocks_translation` SET `tb_content` = REPLACE(`tb_content`,
+       '<p>Блоки можна перетягувати між колонками й додавати з набору віджетів — текстовий блок.</p>', '')
+ WHERE `tb_id` = 61 AND `lang_id` = 2;
+UPDATE `share_textblocks_translation` SET `tb_content` = REPLACE(`tb_content`,
+       '<li><a href="/admin/widgets/">Виджеты</a></li>', '')
+ WHERE `tb_id` = 61 AND `lang_id` = 1;
+UPDATE `share_textblocks_translation` SET `tb_content` = REPLACE(`tb_content`,
+       '<li><a href="/ua/admin/widgets/">Віджети</a></li>', '')
+ WHERE `tb_id` = 61 AND `lang_id` = 2;

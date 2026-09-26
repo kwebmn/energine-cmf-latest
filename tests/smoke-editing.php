@@ -1,5 +1,5 @@
 <?php
-// Edit-mode smoke test: text block save, layout manager endpoints, content XML save. Restores original DB values.
+// Edit-mode smoke test: edit mode page, text block save. Restores original DB values.
 $E = require __DIR__ . '/env.php';
 $B = $E['BASE'];
 $jar = __DIR__ . '/smoke-editing-cookies.txt';
@@ -46,32 +46,8 @@ try {
     $tbNow = $pdo->query("SELECT tb_content FROM share_textblocks_translation WHERE tb_id = 59 AND lang_id = 1")->fetchColumn();
     check('textblock save', $code == 200 && clean($body) && trim($tbNow) !== '', $body);
 
-    // layout manager endpoints
-    [$code, $body] = http($panel . 'get-template-info/', null, ['X-Request: JSON']);
-    $j = json_decode($body, true);
-    check('get-template-info', $code == 200 && !empty($j['result']), $body);
-
-    [$code, $body] = http($panel . 'widgets/');
-    check('widgets list', $code == 200 && clean($body), $body);
-
-    $widgetXml = $pdo->query("SELECT widget_xml FROM share_widgets WHERE widget_id = 1")->fetchColumn();
-    [$code, $body] = http($panel . 'widgets/build-widget/', ['xml' => $widgetXml]);
-    check('build widget', $code == 200 && clean($body) && strpos($body, '<div') !== false, $body);
-
-    // ModalBox posts the widget container XML as modalBoxData
-    $doc = new DOMDocument();
-    $doc->loadXML($xmlOrig);
-    $container = (new DOMXPath($doc))->query("//component[@name='topNews']/..")->item(0);
-    [$code, $body] = http($panel . 'widgets/edit-params/topNews/', ['modalBoxData' => $doc->saveXML($container)]);
-    check('widget edit params', $code == 200 && clean($body), $body);
-
-    [$code, $body] = http($panel . 'widgets/save-content/', ['xml' => $xmlOrig], ['X-Request: JSON']);
-    $j = json_decode($body, true);
-    $xmlNow = $pdo->query("SELECT smap_content_xml FROM share_sitemap WHERE smap_id = 80")->fetchColumn();
-    check('save content xml', $code == 200 && !empty($j['result']) && strpos((string)$xmlNow, 'textBlock_1') !== false, $body);
-
     [$code, $body] = http("$B/");
-    check('page after content save', $code == 200 && clean($body) && strpos($body, 'Главная страница') !== false, $body);
+    check('page after textblock save', $code == 200 && clean($body) && strpos($body, 'Главная страница') !== false, $body);
 } finally {
     $st = $pdo->prepare("UPDATE share_textblocks_translation SET tb_content = ? WHERE tb_id = 59 AND lang_id = 1");
     $st->execute([$tbOrig]);

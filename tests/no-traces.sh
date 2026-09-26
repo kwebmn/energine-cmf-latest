@@ -52,7 +52,7 @@ FILES[tops]='core/modules/apps/scripts/TOTP.js'
 # этап 3. Кавычки внутри выражений — точкой (.tags.): так их не нужно экранировать в bash.
 # Сторонние библиотеки (CKEditor и т. п.) выражения не задевают: они ищут код Energine.
 CODE[tags]='TagManager|TagEditor|TextboxList|DropBoxList|tag_acpl|\bTags\.js|new Tags\(|BooleanTag|tagEditor|tags\.css|\bshare_tags|share_(sitemap|sites|uploads)_tags|apps_news_tags|getTagsTablename|getPagesByTag|name="tags"|@name ?= ?.tags.|[^-a-z_]tags. ?=>|registerState\(.tags.|state name="tag"|function tag\(|/tag/\[tagID\]|TXT_NEWS_BY_TAG|hasTags|\btag_(code|name|id)\b'
-CODE[widgets]='WidgetsRepository|share_widgets|widget_xml|widget_icon_img|LayoutManager|WidgetGridManager|ComponentParamsForm|NewTemplateForm|layout_manager\.css|editBlocks|EDIT_BLOCKS|showWidgetEditor|widgetEditor|e-widget|widget="(widget|static)"|column="column"|@widget|@column|widgets_repository|buildWidget|build-widget|revertTemplate|revert-template|saveTemplate|save-template|saveNewTemplate|new-template|NewTemplateForm|getTemplateInfo|get-template-info|TXT_SAVE_TO_CURRENT_CONTENT'
+CODE[widgets]='[Ww]idgetsRepository|admin/widgets/|share_widgets|widget_xml|widget_icon_img|LayoutManager|WidgetGridManager|ComponentParamsForm|NewTemplateForm|layout_manager\.css|editBlocks|EDIT_BLOCKS|showWidgetEditor|widgetEditor|e-widget|e-lm-|widget="(widget|static)"|column="column"|@widget|@column|widgets_repository|buildWidget|build-widget|revertTemplate|revert-template|saveTemplate|save-template|saveNewTemplate|new-template|NewTemplateForm|getTemplateInfo|get-template-info|TXT_SAVE_TO_CURRENT_CONTENT'
 CODE[storages]='FileRepositoryFTP|FileRepositoryRO|FTPRO|\bFTP\b|.ftp. ?=>|repo/ftp|repo/ro\b'
 CODE[watermark]='[Ww]atermark'
 CODE[video]="VideoUploader|jwplayer|\bPlayer\.js|Playlist\.js|new Player\(|embedPlayer|embed_player|putVideo|put-video|getPlayerParams|energinevideo|EnergineVideo|META_TYPE_VIDEO|setVideo|upl_is_mp4|upl_is_webm|upl_is_flv|upl_duration|upl_is_ready|\bis_(mp4|webm|flv)\b|VIDEO_PLAYER|player_box|playerBox|INSERT_VIDEO|media\.xslt|media_type=[\"']video[\"']|case [\"']video[\"']|== *[\"']video[\"']|[\"']video[\"'] *\)|_video[\"']"
@@ -166,6 +166,14 @@ report() { # category scope found
   grep -q '__GREPERROR__' <<<"$3" && greperror=1
 }
 
+# репозиторий виджетов (share_widgets) вырезан на этапе 3: на его XML проверки смотрят, пока таблица есть
+widgets_sql() { # выражение для LOCATE
+  [ "$HAS_WIDGETS" = 1 ] && echo "UNION SELECT CONCAT('widget ', widget_id) FROM share_widgets WHERE LOCATE('$1', widget_xml) > 0"
+}
+HAS_WIDGETS=0
+[ "$scope" != code ] && HAS_WIDGETS=$(M "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'share_widgets'")
+case "$HAS_WIDGETS" in 0|1) ;; *) echo "FAIL db: $HAS_WIDGETS"; echo "база недоступна: проверка по базе не выполнена"; exit 2;; esac
+
 for m in "${mods[@]}"; do
   if [ "$m" = i18n ]; then
     [ "$scope" = code ] && continue
@@ -196,12 +204,12 @@ for m in "${mods[@]}"; do
     fi
     found+=$(M "SELECT CONCAT('page-xml ', smap_id) FROM share_sitemap
         WHERE LOCATE('Energine\\\\$m\\\\', CONCAT_WS(' ', smap_content_xml, smap_layout_xml)) > 0
-        UNION SELECT CONCAT('widget ', widget_id) FROM share_widgets WHERE LOCATE('Energine\\\\$m\\\\', widget_xml) > 0")$'\n'
+        $(widgets_sql "Energine\\\\$m\\\\")")$'\n'
     if [ -n "${XMLCLASS[$m]}" ]; then
       cls=${XMLCLASS[$m]//\\/\\\\}
       found+=$(M "SELECT CONCAT('page-xml ', smap_id) FROM share_sitemap
           WHERE LOCATE('$cls', CONCAT_WS(' ', smap_content_xml, smap_layout_xml)) > 0
-          UNION SELECT CONCAT('widget ', widget_id) FROM share_widgets WHERE LOCATE('$cls', widget_xml) > 0")$'\n'
+          $(widgets_sql "$cls")")$'\n'
     fi
     if [ -n "${LINKS[$m]}" ]; then
       re="href=\"(/ua)?/(${LINKS[$m]})[/\"?]"

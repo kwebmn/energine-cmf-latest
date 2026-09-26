@@ -64,11 +64,6 @@ class DivisionEditor extends Grid implements SampleDivisionEditor {
      * @var LanguageEditor $langEditor
      */
     protected $langEditor;
-    /**
-     * Widget editor.
-     * @var WidgetsRepository $widgetEditor
-     */
-    private $widgetEditor;
 
     /**
      * @copydoc Grid::__construct
@@ -600,16 +595,6 @@ class DivisionEditor extends Grid implements SampleDivisionEditor {
         parent::deleteData($id);
     }
 
-    /**
-     * Show widget editor.
-     */
-    protected function showWidgetEditor() {
-        $this->request->shiftPath(1);
-        $this->widgetEditor =
-            $this->document->componentManager->createComponent('widgetEditor', 'Energine\share\components\WidgetsRepository', ['config' => 'ModalWidgetsRepository.component.xml']);
-        $this->widgetEditor->run();
-    }
-
 
     // Для метода show слешатся имена разделов
     public function build() {
@@ -642,9 +627,6 @@ class DivisionEditor extends Grid implements SampleDivisionEditor {
             case 'showSiteEditor':
                 $result = $this->siteEditor->build();
                 break;
-            case 'showWidgetEditor':
-                $result = $this->widgetEditor->build();
-                break;
             default:
                 $result = parent::build();
                 break;
@@ -674,55 +656,6 @@ class DivisionEditor extends Grid implements SampleDivisionEditor {
             ' WHERE s.smap_id = ' . $id . ' AND lang_id = ' . $langID
         );
         list($result) = $result;
-        $b = new JSONCustomBuilder();
-        $b->setProperty('result', true);
-        $b->setProperty('data', $result);
-        $this->setBuilder($b);
-    }
-
-    /**
-     * Get template information.
-     */
-    protected function getTemplateInfo() {
-        $res = $this->dbh->select('SELECT smap_layout, smap_content, IF(smap_content_xml<>"", 1,0 ) as modified FROM share_sitemap WHERE smap_id = %s', $this->document->getID());
-        if ($res) {
-            list($res) = $res;
-
-            list($contentTitle) = explode('.', basename($res['smap_content']));
-            list($layoutTitle) = explode('.', basename($res['smap_layout']));
-
-            $result = [
-                'content' => [
-                    'title' => $this->translate('TXT_CONTENT'),
-                    'file' => $res['smap_content'],
-                    'name' => $this->translate('CONTENT_' . $contentTitle),
-                    'modified' => ((bool)$res['modified']) ? $this->translate('TXT_CHANGED') : false
-                ],
-                'layout' => [
-                    'title' => $this->translate('TXT_LAYOUT'),
-                    'file' => $res['smap_layout'],
-                    'name' => $this->translate('LAYOUT_' . $layoutTitle),
-                ],
-                'actionSelector' => [
-                    'reset' => $this->translate('TXT_RESET_CONTENT'),
-                    'save' => $this->translate('TXT_SAVE_CONTENT'),
-                    'saveTemplate' => $this->translate('TXT_SAVE_TO_CURRENT_CONTENT'),
-                    'saveNewTemplate' => $this->translate('TXT_SAVE_TO_NEW_CONTENT')
-                ],
-                'actionSelectorText' => $this->translate('TXT_ACTION_SELECTOR'),
-                'saveText' => $this->translate('BTN_APPLY'),
-                'cancelText' => $this->translate('BTN_CANCEL')
-            ];
-            //С точкой это хитрый POSIX стандарт
-            //То есть если страница создана не по шаблону из ядра
-            //и существует одноименный шаблон ядра
-            //то добавляется опция возможности откатиться к шаблону ядра
-            if ((dirname($res['smap_content']) != '.')
-                && file_exists('templates/content/' . basename($res['smap_content']))
-            ) {
-                $result['actionSelector']['revert'] = $this->translate('TXT_REVERT_CONTENT');
-            }
-        }
         $b = new JSONCustomBuilder();
         $b->setProperty('result', true);
         $b->setProperty('data', $result);

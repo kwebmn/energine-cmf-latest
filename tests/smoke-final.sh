@@ -71,7 +71,6 @@ for u in structure/single/divEditor/80/edit/ structure/single/divEditor/3594/edi
   users/single/userEditor/22/edit/ users/single/userEditor/add/ users/roles/single/roleEditor/1/edit/ \
   structure/sites/single/siteEditor/1/edit/ translations/single/transEditor/14/edit/ translations/single/transEditor/add/ \
   translations/languages/single/langEditor/1/edit/ news-editor/single/newsRepo/1/edit/ news-editor/single/newsRepo/add/ \
-  widgets/single/widgetsRepository/1/edit/ \
   feedback-editor/recipients/single/feedbackRecipientsEditor/5/edit/ feedback-editor/single/feedbackList/1/ \
   users/single/adminPanel/file-library users/single/adminPanel/file-library/1/add/; do
   check "form" "$A/$u" 200

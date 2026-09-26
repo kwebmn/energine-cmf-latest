@@ -11,7 +11,6 @@ admin/translations/
 admin/translations/languages/
 admin/users/
 admin/users/roles/
-admin/widgets/
 contacts/
 features/
 features/admin/

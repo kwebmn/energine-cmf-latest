@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <content html_class="colset colset3">
-    <container name="left" column="column" html_class="col col1">
-        <container name="mainMenuContainer" block="beta" widget="widget">
+    <container name="left" html_class="col col1">
+        <container name="mainMenuContainer" block="beta">
             <component name="mainMenu" class="Energine\share\components\PageList">
                 <params>
                     <param name="menu">1</param>
@@ -10,7 +10,7 @@
                 </params>
             </component>
         </container>
-        <container name="sidebarTextBlockContainer" block="beta" widget="widget">
+        <container name="sidebarTextBlockContainer" block="beta">
             <component name="sidebarTextBlock" class="Energine\share\components\TextBlock">
                 <params>
                     <param name="title"></param>
@@ -18,12 +18,12 @@
                 </params>
             </component>
         </container>
-        <container name="loginFormContainer" block="beta" widget="widget">
+        <container name="loginFormContainer" block="beta">
             <component name="loginForm" class="Energine\user\components\LoginForm"/>
         </container>
     </container>
-    <container name="center" column="column" html_class="col col2">
-        <container name="textBlockContainer1" block="alfa" widget="static">
+    <container name="center" html_class="col col2">
+        <container name="textBlockContainer1" block="alfa">
             <component name="textBlock_1" class="Energine\share\components\TextBlock">
                 <params>
                     <param name="num">1</param>
@@ -31,8 +31,8 @@
             </component>
         </container>
     </container>
-    <container name="right" column="column" html_class="col col3 last_col">
-        <container name="topNewsContainer" block="beta" widget="widget">
+    <container name="right" html_class="col col3 last_col">
+        <container name="topNewsContainer" block="beta">
             <component name="topNews" class="Energine\apps\components\NewsFeed">
                 <params>
                     <param name="title">TXT_TOP_NEWS</param>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <content html_class="colset colset2">
-    <container name="left" column="column" html_class="col col1">
-        <container name="mainMenuContainer" block="beta" widget="widget">
+    <container name="left" html_class="col col1">
+        <container name="mainMenuContainer" block="beta">
             <component name="mainMenu" class="Energine\share\components\PageList">
                <params>
                    <param name="menu">1</param>
@@ -10,12 +10,12 @@
                </params>
             </component>
         </container>
-        <container name="loginFormContainer" block="beta" widget="widget">
+        <container name="loginFormContainer" block="beta">
             <component name="loginForm" class="Energine\user\components\LoginForm"/>
         </container>
     </container>
-    <container name="center" column="column" html_class="col col2 last_col">
-        <container name="newsRepoContainer" block="alfa" widget="static">
+    <container name="center" html_class="col col2 last_col">
+        <container name="newsRepoContainer" block="alfa">
             <component name="newsRepo" class="Energine\apps\components\NewsRepository">
                 <params>
                     <param name="rights">3</param>

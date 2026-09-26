@@ -6,7 +6,6 @@ admin/news-editor/single/newsRepo/
 admin/structure/single/divEditor/
 admin/translations/single/transEditor/
 admin/users/single/userEditor/
-admin/widgets/single/widgetsRepository/
 admin/structure/sites/single/siteEditor/
 admin/translations/languages/single/langEditor/
 admin/users/roles/single/roleEditor/

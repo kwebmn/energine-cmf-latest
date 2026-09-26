@@ -116,9 +116,11 @@ $rTemplates = templateNames($opt['removed']);
 // оставшееся: код, база
 $keptPaths = array_map(fn($d) => "$root/$d", ['core', 'site', 'htdocs', 'setup']);
 [$kWords, $kPrefixes] = scan(fileTexts($keptPaths));
+// таблица может быть уже удалена этапом, который сейчас чистится (share_widgets — этап 3)
+$exists = fn(string $t): bool => (bool)$cur->query('SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ' . $cur->quote($t))->fetchColumn();
 $dbTexts = array_merge(
     $cur->query('SELECT CONCAT_WS(" ", smap_content_xml, smap_layout_xml, smap_content, smap_layout) FROM share_sitemap')->fetchAll(PDO::FETCH_COLUMN),
-    $cur->query('SELECT widget_xml FROM share_widgets')->fetchAll(PDO::FETCH_COLUMN),
+    $exists('share_widgets') ? $cur->query('SELECT widget_xml FROM share_widgets')->fetchAll(PDO::FETCH_COLUMN) : [],
     $cur->query('SELECT right_const FROM user_group_rights')->fetchAll(PDO::FETCH_COLUMN),
     $cur->query('SELECT CONCAT_WS(" ", TABLE_NAME, COLUMN_NAME) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE()')->fetchAll(PDO::FETCH_COLUMN));
 [$dbWords, ] = scan(array_filter($dbTexts, 'is_string'));
