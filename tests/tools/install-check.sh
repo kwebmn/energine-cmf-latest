@@ -11,7 +11,7 @@
 #     вход, регистрация, восстановление пароля, карта сайта; администратор входит и видит админку;
 #     неизвестный адрес — 404; ссылок на демо-разделы нет; <base> и форма входа — адрес из конфига и при чужом Host;
 #     cookie на адресе с портом — без Domain;
-#  4. вторая установка — с доменом площадки (--domain: http и https) — и setup demo поверх: отпечаток
+#  4. вторая установка — с доменом площадки (--domain) — и setup demo поверх: отпечаток
 #     (fingerprint.php) совпадает с базой площадки; повторное демо — отказ.
 #   bash tests/tools/install-check.sh
 # Каталог экземпляра — в INSTALL_TMP (по умолчанию tmp площадки: владельцу площадки нужен проход к сокету).
@@ -205,7 +205,7 @@ js=$(curl -s -o /dev/null -w '%{http_code}' "${URL}scripts/Energine.js")
 kill "$SRV" 2>/dev/null; SRV=
 
 echo "-- установка с доменом площадки и демо поверх"
-# вторая база: адрес сайта — как у площадки (--domain: http и https), затем демо; сверка с базой площадки
+# вторая база: адрес сайта — как у площадки (--domain), затем демо; сверка с базой площадки
 tempdb_create site2 && TM <<< "GRANT ALL PRIVILEGES ON \`site2\`.* TO 'energine'@'localhost';" || { bad "вторая база"; exit 1; }
 out=$(setup install --config="$S/web/system2.config.php" --no-static --domain="$HOST" --db-socket="$SOCK" --db-name=site2 \
   --db-user=energine --admin-email="$ADMIN_LOGIN" --admin-name=Admin); rc=$?

@@ -3,7 +3,7 @@
 //  - страница — 200, грид одной записи; добавить, удалить, переставить сайт нельзя (адресов этих действий нет);
 //  - форма: название, ключевые слова и описание по языкам, site_meta_robots, вкладка свойств;
 //  - новое название (ru) — в шапке главной; NOINDEX — robots.txt закрывает сайт, google-sitemap — 404;
-//  - сохранение без токена — 422, запись та же; старой страницы редактора сайтов нет.
+//  - сохранение без токена — 422, запись та же.
 // Исходные значения возвращаются в конце, в том числе после провала.
 $E = require __DIR__ . '/env.php';
 $B = $E['BASE'];
@@ -109,9 +109,13 @@ try {
         }
     }
     check('поле site_meta_robots', $xp->query("//form//*[@name='share_sites[site_meta_robots]' or @name='share_sites[site_meta_robots][]']")->length > 0);
-    foreach (['site_is_default', 'site_is_active', 'site_folder', 'site_order_num'] as $f) {
-        check("поля $f в форме нет", !in_array("share_sites[$f]", $fieldNames, true));
-    }
+    // из записи сайта форма правит только site_meta_robots (номер записи — скрытое поле)
+    $formNames = array_map(fn($el) => preg_replace('/\[\]$/', '', $el->getAttribute('name')),
+        iterator_to_array($xp->query('//form//input[@name] | //form//select[@name] | //form//textarea[@name]')));
+    $siteFields = array_values(array_unique(array_filter($formNames, fn($n) => str_starts_with($n, 'share_sites['))));
+    sort($siteFields);
+    check('поля записи сайта в форме — только номер и site_meta_robots',
+        $siteFields === ['share_sites[site_id]', 'share_sites[site_meta_robots]'], json_encode($siteFields));
     check('вкладка свойств сайта', str_contains($form, "$id/properties/"));
     [$code, $props] = http($single . "$id/properties/");
     check('свойства сайта открываются — 200', $code == 200, "HTTP $code");
@@ -148,8 +152,6 @@ try {
     $now = $pdo->query("SELECT site_name FROM share_sites_translation WHERE lang_id = $ru")->fetchColumn();
     check('сохранение без токена — 422, название то же', $code == 422 && $now === $names[$ru], "HTTP $code, «{$now}»");
 
-    [$code] = http("$B/admin/structure/sites/");
-    check('старой страницы редактора сайтов нет — 404', $code == 404, "HTTP $code");
 } finally {
     $restore();
     @unlink($jar);

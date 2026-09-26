@@ -137,7 +137,7 @@ const inspect = (page) => page.evaluate(() => {
             await tp.goto(BASE + url, { waitUntil: 'networkidle' });
             await tp.waitForSelector('.treeview li a', { timeout: 10000 }).catch(() => null);
             const r = await tp.evaluate(() => ({
-                selector: !!document.getElementById('site_selector'),
+                selector: !!document.querySelector('#treeContainer select'),
                 nodes: document.querySelectorAll('.treeview li a').length,
             }));
             check(`${label}: дерево без выбора сайта, узлы загружены`, !r.selector && r.nodes > 1, JSON.stringify(r));

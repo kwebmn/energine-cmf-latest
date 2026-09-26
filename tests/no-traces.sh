@@ -6,6 +6,8 @@
 # Этап 3 — share: tags widgets storages watermark video flash lookup columns placehold
 # Этап 4 — редактор и загрузка: ckeditor fileapi jsonp
 # Этап 5в — тема: theme (спрайты и стили старой темы, jQuery, single.xslt; в текстах — вход администратора demo)
+# Этап 6 — мультисайт: multisite (домены, привязка групп к сайтам, номер сайта у страниц, флажки сайта,
+#   редактор сайтов и доменов, список сайтов, междоменный вход)
 # i18n — в справочнике переводов нет ни одной константы из списков удаления в sql/cut/*.sql.
 # mail-core — отправка писем живёт в ядре: класс Energine\share\gears\Mail есть,
 # а оставшийся код не ссылается на Energine\mail\gears\Mail*.
@@ -17,7 +19,7 @@ mods=("$@")
 [ ${#mods[@]} -eq 0 ] && mods=(mail-core mail calendar comments forms ads blog shop
                                 pageads branding tops vote feed tagcloud similar rss sockets htmlcap
                                 tags widgets storages watermark video flash lookup columns placehold
-                                ckeditor fileapi jsonp theme i18n)
+                                ckeditor fileapi jsonp theme multisite i18n)
 
 # код: весь репозиторий, кроме истории (docs), переходного SQL (sql) и инструментов чистки
 CODE_DIRS=(core site htdocs configs cli setup tests)
@@ -85,6 +87,10 @@ FILES[video]='core/modules/share/gears/VideoUploader.php core/modules/share/scri
 FILES[flash]='core/modules/share/scripts/Swiff.Uploader.js core/modules/share/scripts/Swiff.Uploader.swf core/modules/share/scripts/expressInstall.swf core/modules/share/scripts/swfobject.js core/modules/share/images/player.swf'
 FILES[lookup]='core/modules/share/components/Lookup.php core/modules/share/gears/LookupConfig.php core/modules/user/components/UserLookup.php core/modules/share/config/Lookup.component.xml core/modules/share/scripts/Lookup.js core/modules/share/scripts/select2 core/modules/share/stylesheets/select2 core/modules/user/config/UserLookup.component.xml'
 
+# этап 6: мультисайт
+CODE[multisite]='share_domains|share_domain2site|share_groups2sites|\bSiteEditor|SiteSaver|DomainEditor|\bSiteList\b|CrossDomainAuth|SiteManager\.js|site_is_default|site_is_active|site_folder|site_order_num|dev_domains|site_selector|writeDomains|getSiteByID|getSiteByPage|getDefaultSite|jumpSite|getSites\(|admin/structure/sites'
+FILES[multisite]='core/modules/share/components/SiteEditor.php core/modules/share/components/DomainEditor.php core/modules/share/components/SiteList.php core/modules/share/components/CrossDomainAuth.php core/modules/share/gears/SiteEditorConfig.php core/modules/share/gears/SiteSaver.php core/modules/share/scripts/SiteManager.js core/modules/share/config/SiteEditor.component.xml core/modules/share/config/SiteEditorModal.component.xml core/modules/share/config/DomainEditor.component.xml core/modules/share/config/SiteList.component.xml site/modules/main/templates/content/sites.content.xml'
+
 # база: TABLES — имена таблиц (REGEXP), PAGES — шаблоны содержимого страниц,
 # XMLCLASS — класс компонента в XML страниц и виджетов
 declare -A TABLES PAGES XMLCLASS
@@ -119,6 +125,8 @@ XMLCLASS[feed]='Energine\apps\components\ExtendedFeed"'
 TABLES[tags]='^(share_tags|share_tags_translation|share_sitemap_tags|share_sites_tags|share_uploads_tags|apps_news_tags)$'
 TABLES[widgets]='^share_widgets$'
 PAGES[widgets]='main/widgets_repository'
+TABLES[multisite]='^(share_domains|share_domain2site|share_groups2sites)$'
+PAGES[multisite]='main/sites'
 
 # содержимое сайта: ссылки на удалённые разделы, слова вырезанных функций в текстовых блоках,
 # демо-новости о вырезанном
@@ -133,6 +141,8 @@ LINKS[branding]='admin/branding'
 LINKS[tops]='admin/tops|admin/tops-groups'
 LINKS[feed]='test-feed'
 LINKS[rss]='news/rss'
+LINKS[multisite]='admin/structure/sites'
+WORDS[multisite]='редактор сайтов|доменов|сайты и домены'
 WORDS[ads]='баннер|банер'
 WORDS[calendar]='календар'
 WORDS[shop]='товар|заказ|замовлен|кошик|корзин|каталог'
@@ -266,6 +276,10 @@ for m in "${mods[@]}"; do
                        OR (TABLE_NAME = 'share_uploads' AND COLUMN_NAME = 'upl_views'))")$'\n' ;;
       branding) found+=$(M "SELECT CONCAT('column ', TABLE_NAME, '.', COLUMN_NAME) FROM information_schema.COLUMNS
                     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'share_sitemap' AND COLUMN_NAME = 'brand_id'")$'\n' ;;
+      multisite) found+=$(M "SELECT CONCAT('column ', TABLE_NAME, '.', COLUMN_NAME) FROM information_schema.COLUMNS
+                    WHERE TABLE_SCHEMA = DATABASE() AND ((TABLE_NAME IN ('share_sitemap', 'share_sites_properties') AND COLUMN_NAME = 'site_id')
+                       OR (TABLE_NAME = 'share_sites' AND COLUMN_NAME IN ('site_is_default', 'site_is_active', 'site_folder', 'site_order_num')))
+                    UNION SELECT CONCAT('sites ', COUNT(*)) FROM share_sites HAVING COUNT(*) <> 1")$'\n' ;;
     esac
     report "$m" db "$(echo "$found" | sed '/^$/d')"
   fi
