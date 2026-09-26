@@ -5,14 +5,6 @@
 	<component name="pageAds" class="Energine\apps\components\Ads"/>
 	<!-- оформление раздела: берётся у ближайшего родителя, которому назначен бренд -->
 	<component name="branding" class="Energine\apps\components\Branding"/>
-	<!-- баннер в шапке: выводится макетом сайта, если для страницы есть подходящий -->
-	<component name="topBanner" class="Energine\ads\components\Ads">
-		<params>
-			<param name="type">top</param>
-			<param name="limit">1</param>
-			<param name="order">rand</param>
-		</params>
-	</component>
 	<component name="footerTextBlock" class="Energine\share\components\TextBlock">
 		<params>
 			<param name="num">footerTextBlock</param> 

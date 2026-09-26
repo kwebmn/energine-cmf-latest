@@ -32,12 +32,6 @@
                 <xsl:value-of select="$COMPONENTS[@name='pageAds']/recordset/record/field[@name='ad_top_728_90']" disable-output-escaping="yes"/>
             </div>
         </xsl:if>
-        <!-- баннер модуля ads из макета страницы -->
-        <xsl:if test="$COMPONENTS[@name='topBanner']/recordset/record">
-            <div class="top_adblock">
-                <xsl:apply-templates select="$COMPONENTS[@name='topBanner']"/>
-            </div>
-        </xsl:if>
         <xsl:if test="$COMPONENTS[@class='CrossDomainAuth']">
             <img src="{$COMPONENTS[@class='CrossDomainAuth']/@authURL}?return={$COMPONENTS[@class='CrossDomainAuth']/@returnURL}" width="1" height="1" style="display:none;" alt="" onload="document.location = document.location.href;"/>
         </xsl:if>

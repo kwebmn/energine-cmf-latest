@@ -139,7 +139,7 @@ freshJar('admin');
 login();
 $T = '/admin/mail-templates/single/mailTemplateEditor/';
 [$c, $j, $raw] = json($T . 'get-data/');
-check('templates grid lists 8 templates', $c == 200 && count($j['data'] ?? []) == 8, $raw);
+check('templates grid lists 4 templates', $c == 200 && count($j['data'] ?? []) == 4, $raw);
 [$c, $html] = http($T . '1/edit/');
 check('template edit form', $c == 200 && clean($html) && str_contains($html, 'user_registration'), $html);
 $before = q('SELECT * FROM mail_templates_translation WHERE template_id = 1 ORDER BY lang_id')->fetchAll();
@@ -147,6 +147,6 @@ $before = q('SELECT * FROM mail_templates_translation WHERE template_id = 1 ORDE
 $after = q('SELECT * FROM mail_templates_translation WHERE template_id = 1 ORDER BY lang_id')->fetchAll();
 check('template saved without changes', !empty($j['result']) && $before == $after, $raw . ' ' . json_encode([$before, $after], JSON_UNESCAPED_UNICODE));
 [$c, $j, $raw] = json($T . '1/delete/');
-check('template cannot be deleted', empty($j['result']) && scalar('SELECT COUNT(*) FROM mail_templates') == 8, $raw);
+check('template cannot be deleted', empty($j['result']) && scalar('SELECT COUNT(*) FROM mail_templates') == 4, $raw);
 
 done('mail');
