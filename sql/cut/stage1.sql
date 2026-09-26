@@ -78,7 +78,62 @@ UPDATE `share_sitemap`
 DELETE FROM `mail_templates`
  WHERE `template_sysname` IN ('mail_news', 'mail_news_item', 'mail_crm', 'mail_crm_item');
 
--- 7. Демо-файлы, на которые после вырезания никто не ссылается: фото товаров,
+-- 7. Демо-контент о вырезанном: путеводитель «Возможности» больше не ведёт на удалённые
+--    разделы и не описывает вырезанные функции, из ленты уходят новости о магазине,
+--    блогах, рассылках и баннерах. Картинки этих новостей освобождает блок 8.
+UPDATE `share_textblocks_translation` SET `tb_content` = REPLACE(`tb_content`,
+       'виджетов — опрос, баннер, текстовый блок.',
+       'виджетов — опрос, текстовый блок.')
+ WHERE `tb_id` = 61 AND `lang_id` = 1;
+UPDATE `share_textblocks_translation` SET `tb_content` = REPLACE(`tb_content`,
+       'віджетів — опитування, банер, текстовий блок.',
+       'віджетів — опитування, текстовий блок.')
+ WHERE `tb_id` = 61 AND `lang_id` = 2;
+UPDATE `share_textblocks_translation` SET `tb_content` = REPLACE(`tb_content`,
+       'архив по датам, календарь и лента RSS.',
+       'архив по датам и лента RSS.')
+ WHERE `tb_id` = 62 AND `lang_id` = 1;
+UPDATE `share_textblocks_translation` SET `tb_content` = REPLACE(`tb_content`,
+       '</a> — календарь и облако тегов слева</li>',
+       '</a> — облако тегов слева</li>')
+ WHERE `tb_id` = 62 AND `lang_id` = 1;
+UPDATE `share_textblocks_translation` SET `tb_content` = REPLACE(`tb_content`,
+       'архів за датами, календар і стрічка RSS.',
+       'архів за датами і стрічка RSS.')
+ WHERE `tb_id` = 62 AND `lang_id` = 2;
+UPDATE `share_textblocks_translation` SET `tb_content` = REPLACE(`tb_content`,
+       'К странице, новости или товару можно прикрепить',
+       'К странице или новости можно прикрепить')
+ WHERE `tb_id` = 69 AND `lang_id` = 1;
+UPDATE `share_textblocks_translation` SET `tb_content` = REPLACE(`tb_content`,
+       '<p>Демо-покупатель: <b>olena@example.com</b> / <b>demo</b> — у него есть заказы и подписки.</p>',
+       '<p>Демо-пользователь: <b>olena@example.com</b> / <b>demo</b>.</p>')
+ WHERE `tb_id` = 70 AND `lang_id` = 1;
+UPDATE `share_textblocks_translation` SET `tb_content` = REPLACE(`tb_content`,
+       '<li><a href="/my-orders/">Мои заказы</a> — после входа</li>',
+       '')
+ WHERE `tb_id` = 70 AND `lang_id` = 1;
+UPDATE `share_textblocks_translation` SET `tb_content` = REPLACE(`tb_content`,
+       '<p>Демо-покупець: <b>olena@example.com</b> / <b>demo</b>.</p>',
+       '<p>Демо-користувач: <b>olena@example.com</b> / <b>demo</b>.</p>')
+ WHERE `tb_id` = 70 AND `lang_id` = 2;
+UPDATE `share_textblocks_translation` SET `tb_content` = REPLACE(`tb_content`,
+       'Честная оговорка: записи блога, комментарии и сообщения обратной связи хранятся одной версией на оба языка — в движке у этих таблиц нет переводов.',
+       'Честная оговорка: сообщения обратной связи хранятся одной версией на оба языка — в движке у этой таблицы нет переводов.')
+ WHERE `tb_id` = 71 AND `lang_id` = 1;
+UPDATE `share_textblocks_translation` SET `tb_content` = REPLACE(`tb_content`,
+       '<li><a href="/ua/catalog/phones/">Каталог по-украински</a></li>',
+       '')
+ WHERE `tb_id` = 71 AND `lang_id` = 1;
+UPDATE `share_textblocks_translation` SET `tb_content` = REPLACE(`tb_content`,
+       'Чесне застереження: записи блогу, коментарі та повідомлення зворотного зв’язку зберігаються однією версією на обидві мови — у рушія в цих таблиць немає перекладів.',
+       'Чесне застереження: повідомлення зворотного зв’язку зберігаються однією версією на обидві мови — у рушія в цієї таблиці немає перекладів.')
+ WHERE `tb_id` = 71 AND `lang_id` = 2;
+DELETE FROM `apps_news`
+ WHERE `news_segment` IN ('catalog-filtry', 'sravnenie-tovarov', 'dve-valyuty', 'blogi-otlozhennye',
+                          'rassylki-bez-spama', 'bannery-adresno');
+
+-- 8. Демо-файлы, на которые после вырезания никто не ссылается: фото товаров,
 --    которых нет ни в новостях, ни в галерее, и картинки категорий каталога.
 DELETE u FROM `share_uploads` u
  WHERE u.`upl_path` LIKE 'uploads/public/demo/%'
@@ -90,7 +145,7 @@ DELETE u FROM `share_uploads` u
    AND NOT EXISTS (SELECT 1 FROM `apps_branding` x WHERE x.`brand_main_img` = u.`upl_path`)
    AND NOT EXISTS (SELECT 1 FROM `share_widgets` x WHERE x.`widget_icon_img` = u.`upl_path`);
 
--- 8. Переводы вырезанных модулей: подписи, которые встречались только в их коде,
+-- 9. Переводы вырезанных модулей: подписи, которые встречались только в их коде,
 --    и FIELD_… колонок их таблиц. Список собран tests/tools/cut-constants.php:
 --    в оставшемся коде этих имён нет, и динамически (FIELD_<колонка>, TXT_<компонент>,
 --    TXT_<право>) оставшийся код их не собирает. Переводы удаляются каскадом.
@@ -173,4 +228,36 @@ DELETE FROM `share_lang_tags` WHERE `ltag_name` IN (
     'TXT_MY_ORDERS_EMPTY', 'TXT_REMOVE_FROM_COMPARE', 'TXT_SAVED_FILTERS', 'TXT_SAVE_FILTER_FORM',
     'TXT_SAVE_FILTER_NAME', 'TXT_SIMILAR_GOODS', 'TXT_SORT', 'TXT_SUBSCRIBE', 'TXT_SUBSCRIBED',
     'TXT_TITLE_SAVE_FILTER_FORM', 'TXT_UNSUBSCRIBED', 'TXT_WISHLIST'
+);
+
+-- 10. Переводы, которые код вырезанных модулей собирал динамически: названия их шаблонов
+--     (CONTENT_…), компонентов (TXT_<имя компонента>), таблиц (TAB_…), полей и параметров
+--     (FIELD_…), выгрузки заказов (EXPORT_ORDERS_…). Список — тот же tests/tools/cut-constants.php
+--     с учётом регистра и динамических имён; оставшийся код и база эти имена не собирают.
+DELETE FROM `share_lang_tags` WHERE `ltag_name` IN (
+    'CONTENT_CATALOG', 'CONTENT_CATALOG_PRODUCTS', 'CONTENT_CATEGORY_EDITOR',
+    'CONTENT_CURRENCY_EDITOR', 'CONTENT_DELIVERY_TYPES_EDITOR', 'CONTENT_FEATURE_EDITOR',
+    'CONTENT_FEATURE_GROUP_EDITOR', 'CONTENT_FORM_EDITOR', 'CONTENT_FORM_RESULTS',
+    'CONTENT_GOODS_EDITOR', 'CONTENT_ORDER_EDITOR', 'CONTENT_ORDER_LIST',
+    'CONTENT_ORDER_STATUS_EDITOR', 'CONTENT_PAYMENT_TYPES_EDITOR', 'CONTENT_PRODUCER_EDITOR',
+    'CONTENT_PROMOTION_EDITOR', 'CONTENT_WISHLIST', 'EXPORT_ORDERS_CAMPAGIN',
+    'EXPORT_ORDERS_DISCOUNT', 'EXPORT_ORDERS_NOCAMPAGIN', 'EXPORT_ORDERS_ORDER',
+    'EXPORT_ORDERS_ORDER_DATE', 'EXPORT_ORDERS_ORDER_NUMBER', 'EXPORT_ORDERS_PHONE',
+    'EXPORT_ORDERS_PRODUCT_AMOUNT', 'EXPORT_ORDERS_PRODUCT_CODE',
+    'EXPORT_ORDERS_PRODUCT_ITEM_SUMM_PRICE', 'EXPORT_ORDERS_PRODUCT_NAME',
+    'EXPORT_ORDERS_PRODUCT_PRICE_PER_ITEM', 'EXPORT_ORDERS_PRODUCT_SUMM_PRICE',
+    'EXPORT_ORDERS_PROMOCODE', 'EXPORT_ORDERS_PROMOCODE_USED', 'EXPORT_ORDERS_STATUS',
+    'EXPORT_ORDERS_SUMM_DISCOUNT', 'EXPORT_ORDERS_TOTAL', 'EXPORT_ORDERS_UPDATED',
+    'EXPORT_ORDERS_USER', 'EXPORT_ORDERS_USER_NAME', 'FIELD_CART_GOODS_SUM', 'FIELD_CATEGORY_NAME',
+    'FIELD_COMMENTS_NUM', 'FIELD_ERROR_MSG', 'FIELD_FIELD_IS_NULLABLE', 'FIELD_FIELD_TYPE',
+    'FIELD_FPV_ORDER', 'FIELD_NICK', 'FIELD_ORDER_GOODS', 'FIELD_PRICE', 'FIELD_PRODUCERS',
+    'FIELD_PROMOTIONS', 'FIELD_SMAP_SEO_DESCRIPTION', 'FIELD_SMAP_SEO_TITLE',
+    'FIELD_VOTE_ANNOTATION_RTF', 'FIELD_form_5_field_2', 'FIELD_form_5_field_3_email',
+    'FIELD_form_5_field_4_phone', 'FIELD_form_5_field_5_multi', 'FIELD_form_5_field_6',
+    'TAB_APPS_NEWS_COMMENT', 'TAB_BLOG_POST_COMMENT', 'TAB_SHARE_SITEMAP_COMMENT', 'TXT_BANIP',
+    'TXT_BANIPEDITOR', 'TXT_CATEGORYDIVEDITOR', 'TXT_COUNTRYEDITOR', 'TXT_CURRENCYEDITOR',
+    'TXT_CURRENCY_RATE', 'TXT_DELIVERYTYPESEDITOR', 'TXT_FEATUREEDITOR', 'TXT_FGEDITOR',
+    'TXT_FORMRESULTS', 'TXT_MAILCRMEDITOR', 'TXT_MAILSUBSCRIPTIONEDITOR', 'TXT_OEDITOR',
+    'TXT_ORDEREDITOR', 'TXT_ORDERGOODSEDITOR', 'TXT_ORDERSTATUSEDITOR', 'TXT_PAYMENTTYPESEDITOR',
+    'TXT_PRODUCEREDITOR', 'TXT_PROMOTIONEDITOR', 'TXT_RELATIONEDITOR', 'TXT_SHOPEDITOR'
 );

@@ -1,13 +1,14 @@
 #!/bin/bash
 # Этап 1: в коде и в базе не осталось следов вырезанных модулей.
 #   bash tests/no-traces.sh [code|db|all] [модуль...]
-#   модули: mail-core mail calendar comments forms ads blog shop (по умолчанию все)
+#   модули: mail-core mail calendar comments forms ads blog shop i18n (по умолчанию все)
 # mail-core — отправка писем живёт в ядре: класс Energine\share\gears\Mail есть,
 # а оставшийся код не ссылается на Energine\mail\gears\Mail*.
+# i18n — в справочнике переводов нет ни одной константы из списков удаления в sql/cut/*.sql.
 # Выход 0 — следов нет, 1 — найденное печатается.
 R="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 scope=${1:-all}; shift
-mods=("$@"); [ ${#mods[@]} -eq 0 ] && mods=(mail-core mail calendar comments forms ads blog shop)
+mods=("$@"); [ ${#mods[@]} -eq 0 ] && mods=(mail-core mail calendar comments forms ads blog shop i18n)
 
 # код: весь репозиторий, кроме истории (docs), переходного SQL (sql) и инструментов чистки
 CODE_DIRS=(core site htdocs configs cli setup tests)
@@ -39,16 +40,48 @@ PAGES[ads]='ads_item_editor ads_type_editor'
 PAGES[blog]='blog_comments_editor blog_editor blog_post blog_post_editor'
 PAGES[shop]='cart catalog catalog_products category_editor country_editor currency_editor delivery_types_editor feature_editor feature_group_editor goods_editor order_editor order_list order_status_editor payment_types_editor producer_editor promotion_editor search shop_editor wishlist'
 
-M() { ( envsh=$(php8.5 "$R/tests/env.php" --shell) || exit 2; eval "$envsh"
-        mysql -N -h "$DB_HOST" -u "$DB_USER" "$DB_NAME" -e "$1" ); }
+# ошибка доступа к базе печатается строкой с меткой __DBERROR__: пустой ответ не должен
+# засчитываться как «следов нет»
+# содержимое сайта: ссылки на удалённые разделы, слова вырезанных функций в текстовых блоках,
+# демо-новости о вырезанном
+declare -A LINKS WORDS NEWS
+LINKS[shop]='catalog|cart|wishlist|my-orders|search'
+LINKS[blog]='blogs'
+LINKS[mail]='subscribe|subscriptions'
+LINKS[forms]='form-example'
+LINKS[ads]='banners'
+WORDS[ads]='баннер|банер'
+WORDS[calendar]='календар'
+WORDS[shop]='товар|заказ|замовлен|кошик|корзин|каталог'
+WORDS[blog]='блог'
+WORDS[comments]='коммент|комент'
+WORDS[mail]='рассылк|розсил|подписк|підписк'
+NEWS[shop]="'catalog-filtry', 'sravnenie-tovarov', 'dve-valyuty'"
+NEWS[blog]="'blogi-otlozhennye'"
+NEWS[mail]="'rassylki-bez-spama'"
+NEWS[ads]="'bannery-adresno'"
+
+M() { ( envsh=$(php8.5 "$R/tests/env.php" --shell 2>&1) || { echo "__DBERROR__ $envsh"; exit 0; }
+        eval "$envsh"
+        mysql -N -h "$DB_HOST" -u "$DB_USER" "$DB_NAME" -e "$1" 2>&1 || echo "__DBERROR__ mysql" ); }
 
 fail=0
+dberror=0
 report() { # module scope found
   if [ -n "$3" ]; then echo "FAIL $1 $2:"; echo "$3" | head -8 | sed 's/^/     /'; fail=1
   else echo "ok   $1 $2"; fi
+  grep -q '__DBERROR__' <<<"$3" && dberror=1
 }
 
 for m in "${mods[@]}"; do
+  if [ "$m" = i18n ]; then
+    [ "$scope" = code ] && continue
+    names=$(sed -n '/DELETE FROM `share_lang_tags` WHERE `ltag_name` IN (/,/);/p' "$R"/sql/cut/*.sql \
+            | grep -oE "'[A-Za-z0-9_]+'" | sort -u | paste -sd, -)
+    [ -z "$names" ] && { report i18n db "__DBERROR__ в sql/cut/*.sql нет списков удаления переводов"; continue; }
+    report i18n db "$(M "SELECT CONCAT('constant ', ltag_name) FROM share_lang_tags WHERE ltag_name IN ($names)")"
+    continue
+  fi
   if [ "$scope" != db ]; then
     if [ "$m" = mail-core ]; then
       found=$(cd "$R" && grep -rnIE "${EXCLUDE[@]}" "${CODE[$m]}" "${KEPT_DIRS[@]}" 2>/dev/null)
@@ -70,6 +103,15 @@ for m in "${mods[@]}"; do
     found+=$(M "SELECT CONCAT('page-xml ', smap_id) FROM share_sitemap
         WHERE LOCATE('Energine\\\\$m\\\\', CONCAT_WS(' ', smap_content_xml, smap_layout_xml)) > 0
         UNION SELECT CONCAT('widget ', widget_id) FROM share_widgets WHERE LOCATE('Energine\\\\$m\\\\', widget_xml) > 0")$'\n'
+    if [ -n "${LINKS[$m]}" ]; then
+      re="href=\"(/ua)?/(${LINKS[$m]})[/\"?]"
+      found+=$(M "SELECT CONCAT('link tb ', tb_id, '/', lang_id) FROM share_textblocks_translation WHERE tb_content REGEXP '$re'
+          UNION SELECT CONCAT('link news ', news_id, '/', lang_id) FROM apps_news_translation
+          WHERE CONCAT_WS(' ', news_announce_rtf, news_text_rtf) REGEXP '$re'")$'\n'
+    fi
+    [ -n "${WORDS[$m]}" ] && found+=$(M "SELECT CONCAT('text tb ', tb_id, '/', lang_id) FROM share_textblocks_translation
+        WHERE LOWER(tb_content) REGEXP '${WORDS[$m]}'")$'\n'
+    [ -n "${NEWS[$m]}" ] && found+=$(M "SELECT CONCAT('news ', news_segment) FROM apps_news WHERE news_segment IN (${NEWS[$m]})")$'\n'
     case $m in
       ads)  found+=$(M "SELECT CONCAT('page-xml leftAdBlock ', smap_id) FROM share_sitemap
                 WHERE CONCAT_WS(' ', smap_content_xml, smap_layout_xml) LIKE '%leftAdBlock%'")$'\n' ;;
@@ -82,4 +124,5 @@ for m in "${mods[@]}"; do
     report "$m" db "$(echo "$found" | sed '/^$/d')"
   fi
 done
+[ $dberror = 1 ] && { echo "база недоступна: проверка по базе не выполнена"; exit 2; }
 exit $fail
