@@ -2,7 +2,7 @@
 # Проверка установщика (этап 5г) на временном экземпляре MariaDB (tempdb.sh): база и файлы площадки
 # не трогаются. Установщик запускается от имени владельца площадки из копии точки входа — у неё свой
 # конфиг (--config) и нет статики (--no-static); ядро — сам репозиторий.
-#  1. setup install в пустую базу: 31 таблица и 5 процедур, языки ru и ua, администратор в группе
+#  1. setup install в пустую базу: 31 таблица и 3 хранимые процедуры, языки ru и ua, администратор в группе
 #     администраторов (пароль сверяется с хэшем), адрес сайта, конфиг с режимом 600, служебные страницы
 #     без демо-строк; паролей нет в выводе;
 #  2. отказы до первого изменения базы: непустая база, неверный e-mail, нет пароля администратора;
@@ -76,7 +76,7 @@ is "setup install — код 0" "$rc" 0
 [ $rc -eq 0 ] || echo "$out" | tail -8 | sed 's/^/     /'
 secret_free "$out" && ok "паролей нет в выводе установщика" || bad "пароль в выводе установщика"
 is "таблиц" "$(Q 'SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = "site"')" 31
-is "хранимых процедур" "$(Q 'SELECT COUNT(*) FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA = "site"')" 5
+is "хранимых процедур" "$(Q 'SELECT COUNT(*) FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA = "site"')" 3
 is "языки" "$(Q 'SELECT GROUP_CONCAT(lang_abbr ORDER BY lang_id) FROM share_languages')" "ru,ua"
 hash=$(Q "SELECT u_password FROM user_users WHERE u_name = '$ADMIN_LOGIN'")
 is "пользователь один — администратор" "$(Q 'SELECT GROUP_CONCAT(u_name) FROM user_users')" "$ADMIN_LOGIN"

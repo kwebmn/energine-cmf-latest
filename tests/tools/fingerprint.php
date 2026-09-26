@@ -25,13 +25,17 @@ $byName = [
     'share_lang_tags' => 'SELECT `ltag_name` FROM `share_lang_tags`',
     'share_lang_tags_translation' => 'SELECT t.`ltag_name`, tr.`lang_id`, tr.`ltag_value_rtf` FROM `share_lang_tags_translation` tr'
         . ' JOIN `share_lang_tags` t USING (`ltag_id`)',
+    // пользователи — по логину: номер администратора зависит от порядка установки (установщик создаёт его
+    // раньше демо-посетителей), кроме групп пользователей на u_id ссылаются только журнал и сессии
+    'user_user_groups' => 'SELECT u.`u_name`, ug.`group_id` FROM `user_user_groups` ug JOIN `user_users` u USING (`u_id`)',
 ];
+$skipColsByTable = ['user_users' => ['u_id']];
 $tables = $p->query("SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_TYPE = 'BASE TABLE' ORDER BY 1")->fetchAll(PDO::FETCH_COLUMN);
 foreach ($tables as $t) {
     if (in_array($t, $skipTables)) continue;
     $st = $p->prepare('SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? ORDER BY ORDINAL_POSITION');
     $st->execute([$t]);
-    $use = array_values(array_diff($st->fetchAll(PDO::FETCH_COLUMN), $skipCols));
+    $use = array_values(array_diff($st->fetchAll(PDO::FETCH_COLUMN), $skipCols, $skipColsByTable[$t] ?? []));
     $rows = $p->query($byName[$t] ?? 'SELECT ' . implode(', ', array_map(fn($c) => "`$c`", $use)) . " FROM `$t`")->fetchAll(PDO::FETCH_NUM);
     $lines = array_map(fn($r) => json_encode($r, JSON_UNESCAPED_UNICODE), $rows);
     sort($lines);
