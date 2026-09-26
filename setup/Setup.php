@@ -1134,20 +1134,22 @@ final class Setup {
         }
 
         //На этот момент у нас есть все необходимые директории в htdocs и они пустые
+        // статика — всегда ссылками на файлы модулей (раньше без отладки — копиями с минификацией JS): после
+        // обновления кода её содержимое сразу новое, раскладка одна и та же на стенде и на рабочем сайте
         foreach ($this->htdocsDirs as $dir) {
 
             $this->text(PHP_EOL . 'Обработка ' . $dir . ':');
             //сначала проходимся по модулям ядра
             foreach (array_reverse($this->config['modules']) as $module => $module_path) {
                 $this->linkCore(
-                    ($this->config['site']['debug'])?self::MODE_SYMLINK:self::MODE_COPY,
+                    self::MODE_SYMLINK,
                     implode(DIRECTORY_SEPARATOR, array(CORE_DIR, MODULES, $module, $dir, '*')),
                     implode(DIRECTORY_SEPARATOR, array(HTDOCS_DIR, $dir)),
                     sizeof(explode(DIRECTORY_SEPARATOR, $dir)));
 
             }
             $this->linkSite(
-                ($this->config['site']['debug'])?self::MODE_SYMLINK:self::MODE_COPY,
+                self::MODE_SYMLINK,
                 implode(DIRECTORY_SEPARATOR, array(SITE_DIR, MODULES, '*', $dir, '*')),
                 implode(DIRECTORY_SEPARATOR, array(HTDOCS_DIR, $dir))
             );

@@ -157,6 +157,30 @@ grep -qE 'PHP (Fatal|Warning|Notice|Deprecated)' "$T/server.log" && bad "жур�
 [ -n "${INSTALL_DEBUG:-}" ] && cp "$T/server.log" "$INSTALL_DEBUG/server.log"
 kill "$SRV" 2>/dev/null; SRV=
 
+echo "-- установка со статикой"
+# так ставится настоящий сайт (без --no-static): статика ложится в web копии — ссылками на файлы модулей,
+# карта скриптов пишется; страница и скрипт отдаются
+S2="$T/full"
+tempsite_empty "$SITE_USER" "$S2" && tempdb_create site3 && TM <<< "GRANT ALL PRIVILEGES ON \`site3\`.* TO 'energine'@'localhost';" \
+  || { bad "копия без статики"; exit 1; }
+out=$(runuser -u "$SITE_USER" -- php8.5 "$S2/web/index.php" setup install --config="$S2/web/system.config.php" --url="$URL" \
+  --db-socket="$SOCK" --db-name=site3 --db-user=energine --admin-email="$ADMIN_LOGIN" --admin-name=Admin < /dev/null 2>&1); rc=$?
+is "setup install со статикой — код 0" "$rc" 0
+[ $rc -eq 0 ] || echo "$out" | tail -5 | sed 's/^/     /'
+links=$(find "$S2/web/scripts" -maxdepth 1 -name '*.js' -type l 2>/dev/null | wc -l)
+files=$(find "$S2/web/scripts" -maxdepth 1 -name '*.js' -type f 2>/dev/null | wc -l)
+[ "$links" -gt 0 ] && [ "$files" = 0 ] && [ -s "$S2/web/system.jsmap.php" ] \
+  && ok "статика — ссылками на файлы модулей ($links скриптов), карта скриптов записана" \
+  || bad "статика" "ссылок $links, файлов-копий $files, карта $([ -s "$S2/web/system.jsmap.php" ] && echo есть || echo нет)"
+(cd "$S2/web" && exec runuser -u "$SITE_USER" -- php8.5 -S "127.0.0.1:$PORT" -t "$S2/web" "$S2/web/router.php") > "$T/server2.log" 2>&1 &
+SRV=$!
+for _ in $(seq 50); do curl -s -o /dev/null "$URL" && break; sleep 0.2; done
+code=$(curl -s -o "$T/page2.html" -w '%{http_code}' "$URL")
+js=$(curl -s -o /dev/null -w '%{http_code}' "${URL}scripts/Energine.js")
+[ "$code" = 200 ] && grep -q '<main id="content"' "$T/page2.html" && [ "$js" = 200 ] \
+  && ok "сайт со своей статикой отвечает: главная и scripts/Energine.js — 200" || bad "сайт со своей статикой" "главная $code, скрипт $js"
+kill "$SRV" 2>/dev/null; SRV=
+
 echo "-- установка с доменом площадки и демо поверх"
 # вторая база: адрес сайта — как у площадки (--domain: http и https), затем демо; сверка с базой площадки
 tempdb_create site2 && TM <<< "GRANT ALL PRIVILEGES ON \`site2\`.* TO 'energine'@'localhost';" || { bad "вторая база"; exit 1; }

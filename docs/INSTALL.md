@@ -113,6 +113,18 @@ R=$H/private/energine
 Сверить установку с нуля с базой площадки, не трогая её, — `tests/tools/fresh-check.sh`,
 проверить сам установщик — `tests/tools/install-check.sh` (временный экземпляр MariaDB).
 
+### Обновление
+
+Статика в `web/` (`images`, `scripts`, `stylesheets`, `templates`) — ссылки на файлы модулей в
+репозитории, при любом режиме отладки: после `git pull` их содержимое уже новое. Если файлы статики
+добавились, удалились или переименовались, а также после правки `htdocs/*.php`:
+```sh
+cp $R/htdocs/index.php $R/htdocs/bootstrap.php $R/htdocs/auth.php $H/web/
+chown -R web97:client1 $H/private $H/web
+cd $H/web && runuser -u web97 -- php8.5 index.php setup linker && runuser -u web97 -- php8.5 index.php setup scriptMap
+```
+Изменения базы между версиями — переходные скрипты `sql/cut/stage*.sql` (см. ниже).
+
 ### Переход базы полной системы на форк
 
 Сайт, работающий на полной системе Energine (как `new.energine.org`), переходит на форк без

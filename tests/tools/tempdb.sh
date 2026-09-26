@@ -94,3 +94,14 @@ PHP
 # tempsite_setup АРГУМЕНТЫ… — php index.php setup … из копии от имени владельца площадки;
 # пароли — только из окружения (ENERGINE_DB_PASSWORD, ENERGINE_ADMIN_PASSWORD), вывод — вместе с ошибками
 tempsite_setup() { runuser -u "$SITE_USER" -- php8.5 "$S/web/index.php" setup "$@" < /dev/null 2>&1; }
+
+# tempsite_empty ПОЛЬЗОВАТЕЛЬ КАТАЛОГ — копия точки входа без статики: её раскладывает сама установка (setup install
+# без --no-static). Статика площадки сюда не ссылается — setup linker чистит каталоги статики, и ссылки на площадку
+# он вычистил бы у неё самой.
+tempsite_empty() {
+  local owner=$1 dir=$2
+  mkdir -p "$dir/web/uploads" "$dir/private" && ln -s "$R" "$dir/private/energine" \
+    && cp "$R/htdocs/index.php" "$R/htdocs/bootstrap.php" "$R/htdocs/auth.php" "$dir/web/" \
+    && cp -a "$R/htdocs/resizer" "$dir/web/" && cp "$S/web/router.php" "$dir/web/" || return 2
+  chown -hR "$owner" "$dir"
+}
