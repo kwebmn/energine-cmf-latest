@@ -4,8 +4,9 @@
 текстовые страницы, права, многоязычность, регистрация и личный кабинет, обратная связь,
 галерея вложений и новости, и больше ничего.
 
-Сейчас **этап 1**: вырезаны модули shop, blog, comments, calendar, forms, ads и рассылки;
-остаются share, user, apps и seo. Дальше — разбор apps (этап 2).
+Сейчас **этап 2**: вырезаны модули shop, blog, comments, calendar, forms, ads и рассылки,
+из apps остались новости и обратная связь. Остаются модули share, user, apps и seo.
+Дальше — чистка share (этап 3).
 
 - Спецификация: `docs/superpowers/specs/2026-09-26-energine-simple-design.md`
 - Установка: `docs/INSTALL.md`
