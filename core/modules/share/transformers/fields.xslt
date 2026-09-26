@@ -472,10 +472,10 @@
         </xsl:if>
     </xsl:template>
 
-    <!-- для любого поля, на которое права только чтение -->
+    <!-- для любого поля, на которое права только чтение: значение — текстом (его мог прислать посетитель) -->
     <xsl:template match="field[@mode='1'][ancestor::component[@type='form']]" mode="field_input_readonly">
         <div class="control">
-            <span id="{@name}_read"><xsl:value-of select="." disable-output-escaping="yes"/></span>
+            <span id="{@name}_read"><xsl:value-of select="."/></span>
             <input>
                 <xsl:call-template name="FORM_ELEMENT_ATTRIBUTES_READONLY"/>
             </input>
@@ -513,9 +513,17 @@
         </input>
     </xsl:template>
 
-    <!-- для полей HTMLBLOCK и TEXT на которые права только чтение -->
-    <xsl:template match="field[@type='htmlblock' or @type='text'][@mode='1'][ancestor::component[@type='form']]" mode="field_input_readonly">
+    <!-- для полей HTMLBLOCK на которые права только чтение: HTML из редактора показывается разметкой -->
+    <xsl:template match="field[@type='htmlblock'][@mode='1'][ancestor::component[@type='form']]" mode="field_input_readonly">
         <div class="read control"><xsl:value-of select="." disable-output-escaping="yes"/></div>
+        <input>
+            <xsl:call-template name="FORM_ELEMENT_ATTRIBUTES_READONLY"/>
+        </input>
+    </xsl:template>
+
+    <!-- для полей TEXT на которые права только чтение: текстом (например, сообщение обратной связи от посетителя) -->
+    <xsl:template match="field[@type='text'][@mode='1'][ancestor::component[@type='form']]" mode="field_input_readonly">
+        <div class="read control"><xsl:value-of select="."/></div>
         <input>
             <xsl:call-template name="FORM_ELEMENT_ATTRIBUTES_READONLY"/>
         </input>

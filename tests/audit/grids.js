@@ -86,6 +86,32 @@ const inspect = (page) => page.evaluate(() => {
             await p.close();
         }
 
+        // the view form of a feedback message (the grid's «Просмотр»): the visitor's fields are read-only there,
+        // their values — text too
+        {
+            const p = await ctx.newPage();
+            const errors = watch(p);
+            await p.goto(BASE + 'admin/feedback-editor/single/feedbackList/' + ids.feed + '/', { waitUntil: 'networkidle' });
+            await p.waitForTimeout(500);
+            const r = await p.evaluate(() => {
+                const shown = [...document.querySelectorAll('.control, .read')].map((x) => {
+                    const input = x.matches('input') ? x : x.querySelector('input[type="text"]');
+                    return (input ? input.value : '') + x.textContent;
+                });
+                return {
+                    fields: document.querySelectorAll('.field').length,
+                    literal: shown.filter((s) => s.includes('<img src="x"')).length,
+                    parsedImg: !!document.querySelector('img[src="x"]'),
+                    parsedB: [...document.querySelectorAll('b')].some((b) => b.textContent === 'claude-grid'),
+                    ran: window.claudeXss || 0,
+                };
+            });
+            check('обратная связь, просмотр: поля обращения — текстом (автор, тема, сообщение)', r.fields > 0 && r.literal >= 3, JSON.stringify(r));
+            check('обратная связь, просмотр: разметка не разобрана и не исполнена', !r.parsedImg && !r.parsedB && !r.ran, JSON.stringify(r));
+            check('обратная связь, просмотр: без ошибок JS и 404', !errors.list().length, errors.list().join(' | '));
+            await p.close();
+        }
+
         // the page tree: a node named with markup, and a renamed node (as after saving a page)
         const p = await ctx.newPage();
         const errors = watch(p);
