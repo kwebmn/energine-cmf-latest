@@ -16,17 +16,10 @@ class FileRepositoryLocal;
 
 namespace Energine\share\gears;
 /**
- * Implementation of file loader interface IFileRepository for local FTP repositories.
- *
- * This is useful for the cases when the repository is local and the file is downloaded over FTP by using admin tools.
- *
- * @code
-class FileRepositoryFTP;
- * @endcode
+ * Implementation of file loader interface IFileRepository for the local repository —
+ * the only kind of file storage in Energine Simple.
  */
 class FileRepositoryLocal extends Primitive implements IFileRepository {
-
-    use FileRepositoryWatermark;
 
     /**
      * Path to the cache for alternative images.
@@ -113,8 +106,6 @@ class FileRepositoryLocal extends Primitive implements IFileRepository {
             throw new SystemException('ERR_DIR_WRITE', SystemException::ERR_CRITICAL, $dir);
         }
 
-        $this->applyWatermark($sourceFilename);
-
         if (!copy($sourceFilename, $destFilename)) {
             throw new SystemException('ERR_COPY_UPLOADED_FILE', SystemException::ERR_CRITICAL, $destFilename);
         }
@@ -133,8 +124,6 @@ class FileRepositoryLocal extends Primitive implements IFileRepository {
         if (!file_put_contents($filePath, $fileData)) {
             throw new SystemException('ERR_PUT_FILE', SystemException::ERR_CRITICAL, $dir . DIRECTORY_SEPARATOR . $filePath);
         }
-
-        $this->applyWatermark($filePath);
 
         return $this->analyze($filePath);
     }

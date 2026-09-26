@@ -119,45 +119,9 @@ return array(
         // маппинг типов репозитариев (share_uploads.upl_mime_type) с реализациями интерфейса IFileRepository
         'mapping' => array(
             'repo/local' => 'FileRepositoryLocal',
-            'repo/ftp' => 'FileRepositoryFTP',
-            'repo/ftpro' => 'FileRepositoryFTPRO',
-            'repo/ro' => 'FileRepositoryRO',
         ),
         // папка по-умолчанию для быстрой загрузки файлов
         'quick_upload_path' => 'uploads/public',
-        // конфигурация для FTP репозитариев
-        'ftp' => array(
-            // конфигурация FTP доступа для репозитария с share_uploads.upl_path uploads/ftp
-            'uploads/ftp' => array(
-                'media' => array(
-                    'server' => '10.0.1.10',
-                    'port' => 21,
-                    'username' => 'username',
-                    'password' => 'password'
-                ),
-                'alts' => array(
-                    'server' => '10.0.1.10',
-                    'port' => 21,
-                    'username' => 'username',
-                    'password' => 'password',
-                )
-            ),
-            // конфигурация FTP доступа для репозитария с share_uploads.upl_path uploads/ftpro
-            'uploads/ftpro' => array(
-                'media' => array(
-                    'server' => '10.0.1.10',
-                    'port' => 21,
-                    'username' => 'username',
-                    'password' => 'password'
-                ),
-                'alts' => array(
-                    'server' => '10.0.1.10',
-                    'port' => 21,
-                    'username' => 'username',
-                    'password' => 'password',
-                )
-            )
-        ),
     ),
 
     // настройка SEO модуля

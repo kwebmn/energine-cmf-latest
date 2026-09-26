@@ -87,3 +87,12 @@ UPDATE `share_textblocks_translation` SET `tb_content` = REPLACE(`tb_content`,
 UPDATE `share_textblocks_translation` SET `tb_content` = REPLACE(`tb_content`,
        '<li><a href="/ua/admin/widgets/">Віджети</a></li>', '')
  WHERE `tb_id` = 61 AND `lang_id` = 2;
+
+-- 6. Нелокальные хранилища файлов (FTP, FTP только для чтения, только для чтения) вместе с
+--    содержимым (upl_pid удаляется каскадом) и пункт о них в «Инструкции по установке». В
+--    украинской версии текста внутри пункта переводы строк, поэтому пункт заменяется выражением.
+DELETE FROM `share_uploads` WHERE `upl_mime_type` IN ('repo/ftp', 'repo/ftpro', 'repo/ro');
+UPDATE `share_textblocks_translation`
+   SET `tb_content` = REGEXP_REPLACE(`tb_content`, '<li>Управление файлами\\.[^<]*FTP[^<]*</li>',
+       '<li>Управление файлами. Файлы хранятся в репозитории на сервере сайта и используются в текстах страниц, новостях и галерее раздела.</li>')
+ WHERE `tb_id` = 59 AND `tb_content` LIKE '%FTP%';
