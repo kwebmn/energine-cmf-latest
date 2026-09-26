@@ -139,6 +139,19 @@ R=$H/private/energine
      SELECT domain_id, 1 FROM share_domains WHERE domain_host = 'simple.energine.org';
    ```
 
+## Тема
+
+Разметка сайта — `site/modules/main/transformers/energine.xslt`: шапка (название, меню, язык,
+вход), содержимое, боковая колонка, подвал. Стили — один файл
+`site/modules/main/stylesheets/main.css`; страница ошибки вне раскладки сайта —
+`core/modules/share/transformers/error_page.xslt`. Меню, вход и переключатель языка — компоненты
+раскладки (`default.layout.xml`), в шаблонах содержимого их нет. Админка (гриды, формы, режим
+правки) тему не использует: `energine.css` и `grid.css` подключаются только администратору.
+
+В `web/` стили попадают ссылками (`setup linker`). nginx площадки отдаёт файл по ссылке, только
+если у ссылки и файла один владелец (`disable_symlinks if_not_owner`): файл темы, записанный от
+root, отдаётся с кодом 404 — после правки `chown web97:client1`.
+
 ## Почта
 
 По умолчанию письма сайта уходят через `mail()` — sendmail сервера. Чтобы отправлять их через
@@ -162,7 +175,7 @@ SMTP-сервер, в конфиг площадки добавляется бл�
 
 ```sh
 bash $R/tests/setup-linker.sh      # linker не трогает модули в core/modules
-bash $R/tests/no-traces.sh         # в коде и базе нет следов вырезанного на этапах 1–4
+bash $R/tests/no-traces.sh         # в коде и базе нет следов вырезанного на этапах 1–4 и старой темы
 bash $R/tests/regression.sh        # все сценарные наборы и журнал ошибок PHP
 ```
 
