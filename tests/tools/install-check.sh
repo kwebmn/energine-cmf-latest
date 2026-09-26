@@ -31,6 +31,9 @@ TMPDIR=${INSTALL_TMP:-$(dirname "$WEB")/tmp} TEMPDB_ACCESS=$SITE_USER tempdb_sta
 SRV=
 trap '[ -n "$SRV" ] && kill "$SRV" 2>/dev/null; tempdb_stop' EXIT
 tempdb_create site && tempdb_user site "$T/dbpw" || exit 2
+# сокет открыт владельцу площадки (и группе хостинга): root временного экземпляра — только для root системы
+runuser -u "$SITE_USER" -- env -u MYSQL_PWD mariadb --no-defaults --socket="$SOCK" -u root -e 'SELECT 1' > /dev/null 2>&1 \
+  && bad "пользователь хостинга входит во временную базу как root без пароля" || ok "root временной базы — только для root системы"
 # ошибка запроса (таблицы ещё нет) — пустой ответ: его и сверяют проверки
 Q() { TM -N site -e "$1" 2>/dev/null; }
 FP() { FP_SOCKET="$SOCK" FP_DB=site FP_USER=root php8.5 "$R/tests/tools/fingerprint.php"; }

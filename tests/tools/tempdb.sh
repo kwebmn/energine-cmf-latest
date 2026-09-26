@@ -31,7 +31,9 @@ $p = new PDO("mysql:host={$E["DB_HOST"]};dbname={$E["DB_NAME"]};charset=utf8", $
 $v = $p->query("SELECT @@character_set_server, @@collation_server, @@sql_mode")->fetch(PDO::FETCH_NUM);
 echo implode("\n", [...$v, parse_url($E["BASE"], PHP_URL_HOST)]), "\n";') || { tempdb_fail "нет настроек сервера площадки"; return 2; }
   { read -r CS; read -r CO; read -r SQLMODE; read -r HOST; } <<< "$settings"
-  mariadb-install-db --no-defaults --user=root --datadir="$T/data" --auth-root-authentication-method=normal \
+  # root экземпляра входит только через сокет от root системы (unix_socket): сокет открыт владельцу площадки,
+  # а в каталоге хостинга его видят и соседние пользователи — пароль root им не нужен был бы вовсе
+  mariadb-install-db --no-defaults --user=root --datadir="$T/data" --auth-root-authentication-method=socket \
     --skip-test-db > "$T/install.log" 2>&1 || { tempdb_fail "mariadb-install-db: $(tail -3 "$T/install.log")"; return 2; }
   mariadbd --no-defaults --user=root --datadir="$T/data" --socket="$SOCK" --pid-file="$T/mysqld.pid" \
     --skip-networking --character-set-server="$CS" --collation-server="$CO" --sql-mode="$SQLMODE" \
