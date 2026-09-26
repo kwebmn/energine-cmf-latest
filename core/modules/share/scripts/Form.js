@@ -10,7 +10,7 @@
  * </ul>
  *
  * @requires Energine
- * @requires ckeditor/ckeditor
+ * @requires EnergineEditor
  * @requires TabPane
  * @requires Toolbar
  * @requires Validator
@@ -23,7 +23,7 @@
  * @version 1.0.1
  */
 
-ScriptLoader.load('ckeditor/ckeditor', 'TabPane', 'Toolbar', 'Validator', 'ModalBox', 'Overlay', 'datepicker');
+ScriptLoader.load('EnergineEditor', 'TabPane', 'Toolbar', 'Validator', 'ModalBox', 'Overlay', 'datepicker');
 
 /**
  * Form.
@@ -779,31 +779,22 @@ Form.Label = /** @lends Form.Label */{
     }
 };
 /**
- * The rich editor form.
+ * Визуальный редактор поля формы (Jodit, общая настройка — EnergineEditor).
  *
  * @constructor
- * @param {} textarea
+ * @param {Element|string} textarea
  * @param {Form} form
- * @param {} fallback_ie
  */
 Form.RichEditor = new Class(/** @lends Form.RichEditor# */{
 
     /**
-     * @type {}
-     */
-    area: null,
-
-    /**
      * Editor.
-     * @type {CKEDITOR}
+     * @type {Jodit}
      */
     editor: null,
 
     // constructor
     initialize: function (textarea, form) {
-
-        this.setupEditors();
-
         /**
          * The text area element.
          * @type {Element}
@@ -815,79 +806,17 @@ Form.RichEditor = new Class(/** @lends Form.RichEditor# */{
          * @type {Form}
          */
         this.form = form;
-        try {
-            this.editor = CKEDITOR.replace(this.textarea.get('id'), {
-                language: Energine.lang
-            });
-            this.editor.editorId = this.textarea.get('id');
-            this.editor.singleTemplate = this.form.singlePath;
-        } catch (e) {
-            console.warn(e);
-        }
+
+        this.editor = EnergineEditor.make(this.textarea, {singlePath: this.form.singlePath});
     },
 
     /**
-     * Setup the editors.
-     * @function
-     * @public
-     */
-    setupEditors: function () {
-        if (!Form.RichEditor.ckeditor_init) {
-            CKEDITOR.config.extraPlugins = 'energineimage,energinefile';
-            CKEDITOR.config.allowedContent = true;
-            CKEDITOR.config.toolbar = [
-                {name: 'document', groups: ['mode'], items: ['Source']},
-                {
-                    name: 'clipboard',
-                    groups: ['clipboard', 'undo'],
-                    items: ['Cut', 'Copy', 'Paste', 'PasteText', 'PasteFromWord', '-', 'Undo', 'Redo']
-                },
-                {name: 'editing', groups: ['find', 'selection'], items: ['Find', 'Replace', '-', 'SelectAll']},
-                {name: 'links', items: ['Link', 'Unlink', 'Anchor']},
-                {name: 'insert', items: ['Image', 'Table', 'EnergineImage', 'EnergineFile']},
-                {name: 'tools', items: ['ShowBlocks']},
-                '/',
-                {
-                    name: 'basicstyles',
-                    groups: ['basicstyles', 'cleanup'],
-                    items: ['Bold', 'Italic', 'Underline', 'Strike', 'Subscript', 'Superscript', '-', 'RemoveFormat']
-                },
-                {
-                    name: 'paragraph',
-                    groups: ['list', 'indent', 'align'],
-                    items: ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent', '-', 'JustifyLeft', 'JustifyCenter', 'JustifyRight', 'JustifyBlock']
-                },
-                {name: 'styles', items: ['Styles', 'Format', 'Font', 'FontSize']},
-                {name: 'colors', items: ['TextColor', 'BGColor']}
-            ];
-            var styles = [];
-            if (window['wysiwyg_styles']) {
-                Object.each(window['wysiwyg_styles'], function (style) {
-                    styles.push({
-                        name: style['caption'],
-                        element: style['element'],
-                        attributes: {'class': style['class']}
-                    });
-                });
-            }
-            CKEDITOR.stylesSet.add('energine', styles);
-            CKEDITOR.config.stylesSet = 'energine';
-            Form.RichEditor.ckeditor_init = true;
-        }
-    },
-
-    /**
-     * Save the form.
+     * Перед отправкой формы текст редактора переносится в textarea.
      * @function
      * @public
      */
     onSaveForm: function () {
-        try {
-            var data = this.editor.getData();
-            this.textarea.value = data;
-        } catch (e) {
-            console.warn(e);
-        }
+        this.textarea.value = this.editor.value;
     }
 });
 

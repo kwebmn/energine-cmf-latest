@@ -17,6 +17,34 @@
 /**
  * Загружает указанные скрипты из директории scripts.
  */
+/**
+ * Array.from у MooTools 1.5 не понимает итерируемые объекты — Set, Map, итераторы заворачивает в массив
+ * из одного элемента — и не принимает функцию-отображение. Современные библиотеки (Jodit) рассчитывают
+ * на стандартное поведение: для них оно такое, для остальных вызовов (код на MooTools) — прежнее.
+ */
+(function () {
+    var mooFrom = Array.from;
+    Array.from = function (item, mapFn, thisArg) {
+        var result, i, it, step;
+        if (item != null && typeof item !== 'string' && typeof item.length !== 'number'
+            && typeof item[Symbol.iterator] === 'function') {
+            result = [];
+            for (it = item[Symbol.iterator](), step = it.next(); !step.done; step = it.next()) {
+                result.push(step.value);
+            }
+        } else if (typeof mapFn === 'function' && item != null && typeof item !== 'function'
+            && typeof item.length === 'number') {
+            result = [];
+            for (i = 0; i < item.length; i++) {
+                result.push(item[i]);
+            }
+        } else {
+            result = mooFrom(item);
+        }
+        return (typeof mapFn === 'function') ? result.map(mapFn, thisArg) : result;
+    };
+})();
+
 var ScriptLoader = {
     load: function () {
     }

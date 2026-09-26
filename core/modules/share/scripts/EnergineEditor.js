@@ -54,6 +54,9 @@ var EnergineEditor = {
             askBeforePasteFromWord: false,
             disablePlugins: EnergineEditor.disabledPlugins,
             uploader: {insertImageAsBase64URI: false},
+            // режим исходника — простое поле, без Ace и js-beautify с внешнего CDN
+            sourceEditor: 'area',
+            beautifyHTML: false,
             buttons: [
                 'source', '|',
                 'bold', 'italic', 'underline', 'strikethrough', 'eraser', '|',

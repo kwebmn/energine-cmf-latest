@@ -105,7 +105,18 @@ const appendHtml = (page, selector, html) => page.evaluate(([sel, h]) => {
     {
         const p = await ctx.newPage();
         await p.goto(BASE + `admin/news-editor/single/newsRepo/${newsId}/edit/`, { waitUntil: 'networkidle' });
-        const btn = p.locator('.jodit-toolbar-button_energineImage button').first();
+        // the text editor sits on the language tab: open it first, as a person would, and mark the editor
+        const tab = await p.evaluate(() => {
+            const ed = window.Jodit && Object.values(window.Jodit.instances).find((e) => e.element.id === 'news_text_rtf_1');
+            if (!ed) return null;
+            ed.container.setAttribute('data-test-editor', 'news-text');
+            for (let el = ed.container; el; el = el.parentElement) {
+                if (el.id && document.querySelector('a[href="#' + el.id + '"]')) return '#' + el.id;
+            }
+            return '';
+        });
+        if (tab) await p.click(`a[href="${tab}"]`);
+        const btn = p.locator('[data-test-editor="news-text"] .jodit-toolbar-button_energineImage button').first();
         if (check('кнопка «Картинка из репозитория» есть', await btn.count() > 0)) {
             await btn.click();
             await p.waitForSelector('.e-modalbox iframe', { timeout: 10000 }).catch(() => null);
