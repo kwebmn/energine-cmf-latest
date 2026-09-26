@@ -73,8 +73,10 @@ class LoginForm extends DataSet implements SampleLoginForm {
 			$this->getDataDescription()->addFieldDescription( $messageField );
 			$messageField->setRights( FieldDescription::FIELD_MODE_READ );
 
+			// в cookie имя константы (auth.php); другое значение пришло не от сайта — общий текст
+			$message = (string) $_COOKIE[ UserSession::FAILED_LOGIN_COOKIE_NAME ];
 			$messageField = new Field( 'message' );
-			$messageField->addRowData( $_COOKIE[ UserSession::FAILED_LOGIN_COOKIE_NAME ] );
+			$messageField->addRowData( $this->translate( preg_match( '/^ERR_[A-Z_]+$/', $message ) ? $message : 'ERR_BAD_AUTH' ) );
 			$this->getData()->addField( $messageField );
 			E()->getResponse()->deleteCookie( UserSession::FAILED_LOGIN_COOKIE_NAME );
 		}

@@ -16,9 +16,11 @@ check() { # label url expected_code [curl args...]
     echo "FAIL [$label] $code (want $exp) ${url#$B} $err"; fail=$((fail+1))
   fi
 }
+# токен страницы (Csrf): у гостя — для входа, после входа — для всех POST админки
+tok() { curl -sS -c $J -b $J "$1" | sed -n 's/.*<meta name="csrf-token" content="\([0-9a-f]*\)".*/\1/p' | head -1; }
 checkjson() { # label url
   local label=$1 url=$2
-  curl -sS -c $J -b $J -X POST -H 'X-Request: JSON' -o $T "$url"
+  curl -sS -c $J -b $J -X POST -H 'X-Request: JSON' -H "X-CSRF-Token: $TOK" -o $T "$url"
   if ! php8.5 -r '$d=json_decode(file_get_contents($argv[1]),true); exit(is_array($d) && !empty($d["result"]) ? 0 : 1);' $T; then
     echo "FAIL [$label] ${url#$B} $(head -c 160 $T | tr '\n' ' ')"; fail=$((fail+1))
   fi
@@ -51,10 +53,11 @@ check "resizer" "$B/resizer/w90-h68/uploads/public/13662314846.png" 200
 check "static" "$B/scripts/Energine.js" 200
 
 # login
-curl -sS -c $J -b $J -o /dev/null $B/login/
-curl -sS -c $J -b $J -o /dev/null -e "$B/login/" --data-urlencode 'user[login]=1' \
+TOK=$(tok $B/login/)
+curl -sS -c $J -b $J -o /dev/null -e "$B/login/" --data-urlencode "csrf_token=$TOK" --data-urlencode 'user[login]=1' \
   --data-urlencode "user[username]=$ADMIN_EMAIL" --data-urlencode "user[password]=$ADMIN_PASSWORD" $B/auth.php
 grep -q NRGNSID $J || { echo "FAIL [login] no session cookie"; fail=$((fail+1)); }
+TOK=$(tok $B/)
 
 # admin pages and public pages as admin
 check "admin" "$B/" 200

@@ -28,21 +28,27 @@ function clean($body) {
     return !preg_match('/Fatal error|Warning: |Notice: |Deprecated: |<title>Errors<\/title>|object\([A-Za-z\\\\]+Exception\)/', $body);
 }
 
-http("$B/login/");
-http("$B/auth.php", ['user' => ['login' => 1, 'username' => $E['ADMIN_EMAIL'], 'password' => $E['ADMIN_PASSWORD']]]);
+// токен страницы (Csrf): у гостя — для входа, после входа — для правки
+function token($html) {
+    return preg_match('~<meta name="csrf-token" content="([^"]*)"~', (string)$html, $m) ? $m[1] : '';
+}
+[, $loginPage] = http("$B/login/");
+http("$B/auth.php", ['csrf_token' => token($loginPage), 'user' => ['login' => 1, 'username' => $E['ADMIN_EMAIL'], 'password' => $E['ADMIN_PASSWORD']]]);
+[, $home] = http("$B/");
+$csrf = token($home);
 
 // backups
 $tbOrig = $pdo->query("SELECT tb_content FROM share_textblocks_translation WHERE tb_id = 59 AND lang_id = 1")->fetchColumn();
 $xmlOrig = $pdo->query("SELECT smap_content_xml FROM share_sitemap WHERE smap_id = 80")->fetchColumn();
 
 try {
-    [$code, $body] = http("$B/", ['editMode' => 1]);
+    [$code, $body] = http("$B/", ['editMode' => 1, 'csrf_token' => $csrf]);
     check('edit mode page', $code == 200 && clean($body) && strpos($body, 'single/textBlock_1/') !== false, $body);
     preg_match("~new PageToolbar\('([^']+)'~", $body, $m);
     $panel = $m[1] ?? "$B/single/adminPanel/";
 
     // text block save with the same content
-    [$code, $body] = http("$B/single/textBlock_1/save-text", ['data' => $tbOrig, 'ID' => 80, 'num' => 1]);
+    [$code, $body] = http("$B/single/textBlock_1/save-text", ['data' => $tbOrig, 'ID' => 80, 'num' => 1, 'csrf_token' => $csrf]);
     $tbNow = $pdo->query("SELECT tb_content FROM share_textblocks_translation WHERE tb_id = 59 AND lang_id = 1")->fetchColumn();
     check('textblock save', $code == 200 && clean($body) && trim($tbNow) !== '', $body);
 

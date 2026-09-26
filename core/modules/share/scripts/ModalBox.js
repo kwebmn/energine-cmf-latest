@@ -80,7 +80,9 @@ var ModalBox = window.top.ModalBox || /** @lends ModalBox */{
                 mbName = 'modalBoxIframe' + this.boxes.length.toString();
 
             if (box.options.post) {
-                var postForm = new Element('form', {target: mbName, action: iframeSrc, method: 'post'}).grab(new Element('input', {'type': 'hidden', 'name': 'modalBoxData', 'value': box.options.post}));
+                var postForm = new Element('form', {target: mbName, action: iframeSrc, method: 'post'})
+                    .grab(new Element('input', {'type': 'hidden', 'name': 'modalBoxData', 'value': box.options.post}))
+                    .grab(Energine.csrfInput());
                 iframeSrc = 'about:blank';
             }
 

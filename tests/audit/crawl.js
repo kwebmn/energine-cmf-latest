@@ -68,7 +68,10 @@ const NO_EDIT = [/actionsList\/$/, /feedbackList\/$/];
 
     for (const p of withHome(lines(adminFile))) await visit(admin, 'admin', BASE + p, 1500);
 
-    // forms of every grid: add and edit of the first record (the modal content pages)
+    // forms of every grid: add and edit of the first record (the modal content pages);
+    // the grid data is a POST, it carries the page token (Csrf) like the admin's own requests
+    const home = await (await admin.request.get(BASE)).text();
+    const token = (home.match(/<meta name="csrf-token" content="([0-9a-f]*)"/) || [])[1] || '';
     for (const path of lines(singlesFile)) {
         const single = path.startsWith('http') ? path : BASE + path;
         const isDiv = /[dD]ivEditor\/$/.test(single);
@@ -76,11 +79,14 @@ const NO_EDIT = [/actionsList\/$/, /feedbackList\/$/];
         if (!NO_ADD.some((re) => re.test(single))) await visit(admin, 'admin-form-add', single + 'add/', 1500);
         if (NO_EDIT.some((re) => re.test(single))) continue;
         try {
-            const r = await admin.request.post(single + 'get-data/page-1', { headers: { 'X-Request': 'JSON' } });
+            const r = await admin.request.post(single + 'get-data/page-1', { headers: { 'X-Request': 'JSON', 'X-CSRF-Token': token } });
             const j = await r.json();
             const pk = j.meta ? Object.keys(j.meta).find((k) => j.meta[k].key) : null;
             const row = (j.data || [])[0];
             if (pk && row && row[pk] !== undefined) await visit(admin, 'admin-form-edit', single + row[pk] + '/edit/', 1500);
+            // a grid that answers without data would silently drop its edit form from the crawl
+            else results.push({ label: 'admin-form-edit', url: single.replace(BASE, '/'), status: r.status(),
+                errors: ['get-data: no record (' + JSON.stringify(j).slice(0, 200) + ')'] });
         } catch (e) {
             results.push({ label: 'admin-form-edit', url: single.replace(BASE, '/'), status: 0, errors: ['get-data: ' + e.message.split('\n')[0]] });
         }

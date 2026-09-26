@@ -16,14 +16,17 @@ fail=0
 ok()  { echo "OK   $1"; }
 bad() { echo "FAIL $1: $(head -c 300 $R | tr '\n' ' ')"; fail=$((fail+1)); }
 # ответ прошлого запроса стирается: запрос, который не дошёл, не должен засчитываться по нему
-post() { : > $R; curl -sS -c $J -b $J -X POST -H 'X-Request: JSON' -o $R "$@"; }
+post() { : > $R; curl -sS -c $J -b $J -X POST -H 'X-Request: JSON' -H "X-CSRF-Token: $TOK" -o $R "$@"; }
+# токен страницы (Csrf): у гостя — для входа, после входа — для всех POST админки
+tok() { curl -sS -c $J -b $J "$1" | sed -n 's/.*<meta name="csrf-token" content="\([0-9a-f]*\)".*/\1/p' | head -1; }
 isok() { php8.5 -r '$d=json_decode(file_get_contents($argv[1]),true); exit(is_array($d) && !empty($d["result"]) ? 0 : 1);' $R; }
 
 rm -f $J
-curl -sS -c $J -b $J -o /dev/null $B/login/
-curl -sS -c $J -b $J -o /dev/null -e "$B/login/" --data-urlencode 'user[login]=1' \
+TOK=$(tok $B/login/)
+curl -sS -c $J -b $J -o /dev/null -e "$B/login/" --data-urlencode "csrf_token=$TOK" --data-urlencode 'user[login]=1' \
   --data-urlencode "user[username]=$ADMIN_EMAIL" --data-urlencode "user[password]=$ADMIN_PASSWORD" $B/auth.php
 grep -q NRGNSID $J && ok "login" || { echo "FAIL login"; exit 1; }
+TOK=$(tok $B/)
 
 # --- page: add, edit with SET column, delete
 S=$A/structure/single/divEditor/
@@ -101,7 +104,7 @@ post "${F}save-dir" --data-urlencode "componentAction=addDir" --data-urlencode "
   --data-urlencode "share_uploads[upl_title]=claude-test-dir"
 DID=$(q "SELECT upl_id FROM share_uploads WHERE upl_title='claude-test-dir'")
 isok && [ -n "$DID" ] && ok "dir create" || bad "dir create"
-curl -sS -c $J -b $J -X POST -H 'X-Request: JSON' -F "key=file" -F "file=@$SCR/claude-test.png;type=image/png" -o $R "${F}upload-temp/"
+curl -sS -c $J -b $J -X POST -H 'X-Request: JSON' -H "X-CSRF-Token: $TOK" -F "key=file" -F "file=@$SCR/claude-test.png;type=image/png" -o $R "${F}upload-temp/"
 isok && ok "upload temp" || bad "upload temp"
 post "${F}save" --data-urlencode "componentAction=add" --data-urlencode "share_uploads[upl_id]=" --data-urlencode "share_uploads[upl_pid]=$DID" \
   --data-urlencode "share_uploads[upl_path]=uploads/temp/claude-test.png" --data-urlencode "share_uploads[upl_title]=claude-test" \
@@ -111,7 +114,7 @@ FPATH=$(q "SELECT upl_path FROM share_uploads WHERE upl_pid='$DID' LIMIT 1")
 [ -n "$FPATH" ] && [ "$(curl -sS -o /dev/null -w '%{http_code}' "$B/resizer/w40-h30/$FPATH")" = 200 ] && ok "file via resizer" || bad "file via resizer"
 # видеофайл — обычный файл: без плеера и перекодировки, тип unknown (раньше video)
 MP4=$(mktemp); printf '\x00\x00\x00\x18ftypmp42\x00\x00\x00\x00mp42isom' > $MP4
-curl -sS -c $J -b $J -X POST -H 'X-Request: JSON' -F "key=file" -F "file=@$MP4;filename=claude-test.mp4;type=video/mp4" -o $R "${F}upload-temp/"
+curl -sS -c $J -b $J -X POST -H 'X-Request: JSON' -H "X-CSRF-Token: $TOK" -F "key=file" -F "file=@$MP4;filename=claude-test.mp4;type=video/mp4" -o $R "${F}upload-temp/"
 isok && ok "upload temp mp4" || bad "upload temp mp4"
 rm -f $MP4
 post "${F}save" --data-urlencode "componentAction=add" --data-urlencode "share_uploads[upl_id]=" --data-urlencode "share_uploads[upl_pid]=$DID" \
@@ -133,7 +136,7 @@ rm -f $WEB/uploads/temp/claude-test.png
 
 
 # --- logout
-curl -sS -c $J -b $J -o /dev/null -e "$B/" --data-urlencode 'user[logout]=1' $B/auth.php
+curl -sS -c $J -b $J -o /dev/null -e "$B/" --data-urlencode "csrf_token=$TOK" --data-urlencode 'user[logout]=1' $B/auth.php
 [ "$(curl -sS -c $J -b $J -o /dev/null -w '%{http_code}' $A/users/)" = 404 ] && ok "logout" || bad "logout"
 
 echo "== write failures: $fail"

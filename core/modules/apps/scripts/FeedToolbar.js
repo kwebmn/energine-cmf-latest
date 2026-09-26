@@ -198,7 +198,7 @@ var FeedToolbar = new Class(/** @lends FeedToolbar# */{
     _reload: function (data) {
         if (data) {
             var form = new Element('form').setProperties({'action': '', 'method': 'POST'});
-            form.adopt(new Element('input').setProperty('name', 'editMode').setProperty('type', 'hidden'));
+            form.adopt(new Element('input').setProperty('name', 'editMode').setProperty('type', 'hidden'), Energine.csrfInput());
             $(document.body).adopt(form);
             form.submit();
         }

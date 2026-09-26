@@ -122,7 +122,26 @@ class DocumentController extends Primitive {
             $language->setCurrent($language->getIDByAbbr(E()->getRequest()->getLang(), true));
             unset($language);
 
+            // POST без токена посетителя или с чужим Origin (Csrf) — до компонентов: ничего не сохраняется.
+            // Код 422, как у Rails: 403 подменяет своей страницей веб-сервер ISPConfig (Own Error-Documents),
+            // и посетитель не увидел бы, что форму нужно отправить ещё раз.
+            $csrfRefused = !Csrf::verify();
+            if ($csrfRefused && $this->getViewMode() == self::TRANSFORM_JSON) {
+                $response = E()->getResponse();
+                $response->setStatus(422);
+                $response->setHeader('Content-Type', 'text/javascript; charset=utf-8');
+                $response->write(json_encode([
+                    'result' => false,
+                    'title' => E()->Utils->translate('TXT_ERROR') . "\n",
+                    'errors' => [['message' => E()->Utils->translate('ERR_CSRF')]],
+                ], JSON_UNESCAPED_UNICODE));
+                return;
+            }
+
             try {
+                if ($csrfRefused) {
+                    throw new SystemException('ERR_CSRF', SystemException::ERR_403);
+                }
                 $document = E()->getDocument();
                 $document->loadComponents([$this, 'getXMLStructure']);
                 $document->runComponents();
@@ -185,6 +204,9 @@ class DocumentController extends Primitive {
                     $document->componentManager->add($ec);
                 }
                 $ec->setError($e);
+                if ($csrfRefused) {
+                    E()->getResponse()->setStatus(422);
+                }
 
                 $document->runComponents();
 

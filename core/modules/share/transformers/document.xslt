@@ -21,6 +21,8 @@
     <xsl:variable name="RESIZER_URL"><xsl:value-of select="$BASE/@resizer"/></xsl:variable>
     <xsl:variable name="MAIN_SITE"><xsl:value-of select="$DOC_PROPS[@name='base']/@default"/><xsl:value-of select="$LANG_ABBR"/></xsl:variable>
     <xsl:variable name="TEMPLATE"><xsl:value-of select="$DOC_PROPS[@name='template']"/></xsl:variable>
+    <!-- токен против подделки запросов: скрытое поле csrf_token в каждой POST-форме, заголовок у запросов из JS -->
+    <xsl:variable name="CSRF" select="string($DOC_PROPS[@name='csrf'])"/>
 
 
     <xsl:template match="/" mode="title">
@@ -121,6 +123,7 @@
             </xsl:otherwise>
         </xsl:choose>
         <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+        <meta name="csrf-token" content="{$CSRF}"/>
         <xsl:if test="$DOC_PROPS[@name='keywords']">
             <meta name="keywords" content="{$DOC_PROPS[@name='keywords']}"/>
         </xsl:if>
@@ -142,6 +145,7 @@
             'media' : '<xsl:value-of select="$MEDIA_URL"/>',
             'root' : '<xsl:value-of select="$MAIN_SITE"/>',
             'lang' : '<xsl:value-of select="$DOC_PROPS[@name='lang']/@real_abbr"/>',
+            'csrf' : '<xsl:value-of select="$CSRF"/>',
             'singleMode':<xsl:value-of select="boolean($DOC_PROPS[@name='single'])"/>
             });
         </script>

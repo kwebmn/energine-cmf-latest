@@ -240,6 +240,7 @@ var PageToolbar = new Class(/** @lends PageToolbar# */{
                     type: 'hidden',
                     value: '1'
                 }))
+            .grab(Energine.csrfInput())
             .inject(document.body).submit();
     }
 });

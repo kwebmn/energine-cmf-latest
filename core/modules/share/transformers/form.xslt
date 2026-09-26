@@ -22,6 +22,7 @@
                 <xsl:when test="@class='Form'"><xsl:attribute name="class">form-horizontal base_form forms_form</xsl:attribute></xsl:when>
 			</xsl:choose>
             <input type="hidden" name="componentAction" value="{@componentAction}" id="componentAction"/>
+            <input type="hidden" name="csrf_token" value="{$CSRF}"/>
     		<xsl:apply-templates/>
         </form>
     </xsl:template>
@@ -40,6 +41,7 @@
 
         <form method="post" action="{@action}" class="e-grid-form">
             <input type="hidden" name="componentAction" value="{@componentAction}" id="componentAction"/>
+            <input type="hidden" name="csrf_token" value="{$CSRF}"/>
             <xsl:apply-templates/>
         </form>
     </xsl:template>

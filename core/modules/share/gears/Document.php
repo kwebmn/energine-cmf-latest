@@ -267,6 +267,11 @@ final class Document extends Primitive implements IDocument {
         $prop->setAttribute('real_abbr', E()->getLanguage()->getAbbrByID($this->getLang()));
         $dom_documentProperties->appendChild($prop);
 
+        // токен против подделки запросов: meta и Energine.csrf в document.xslt, скрытое поле в формах
+        $prop = $this->doc->createElement('property', Csrf::token());
+        $prop->setAttribute('name', 'csrf');
+        $dom_documentProperties->appendChild($prop);
+
         if (($docVars = $this->getConfigValue('site.vars')) && is_array($docVars)) {
             $dom_documentVars = $this->doc->createElement('variables');
             foreach ($docVars as $varName => $varValue) {

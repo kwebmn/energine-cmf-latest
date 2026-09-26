@@ -122,6 +122,7 @@ var FileRepoForm = new Class(/** @lends FileRepoForm# */{
     xhrFileUpload: function (field_name, files, response_callback) {
         var body = new FormData(),
             field = this.element.getElementById(field_name);
+        body.append('csrf_token', Energine.csrf || '');
         body.append('key', field_name);
         body.append('pid', $('upl_pid').get('value'));
         body.append(field_name, files[0]);
@@ -132,11 +133,12 @@ var FileRepoForm = new Class(/** @lends FileRepoForm# */{
                 return response.json();
             })
             .then(function (result) {
-                if (result && !result.error) {
+                if (result && !result.error && result.tmp_name) {
                     response_callback(result);
                 } else {
-                    // отказ сервера (запрещённый тип файла, нет прав, нет места) показывается у поля
-                    this.validator.showError(field, (result && result.error_message) || 'ERR_UPLOAD');
+                    // отказ сервера (запрещённый тип файла, нет прав, нет места, устаревшая форма) показывается у поля
+                    this.validator.showError(field, (result && (result.error_message
+                        || (result.errors && result.errors[0] && result.errors[0].message))) || 'ERR_UPLOAD');
                 }
             }.bind(this))
             .catch(function (e) {

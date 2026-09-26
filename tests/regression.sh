@@ -15,6 +15,7 @@ echo "### smoke-write"; bash smoke-write.sh
 echo "### smoke-roundtrip"; php8.5 smoke-roundtrip.php
 echo "### smoke-editing"; php8.5 smoke-editing.php
 echo "### smoke-upload"; php8.5 smoke-upload.php
+echo "### csrf"; php8.5 smoke-csrf.php
 echo "### smoke-profile"; php8.5 smoke-profile.php
 echo "### session-id"; php8.5 session-id.php
 echo "### menu"; php8.5 menu.php

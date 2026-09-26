@@ -122,8 +122,9 @@ final class Response extends Primitive {
      * @param int $expire Expire time.
      * @param bool $domain Domain.
      * @param string $path Path.
+     * @param bool $httpOnly Недоступна из JS (cookie, которые читает JS, этот флаг не получают).
      */
-    public function addCookie($name = UserSession::DEFAULT_SESSION_NAME, $value = '', $expire = 0, $domain = false, $path = '/') {
+    public function addCookie($name = UserSession::DEFAULT_SESSION_NAME, $value = '', $expire = 0, $domain = false, $path = '/', $httpOnly = false) {
         if (!$domain) {
             if ($domain = $this->getConfigValue('site.domain')) {
                 $domain = '.' . $domain;
@@ -142,10 +143,10 @@ final class Response extends Primitive {
             $path = E()->getSiteManager()->getCurrentSite()->root;
             $domain = '';
         }*/
-        $secure = false;
+        $secure = (E()->getRequest()->getURI()->getScheme() == 'https');
         $_COOKIE[$name] = $value;
         $this->cookies[$name] =
-            compact('value', 'expire', 'path', 'domain', 'secure');
+            compact('value', 'expire', 'path', 'domain', 'secure', 'httpOnly');
     }
 
     /**
@@ -155,7 +156,11 @@ final class Response extends Primitive {
      */
     public function sendCookies() {
         foreach ($this->cookies as $name => $params) {
-            setcookie($name, $params['value'], $params['expire'], $params['path'], $params['domain'], $params['secure']);
+            // SameSite=Lax: с чужого сайта cookie приходят только при переходе по ссылке, не с POST
+            setcookie($name, $params['value'], [
+                'expires' => $params['expire'], 'path' => $params['path'], 'domain' => $params['domain'],
+                'secure' => $params['secure'], 'httponly' => $params['httpOnly'], 'samesite' => 'Lax',
+            ]);
         }
     }
 
@@ -222,18 +227,32 @@ final class Response extends Primitive {
     }
 
     /**
+     * Адрес ведёт на этот же сайт: путь от корня или полный адрес с хостом запроса.
+     *
+     * @param string $url
+     * @return bool
+     */
+    private static function isLocalURL($url) {
+        if (preg_match('~[\x00-\x1f\\\\]~', $url)) {
+            return false;
+        }
+        if (preg_match('~^/(?!/)~', $url)) {
+            return true;
+        }
+        $host = preg_replace('/:\d+$/', '', (string)($_SERVER['HTTP_HOST'] ?? ''));
+        return in_array(strtolower((string)parse_url($url, PHP_URL_SCHEME)), ['http', 'https'], true)
+            && $host !== '' && strcasecmp((string)parse_url($url, PHP_URL_HOST), $host) === 0;
+    }
+
+    /**
      * Go back.
      *
      * @see auth.php
      */
     public function goBack() {
-        if (isset($_GET['return'])) {
-            $url = $_GET['return'];
-        }
-        else if (isset($_SERVER['HTTP_REFERER'])) {
-            $url = $_SERVER['HTTP_REFERER'];
-        }
-        else {
+        $url = $_GET['return'] ?? $_SERVER['HTTP_REFERER'] ?? null;
+        // только на этот же сайт: чужой адрес в return или Referer уводил бы посетителя куда угодно
+        if (!is_string($url) || !self::isLocalURL($url)) {
             $url = E()->getSiteManager()->getCurrentSite()->root;
         }
         $this->setHeader('Location', $url);

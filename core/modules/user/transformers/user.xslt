@@ -9,6 +9,7 @@
     <xsl:template match="component[@sample='LoginForm']">
         <form method="post" action="{@action}" class="base_form login_form form-horizontal">
             <input type="hidden" name="componentAction" value="{@componentAction}" />
+            <input type="hidden" name="csrf_token" value="{$CSRF}"/>
             <xsl:apply-templates/>
         </form>
     </xsl:template>

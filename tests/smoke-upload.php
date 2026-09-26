@@ -18,6 +18,7 @@ function upload($name, $content, $mime) {
         CURLOPT_POSTFIELDS     => ['key' => 'upl_path', 'upl_path' => new CURLFile($tmp, $mime, $name)],
         CURLOPT_REFERER        => BASE . '/',
         CURLOPT_TIMEOUT        => 60,
+        CURLOPT_HTTPHEADER     => ['X-CSRF-Token: ' . csrfToken()],
     ]);
     $body = curl_exec($ch);
     $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -31,7 +32,9 @@ login();
 // 1. a PHP script must be refused and must not appear on disk
 [$code, $body] = upload('claude-probe.php', "<?php echo 'executed';", 'application/x-php');
 $landed = file_exists(TEMP_DIR . 'claude-probe.php');
-check('.php отвергнут', !$landed, $body);
+// отказ должен прийти от проверки файла (JSON с error), а не от чего-то ещё до неё (например, токена)
+$refusedByCheck = fn($body) => ($j = json_decode($body, true)) && !empty($j['error']) && !empty($j['error_message']);
+check('.php отвергнут проверкой файла', $refusedByCheck($body), $body);
 check('.php не попал на диск', !$landed, TEMP_DIR . 'claude-probe.php');
 if ($landed) unlink(TEMP_DIR . 'claude-probe.php');
 
@@ -42,7 +45,7 @@ check('.php недоступен по URL (404)', $c2 === 404, 'HTTP ' . $c2);
 // 2. double extension: the last one is what the web server looks at
 [, $body3] = upload('claude-probe.jpg.php', "<?php echo 'executed';", 'image/jpeg');
 $landed3 = file_exists(TEMP_DIR . 'claude-probe.jpg.php');
-check('.jpg.php отвергнут', !$landed3, $body3);
+check('.jpg.php отвергнут проверкой файла', !$landed3 && $refusedByCheck($body3), $body3);
 if ($landed3) unlink(TEMP_DIR . 'claude-probe.jpg.php');
 
 // 3. a real image still uploads (no regression)

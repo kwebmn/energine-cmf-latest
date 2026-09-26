@@ -19,7 +19,12 @@ function pdo() {
 function q($sql, $args = []) { $st = pdo()->prepare($sql); $st->execute($args); return $st; }
 function scalar($sql, $args = []) { return q($sql, $args)->fetchColumn(); }
 
+// POST без заголовка X-CSRF-Token получает токен текущего посетителя (csrfToken);
+// пустой заголовок 'X-CSRF-Token: ' — отправить без токена
 function http($url, $post = null, $headers = [], $referer = null) {
+    if ($post !== null && !preg_grep('/^X-CSRF-Token:/i', $headers)) {
+        $headers[] = 'X-CSRF-Token: ' . csrfToken();
+    }
     $ch = curl_init(str_starts_with($url, 'http') ? $url : BASE . $url);
     curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_COOKIEJAR => $GLOBALS['jar'], CURLOPT_COOKIEFILE => $GLOBALS['jar'],
         CURLOPT_HTTPHEADER => $headers, CURLOPT_REFERER => $referer ?? BASE . '/', CURLOPT_TIMEOUT => 120]);
@@ -29,6 +34,25 @@ function http($url, $post = null, $headers = [], $referer = null) {
     }
     $body = curl_exec($ch);
     return [curl_getinfo($ch, CURLINFO_HTTP_CODE), (string)$body];
+}
+// значение cookie из банки curl (формат Netscape, строки HttpOnly начинаются с #HttpOnly_)
+function cookie($name) {
+    foreach (@file($GLOBALS['jar'], FILE_IGNORE_NEW_LINES) ?: [] as $line) {
+        $f = explode("\t", $line);
+        if (count($f) == 7 && $f[5] === $name) return $f[6];
+    }
+    return null;
+}
+// токен CSRF текущего посетителя со страницы; берётся заново, когда сменились сессия или cookie гостя
+function csrfToken() {
+    static $cache = [];
+    $key = cookie('NRGNSID') . '|' . cookie('nrgn_csrf');
+    if (!array_key_exists($key, $cache)) {
+        [, $html] = http('/');
+        $key = cookie('NRGNSID') . '|' . cookie('nrgn_csrf');
+        $cache[$key] = preg_match('~<meta name="csrf-token" content="([^"]*)"~', $html, $m) ? $m[1] : '';
+    }
+    return $cache[$key];
 }
 function json($url, $post = '') { [$c, $b] = http($url, $post, ['X-Request: JSON']); return [$c, json_decode($b, true), $b]; }
 // значение константы интерфейса из справочника (тексты сообщений переведены)

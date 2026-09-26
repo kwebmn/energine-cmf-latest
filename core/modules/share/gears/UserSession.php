@@ -144,7 +144,11 @@ final class UserSession implements \SessionHandlerInterface {
             $path = E()->getSiteManager()->getCurrentSite()->root;
             $domain = '';
         }
-        session_set_cookie_params($this->lifespan, $path, $domain);
+        // из JS сессия не читается; SameSite=Lax — с чужого сайта cookie не приходит с POST
+        session_set_cookie_params([
+            'lifetime' => $this->lifespan, 'path' => $path, 'domain' => $domain,
+            'secure' => (E()->getRequest()->getURI()->getScheme() == 'https'), 'httponly' => true, 'samesite' => 'Lax',
+        ]);
         session_id($this->phpSessId);
         session_start();
         $this->isStarted = true;

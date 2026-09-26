@@ -93,6 +93,8 @@ PageEditor.BlockEditor = new Class(/** @lends PageEditor.BlockEditor# */{
      */
     body: function (value) {
         var data = new URLSearchParams();
+        // токен в теле: маяк заголовков не передаёт
+        data.append('csrf_token', Energine.csrf || '');
         data.append('data', value);
         if (this.ID) {
             data.append('ID', this.ID);
@@ -115,9 +117,15 @@ PageEditor.BlockEditor = new Class(/** @lends PageEditor.BlockEditor# */{
             .then(function (response) {
                 if (response.ok) {
                     this.saved = value;
-                } else {
-                    console.warn('save-text: HTTP ' + response.status);
+                    return;
                 }
+                // блок не сохранён (например, форма устарела): правка остаётся, администратор узнаёт причину
+                return response.json().catch(function () {
+                    return null;
+                }).then(function (result) {
+                    alert((result && result.errors && result.errors[0] && result.errors[0].message)
+                        || ('HTTP ' + response.status));
+                });
             }.bind(this))
             .catch(function (e) {
                 console.warn(e);

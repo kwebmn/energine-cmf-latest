@@ -889,16 +889,6 @@ class FileRepository extends Grid implements SampleFileRepository {
         $builder = new JSONCustomBuilder();
         $this->setBuilder($builder);
 
-        if (!empty($_SERVER['HTTP_ORIGIN'])) {
-            header('Access-Control-Allow-Origin: ' . $_SERVER['HTTP_ORIGIN']);
-            header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
-            header('Access-Control-Allow-Headers: Origin, X-Requested-With');
-        }
-
-        if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
-            exit();
-        }
-
         $response = [
             'name'          => '',
             'type'          => '',

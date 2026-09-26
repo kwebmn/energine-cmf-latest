@@ -12,6 +12,7 @@
                 <xsl:attribute name="class">e-grid-form</xsl:attribute>
             </xsl:if>
             <input type="hidden" name="componentAction" value="{@componentAction}"/>
+            <input type="hidden" name="csrf_token" value="{$CSRF}"/>
             <xsl:apply-templates/>
     	</form>
     </xsl:template>

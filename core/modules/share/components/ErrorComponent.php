@@ -77,7 +77,9 @@ class ErrorComponent extends DataSet {
                 $message = E()->Utils->translate("TXT_ERROR_404");
                 break;
             case SystemException::ERR_403:
-                $message = E()->Utils->translate("TXT_ERROR_403");
+                // особая причина отказа (например, ERR_CSRF) показывается своим текстом, обычный 403 — общим
+                $message = ($this->exception->getMessage() !== E()->Utils->translate('ERR_403'))
+                    ? $this->exception->getMessage() : E()->Utils->translate("TXT_ERROR_403");
                 break;
             default:
                 $message = $this->exception->getMessage();

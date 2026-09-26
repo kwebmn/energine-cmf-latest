@@ -50,8 +50,10 @@ function serializeForm($html) {
     return implode('&', array_map(fn($p) => rawurlencode($p[0]) . '=' . rawurlencode($p[1]), $pairs));
 }
 
-http("$B/login/");
-http("$B/auth.php", http_build_query(['user' => ['login' => 1, 'username' => $E['ADMIN_EMAIL'], 'password' => $E['ADMIN_PASSWORD']]]));
+// вход несёт токен страницы входа (Csrf); формы правки приносят свой токен скрытым полем
+[, $loginPage] = http("$B/login/");
+$csrf = preg_match('~<meta name="csrf-token" content="([^"]*)"~', $loginPage, $m) ? $m[1] : '';
+http("$B/auth.php", http_build_query(['csrf_token' => $csrf, 'user' => ['login' => 1, 'username' => $E['ADMIN_EMAIL'], 'password' => $E['ADMIN_PASSWORD']]]));
 
 $editors = [
     'site'                => '/admin/structure/sites/single/siteEditor/1/edit/',

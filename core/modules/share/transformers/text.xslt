@@ -52,6 +52,7 @@
         <script  type="text/javascript" src="scripts/codemirror/mode/htmlmixed/htmlmixed.js"></script>
         <form method="post" action="{@action}" class="e-grid-form">
             <input type="hidden" name="componentAction" value="{@componentAction}" id="componentAction"/>
+            <input type="hidden" name="csrf_token" value="{$CSRF}"/>
             <xsl:apply-templates/>
         </form>    
     </xsl:template>-->

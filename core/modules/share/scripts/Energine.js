@@ -152,6 +152,29 @@ var Energine = /** @lends Energine */{
         };
         method = method || 'post';
 
+        // ошибки из ответа сервера: текст для администратора
+        var showErrors = function (response) {
+            var msg = (typeof response.title != 'undefined')
+                ? response.title
+                : 'Произошла ошибка:\n';
+            (response.errors || []).each(function (error) {
+                if (typeof error.field != 'undefined') {
+                    msg += error.field + " :\t";
+                }
+                if (typeof error.message != 'undefined') {
+                    msg += error.message + "\n";
+                } else {
+                    msg += error + "\n";
+                }
+            });
+
+            alert(msg);
+
+            if (onUserError) {
+                onUserError(response);
+            }
+        };
+
         new Request.JSON({
             'url': uri + ((Energine.forceJSON) ? '?json' : ''),
             'method': method,
@@ -159,6 +182,10 @@ var Energine = /** @lends Energine */{
             // 'noCache': true,
             'evalResponse': false,
             'onComplete': function (response, responseText) {
+                // ответ с кодом ошибки разбирает onFailure
+                if (this.status >= 400) {
+                    return;
+                }
                 if (!response) {
                     onServerError(responseText);
                     return;
@@ -167,29 +194,22 @@ var Energine = /** @lends Energine */{
                 if (response.result) {
                     onSuccess(response);
                 } else {
-                    var msg = (typeof response.title != 'undefined')
-                        ? response.title
-                        : 'Произошла ошибка:\n';
-                    response.errors.each(function (error) {
-                        if (typeof error.field != 'undefined') {
-                            msg += error.field + " :\t";
-                        }
-                        if (typeof error.message != 'undefined') {
-                            msg += error.message + "\n";
-                        } else {
-                            msg += error + "\n";
-                        }
-                    });
-
-                    alert(msg);
-
-                    if (onUserError) {
-                        onUserError(response);
-                    }
+                    showErrors(response);
                 }
             },
-            'onFailure': function (e) {
-                console.error(arguments)
+            'onFailure': function (xhr) {
+                // отказ с объяснением в JSON (например, устаревшая форма — код 422) показывается как ошибка формы
+                var response = null;
+                try {
+                    response = JSON.parse(xhr.responseText);
+                } catch (e) {
+                }
+                if (response && response.errors) {
+                    showErrors(response);
+                } else {
+                    onServerError(xhr.responseText);
+                    console.error(arguments);
+                }
             }
         }).send();
     },
@@ -308,6 +328,29 @@ var Energine = /** @lends Energine */{
  * @deprecated Use Energine.request.
  */
 Energine.request.request = Energine.request;
+
+/**
+ * Токен против подделки запросов (Csrf на сервере): каждый запрос MooTools несёт его в заголовке.
+ * Energine.csrf задаёт страница (document.xslt).
+ */
+(function () {
+    var send = Request.prototype.send;
+    Request.prototype.send = function () {
+        if (Energine.csrf) {
+            this.setHeader('X-CSRF-Token', Energine.csrf);
+        }
+        return send.apply(this, arguments);
+    };
+})();
+
+/**
+ * Скрытое поле токена для форм, которые создаёт JS (формы из XSLT получают его в шаблоне).
+ *
+ * @returns {Element}
+ */
+Energine.csrfInput = function () {
+    return new Element('input', {'type': 'hidden', 'name': 'csrf_token', 'value': Energine.csrf || ''});
+};
 
 /**
  * Local placeholder for an image of the given size: a grey SVG in a data: URL.
