@@ -1,8 +1,6 @@
 <?php
 
-namespace Energine\mail\gears;
-
-use Energine\share\gears\Primitive;
+namespace Energine\share\gears;
 
 final class Mail extends Primitive {
 

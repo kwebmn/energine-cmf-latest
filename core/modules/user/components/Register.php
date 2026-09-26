@@ -23,8 +23,8 @@ use Energine\share\components\DBDataSet,
     Energine\share\gears\Data,
     Energine\share\gears\DataDescription,
     Energine\share\gears\Field,
-    Energine\mail\gears\MailTemplate,
-    Energine\mail\gears\Mail;
+    Energine\share\gears\MailTemplate,
+    Energine\share\gears\Mail;
 
 /**
  * Registration form.

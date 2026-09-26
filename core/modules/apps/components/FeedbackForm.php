@@ -22,8 +22,8 @@ use Energine\share\components\DBDataSet,
     Energine\share\gears\QAL,
     Energine\share\gears\FieldDescription,
     Energine\share\gears\Field,
-    Energine\mail\gears\MailTemplate,
-    Energine\mail\gears\Mail;
+    Energine\share\gears\MailTemplate,
+    Energine\share\gears\Mail;
 /**
  * Form for feedback.
  *

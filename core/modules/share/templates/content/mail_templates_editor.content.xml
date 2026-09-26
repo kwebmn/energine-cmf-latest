@@ -22,7 +22,7 @@
                    <param name="id">current</param>
                </params>
             </component>
-            <component name="mailTemplateEditor" class="Energine\mail\components\MailTemplateEditor">
+            <component name="mailTemplateEditor" class="Energine\share\components\MailTemplateEditor">
                 <params>
                     <param name="rights">3</param>
                 </params>

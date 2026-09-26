@@ -1,9 +1,8 @@
 <?php
 
-namespace Energine\mail\components;
+namespace Energine\share\components;
 
-use Energine\share\components\Grid,
-    Energine\share\gears\SystemException;
+use Energine\share\gears\SystemException;
 
 class MailTemplateEditor extends Grid {
 

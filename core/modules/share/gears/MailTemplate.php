@@ -1,9 +1,6 @@
 <?php
 
-namespace Energine\mail\gears;
-
-use Energine\share\gears\DBWorker;
-use Energine\share\gears\SystemException;
+namespace Energine\share\gears;
 
 class MailTemplate {
 

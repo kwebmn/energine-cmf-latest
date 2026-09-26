@@ -19,8 +19,8 @@ use Energine\share\components\DataSet,
     Energine\share\gears\User,
     Energine\share\gears\QAL,
     Energine\share\gears\Field,
-    Energine\mail\gears\MailTemplate,
-    Energine\mail\gears\Mail;
+    Energine\share\gears\MailTemplate,
+    Energine\share\gears\Mail;
 
 /**
  * Form to restoring password.
