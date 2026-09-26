@@ -35,22 +35,7 @@ tempdb_create site && tempdb_user site "$T/dbpw" || exit 2
 Q() { TM -N site -e "$1" 2>/dev/null; }
 FP() { FP_SOCKET="$SOCK" FP_DB=site FP_USER=root php8.5 "$R/tests/tools/fingerprint.php"; }
 
-# копия точки входа: свои index.php, bootstrap.php, auth.php и конфиг; ядро и шаблоны — ссылками
-S="$T/site"
-mkdir -p "$S/web/uploads" "$S/private" && ln -s "$R" "$S/private/energine" \
-  && cp "$R/htdocs/index.php" "$R/htdocs/bootstrap.php" "$R/htdocs/auth.php" "$S/web/" || exit 2
-# статика и карта скриптов — площадки (--no-static их не раскладывает, раскладка — дело setup linker и scriptMap)
-for d in images scripts stylesheets templates resizer system.jsmap.php; do ln -s "$WEB/$d" "$S/web/$d" || exit 2; done
-cat > "$S/web/router.php" <<'PHP'
-<?php
-// встроенный сервер PHP: файлы (статика, auth.php) — как есть, остальное — index.php, как у nginx площадки
-$path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-if ($path !== '/' && is_file(__DIR__ . $path)) {
-    return false;
-}
-require __DIR__ . '/index.php';
-PHP
-chown -hR "$SITE_USER" "$S" && chown "$SITE_USER" "$T/dbpw" || exit 2
+tempsite "$SITE_USER" "$WEB" && chown "$SITE_USER" "$T/dbpw" || exit 2
 PORT=$(php8.5 -r '$s = stream_socket_server("tcp://127.0.0.1:0"); echo parse_url("tcp://" . stream_socket_get_name($s, false), PHP_URL_PORT);')
 URL="http://127.0.0.1:$PORT/"
 
@@ -58,7 +43,7 @@ URL="http://127.0.0.1:$PORT/"
 ENERGINE_DB_PASSWORD=$(cat "$T/dbpw")
 ENERGINE_ADMIN_PASSWORD=$(head -c 18 /dev/urandom | base64 | tr '+/' '-_')
 export ENERGINE_DB_PASSWORD ENERGINE_ADMIN_PASSWORD
-setup() { runuser -u "$SITE_USER" -- php8.5 "$S/web/index.php" setup "$@" < /dev/null 2>&1; }
+setup() { tempsite_setup "$@"; }
 INSTALL=(install --config="$S/web/system.config.php" --no-static --url="$URL" --db-socket="$SOCK" --db-name=site
          --db-user=energine --admin-email="$ADMIN_LOGIN" --admin-name=Admin)
 secret_free() { ! grep -qF -e "$ENERGINE_DB_PASSWORD" -e "$ENERGINE_ADMIN_PASSWORD" <<< "$1"; }

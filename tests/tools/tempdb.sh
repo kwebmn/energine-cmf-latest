@@ -64,3 +64,31 @@ tempdb_user() {
   # через stdin: пароль не попадает в аргументы процесса
   TM <<< "CREATE USER 'energine'@'localhost' IDENTIFIED BY '$pw'; GRANT ALL PRIVILEGES ON \`$1\`.* TO 'energine'@'localhost';"
 }
+
+# tempsite ПОЛЬЗОВАТЕЛЬ WEB — копия точки входа площадки в $T/site (переменная S): свои index.php, bootstrap.php,
+# auth.php и конфиг; статика, шаблоны и карта скриптов — ссылками на WEB площадки, ядро — ссылкой на репозиторий;
+# владелец — ПОЛЬЗОВАТЕЛЬ (владелец площадки, переменная SITE_USER). Установщик и встроенный сервер PHP работают
+# из копии: конфиг и файлы площадки не трогаются.
+tempsite() {
+  SITE_USER=$1
+  local web=$2 d
+  S="$T/site"
+  mkdir -p "$S/web/uploads" "$S/private" && ln -s "$R" "$S/private/energine" \
+    && cp "$R/htdocs/index.php" "$R/htdocs/bootstrap.php" "$R/htdocs/auth.php" "$S/web/" || return 2
+  # статика и карта скриптов — площадки (установка с --no-static их не раскладывает)
+  for d in images scripts stylesheets templates resizer system.jsmap.php; do ln -s "$web/$d" "$S/web/$d" || return 2; done
+  cat > "$S/web/router.php" <<'PHP'
+<?php
+// встроенный сервер PHP: файлы (статика, auth.php) — как есть, остальное — index.php, как у nginx площадки
+$path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+if ($path !== '/' && is_file(__DIR__ . $path)) {
+    return false;
+}
+require __DIR__ . '/index.php';
+PHP
+  chown -hR "$SITE_USER" "$S"
+}
+
+# tempsite_setup АРГУМЕНТЫ… — php index.php setup … из копии от имени владельца площадки;
+# пароли — только из окружения (ENERGINE_DB_PASSWORD, ENERGINE_ADMIN_PASSWORD), вывод — вместе с ошибками
+tempsite_setup() { runuser -u "$SITE_USER" -- php8.5 "$S/web/index.php" setup "$@" < /dev/null 2>&1; }
