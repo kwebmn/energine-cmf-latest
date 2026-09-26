@@ -172,7 +172,12 @@ final class UserSession implements \SessionHandlerInterface {
             $this->launch();
         }
 
-        if ($UID != $this->UID) $_SESSION['UID'] = $UID;
+        if ($UID != $this->UID) {
+            $_SESSION['UID'] = $UID;
+            // u_id строки сессии записывает write(): по нему закрываются сессии пользователя при смене пароля
+            // (раньше колонка оставалась пустой)
+            $this->UID = $UID;
+        }
 
         return $this;
     }

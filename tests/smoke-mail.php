@@ -96,19 +96,81 @@ check('login with the mailed password', $password && loginAs(TEST_EMAIL, $passwo
 
 // =====================================================================================================
 echo "-- restore password\n";
-freshJar('guest');
+// ссылка на смену пароля: запрос не меняет пароль, ссылка одноразовая, срок — час, в базе только хэш токена
+$restoreRow = fn() => q('SELECT u_password, u_restore_hash, u_restore_until FROM user_users WHERE u_name = ?', [TEST_EMAIL])->fetch();
+$sent = (string)translation('MSG_RESTORE_LINK_SENT');
+$badLink = (string)translation('ERR_RESTORE_LINK');
+$request = function ($lang = '') {
+    freshJar('guest');
+    [, $html] = http("/{$lang}restore-password/");
+    return http("/{$lang}restore-password/send/", formIn($html, 'restore-password/send', ['u_name' => TEST_EMAIL]));
+};
+$tokenOf = fn($link) => preg_match('~/reset/([0-9a-f]{64})/$~', (string)$link, $mm) ? $mm[1] : '';
+$hashBefore = $restoreRow()['u_password'];
 $off = mboxSize();
-[$c, $html] = http('/restore-password/');
-[$c, $body] = http('/restore-password/send/', formIn($html, 'restore-password/send', ['u_name' => TEST_EMAIL]));
-check("restore form answer (HTTP $c)", $c == 200 && clean($body) && str_contains($body, translation('MSG_PASSWORD_SENT')), $body);
+[$c, $body] = $request();
+check("restore request answer (HTTP $c)", $c == 200 && clean($body) && $sent !== '' && str_contains($body, $sent), $body);
 $messages = mboxWait($off, 1);
-$m = bySubject($messages, "Новый пароль для сайта $siteName");
-check('restore mail delivered', $m && $m['to'] === TEST_EMAIL && str_contains($m['text'], 'Уважаемый(ая) ' . USER_NAME . '!') && str_contains($m['html'], 'Уважаемый(ая) Тестовый пользователь &amp; Co!'), brief($messages));
-$newPassword = ($m && preg_match('/новый пароль: (\S+)/u', $m['text'], $mm)) ? $mm[1] : null;
-check('old password rejected, new one accepted', $newPassword && $newPassword !== $password && !loginAs(TEST_EMAIL, (string)$password)
-    && (freshJar('user') || true) && loginAs(TEST_EMAIL, $newPassword));
+$m = bySubject($messages, "Смена пароля на сайте $siteName");
+$link = ($m && preg_match('~(https?://\S+/restore-password/reset/[0-9a-f]{64}/)~', $m['text'], $mm)) ? $mm[1] : null;
+check('restore mail with a one-time link', $m && $m['to'] === TEST_EMAIL && $link && str_contains($m['html'], 'href="' . $link . '"')
+    && str_contains($m['text'], 'Уважаемый(ая) ' . USER_NAME . '!'), brief($messages));
+$row = $restoreRow();
+check('the request does not change the password', $row['u_password'] === $hashBefore);
+check('only a hash of the token is stored, valid for an hour', $link && $row['u_restore_hash'] === hash('sha256', $tokenOf($link))
+    && abs(strtotime($row['u_restore_until']) - time() - 3600) < 120, json_encode($row));
+freshJar('old');
+check('the old password works until the link is used', loginAs(TEST_EMAIL, (string)$password));
+
+$off = mboxSize();
+[$c, $body] = $request();
+check('a second request: the same answer', $c == 200 && str_contains($body, $sent), $body);
 [$c, $body] = http('/restore-password/send/', ['componentAction' => 'send', 'u_name' => 'nobody-' . getmypid() . '@localhost']);
-check('restore for unknown user', $c == 200 && clean($body) && str_contains($body, translation('ERR_NO_U_NAME')), $body);
+check('an unknown address: the same answer', $c == 200 && clean($body) && str_contains($body, $sent), $body);
+sleep(3);
+check('no mail for a second request within 5 minutes nor for an unknown address', count(mboxRead($off)) === 0, brief(mboxRead($off)));
+
+freshJar('guest');
+[$c, $body] = http('/restore-password/reset/' . str_repeat('0', 64) . '/');
+check('a wrong token is refused', $c == 200 && clean($body) && $badLink !== '' && str_contains($body, $badLink), $body);
+[$c, $html] = http((string)$link);
+check('the link opens the new password form', $c == 200 && clean($html) && str_contains($html, 'name="u_password"')
+    && str_contains($html, 'name="u_password2"'), $html);
+$change = str_replace('/reset/', '/change/', (string)$link);
+[$c, $body] = http($change, formIn($html, 'restore-password/change', ['u_password' => 'claude-1', 'u_password2' => 'claude-2']));
+check('a mismatched confirmation is refused', $c == 200 && str_contains($body, (string)translation('ERR_PWD_MISMATCH'))
+    && $restoreRow()['u_password'] === $hashBefore, $body);
+$newPassword = 'Claude-' . bin2hex(random_bytes(4));
+[$c, $html] = http((string)$link);
+[$c, $body] = http($change, formIn($html, 'restore-password/change', ['u_password' => $newPassword, 'u_password2' => $newPassword]));
+check('the new password is set', $c == 200 && clean($body) && str_contains($body, (string)translation('MSG_PASSWORD_CHANGED')), $body);
+check('the token is gone', $restoreRow()['u_restore_hash'] === null);
+jar('old');
+[$c] = http('/profile/');
+check('sessions opened before the change are closed', $c == 404, "HTTP $c");
+freshJar('user');
+check('old password rejected, new one accepted', !loginAs(TEST_EMAIL, (string)$password) && (freshJar('user') || true) && loginAs(TEST_EMAIL, $newPassword));
+freshJar('guest');
+[$c, $body] = http((string)$link);
+check('a used link is refused', $c == 200 && str_contains($body, $badLink), $body);
+
+// срок: ссылка, выданная больше часа назад, не действует
+$off = mboxSize();
+$request();
+$m = bySubject(mboxWait($off, 1), "Смена пароля на сайте $siteName");
+$link2 = ($m && preg_match('~(https?://\S+/restore-password/reset/[0-9a-f]{64}/)~', $m['text'], $mm)) ? $mm[1] : null;
+q("UPDATE user_users SET u_restore_until = ? WHERE u_name = ?", [date('Y-m-d H:i:s', time() - 60), TEST_EMAIL]);
+freshJar('guest');
+[$c, $body] = http((string)$link2);
+check('an expired link is refused', $link2 && $c == 200 && str_contains($body, $badLink), $body);
+
+// украинская страница: письмо и ссылка на украинском
+$off = mboxSize();
+$request('ua/');
+$m = bySubject(mboxWait($off, 1), "Зміна пароля на сайті " . scalar('SELECT site_name FROM share_sites_translation st JOIN share_sites s USING(site_id) WHERE s.site_is_default = 1 AND st.lang_id = 2'));
+check('the Ukrainian request gets a Ukrainian mail with a /ua/ link', $m && preg_match('~https?://\S+/ua/restore-password/reset/[0-9a-f]{64}/~', $m['text']),
+    brief(mboxRead($off)));
+q('UPDATE user_users SET u_restore_hash = NULL, u_restore_until = NULL WHERE u_name = ?', [TEST_EMAIL]);
 
 // =====================================================================================================
 echo "-- feedback form\n";

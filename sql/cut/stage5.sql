@@ -39,3 +39,53 @@ INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_va
       FROM `share_lang_tags` t JOIN `share_languages` l
      WHERE t.`ltag_name` = 'ERR_TOO_MANY_ATTEMPTS';
 
+-- 4. Восстановление пароля по одноразовой ссылке (RestorePassword): в базе — только хэш токена и срок ссылки;
+--    пароль меняется после перехода по ссылке, а не сразу по запросу. Письмо — ссылка вместо пароля.
+ALTER TABLE `user_users`
+    ADD COLUMN IF NOT EXISTS `u_restore_hash` char(64) DEFAULT NULL,
+    ADD COLUMN IF NOT EXISTS `u_restore_until` datetime DEFAULT NULL,
+    ADD INDEX IF NOT EXISTS `idx_restore_hash` (`u_restore_hash`);
+UPDATE `mail_templates` t JOIN `mail_templates_translation` tr USING (`template_id`) JOIN `share_languages` l USING (`lang_id`)
+   SET tr.`template_subject` = IF(l.`lang_abbr` = 'ua', 'Зміна пароля на сайті [site_name]', 'Смена пароля на сайте [site_name]'),
+       tr.`template_body` = IF(l.`lang_abbr` = 'ua',
+           CONCAT('Шановн[sex_suffix_hello] [user_name]!\n\n',
+                  'Для облікового запису [user_login] на сайті [site_name] ([site_url]) запитано зміну пароля.\n',
+                  'Щоб задати новий пароль, перейдіть за посиланням (воно дійсне одну годину):\n[restore_link]\n\n',
+                  'Якщо ви не запитували зміну пароля, просто проігноруйте цей лист: пароль залишиться попереднім.'),
+           CONCAT('Уважаем[sex_suffix_hello] [user_name]!\n\n',
+                  'Для учётной записи [user_login] на сайте [site_name] ([site_url]) запрошена смена пароля.\n',
+                  'Чтобы задать новый пароль, перейдите по ссылке (она действует один час):\n[restore_link]\n\n',
+                  'Если вы не запрашивали смену пароля, просто проигнорируйте это письмо: пароль останется прежним.')),
+       tr.`template_body_rtf` = IF(l.`lang_abbr` = 'ua',
+           CONCAT('<p>Шановн[sex_suffix_hello] [user_name]!</p>\n',
+                  '<p>Для облікового запису [user_login] на сайті <a href="[site_url]">[site_name]</a> запитано зміну пароля.</p>\n',
+                  '<p>Щоб задати новий пароль, перейдіть за посиланням (воно дійсне одну годину):<br><a href="[restore_link]">[restore_link]</a></p>\n',
+                  '<p>Якщо ви не запитували зміну пароля, просто проігноруйте цей лист: пароль залишиться попереднім.</p>'),
+           CONCAT('<p>Уважаем[sex_suffix_hello] [user_name]!</p>\n',
+                  '<p>Для учётной записи [user_login] на сайте <a href="[site_url]">[site_name]</a> запрошена смена пароля.</p>\n',
+                  '<p>Чтобы задать новый пароль, перейдите по ссылке (она действует один час):<br><a href="[restore_link]">[restore_link]</a></p>\n',
+                  '<p>Если вы не запрашивали смену пароля, просто проигнорируйте это письмо: пароль останется прежним.</p>'))
+ WHERE t.`template_sysname` = 'user_restore_password';
+UPDATE `mail_templates`
+   SET `template_hints` = '[sex_suffix_hello] - окончание обращения по полу пользователя (константы TXT_EMAIL_SUFFIX_SEX_M/F/UNKNOWN), [user_name] - имя, [user_login] - логин (e-mail), [restore_link] - ссылка для смены пароля (действует час), [site_name] - название сайта, [site_url] - адрес сайта'
+ WHERE `template_sysname` = 'user_restore_password';
+INSERT IGNORE INTO `share_lang_tags` (`ltag_name`) VALUES
+    ('MSG_RESTORE_LINK_SENT'), ('ERR_RESTORE_LINK'), ('MSG_PASSWORD_CHANGED'), ('TXT_NEW_PASSWORD');
+INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`)
+    SELECT t.`ltag_id`, l.`lang_id`,
+           CASE t.`ltag_name`
+               WHEN 'MSG_RESTORE_LINK_SENT' THEN IF(l.`lang_abbr` = 'ua',
+                   'Якщо цю адресу зареєстровано, на неї надіслано посилання для зміни пароля. Посилання дійсне одну годину.',
+                   'Если этот адрес зарегистрирован, на него отправлена ссылка для смены пароля. Ссылка действует один час.')
+               WHEN 'ERR_RESTORE_LINK' THEN IF(l.`lang_abbr` = 'ua',
+                   'Посилання для зміни пароля застаріло або вже використане. Запросіть нове.',
+                   'Ссылка для смены пароля устарела или уже использована. Запросите новую.')
+               WHEN 'MSG_PASSWORD_CHANGED' THEN IF(l.`lang_abbr` = 'ua',
+                   'Пароль змінено. Увійдіть із новим паролем.',
+                   'Пароль изменён. Войдите с новым паролем.')
+               ELSE IF(l.`lang_abbr` = 'ua', 'Новий пароль', 'Новый пароль')
+           END
+      FROM `share_lang_tags` t JOIN `share_languages` l
+     WHERE t.`ltag_name` IN ('MSG_RESTORE_LINK_SENT', 'ERR_RESTORE_LINK', 'MSG_PASSWORD_CHANGED', 'TXT_NEW_PASSWORD');
+-- прежние сообщения (новый пароль в письме, «неправильное имя пользователя» — выдавало, есть ли адрес)
+DELETE FROM `share_lang_tags` WHERE `ltag_name` IN ('MSG_PASSWORD_SENT', 'ERR_NO_U_NAME');
