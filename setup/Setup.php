@@ -761,6 +761,14 @@ final class Setup {
         $this->text(PHP_EOL . 'Создание символических ссылок в ' . CORE_DIR . ':');
         foreach ($this->config['modules'] as $module => $module_path) {
             $symlinked_dir = implode(DIRECTORY_SEPARATOR, array(CORE_DIR, MODULES, $module));
+
+            // ядро и проект в одном репозитории: модуль уже лежит там, куда вела бы ссылка
+            if (is_dir($symlinked_dir) && !is_link($symlinked_dir)
+                && realpath($symlinked_dir) === realpath($module_path)) {
+                $this->text('Модуль на месте: ', $symlinked_dir);
+                continue;
+            }
+
             $this->text('Создание символической ссылки ', $module_path, ' -> ', $symlinked_dir);
 
             if (file_exists($symlinked_dir) || is_link($symlinked_dir)) {
