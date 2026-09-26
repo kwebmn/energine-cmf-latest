@@ -7,7 +7,11 @@ require __DIR__ . '/testlib.php';
 
 $login = 'claude-profile-' . getmypid() . '@localhost';
 $password = bin2hex(random_bytes(8));
-$cleanup = fn() => q('DELETE FROM user_users WHERE u_name LIKE ?', ['claude-profile-%']);
+// и строки неудачных входов: проваленный прогон оставил бы их в журнале попыток
+$cleanup = function () {
+    q('DELETE FROM user_users WHERE u_name LIKE ?', ['claude-profile-%']);
+    q('DELETE FROM user_login_attempts WHERE la_login LIKE ?', ['claude-profile-%']);
+};
 $cleanup();
 register_shutdown_function($cleanup);
 q('INSERT INTO user_users (u_name, u_password, u_fullname, u_is_active) VALUES (?, ?, ?, 1)',
