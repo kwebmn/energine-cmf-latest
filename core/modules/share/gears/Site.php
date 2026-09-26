@@ -32,65 +32,52 @@ class Site extends Primitive {
         __get as _get;
     }
     /**
+     * Модуль сайта (site/modules/main): шаблоны, трансформеры и конфиги компонентов сайта.
+     */
+    const FOLDER = 'main';
+    /**
      * Site data.
      * @var array $data
      */
     private $data;
     /**
-     * Site translations.
-     * @var array $siteTranslationsData
+     * Название, ключевые слова и описание сайта по языкам.
+     * @var array $translations
      */
-    static private $siteTranslationsData;
-    /**
-     * Flag, indicates if extended properties 'share_sites_properties' table exists.
-     * @var string
-     */
-    public static $isPropertiesTableExists = null;
+    private $translations = [];
 
     /**
-     * @param array $data Data.
+     * @param array $data строка share_sites
+     * @param array $translations строки share_sites_translation по lang_id
      */
-    public function __construct($data) {
+    public function __construct($data, array $translations = []) {
         parent::__construct();
         $this->data = E()->Utils->convertFieldNames($data, 'site_');
-        if (is_null(self::$isPropertiesTableExists)) {
-            self::$isPropertiesTableExists = $this->dbh->tableExists('share_sites_properties');
-        }
+        $this->data['folder'] = self::FOLDER;
+        $this->translations = $translations;
     }
 
     /**
-     * Load site.
-     * Return the information about all sites in the form of an array of Site objects.
-     * Right away all info is cached from translation table, because ata this moment current language is not yet defined.
-     * @return Site[]
+     * Запись сайта — единственная строка share_sites; переводы читаются сразу: текущий язык в этот момент ещё
+     * не определён.
+     *
+     * @return Site|null
      */
     public static function load() {
-        $result = [];
-        $res = E()->getDB()->select('share_sites');
-        foreach ($res as $siteData) {
-            if(!empty($siteData['site_meta_robots'])){
-                $siteData['site_meta_robots'] = explode(',', $siteData['site_meta_robots']);
-            }
-            else {
-                $siteData['site_meta_robots'] = [];
-            }
-            $siteData['site_is_indexed'] = !in_array('NOINDEX', $siteData['site_meta_robots']);
-            $result[$siteData['site_id']] = new Site($siteData);
+        if (!($res = E()->getDB()->select('share_sites'))) {
+            return null;
         }
-        $res = E()->getDB()->select('share_sites_translation');
-
-        self::$siteTranslationsData = [];
-        $f = function ($row) {
+        list($siteData) = $res;
+        $siteData['site_meta_robots'] = empty($siteData['site_meta_robots']) ? [] : explode(',', $siteData['site_meta_robots']);
+        $siteData['site_is_indexed'] = !in_array('NOINDEX', $siteData['site_meta_robots']);
+        $translations = [];
+        foreach (E()->getDB()->select('share_sites_translation', true, ['site_id' => $siteData['site_id']]) ?: [] as $row) {
+            $lang = $row['lang_id'];
             unset($row['lang_id'], $row['site_id']);
-            $row = E()->Utils->convertFieldNames($row, 'site_');
-            return $row;
-        };
-        foreach ($res as $row) {
-            self::$siteTranslationsData[$row['lang_id']][$row['site_id']] = $f($row);
-
+            $translations[$lang] = E()->Utils->convertFieldNames($row, 'site_');
         }
 
-        return $result;
+        return new Site($siteData, $translations);
     }
 
     /**
@@ -163,21 +150,11 @@ class Site extends Primitive {
             $result = $this->data[$propName];
         }
         elseif (in_array($propName, ['name', 'metaKeywords', 'metaDescription'])) {
-            return $this->data[$propName] = self::$siteTranslationsData[E()->getLanguage()->getCurrent()][$this->data['id']][$propName];
-        } elseif (self::$isPropertiesTableExists) {
-            $res = $this->data[$propName] = $this->dbh->getScalar(
-                'SELECT prop_value FROM share_sites_properties
-                    WHERE prop_name = %s
-                    AND (site_id = %s
-                    OR site_id IS NULL)
-                    ORDER BY site_id DESC
-                    LIMIT 1',
-                $propName,
-                $this->data['id']
-            );
-
+            return $this->data[$propName] = $this->translations[E()->getLanguage()->getCurrent()][$propName] ?? null;
+        } else {
+            // дополнительный параметр сайта (share_sites_properties, «Настройки сайта»)
+            $res = $this->data[$propName] = $this->dbh->getScalar('share_sites_properties', 'prop_value', ['prop_name' => $propName]);
             $result = (false !== $res) ? $res : $result;
-            //var_dump($result, $propName);
         }
         return $result;
     }

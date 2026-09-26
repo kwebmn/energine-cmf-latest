@@ -6,9 +6,7 @@
         </javascript>
         <fields>
             <field name="prop_id"/>
-            <field name="prop_is_default" sort="0" type="boolean" title="FIELD_PROP_IS_DEFAULT"/>
             <field name="prop_name"/>
-            <field name="site_id" type="hidden"/>
             <field name="prop_value"/>
         </fields>
         <toolbar>

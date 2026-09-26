@@ -31,24 +31,13 @@ class SitePropertiesSaver extends ExtendedSaver {
     }
 
     /**
-     * Save data into the table of uploads and tags.
+     * Имя параметра не повторяется (ключ prop_name): отказ до записи — сообщением, а не текстом ошибки SQL.
      */
     public function save() {
-
-        $sIdField = $this->getData()->getFieldByName('site_id');
-        $siteId = intval($sIdField->getRowData(0));
         $propName = $this->getData()->getFieldByName('prop_name')->getRowData(0);
-
-        if($siteId
-            && $this->getMode() !== QAL::UPDATE) {
-            $propCount = (int)$this->dbh->getScalar('SELECT COUNT(prop_id) FROM share_sites_properties WHERE prop_name = %s AND (site_id = %s OR site_id IS NULL)', $propName, $siteId);
-            // If there is no property, we need to insert "default" property with NULL as site id
-            if($propCount === 0) {
-                $sIdField->setData('', true);
-            }
-            elseif($propCount > 1) {
-                throw new SystemException('ERR_PROPERTY_EXIST');
-            }
+        $id = (int)($_POST['share_sites_properties']['prop_id'] ?? 0);
+        if ($this->dbh->getScalar('SELECT COUNT(*) FROM share_sites_properties WHERE prop_name = %s AND prop_id <> %s', $propName, $id)) {
+            throw new SystemException('ERR_PROPERTY_EXIST', SystemException::ERR_WARNING);
         }
 
         return parent::save();

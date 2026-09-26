@@ -59,10 +59,9 @@ class SiteSettings extends Grid {
      * Дополнительные параметры сайта — грид share_sites_properties во вкладке формы.
      */
     protected function properties() {
-        $sp = $this->getStateParams(true);
         $this->request->shiftPath(2);
         $this->propertiesEditor = $this->document->componentManager->createComponent('propertiesEditor',
-            'Energine\share\components\SitePropertiesEditor', ['siteID' => $sp['site_id']]);
+            'Energine\share\components\SitePropertiesEditor', null);
         $this->propertiesEditor->run();
     }
 

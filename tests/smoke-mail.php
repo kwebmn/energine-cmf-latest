@@ -77,7 +77,7 @@ function loginAs($user, $password) {
     return $c == 200;
 }
 
-$siteName = scalar('SELECT site_name FROM share_sites_translation st JOIN share_sites s USING(site_id) WHERE s.site_is_default = 1 AND st.lang_id = 1');
+$siteName = scalar('SELECT site_name FROM share_sites_translation WHERE lang_id = 1');
 
 // =====================================================================================================
 echo "-- registration\n";
@@ -188,7 +188,7 @@ check('an expired link is refused', $link2 && $c == 200 && str_contains($body, $
 // украинская страница: письмо и ссылка на украинском
 $off = mboxSize();
 $request('ua/');
-$m = bySubject(mboxWait($off, 1), "Зміна пароля на сайті " . scalar('SELECT site_name FROM share_sites_translation st JOIN share_sites s USING(site_id) WHERE s.site_is_default = 1 AND st.lang_id = 2'));
+$m = bySubject(mboxWait($off, 1), "Зміна пароля на сайті " . scalar('SELECT site_name FROM share_sites_translation WHERE lang_id = 2'));
 check('the Ukrainian request gets a Ukrainian mail with a /ua/ link', $m && preg_match('~https?://\S+/ua/restore-password/reset/[0-9a-f]{64}/~', $m['text']),
     brief(mboxRead($off)));
 q('UPDATE user_users SET u_restore_hash = NULL, u_restore_until = NULL WHERE u_name = ?', [TEST_EMAIL]);

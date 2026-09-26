@@ -15,9 +15,8 @@ BEGIN NOT ATOMIC
 END //
 DELIMITER ;
 
--- 1. Адрес сайта — из конфига (site.domain, site.root): записи доменов не читаются и не пишутся.
-DELETE FROM `share_domain2site`;
-DELETE FROM `share_domains`;
+-- 1. Адрес сайта — из конфига (site.domain, site.root): таблиц доменов нет.
+DROP TABLE IF EXISTS `share_domain2site`, `share_domains`;
 
 -- 2. «Настройки сайта» (admin/settings/) вместо редактора сайтов и доменов (admin/structure/sites/): та же страница
 --    переезжает в корень админки, её права остаются. Сайт не добавляется и не удаляется — константы редактора сайтов,
@@ -74,3 +73,27 @@ INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_va
       FROM `share_lang_tags` t JOIN `share_languages` l
      WHERE t.`ltag_name` = 'TXT_ALL_DIVISIONS';
 DELETE FROM `share_lang_tags` WHERE `ltag_name` IN ('FIELD_SITE');
+
+-- 5. Один сайт: у записи сайта нет флажков «по умолчанию» и «активен», папки и порядка; свойства сайта — без
+--    номера сайта, одно значение на имя (значение сайта важнее общего, заданного для всех сайтов).
+ALTER TABLE `share_sites`
+    DROP COLUMN IF EXISTS `site_is_active`,
+    DROP COLUMN IF EXISTS `site_is_default`,
+    DROP COLUMN IF EXISTS `site_folder`,
+    DROP COLUMN IF EXISTS `site_order_num`;
+DELIMITER //
+BEGIN NOT ATOMIC
+    IF EXISTS (SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE()
+                  AND TABLE_NAME = 'share_sites_properties' AND COLUMN_NAME = 'site_id') THEN
+        DELETE p0 FROM `share_sites_properties` p0 JOIN `share_sites_properties` p1
+            ON p1.`prop_name` = p0.`prop_name` AND p0.`site_id` IS NULL AND p1.`site_id` IS NOT NULL;
+    END IF;
+END //
+DELIMITER ;
+ALTER TABLE `share_sites_properties` DROP FOREIGN KEY IF EXISTS `share_sites_properties_ibfk_1`;
+ALTER TABLE `share_sites_properties`
+    DROP INDEX IF EXISTS `site_id`,
+    DROP COLUMN IF EXISTS `site_id`,
+    ADD UNIQUE KEY IF NOT EXISTS `prop_name` (`prop_name`);
+DELETE FROM `share_lang_tags` WHERE `ltag_name` IN ('FIELD_SITE_IS_ACTIVE', 'FIELD_SITE_IS_DEFAULT', 'FIELD_SITE_FOLDER',
+    'FIELD_SITE_ORDER_NUM', 'FIELD_PROP_IS_DEFAULT');

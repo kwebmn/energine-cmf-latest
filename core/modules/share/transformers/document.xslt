@@ -19,7 +19,7 @@
     <xsl:variable name="STATIC_URL"><xsl:value-of select="$BASE/@static"/></xsl:variable>
     <xsl:variable name="MEDIA_URL"><xsl:value-of select="$BASE/@media"/></xsl:variable>
     <xsl:variable name="RESIZER_URL"><xsl:value-of select="$BASE/@resizer"/></xsl:variable>
-    <xsl:variable name="MAIN_SITE"><xsl:value-of select="$DOC_PROPS[@name='base']/@default"/><xsl:value-of select="$LANG_ABBR"/></xsl:variable>
+    <xsl:variable name="MAIN_SITE"><xsl:value-of select="$DOC_PROPS[@name='base']"/><xsl:value-of select="$LANG_ABBR"/></xsl:variable>
     <xsl:variable name="TEMPLATE"><xsl:value-of select="$DOC_PROPS[@name='template']"/></xsl:variable>
     <!-- токен против подделки запросов: скрытое поле csrf_token в каждой POST-форме, заголовок у запросов из JS -->
     <xsl:variable name="CSRF" select="string($DOC_PROPS[@name='csrf'])"/>

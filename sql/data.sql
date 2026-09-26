@@ -4,7 +4,7 @@ SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 INSERT INTO `share_languages` (`lang_id`, `lang_locale`, `lang_abbr`, `lang_name`, `lang_default`, `lang_order_num`) VALUES (1,'ru_UA.UTF8','ru','Русский',1,1);
 INSERT INTO `share_languages` (`lang_id`, `lang_locale`, `lang_abbr`, `lang_name`, `lang_default`, `lang_order_num`) VALUES (2,'uk_UA.UTF8','ua','Українська',0,2);
-INSERT INTO `share_sites` (`site_id`, `site_is_active`, `site_is_default`, `site_folder`, `site_order_num`, `site_meta_robots`) VALUES (1,1,1,'main',2,NULL);
+INSERT INTO `share_sites` (`site_id`, `site_meta_robots`) VALUES (1,NULL);
 INSERT INTO `share_sites_translation` (`site_id`, `lang_id`, `site_name`, `site_meta_keywords`, `site_meta_description`) VALUES (1,1,'Energine Platform',NULL,NULL);
 INSERT INTO `share_sites_translation` (`site_id`, `lang_id`, `site_name`, `site_meta_keywords`, `site_meta_description`) VALUES (1,2,'Energine Platform',NULL,NULL);
 INSERT INTO `user_groups` (`group_id`, `group_name`, `group_default`, `group_user_default`) VALUES (1,'Администратор',0,0);
@@ -266,8 +266,6 @@ INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (559,'FIELD_CURR_I
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (579,'TXT_ENTER_CAPTCHA');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (580,'TXT_LOGIN_ENGAGED');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (590,'FIELD_SITE_NAME');
-INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (591,'FIELD_SITE_IS_DEFAULT');
-INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (592,'FIELD_SITE_FOLDER');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (593,'FIELD_SITE_META_KEYWORDS');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (594,'FIELD_SITE_META_DESCRIPTION');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (595,'FIELD_SMAP_CONTENT');
@@ -332,7 +330,6 @@ INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (709,'FIELD_WEEK_N
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (710,'FIELD_WEEK_IS_ACTIVE');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (726,'TXT_TODAY');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (727,'TXT_YESTERDAY');
-INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (728,'FIELD_SITE_IS_ACTIVE');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (729,'FIELD_DOW_0');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (730,'FIELD_DOW_1');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (731,'FIELD_DOW_2');
@@ -919,7 +916,6 @@ INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2138,'FIELD_NEWS_
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2139,'FIELD_PAGE_RIGHTS');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2140,'FIELD_PID');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2141,'FIELD_PROP_ID');
-INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2142,'FIELD_PROP_IS_DEFAULT');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2143,'FIELD_PROP_NAME');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2144,'FIELD_PROP_VALUE');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2145,'FIELD_RESTORE_PASSWORD_RESULT');
@@ -1516,10 +1512,6 @@ INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (580,2,'Ця електронна адреса вже використовується. Будь-ласка, використайте\nінший e-mail.');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (590,1,'Название сайта');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (590,2,'Назва сайту');
-INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (591,1,'Базовый');
-INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (591,2,'Базовий');
-INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (592,1,'Вариант дизайна');
-INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (592,2,'Варіант');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (593,1,'Мета keywords');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (593,2,'Мета keywords');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (594,1,'Мета описание');
@@ -1650,8 +1642,6 @@ INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (726,2,'Сьогодні');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (727,1,'Вчера');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (727,2,'Вчора');
-INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (728,1,'Активный');
-INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (728,2,'Активний');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (729,1,'Пн');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (729,2,'Пн');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (730,1,'Вт');
@@ -2824,8 +2814,6 @@ INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2140,2,'Батьківський розділ');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2141,1,'Свойство');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2141,2,'Властивість');
-INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2142,1,'Значение по умолчанию');
-INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2142,2,'Значення за замовчуванням');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2143,1,'Название свойства');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2143,2,'Назва властивості');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2144,1,'Значение');

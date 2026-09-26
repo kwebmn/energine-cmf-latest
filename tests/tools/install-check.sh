@@ -2,7 +2,7 @@
 # Проверка установщика (этап 5г) на временном экземпляре MariaDB (tempdb.sh): база и файлы площадки
 # не трогаются. Установщик запускается от имени владельца площадки из копии точки входа — у неё свой
 # конфиг (--config) и нет статики (--no-static); ядро — сам репозиторий.
-#  1. setup install в пустую базу: 30 таблиц и 3 хранимые процедуры, языки ru и ua, администратор в группе
+#  1. setup install в пустую базу: 28 таблиц (мультисайта нет) и 3 хранимые процедуры, языки ru и ua, администратор в группе
 #     администраторов (пароль сверяется с хэшем), адрес сайта в конфиге (домен с портом, корень; в базе доменов нет),
 #     конфиг с режимом 600, служебные страницы
 #     без демо-строк; паролей нет в выводе;
@@ -86,7 +86,7 @@ out=$(setup "${INSTALL[@]}"); rc=$?
 is "setup install — код 0" "$rc" 0
 [ $rc -eq 0 ] || echo "$out" | tail -8 | sed 's/^/     /'
 secret_free "$out" && ok "паролей нет в выводе установщика" || bad "пароль в выводе установщика"
-is "таблиц" "$(Q 'SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = "site"')" 30
+is "таблиц" "$(Q 'SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = "site"')" 28
 is "хранимых процедур" "$(Q 'SELECT COUNT(*) FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA = "site"')" 3
 is "языки" "$(Q 'SELECT GROUP_CONCAT(lang_abbr ORDER BY lang_id) FROM share_languages')" "ru,ua"
 hash=$(Q "SELECT u_password FROM user_users WHERE u_name = '$ADMIN_LOGIN'")
@@ -100,7 +100,12 @@ is "администратор в группе администраторов" "
 # адрес сайта — в конфиге: домен с нестандартным портом и корень; записей доменов в базе нет
 is "конфиг: адрес сайта (домен с портом, корень)" "$(php8.5 -r 'define("ROOT_DIR", $argv[2]); $c = include $argv[1];
   echo $c["site"]["domain"] ?? "-", " ", $c["site"]["root"] ?? "-";' "$S/web/system.config.php" "$R" 2>/dev/null)" "127.0.0.1:$PORT /"
-is "записей доменов в базе нет" "$(Q 'SELECT COUNT(*) FROM share_domains')" 0
+# мультисайта нет: ни таблиц доменов и привязки групп к сайтам, ни колонок сайта у страниц и свойств, ни флажков сайта
+is "таблиц мультисайта нет" "$(Q "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = 'site'
+  AND TABLE_NAME IN ('share_domains', 'share_domain2site', 'share_groups2sites')")" 0
+is "колонок мультисайта нет" "$(Q "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = 'site' AND (TABLE_NAME, COLUMN_NAME) IN
+  (('share_sitemap', 'site_id'), ('share_sites_properties', 'site_id'), ('share_sites', 'site_is_default'),
+   ('share_sites', 'site_is_active'), ('share_sites', 'site_folder'), ('share_sites', 'site_order_num'))")" 0
 is "конфиг: режим 600, владелец площадки" "$(stat -c '%a %U' "$S/web/system.config.php" 2>/dev/null)" "600 $SITE_USER"
 # рабочему сайту отладка не нужна: с ней посетитель видит пути сервера и цепочку вызовов на странице ошибки
 php8.5 -r 'define("ROOT_DIR", $argv[2]); $c = include $argv[1]; exit(empty($c["site"]["debug"]) ? 0 : 1);' \

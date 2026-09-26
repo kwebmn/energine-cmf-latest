@@ -255,9 +255,8 @@ final class Document extends Primitive implements IDocument {
         $prop->setAttribute('media', (($mediaURL =
             $this->getConfigValue('site.media')) ? $mediaURL : $baseURL));
         $prop->setAttribute('resizer', (($resizerURL =
-            $this->getConfigValue('site.resizer')) ? $resizerURL : (E()->getSiteManager()->getDefaultSite()->base . 'resizer/')));
+            $this->getConfigValue('site.resizer')) ? $resizerURL : ($baseURL . 'resizer/')));
         $prop->setAttribute('folder', E()->getSiteManager()->getCurrentSite()->folder);
-        $prop->setAttribute('default', E()->getSiteManager()->getDefaultSite()->base);
         $dom_documentProperties->appendChild($prop);
 
         $prop = $this->doc->createElement('property', $this->getLang());

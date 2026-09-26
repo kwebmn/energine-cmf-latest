@@ -1,4 +1,4 @@
--- Energine Simple: схема базы — 30 таблиц и хранимые процедуры. Ставится в пустую базу установщиком:
+-- Energine Simple: схема базы — 28 таблиц и хранимые процедуры. Ставится в пустую базу установщиком:
 -- php web/index.php setup install (docs/INSTALL.md). Получена из установки полной системы и sql/cut/stage1–6.sql.
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
@@ -151,29 +151,6 @@ CREATE TABLE `share_action_log` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `share_domain2site` (
-  `domain_id` int(10) unsigned NOT NULL,
-  `site_id` int(10) unsigned NOT NULL,
-  PRIMARY KEY (`domain_id`,`site_id`),
-  KEY `site_id` (`site_id`),
-  CONSTRAINT `share_domain2site_ibfk_1` FOREIGN KEY (`domain_id`) REFERENCES `share_domains` (`domain_id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `share_domain2site_ibfk_2` FOREIGN KEY (`site_id`) REFERENCES `share_sites` (`site_id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `share_domains` (
-  `domain_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `domain_protocol` char(5) NOT NULL DEFAULT 'http',
-  `domain_port` mediumint(8) unsigned NOT NULL DEFAULT 80,
-  `domain_host` varchar(255) NOT NULL,
-  `domain_root` varchar(255) NOT NULL DEFAULT '/',
-  PRIMARY KEY (`domain_id`),
-  UNIQUE KEY `domain_protocol` (`domain_protocol`,`domain_host`,`domain_port`,`domain_root`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `share_lang_tags` (
   `ltag_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `ltag_name` varchar(70) NOT NULL,
@@ -285,10 +262,6 @@ CREATE TABLE `share_sitemap_uploads` (
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `share_sites` (
   `site_id` int(11) unsigned NOT NULL AUTO_INCREMENT,
-  `site_is_active` tinyint(1) NOT NULL DEFAULT 1,
-  `site_is_default` tinyint(1) NOT NULL DEFAULT 0,
-  `site_folder` char(20) NOT NULL DEFAULT 'main',
-  `site_order_num` int(10) unsigned DEFAULT 1,
   `site_meta_robots` set('NOINDEX','NOFOLLOW','NOARCHIVE','NOSNIPPET','NOODP') DEFAULT NULL,
   PRIMARY KEY (`site_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;
@@ -297,12 +270,10 @@ CREATE TABLE `share_sites` (
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `share_sites_properties` (
   `prop_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `site_id` int(10) unsigned DEFAULT NULL,
   `prop_name` varchar(255) NOT NULL,
   `prop_value` text NOT NULL,
   PRIMARY KEY (`prop_id`),
-  UNIQUE KEY `site_id` (`site_id`,`prop_name`),
-  CONSTRAINT `share_sites_properties_ibfk_1` FOREIGN KEY (`site_id`) REFERENCES `share_sites` (`site_id`) ON DELETE CASCADE ON UPDATE CASCADE
+  UNIQUE KEY `prop_name` (`prop_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;

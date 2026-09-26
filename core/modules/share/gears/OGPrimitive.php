@@ -146,7 +146,7 @@ class OGPrimitive extends Primitive {
             foreach ($this->images as $imageProps) {
 
                 $prop = $doc->createElement('property', (($resizerURL =
-                        $this->getConfigValue('site.resizer')) ? $resizerURL : (E()->getSiteManager()->getDefaultSite()->base . 'resizer/')) . 'w' . $imageProps['width'] . '-h' . $imageProps['height'] . '/' . $imageProps['url']);
+                        $this->getConfigValue('site.resizer')) ? $resizerURL : (E()->getSiteManager()->getCurrentSite()->base . 'resizer/')) . 'w' . $imageProps['width'] . '-h' . $imageProps['height'] . '/' . $imageProps['url']);
                 $prop->setAttribute('name', 'image');
                 $result->appendChild($prop);
                 $prop = $doc->createElement('property', $imageProps['width']);

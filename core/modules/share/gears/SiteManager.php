@@ -15,7 +15,7 @@ final class SiteManager;
  */
 namespace Energine\share\gears;
 /**
- * Site manager.
+ * Сайт установки — один: запись share_sites и адрес из конфига (site.domain, site.root).
  *
  * @code
 final class SiteManager;
@@ -23,128 +23,35 @@ final class SiteManager;
  *
  * @final
  */
-final class SiteManager extends Primitive implements \Iterator {
+final class SiteManager extends Primitive {
     use DBWorker;
 
-    /*
-     * Instance of the current class.
-     *
-     * @var SiteManager $instance
-     */
-    //private static $instance;
-
     /**
-     * Data about all registered sites.
-     * Array of Site's.
-     * @var array $data
+     * Сайт.
+     * @var Site $site
      */
-    private $data;
-    /**
-     * Iteration index.
-     * @var int $index
-     */
-    private static $index = 0;
-
-    /**
-     * Current site ID.
-     * @var int $currentSiteID
-     */
-    private $currentSiteID = NULL;
+    private $site;
 
     /**
      * Адрес сайта — из конфига (site.domain, site.root), схема — из запроса. Заголовок Host адреса не меняет.
      *
-     * @throws SystemException 'ERR_NO_SITE' нет site.domain в конфиге или сайта в базе
-     * @throws SystemException 'ERR_403' сайт не активен
+     * @throws SystemException 'ERR_NO_SITE' нет site.domain в конфиге или записи сайта в базе
      */
     public function __construct() {
         parent::__construct();
-        $this->data = Site::load();
-        if (!($domain = (string)$this->getConfigValue('site.domain')) || !$this->data) {
+        $this->site = Site::load();
+        if (!($domain = (string)$this->getConfigValue('site.domain')) || !$this->site) {
             throw new SystemException('ERR_NO_SITE', SystemException::ERR_DEVELOPER, 'site.domain');
         }
-        $scheme = URI::create()->getScheme();
-        foreach ($this->data as $siteID => $site) {
-            $site->setAddress($scheme, $domain, $this->getConfigValue('site.root'));
-            if ($site->isDefault == 1) {
-                $this->currentSiteID = $siteID;
-            }
-        }
-        if (is_null($this->currentSiteID)) {
-            $this->currentSiteID = array_key_first($this->data);
-        }
-        //Если текущий сайт не активный
-        if (!$this->data[$this->currentSiteID]->isActive) {
-            throw new SystemException('ERR_403', SystemException::ERR_403);
-        }
-
+        $this->site->setAddress(URI::create()->getScheme(), $domain, $this->getConfigValue('site.root'));
     }
 
     /**
-     * Get Site instance by its ID.
-     *
-     * @param int $siteID Site ID.
-     * @return Site
-     *
-     * @throws SystemException 'ERR_NO_SITE'
-     */
-    public function getSiteByID($siteID) {
-
-        if (!isset($this->data[$siteID])) {
-            throw new SystemException('ERR_NO_SITE', SystemException::ERR_DEVELOPER, $siteID);
-        }
-        return $this->data[$siteID];
-    }
-
-    /**
-     * Returns current site.
+     * Сайт установки.
      *
      * @return Site
      */
     public function getCurrentSite() {
-        return $this->data[$this->currentSiteID];
-
+        return $this->site;
     }
-
-
-    /**
-     * Get default site.
-     *
-     * @return Site
-     *
-     * @throws SystemException 'ERR_NO_DEFAULT_SITE'
-     */
-    public function getDefaultSite() {
-        foreach ($this->data as $site) {
-            if ($site->isDefault) {
-                return $site;
-            }
-        }
-        throw new SystemException('ERR_NO_DEFAULT_SITE', SystemException::ERR_DEVELOPER);
-    }
-
-    public function current(): mixed {
-        $siteIDs = array_keys($this->data);
-
-        return $this->data[$siteIDs[self::$index]];
-    }
-
-    public function key(): mixed {
-        $siteIDs = array_keys($this->data);
-        return $siteIDs[self::$index];
-    }
-
-    public function next(): void {
-        self::$index++;
-    }
-
-    public function rewind(): void {
-        self::$index = 0;
-    }
-
-    public function valid(): bool {
-        $siteIDs = array_keys($this->data);
-        return isset($siteIDs[self::$index]);
-    }
-
 }
