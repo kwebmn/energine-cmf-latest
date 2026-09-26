@@ -749,51 +749,43 @@
     </xsl:template>
 
 
-    <!-- в виде карусели -->
+    <!-- сеткой превью: каждое ведёт на файл (картинку откроет браузер); файл без картинки — ссылкой с именем.
+         Карусель на JS здесь была раньше, но её скрипт не подключался: оставались столбик мелких превью
+         и мёртвые ссылки «<» и «>». -->
     <!-- тип вложения: поле type (текущий AttachmentManager) или дочерний элемент image поля file (старый формат) -->
-    <xsl:template match="field[@name='attachments']" mode="carousel">
-        <xsl:param name="PREVIEW_WIDTH">90</xsl:param>
-        <xsl:param name="PREVIEW_HEIGHT">68</xsl:param>
-        <xsl:if test="(count(recordset/record) &gt; 1) or recordset/record[concat(field[@name='type'], name(field[@name='file']/*[1])) != 'image']">
-            <div class="carousel_box">
-                <xsl:if test="not(recordset/record[concat(field[@name='type'], name(field[@name='file']/*[1])) = 'image'])">
-                    <xsl:attribute name="style">display:none;</xsl:attribute>
-                </xsl:if>
-                <!--<div class="carousel_title">
-                    <xsl:value-of select="@title"/>
-                </div>-->
-                <div class="carousel" id="playlist">
-                    <div class="carousel_viewbox viewbox">
-                        <ul>
-                            <xsl:for-each select="recordset/record">
-                                <xsl:variable name="TYPE" select="concat(field[@name='type'], name(field[@name='file']/*[1]))"/>
-                                <xsl:variable name="FILE">
-                                    <xsl:choose>
-                                        <xsl:when test="field[@name='file']/*"><xsl:value-of select="field[@name='file']/*[1]"/></xsl:when>
-                                        <xsl:otherwise><xsl:value-of select="field[@name='file']"/></xsl:otherwise>
-                                    </xsl:choose>
-                                </xsl:variable>
-                                <xsl:variable name="PREVIEW">
-                                    <xsl:choose>
-                                        <xsl:when test="field[@name='file']/*/@image"><xsl:value-of select="field[@name='file']/*[1]/@image"/></xsl:when>
-                                        <xsl:otherwise><xsl:value-of select="$FILE"/></xsl:otherwise>
-                                    </xsl:choose>
-                                </xsl:variable>
-                                <li>
-                                    <div class="carousel_image" id="{field[@name='id']}_imgc">
-                                        <a href="{$FILE}" xmlns:nrgn="http://energine.org" nrgn:media_type="{$TYPE}">
-                                            <img src="{$RESIZER_URL}w{$PREVIEW_WIDTH}-h{$PREVIEW_HEIGHT}/{$PREVIEW}" alt="{field[@name='name']}" width="{$PREVIEW_WIDTH}" height="{$PREVIEW_HEIGHT}"/>
-                                         </a>
-                                     </div>
-                                 </li>
-                             </xsl:for-each>
-                         </ul>
-                     </div>
-                     <a class="previous_control" href="#"><xsl:text disable-output-escaping="yes">&amp;lt;</xsl:text></a>
-                     <a class="next_control" href="#"><xsl:text disable-output-escaping="yes">&amp;gt;</xsl:text></a>
-                 </div>
-             </div>
-        </xsl:if>
+    <xsl:template match="field[@name='attachments']" mode="gallery">
+        <xsl:param name="PREVIEW_WIDTH">320</xsl:param>
+        <xsl:param name="PREVIEW_HEIGHT">240</xsl:param>
+        <ul class="gallery">
+            <xsl:for-each select="recordset/record">
+                <xsl:variable name="TYPE" select="concat(field[@name='type'], name(field[@name='file']/*[1]))"/>
+                <xsl:variable name="FILE">
+                    <xsl:choose>
+                        <xsl:when test="field[@name='file']/*"><xsl:value-of select="field[@name='file']/*[1]"/></xsl:when>
+                        <xsl:otherwise><xsl:value-of select="field[@name='file']"/></xsl:otherwise>
+                    </xsl:choose>
+                </xsl:variable>
+                <xsl:variable name="PREVIEW">
+                    <xsl:choose>
+                        <xsl:when test="field[@name='file']/*/@image"><xsl:value-of select="field[@name='file']/*[1]/@image"/></xsl:when>
+                        <xsl:when test="$TYPE = 'image'"><xsl:value-of select="$FILE"/></xsl:when>
+                    </xsl:choose>
+                </xsl:variable>
+                <li class="gallery_item">
+                    <a href="{$FILE}">
+                        <xsl:choose>
+                            <xsl:when test="$PREVIEW != ''">
+                                <img src="{$RESIZER_URL}w{$PREVIEW_WIDTH}-h{$PREVIEW_HEIGHT}/{$PREVIEW}" alt="{field[@name='name']}"
+                                     width="{$PREVIEW_WIDTH}" height="{$PREVIEW_HEIGHT}" loading="lazy"/>
+                            </xsl:when>
+                            <xsl:otherwise>
+                                <span class="gallery_file"><xsl:value-of select="field[@name='name']"/></span>
+                            </xsl:otherwise>
+                        </xsl:choose>
+                    </a>
+                </li>
+            </xsl:for-each>
+        </ul>
     </xsl:template>
     <xsl:template match="field[@name='upl_id'][ancestor::component[@type='form' and @exttype='grid']]" mode="field_content">
             <div class="control toggle type_file" id="control_{@language}_{@name}">

@@ -274,10 +274,7 @@
     <xsl:template match="component[@class='PageMedia']">
         <xsl:if test="recordset/record[1]/field[@name='attachments']/recordset">
             <div class="media_box">
-                <xsl:apply-templates select="recordset/record[1]/field[@name='attachments']" mode="carousel">
-                    <xsl:with-param name="PREVIEW_WIDTH">90</xsl:with-param>
-                    <xsl:with-param name="PREVIEW_HEIGHT">68</xsl:with-param>
-                </xsl:apply-templates>
+                <xsl:apply-templates select="recordset/record[1]/field[@name='attachments']" mode="gallery"/>
             </div>
         </xsl:if>
     </xsl:template>

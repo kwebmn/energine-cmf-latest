@@ -60,9 +60,10 @@
         </div>
     </xsl:template>
 
-    <!-- для поля name (или title) в режиме просмотра добавляется возможность редактирования -->
+    <!-- для поля name (или title) в режиме просмотра добавляется возможность редактирования;
+         название открытой записи — заголовок страницы (h1), заголовок блока тогда не выводится (container.xslt) -->
     <xsl:template match="field[contains(@name,'name') or contains(@name,'title')][ancestor::component[@exttype='feed' and @type='form']]">
-        <h3 class="feed_name">
+        <h1 class="feed_name">
             <xsl:if test="ancestor::component/@editable">
                 <xsl:attribute name="class">nrgnEditor feed_name</xsl:attribute>
                 <!-- заголовок — простой текст: правится без визуального редактора (PageEditor) -->
@@ -72,7 +73,7 @@
                 <xsl:attribute name="eID"><xsl:value-of select="../field[@index='PRI']"/></xsl:attribute>
             </xsl:if>
             <xsl:value-of select="."/>
-        </h3>
+        </h1>
     </xsl:template>
 
     <!-- для поля text_rtf в режиме просмотра добавляется возможность редактирования -->
@@ -193,12 +194,10 @@
                 </div>
             </xsl:if>
             <xsl:apply-templates select="field[@name='news_text_rtf']"/>
-            <xsl:if test="field[@name='attachments']/recordset">
+            <!-- первая картинка уже над текстом: сетка — когда вложений больше одного -->
+            <xsl:if test="count(field[@name='attachments']/recordset/record) &gt; 1">
                 <div class="media_box">
-                    <xsl:apply-templates select="field[@name='attachments']" mode="carousel">
-                        <xsl:with-param name="WIDTH">664</xsl:with-param>
-                        <xsl:with-param name="HEIGHT">498</xsl:with-param>
-                    </xsl:apply-templates>
+                    <xsl:apply-templates select="field[@name='attachments']" mode="gallery"/>
                 </div>
             </xsl:if>
             <div class="go_back">

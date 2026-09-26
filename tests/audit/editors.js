@@ -279,7 +279,7 @@ const showTabOf = (page, selector) => page.evaluate((sel) => {
         const id = href && href.match(/\/(\d+)--/)[1];
         if (check('в ленте есть ссылка на новость', !!id, href)) {
             const snap = db('news-snap', id);
-            const title = 'h3.feed_name';
+            const title = 'h1.feed_name';
             try {
                 await p.goto(href, { waitUntil: 'networkidle' });
                 await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle' }), p.click('li.editMode_btn')]);

@@ -145,6 +145,118 @@ async function inspect(page) {
         await p.close();
     }
 
+    // страницы (задача 4): новость, галерея, форма обратной связи, страницы ошибок
+    const admin = await browser.newContext({ locale: 'ru-RU' });
+    {
+        const lp = await admin.newPage();
+        await lp.goto(BASE + 'login/', { waitUntil: 'networkidle' });
+        await lp.fill('input[name="user[username]"]', process.env.ADMIN_EMAIL);
+        await lp.fill('input[name="user[password]"]', process.env.ADMIN_PASSWORD);
+        await Promise.all([lp.waitForNavigation({ waitUntil: 'networkidle' }), lp.click('button[name="user[login]"]')]);
+        await lp.close();
+    }
+    // ссылка на главную в содержимом страницы (не в крошках): видна и с текстом
+    const homeLink = (p) => p.evaluate((base) => {
+        const main = document.querySelector('main');
+        const links = main ? [...main.querySelectorAll('a[href]')].filter((a) => !a.closest('.breadcrumbs')) : [];
+        const home = links.find((a) => a.href.replace(/\/$/, '') === base.replace(/\/$/, ''));
+        return { text: main ? main.textContent.replace(/\s+/g, ' ') : '', home: !!home && home.textContent.trim() !== '' && home.checkVisibility(),
+            title: (document.querySelector('h1') || { textContent: '' }).textContent.trim() };
+    }, BASE);
+    for (const [w, h, tag] of [[390, 844, 'телефон'], [1280, 900, 'десктоп']]) {
+        const open = async (ctx) => {
+            const p = await ctx.newPage();
+            await p.setViewportSize({ width: w, height: h });
+            const errors = [];
+            p.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
+            p.on('response', (r) => {
+                if (r.status() >= 400 && !(r.request().isNavigationRequest() && r.frame() === p.mainFrame())) errors.push(`http ${r.status()}: ${r.url()}`);
+            });
+            return [p, errors];
+        };
+
+        // новость: её название — единственный заголовок h1, картинка видна и помещается
+        let [p] = await open(guest);
+        await p.goto(BASE + PAGES.find((x) => x[0] === 'новость')[1], { waitUntil: 'networkidle' });
+        const n = await p.evaluate(() => {
+            const crumb = document.querySelector('.breadcrumbs [aria-current]');
+            const img = document.querySelector('main .feed_image img');
+            return { h1: [...document.querySelectorAll('h1')].map((x) => x.textContent.trim()), crumb: crumb && crumb.textContent.trim(),
+                img: !!img && img.complete && img.naturalWidth > 0, fits: !!img && img.getBoundingClientRect().right <= document.documentElement.clientWidth };
+        });
+        check(`новость, ${tag}: заголовок h1 — название новости`, n.h1.length === 1 && n.h1[0] === n.crumb, JSON.stringify(n));
+        check(`новость, ${tag}: картинка видна и помещается`, n.img && n.fits, JSON.stringify(n));
+        await p.close();
+
+        // галерея: превью сеткой, каждое — ссылка на файл; кнопок карусели без скрипта нет
+        [p] = await open(guest);
+        await p.goto(BASE + 'media/', { waitUntil: 'networkidle' });
+        const g = await p.evaluate(() => {
+            const list = document.querySelector('main ul.gallery');
+            const items = list ? [...list.children] : [];
+            const imgs = items.map((li) => li.querySelector('img')).filter(Boolean);
+            return { list: !!list, display: list ? getComputedStyle(list).display : null, items: items.length,
+                sameRow: items.length > 1 && Math.abs(items[0].getBoundingClientRect().top - items[1].getBoundingClientRect().top) < 2,
+                width: imgs.length ? Math.round(imgs[0].getBoundingClientRect().width) : 0,
+                loaded: imgs.length > 0 && imgs.every((i) => i.complete && i.naturalWidth > 0),
+                links: items.length > 0 && items.every((li) => li.querySelector('a[href]')),
+                controls: document.querySelectorAll('.previous_control, .next_control').length };
+        });
+        check(`галерея, ${tag}: превью сеткой, каждое — ссылка`, g.list && g.display === 'grid' && g.items >= 2 && g.loaded && g.links, JSON.stringify(g));
+        if (w > 600) check('галерея, десктоп: несколько превью в ряд, превью не меньше 120 px', g.sameRow && g.width >= 120, JSON.stringify(g));
+        check(`галерея, ${tag}: нет кнопок карусели`, g.controls === 0, JSON.stringify(g));
+        await p.close();
+
+        // обратная связь: поля видны, ловушка для ботов скрыта, подписи над полями
+        [p] = await open(guest);
+        await p.goto(BASE + 'contacts/', { waitUntil: 'networkidle' });
+        const f = await p.evaluate(() => {
+            const form = document.querySelector('main form');
+            const visible = form ? [...form.querySelectorAll('input:not([type=hidden]), textarea, select')].filter((x) => x.checkVisibility()) : [];
+            const trap = form && form.querySelector('[name*="hp_url"]');
+            // ловушка спрятана за краем экрана (checkVisibility такие элементы считает видимыми), без таба и читалок
+            const box = trap && trap.getBoundingClientRect();
+            const offscreen = !!box && (box.right <= 0 || box.bottom <= 0 || box.left >= innerWidth || box.width <= 1 || !trap.checkVisibility());
+            const label = form && form.querySelector('label[for]');
+            const input = label && document.getElementById(label.htmlFor);
+            return { fields: visible.length, trap: !!trap, trapHidden: offscreen && trap.tabIndex === -1 && !!trap.closest('[aria-hidden="true"]'),
+                labelAbove: !!(label && input) && label.getBoundingClientRect().bottom <= input.getBoundingClientRect().top + 1 };
+        });
+        check(`обратная связь, ${tag}: поля видны, ловушка для ботов скрыта`, f.fields >= 3 && f.trap && f.trapHidden, JSON.stringify(f));
+        check(`обратная связь, ${tag}: подписи над полями`, f.labelAbove, JSON.stringify(f));
+
+        // страница ошибки сайта: форма без токена (422 — эту страницу, в отличие от 404, ISPConfig не подменяет)
+        const [resp] = await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle' }), p.evaluate((b) => {
+            const form = document.createElement('form');
+            form.method = 'post';
+            form.action = b + 'contacts/send/';
+            document.body.append(form);
+            form.submit();
+        }, BASE)]);
+        let r = await inspect(p);
+        let e = await homeLink(p);
+        check(`страница ошибки сайта, ${tag}: ответ 422`, resp && resp.status() === 422, resp && resp.status());
+        check(`страница ошибки сайта, ${tag}: каркас темы, один h1, без прокрутки`, r.main && r.mainFirst && r.h1 === 1 && r.skip && r.menu
+            && r.overflow <= 0, JSON.stringify(r));
+        check(`страница ошибки сайта, ${tag}: понятный текст и видимая ссылка на главную`, /Форма устарела/.test(e.text) && e.home, JSON.stringify(e));
+        check(`страница ошибки сайта, ${tag}: в заголовке нет кода ответа`, !/\d{3}/.test(e.title), e.title);
+        await p.close();
+
+        // страница ErrorDocument (ошибка вне раскладки сайта): администратор открыл ссылку на удаление GET-ом
+        let errors;
+        [p, errors] = await open(admin);
+        const resp2 = await p.goto(BASE + 'admin/feedback-editor/single/feedbackList/999999/delete/', { waitUntil: 'networkidle' });
+        r = await inspect(p);
+        e = await homeLink(p);
+        check(`страница ErrorDocument, ${tag}: ответ 422`, resp2 && resp2.status() === 422, resp2 && resp2.status());
+        check(`страница ErrorDocument, ${tag}: main#content, один h1, ссылка «к содержимому», без прокрутки`, r.main && r.h1 === 1 && r.skip
+            && r.overflow <= 0, JSON.stringify(r));
+        check(`страница ErrorDocument, ${tag}: понятный текст и видимая ссылка на главную`, /Форма устарела/.test(e.text) && e.home, JSON.stringify(e));
+        check(`страница ErrorDocument, ${tag}: без ошибок JS и 404`, !errors.length, errors.join(' | '));
+        await p.screenshot({ path: path.join(SHOTS, `ошибка-errordocument-${w}.png`), fullPage: true });
+        await p.close();
+    }
+
     await browser.close();
     console.log(`screenshots: ${SHOTS}`);
     console.log(`== theme failures: ${fail}`);

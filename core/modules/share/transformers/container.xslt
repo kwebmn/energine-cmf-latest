@@ -80,9 +80,9 @@
         </div>
     </xsl:template>
 
-    <!-- Заголовок alfa-блока -->
+    <!-- Заголовок alfa-блока; у открытой записи ленты (новость) заголовок страницы — её название (feed.xslt) -->
     <xsl:template match="container[@block='alfa']" mode="block_header">
-        <xsl:if test="$DOC_PROPS[@name='default'] != 1">
+        <xsl:if test="$DOC_PROPS[@name='default'] != 1 and not(.//component[@exttype='feed'][@type='form'])">
             <div class="block_header clearfix">
                 <h1 class="block_title"><xsl:value-of select="$DOC_PROPS[@name='title']" disable-output-escaping="yes"/></h1>
             </div>

@@ -60,8 +60,9 @@ try {
     [, $list] = http("$B/news/");
     preg_match('~href="([^"]*/(\d+)--[^"/]+/)"~', $list, $nm);
     [$code, $page] = http($nm[1] ?? "$B/news/", ['editMode' => 1, 'csrf_token' => $csrf]);
-    preg_match('~<h3[^>]*class="nrgnEditor feed_name"[^>]*>~', $page, $h3);
-    preg_match('~single_template="([^"]+)"~', $h3[0] ?? '', $st);
+    // название открытой новости — заголовок страницы h1 (тема, этап 5в)
+    preg_match('~<h1[^>]*class="nrgnEditor feed_name"[^>]*>~', $page, $h1);
+    preg_match('~single_template="([^"]+)"~', $h1[0] ?? '', $st);
     $newsId = (int)($nm[2] ?? 0);
     $title = fn() => $pdo->query("SELECT news_title FROM apps_news_translation WHERE news_id = $newsId AND lang_id = 1")->fetchColumn();
     $titleOrig = $title();
