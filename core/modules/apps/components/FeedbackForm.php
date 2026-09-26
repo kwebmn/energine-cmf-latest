@@ -198,9 +198,18 @@ class FeedbackForm extends DBDataSet {
 
     /**
      * Форма отмечается временем показа (FormGuard).
+     * Варианты получателя — только номер и название: остальные колонки строки получателя, в том числе адреса
+     * (rcp_recipients), выводились атрибутами option, и сборщики адресов находили их в коде страницы.
      */
     protected function prepare() {
         parent::prepare();
+        if (($fd = $this->getDataDescription()->getFieldDescriptionByName('rcp_id'))
+            && is_array($values = $fd->getAvailableValues())) {
+            foreach ($values as $key => $value) {
+                $values[$key]['attributes'] = false;
+            }
+            $fd->setAvailableValues($values);
+        }
         $this->guardForm();
     }
 

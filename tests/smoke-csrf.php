@@ -32,6 +32,13 @@ echo "-- гость\n";
 [$meta, $field] = tokens($html);
 check('страница отдаёт токен в meta и в форме', $meta && strlen($meta) == 64 && $meta === $field, "meta=$meta field=$field");
 check('у гостя cookie nrgn_csrf', (bool)cookie('nrgn_csrf'));
+// адреса получателей нужны только для отправки: в варианты выбора (атрибуты option) они не попадают
+$addresses = [];
+foreach (q('SELECT rcp_recipients FROM apps_feedback_recipient')->fetchAll(PDO::FETCH_COLUMN) as $list) {
+    foreach (preg_split('/[\s,;]+/', (string)$list, -1, PREG_SPLIT_NO_EMPTY) as $address) $addresses[] = $address;
+}
+$shown = array_values(array_filter($addresses, fn($a) => stripos($html, $a) !== false));
+check('страница обратной связи не выдаёт адреса получателей', $addresses && !$shown, implode(', ', $shown));
 
 $before = (int)scalar('SELECT COUNT(*) FROM apps_feedback');
 $feedback = ['componentAction' => 'send', 'apps_feedback[feed_author]' => MARK, 'apps_feedback[feed_theme]' => MARK,
