@@ -37,7 +37,8 @@ const VENDOR = '~/scripts/(ckeditor|codemirror|select2|jwplayer|FileAPI)/|/scrip
 
 function files(array $paths): Generator {
     foreach ($paths as $p) {
-        if (is_file($p)) { yield $p; continue; }
+        // сторонние библиотеки не в счёт и тогда, когда файл передан явно (удалённые файлы этапа)
+        if (is_file($p)) { if (!preg_match(VENDOR, $p)) yield $p; continue; }
         if (!is_dir($p)) { fwrite(STDERR, "нет пути $p\n"); exit(2); }
         $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($p, FilesystemIterator::SKIP_DOTS));
         foreach ($it as $f) {

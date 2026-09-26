@@ -669,13 +669,11 @@ abstract class DataSet extends Component
             'TXT_H5',
             'TXT_H6',
             'TXT_ADDRESS',
-            'TXT_ERROR_NOT_VIDEO_FILE',
             'BTN_SAVE',
             'BTN_BOLD',
             'BTN_ALIGN_CENTER',
             'BTN_ALIGN_RIGHT',
             'BTN_ALIGN_JUSTIFY',
-            'BTN_EXT_FLASH',
             'BTN_ACTIVATE'
         ];
         call_user_func_array([$this, 'addTranslation'], $translations);
