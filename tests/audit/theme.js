@@ -45,7 +45,8 @@ async function inspect(page) {
             h1: document.querySelectorAll('h1').length,
             skip: !!skip && skip.getAttribute('href') === '#content',
             menu: !!menu,
-            menuLinkVisible: !!menuLink && menuLink.getBoundingClientRect().height > 0,
+            // inside a closed <details> the box still has a size: checkVisibility honours content-visibility
+            menuLinkVisible: !!menuLink && menuLink.checkVisibility(),
             bg: getComputedStyle(document.body).backgroundColor,
         };
     });
@@ -95,7 +96,7 @@ async function inspect(page) {
             });
             const resp = await p.goto(BASE + url, { waitUntil: 'networkidle' });
             const where = `${label}, ${tag}`;
-            if (status === 404 && /Powered by ISPConfig/.test(await p.content())) {
+            if (status === 404 && /ISPConfig/.test(await p.evaluate(() => document.body ? document.body.textContent : ''))) {
                 console.log(`SKIP ${where}: страницу 404 подменяет ISPConfig (Own Error-Documents)`);
                 await p.close();
                 continue;
@@ -106,15 +107,6 @@ async function inspect(page) {
             check(`${where}: main#content, содержимое раньше боковой колонки`, r.main && r.mainFirst, JSON.stringify(r));
             check(`${where}: один заголовок h1`, r.h1 === 1, `h1: ${r.h1}`);
             check(`${where}: ссылка «к содержимому»`, r.skip);
-            if (w < 600) {
-                check(`${where}: меню свёрнуто`, r.menu && !r.menuLinkVisible, JSON.stringify(r));
-                if (r.menu) {
-                    await p.click('nav.site-nav details.site-menu > summary');
-                    check(`${where}: меню раскрывается по кнопке`, await p.isVisible('nav.site-nav details.site-menu ul a'));
-                }
-            } else {
-                check(`${where}: меню видно сразу`, r.menu && r.menuLinkVisible, JSON.stringify(r));
-            }
             if (label === 'главная' || label === 'обратная связь') {
                 // Tab: the skip link first, then the site's links; the focused element has a visible ring
                 await p.keyboard.press('Tab');
@@ -125,6 +117,15 @@ async function inspect(page) {
                     return (s.outlineStyle !== 'none' && parseFloat(s.outlineWidth) > 0) || s.boxShadow !== 'none';
                 });
                 check(`${where}: фокус виден`, ring);
+            }
+            if (w < 600) {
+                check(`${where}: меню свёрнуто`, r.menu && !r.menuLinkVisible, JSON.stringify(r));
+                if (r.menu) {
+                    await p.click('nav.site-nav details.site-menu > summary');
+                    check(`${where}: меню раскрывается по кнопке`, await p.isVisible('nav.site-nav details.site-menu ul a'));
+                }
+            } else {
+                check(`${where}: меню видно сразу`, r.menu && r.menuLinkVisible, JSON.stringify(r));
             }
             check(`${where}: ничего со сторонних адресов`, !foreign.size, [...foreign].join(', '));
             check(`${where}: без ошибок JS и 404`, !errors.length, errors.join(' | '));
