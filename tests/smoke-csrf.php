@@ -3,6 +3,8 @@
 // чужой Origin отклоняется и с верным токеном. Отказ — код 422: 403 подменяет своей страницей
 // веб-сервер ISPConfig. Почта не уходит: отклонённые запросы останавливаются до компонентов,
 // принятый гостевой запрос — проверка логина регистрации (без побочных действий).
+// Действия, меняющие данные по одному адресу (удаление, включение пользователя), GET-ом не выполняются:
+// ссылку с чужого сайта браузер открывает с cookie сессии.
 // Всё, что тест меняет, возвращается.
 require __DIR__ . '/testlib.php';
 
@@ -17,7 +19,10 @@ function tokens($html) {
 }
 
 // строки обратной связи с меткой убираются и до, и после прогона (без проверки они бы сохранились)
-$cleanup = fn() => q('DELETE FROM apps_feedback WHERE feed_theme = ?', [MARK]);
+$cleanup = function () {
+    q('DELETE FROM apps_feedback WHERE feed_theme = ?', [MARK]);
+    q('DELETE FROM user_users WHERE u_name LIKE ?', [MARK . '-%']);
+};
 $cleanup();
 register_shutdown_function($cleanup);
 
@@ -89,6 +94,35 @@ try {
 } finally {
     q('UPDATE apps_news_translation SET news_title = ? WHERE news_id = ? AND lang_id = 1', [$orig, $newsId]);
 }
+
+echo "-- действия, меняющие данные, — только POST-ом\n";
+// ссылка или картинка на чужом сайте открывает адрес GET-ом, и cookie сессии уходит с ним (SameSite=Lax
+// пропускает переходы по ссылке): такой запрос ничего не удаляет и не меняет
+q("INSERT INTO apps_feedback (feed_date, rcp_id, feed_email, feed_author, feed_theme, feed_text)
+   SELECT NOW(), MIN(rcp_id), 'claude-csrf@localhost', ?, ?, ? FROM apps_feedback_recipient", [MARK, MARK, MARK]);
+$feedId = (int)pdo()->lastInsertId();
+$feedExists = fn() => (int)scalar('SELECT COUNT(*) FROM apps_feedback WHERE feed_id = ?', [$feedId]) === 1;
+q('INSERT INTO user_users (u_name, u_password, u_fullname, u_is_active) VALUES (?, ?, ?, 1)',
+    [MARK . '-' . getmypid() . '@localhost', password_hash(bin2hex(random_bytes(8)), PASSWORD_DEFAULT), MARK]);
+$userId = (int)pdo()->lastInsertId();
+$gets = [
+    'удаление обращения' => "/admin/feedback-editor/single/feedbackList/$feedId/delete/",
+    'выключение пользователя' => "/admin/users/single/userEditor/$userId/activate/",
+];
+foreach ($gets as $label => $url) {
+    [$c, $body] = http($url);
+    // у single-адресов страницу отказа строит ErrorDocument (<title>Errors</title>), текст — ERR_CSRF
+    check("$label GET-ом — отказ 422 с текстом ERR_CSRF (HTTP $c)", $c == 422 && str_contains($body, $errCsrf)
+        && !preg_match('/Fatal error|Warning: |Notice: |Deprecated: /', $body), substr($body, 0, 300));
+}
+check('обращение не удалено', $feedExists());
+check('пользователь остался активным', (int)scalar('SELECT u_is_active FROM user_users WHERE u_id = ?', [$userId]) === 1);
+// так действуют кнопки грида: POST с токеном в заголовке
+[$c, $body] = http("/admin/users/single/userEditor/$userId/activate/", '', ['X-Request: JSON']);
+check("выключение пользователя POST-ом с токеном — принято (HTTP $c)", $c == 200
+    && (int)scalar('SELECT u_is_active FROM user_users WHERE u_id = ?', [$userId]) === 0, $body);
+[$c, $body] = http("/admin/feedback-editor/single/feedbackList/$feedId/delete/", '', ['X-Request: JSON']);
+check("удаление обращения POST-ом с токеном — принято (HTTP $c)", $c == 200 && !$feedExists(), $body);
 logout();
 check('выход POST-ом с токеном выполнен', !cookie('NRGNSID'));
 

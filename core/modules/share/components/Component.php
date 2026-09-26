@@ -15,6 +15,7 @@ namespace Energine\share\components;
 
 use Energine\share\gears\Builder;
 use Energine\share\gears\ComponentConfig;
+use Energine\share\gears\Csrf;
 use Energine\share\gears\DBWorker;
 use Energine\share\gears\Document;
 use Energine\share\gears\IBlock;
@@ -60,6 +61,15 @@ class Component extends Primitive implements IBlock {
      * @var string DEFAULT_STATE_NAME
      */
     const DEFAULT_STATE_NAME = 'main';
+    /**
+     * Состояния, которые меняют данные по одному адресу, без тела запроса: выполняются только POST-запросом,
+     * токен которого проверил Csrf. Иначе ссылка или картинка на чужом сайте удаляла бы записи GET-ом:
+     * cookie сессии администратора уходит и с таким запросом (SameSite=Lax пропускает переходы по ссылкам).
+     * Состояниям, которые берут данные из тела POST (save, send, change, saveText …), GET ничего не передаёт,
+     * а формы сайта сами отвечают на GET своего адреса (обратная связь возвращает на раздел).
+     * @var string[]
+     */
+    const CHANGING_STATES = ['delete', 'up', 'down', 'moveTo', 'activate', 'clear', 'copy', 'resetTemplates'];
     /**
      * Page document.
      * @var Document $document
@@ -266,6 +276,9 @@ class Component extends Primitive implements IBlock {
             if ($action !== false) {
                 $this->state = $action['name'];
                 $this->stateParams = $action['params'];
+                if (in_array($this->state, static::CHANGING_STATES, true) && !Csrf::isPost()) {
+                    Csrf::refuse();
+                }
             }
 
         } // если имя действия указано в POST-запросе - используем его

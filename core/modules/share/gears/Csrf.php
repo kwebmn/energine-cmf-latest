@@ -23,7 +23,8 @@ namespace Energine\share\gears;
  * если браузер прислал Origin, его хост должен совпадать с хостом запроса.
  *
  * Токен выводят документ (свойство csrf: meta и Energine.csrf) и шаблоны форм (скрытое поле),
- * проверку делают DocumentController::run и auth.php.
+ * проверку делают DocumentController::run и auth.php. Действия, меняющие данные (Component::CHANGING_STATES),
+ * принимаются только POST-ом: запрошенные иначе, они отклоняются тем же ответом (refuse).
  *
  * @code
 final class Csrf;
@@ -47,12 +48,45 @@ final class Csrf {
     }
 
     /**
+     * Был ли отказ refuse() в этом запросе.
+     * @var bool
+     */
+    private static $refused = false;
+
+    /**
+     * Запрос пришёл POST-ом (только у него verify проверяет токен).
+     *
+     * @return bool
+     */
+    public static function isPost() {
+        return strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST';
+    }
+
+    /**
+     * Отказать: действие, меняющее данные, запрошено не POST-ом (ссылкой, картинкой, переходом с чужого сайта).
+     * Ответ тот же, что при неверном токене: код 422 (его ставит DocumentController) и текст ERR_CSRF.
+     *
+     * @throws SystemException
+     */
+    public static function refuse() {
+        self::$refused = true;
+        throw new SystemException('ERR_CSRF', SystemException::ERR_403);
+    }
+
+    /**
+     * @return bool был ли отказ refuse()
+     */
+    public static function refused() {
+        return self::$refused;
+    }
+
+    /**
      * Проверка запроса: не POST — проходит; POST — нужен свой Origin (если он есть) и верный токен.
      *
      * @return bool
      */
     public static function verify() {
-        if (strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+        if (!self::isPost()) {
             return true;
         }
         if (!self::sameOrigin()) {

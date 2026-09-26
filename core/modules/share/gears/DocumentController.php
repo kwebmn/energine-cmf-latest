@@ -215,8 +215,9 @@ class DocumentController extends Primitive {
             $document = E()->ErrorDocument;
             $document->attachException($e)->build();
         }
-        // отказ по токену — 422, каким бы путём ни строилась страница ошибки (у single-адресов — через ErrorDocument)
-        if ($csrfRefused) {
+        // отказ по токену или изменяющее действие не POST-ом (Csrf::refuse) — 422, каким бы путём ни строилась
+        // страница ошибки (у single-адресов — через ErrorDocument)
+        if ($csrfRefused || Csrf::refused()) {
             E()->getResponse()->setStatus(422);
         }
         E()->getResponse()->write($this->transform($document));
