@@ -131,3 +131,14 @@ INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_va
       FROM `share_lang_tags` t JOIN `share_languages` l
      WHERE t.`ltag_name` IN ('FIELD_U_PASSWORD_CURRENT', 'FIELD_U_PASSWORD_NEW');
 
+
+-- 9. Листалка по страницам (исправления темы): подписи стрелок «назад» и «вперёд».
+INSERT IGNORE INTO `share_lang_tags` (`ltag_name`) VALUES ('TXT_PREVIOUS_PAGE'), ('TXT_NEXT_PAGE');
+INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`)
+    SELECT t.`ltag_id`, l.`lang_id`,
+           CASE t.`ltag_name`
+               WHEN 'TXT_PREVIOUS_PAGE' THEN IF(l.`lang_abbr` = 'ua', 'Попередня сторінка', 'Предыдущая страница')
+               ELSE IF(l.`lang_abbr` = 'ua', 'Наступна сторінка', 'Следующая страница')
+           END
+      FROM `share_lang_tags` t JOIN `share_languages` l
+     WHERE t.`ltag_name` IN ('TXT_PREVIOUS_PAGE', 'TXT_NEXT_PAGE');

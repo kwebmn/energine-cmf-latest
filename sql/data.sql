@@ -3164,4 +3164,14 @@ INSERT INTO `share_access_level` (`smap_id`, `group_id`, `right_id`) VALUES (372
 INSERT INTO `share_access_level` (`smap_id`, `group_id`, `right_id`) VALUES (3725,1,3);
 INSERT INTO `share_access_level` (`smap_id`, `group_id`, `right_id`) VALUES (3727,1,3);
 INSERT INTO `share_uploads` (`upl_id`, `upl_pid`, `upl_childs_count`, `upl_path`, `upl_filename`, `upl_name`, `upl_title`, `upl_description`, `upl_publication_date`, `upl_data`, `upl_internal_type`, `upl_mime_type`, `upl_width`, `upl_height`, `upl_is_active`) VALUES (1,NULL,0,'uploads/public','public','public','Локальный репозиторий',NULL,NULL,NULL,'repo','repo/local',NULL,NULL,1);
+-- листалка по страницам: подписи стрелок «назад» и «вперёд» (добавлены после сводки, как в sql/cut/stage5.sql, блок 9)
+INSERT IGNORE INTO `share_lang_tags` (`ltag_name`) VALUES ('TXT_PREVIOUS_PAGE'), ('TXT_NEXT_PAGE');
+INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`)
+    SELECT t.`ltag_id`, l.`lang_id`,
+           CASE t.`ltag_name`
+               WHEN 'TXT_PREVIOUS_PAGE' THEN IF(l.`lang_abbr` = 'ua', 'Попередня сторінка', 'Предыдущая страница')
+               ELSE IF(l.`lang_abbr` = 'ua', 'Наступна сторінка', 'Следующая страница')
+           END
+      FROM `share_lang_tags` t JOIN `share_languages` l
+     WHERE t.`ltag_name` IN ('TXT_PREVIOUS_PAGE', 'TXT_NEXT_PAGE');
 SET FOREIGN_KEY_CHECKS = 1;

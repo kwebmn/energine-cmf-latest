@@ -267,6 +267,93 @@ async function inspect(page) {
         await p.close();
     }
 
+    // исправления финального ревью темы: меню без ::details-content, подпункты меню, листалка ленты,
+    // админка внутри страниц сайта. Временные новости и подпункт меню убираются и при сбое (process exit)
+    db('news-add');
+    db('menu-child', 'on');
+    process.on('exit', () => { try { db('news-remove'); db('menu-child', 'off'); } catch (e) { } });
+    try {
+        // браузер без ::details-content (Safari до 18.4, Firefox ESR): правила с ним он отбрасывает целиком —
+        // так же и здесь убираются правила с этим селектором и блоки @supports с условием о нём
+        let p = await guest.newPage();
+        await p.setViewportSize({ width: 1280, height: 900 });
+        await p.goto(BASE, { waitUntil: 'networkidle' });
+        await p.evaluate(() => {
+            const drop = (owner) => {
+                for (let i = owner.cssRules.length - 1; i >= 0; i--) {
+                    const r = owner.cssRules[i];
+                    if ((r.selectorText || '').includes('::details-content') || (r.conditionText || '').includes('details-content')) owner.deleteRule(i);
+                    else if (r.cssRules) drop(r);
+                }
+            };
+            for (const s of document.styleSheets) { try { drop(s); } catch (e) { } }
+        });
+        const m = await p.evaluate(() => {
+            const s = document.querySelector('nav.site-nav details.site-menu > summary');
+            const a = document.querySelector('nav.site-nav details.site-menu ul.main_menu a');
+            return { summary: !!s && s.checkVisibility(), link: !!a && a.checkVisibility() };
+        });
+        let usable = m.link;
+        if (!usable && m.summary) {
+            await p.click('nav.site-nav details.site-menu > summary');
+            usable = await p.isVisible('nav.site-nav details.site-menu ul.main_menu a');
+        }
+        check('десктоп в браузере без ::details-content: меню доступно — сразу или кнопкой', usable, JSON.stringify(m));
+        await p.close();
+
+        // подпункт меню (раздел в меню внутри раздела в меню): на десктопе — при наведении и при фокусе с клавиатуры
+        p = await guest.newPage();
+        await p.setViewportSize({ width: 1280, height: 900 });
+        await p.goto(BASE, { waitUntil: 'networkidle' });
+        const sub = 'nav.site-nav .main_menu--sub a[href$="features/content/"]';
+        const parent = 'nav.site-nav .main_menu > li:has(> .main_menu--sub) > a';
+        const present = !!(await p.$(sub)) && !!(await p.$(parent));
+        let hover = false, focus = false;
+        if (present) {
+            await p.hover(parent);
+            hover = await p.isVisible(sub);
+            await p.mouse.move(1, 890);
+            await p.focus(parent);
+            focus = await p.isVisible(sub);
+        }
+        check('десктоп: подпункт меню виден при наведении и при фокусе с клавиатуры', present && hover && focus, JSON.stringify({ present, hover, focus }));
+        await p.close();
+
+        // листалка ленты (больше 10 новостей): у ссылок «назад» и «вперёд» есть видимый текст или подпись
+        for (const [path, label] of [['news/', 'первая страница'], ['news/page-2/', 'вторая страница']]) {
+            p = await guest.newPage();
+            await p.setViewportSize({ width: 1280, height: 900 });
+            await p.goto(BASE + path, { waitUntil: 'networkidle' });
+            const g = await p.evaluate(() => {
+                const links = [...document.querySelectorAll('main .pager a, main .toolbar a')].filter((a) => /page-\d+/.test(a.getAttribute('href') || ''));
+                return links.map((a) => ({ name: (a.textContent.trim() || a.getAttribute('aria-label') || ''), width: Math.round(a.getBoundingClientRect().width) }));
+            });
+            check(`листалка ленты, ${label}: у каждой ссылки есть видимый текст и подпись`, g.length > 0 && g.every((x) => x.name !== '' && x.width > 0), JSON.stringify(g));
+            await p.close();
+        }
+
+        // админка внутри страницы сайта (гриды): стили темы её не трогают
+        p = await admin.newPage();
+        await p.setViewportSize({ width: 1280, height: 900 });
+        await p.goto(BASE + 'admin/users/', { waitUntil: 'networkidle' });
+        await p.waitForTimeout(1000);
+        const a = await p.evaluate(() => {
+            const t = document.querySelector('table.gridTable');
+            const box = t && t.closest('.grid');
+            const apply = document.querySelector('button.f_apply');
+            const cs = apply && getComputedStyle(apply);
+            return { display: t && getComputedStyle(t).display, fill: t && box ? Math.round(t.getBoundingClientRect().width / box.getBoundingClientRect().width * 100) : 0,
+                apply: !!apply, text: apply && apply.textContent.trim(), color: cs && cs.color, background: cs && cs.backgroundColor };
+        });
+        check('админка в странице сайта: таблица грида — таблица на всю ширину грида', a.display === 'table' && a.fill >= 95, JSON.stringify(a));
+        check('админка в странице сайта: текст кнопки «Применить» фильтра виден (цвет не совпадает с фоном)', a.apply && !!a.color && a.color !== a.background, JSON.stringify(a));
+        await p.screenshot({ path: path.join(SHOTS, 'админка-пользователи-1280.png'), fullPage: true });
+        await p.close();
+    } finally {
+        db('news-remove');
+        db('menu-child', 'off');
+    }
+
     await browser.close();
     console.log(`screenshots: ${SHOTS}`);
     console.log(`== theme failures: ${fail}`);

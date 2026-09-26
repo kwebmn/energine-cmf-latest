@@ -199,6 +199,9 @@ VISIBLE_PAGES_COUNT = 3 --> 1 2 ... 5  6  7 _8_ 9 10 11 ... 455 456
         }
 
         $pager->setProperty('from', translate('TXT_FROM'));
+        // подписи стрелок «назад» и «вперёд» (для чтения с экрана и подсказки)
+        $pager->setProperty('previous', translate('TXT_PREVIOUS_PAGE'));
+        $pager->setProperty('next', translate('TXT_NEXT_PAGE'));
         $pager->setProperty('to', translate('TXT_TO'));
         //$pager->setProperty('total', translate('TXT_TOTAL'));
         $pager->setProperty('records', $this->recordsCount);

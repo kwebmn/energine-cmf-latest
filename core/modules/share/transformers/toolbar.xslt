@@ -166,16 +166,21 @@
             <span class="control arrow prev">
                 <a>
                     <xsl:attribute name="href"><xsl:value-of select="$BASE"/><xsl:value-of select="$LANG_ABBR"/><xsl:value-of select="$TEMPLATE"/><xsl:value-of select="../properties/property[@name='additional_url']"/>page-<xsl:value-of select="@action - 1"/>/<xsl:if test="../properties/property[@name='get_string']!=''">?<xsl:value-of select="../properties/property[@name='get_string']"/></xsl:if></xsl:attribute>
-                    <i class="fa fa-caret-left"/>
+                    <!-- стрелка текстом (шрифта иконок у темы нет), подпись — для чтения с экрана -->
+                    <xsl:attribute name="aria-label"><xsl:value-of select="../properties/property[@name='previous']"/></xsl:attribute>
+                    <xsl:attribute name="title"><xsl:value-of select="../properties/property[@name='previous']"/></xsl:attribute>
+                    <xsl:text>‹</xsl:text>
                 </a>
             </span>
         </xsl:if>
-        <span class="control current"><xsl:value-of select="@title"/></span>
+        <span class="control current" aria-current="page"><xsl:value-of select="@title"/></span>
         <xsl:if test="following-sibling::control">
             <span class="control arrow next">
                 <a>
                     <xsl:attribute name="href"><xsl:value-of select="$BASE"/><xsl:value-of select="$LANG_ABBR"/><xsl:value-of select="$TEMPLATE"/><xsl:value-of select="../properties/property[@name='additional_url']"/>page-<xsl:value-of select="@action + 1"/>/<xsl:if test="../properties/property[@name='get_string']!=''">?<xsl:value-of select="../properties/property[@name='get_string']"/></xsl:if></xsl:attribute>
-                    <i class="fa fa-caret-right"/>
+                    <xsl:attribute name="aria-label"><xsl:value-of select="../properties/property[@name='next']"/></xsl:attribute>
+                    <xsl:attribute name="title"><xsl:value-of select="../properties/property[@name='next']"/></xsl:attribute>
+                    <xsl:text>›</xsl:text>
                 </a>
             </span>
         </xsl:if>
