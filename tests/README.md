@@ -35,8 +35,7 @@ bash tests/regression.sh
 **Почта.** На время прогона получатели обратной связи и формы переключаются на локальный
 ящик площадки (`mailbox` в `local.php`, на simple.energine.org — `web97@loki.kweb.biz`).
 Прежние адреса запоминаются перед прогоном и возвращаются после него, даже если прогон
-прервали. **Наружу тестовые письма слать нельзя.** Обработчик рассылок при
-`site.debug = 1` пишет письма в `web/uploads/tmp/mailout.txt`.
+прервали. **Наружу тестовые письма слать нельзя.**
 
 **Порядок страниц.** Добавление страницы через админку сдвигает `smap_order_num` всему
 сайту — так устроено ядро. Прогон запоминает порядок разделов перед началом и возвращает
@@ -49,9 +48,13 @@ bash tests/regression.sh
 ## Отдельные наборы
 
 - `smoke-final.sh` — только чтение, безопасен на живой площадке.
-- По областям: `smoke-shop.php`, `smoke-mail.php`, `smoke-ads.php`, `smoke-blog.php`,
-  `smoke-comments.php`, `smoke-forms.php`, `smoke-editing.php`, `smoke-roundtrip.php`.
-- После прерванного прогона остатки убирают `cleanup-mail.php` и `cleanup-shop.php`.
+- По областям: `smoke-write.sh`, `smoke-roundtrip.php`, `smoke-editing.php`,
+  `smoke-upload.php`, `smoke-profile.php`, `smoke-mail.php` (регистрация, восстановление
+  пароля, обратная связь, шаблоны писем).
+- После прерванного прогона остатки почтового набора убирает `cleanup-mail.php`.
+- `no-traces.sh` — в коде и базе нет следов вырезанных модулей (этап 1).
+- `raw-constants.php` — какие подписи видны системными именами; сравнивается до и после
+  чистки переводов.
 - `setup-linker.sh` проверяет, что `setup linker` не трогает модули в `core/modules`.
 
 ## Обход браузером

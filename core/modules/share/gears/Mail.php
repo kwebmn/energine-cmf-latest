@@ -65,26 +65,8 @@ final class Mail extends Primitive {
      */
     private $attachments = array();
 
-    /**
-     * Debug mode
-     *
-     * @var bool
-     */
-    private $debug = false;
-
     public function __construct() {
         $this->sender = $this->getConfigValue('mail.from');
-    }
-
-    /**
-     * Set debug mode
-     *
-     * @param bool $debug
-     * @return Mail
-     */
-    public function setDebugMode($debug) {
-        $this -> debug = $debug;
-        return $this;
     }
 
     /**
@@ -263,24 +245,7 @@ final class Mail extends Primitive {
         $headers = implode(self::EOL, $this->headers);
 
         if(!empty($this->to)) {
-
-            if ($this->debug) {
-                $content = '--------------------------------------------' . "\n";
-                $content .= date('Y-m-d H:i:s') . "\n";
-                $content .= 'TO: ' . implode(',', $this->to) . "\n";
-                $content .= 'SUBJECT: ' . $this->subject . "\n";
-                $content .= 'BODY: ' . $message . "\n";
-                $content .= 'HEADERS: ' . $headers . "\n\n";
-                try {
-                    file_put_contents( HTDOCS_DIR . '/uploads/tmp/mailout.txt', $content, FILE_APPEND );
-                }
-                catch(\Exception $e){
-                    //ну нет так и нет
-                }
-                $result = true;
-            } else {
-                $result = mail(implode(',', $this->to), $this->subject, $message, $headers);
-            }
+            $result = mail(implode(',', $this->to), $this->subject, $message, $headers);
         }
         else {
             $result = false;

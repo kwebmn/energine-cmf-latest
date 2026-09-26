@@ -258,8 +258,6 @@ final class Document extends Primitive implements IDocument {
             $this->getConfigValue('site.resizer')) ? $resizerURL : (E()->getSiteManager()->getDefaultSite()->base . 'resizer/')));
         $prop->setAttribute('folder', E()->getSiteManager()->getCurrentSite()->folder);
         $prop->setAttribute('default', E()->getSiteManager()->getDefaultSite()->base);
-        $prop->setAttribute('favicon',
-            ($favicon = E()->getSiteManager()->getCurrentSite()->faviconFile) ? $favicon : E()->getSiteManager()->getDefaultSite()->faviconFile);
         $dom_documentProperties->appendChild($prop);
 
         $prop = $this->doc->createElement('property', $this->getLang());

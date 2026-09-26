@@ -10,7 +10,6 @@
                </params>
             </component>
         </container>
-        <container name="leftAdBlock"/>
     </container>
     <container name="center" column="column" html_class="col col2 last_col">
         <container name="loginFormContainer" block="alfa" widget="static">

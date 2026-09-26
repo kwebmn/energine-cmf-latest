@@ -14,7 +14,7 @@ class NewsFeed;
  * @version 1.0.0
  */
 namespace Energine\apps\components;
-use Energine\share\gears\QAL, Energine\share\gears\SystemException, Energine\share\gears\AttachmentManager, Energine\share\gears\FieldDescription, Energine\share\gears\SimpleBuilder, Energine\share\gears\Data, Energine\share\gears\TagManager, Energine\share\gears\Request;
+use Energine\share\gears\QAL, Energine\share\gears\SystemException, Energine\share\gears\AttachmentManager, Energine\share\gears\FieldDescription, Energine\share\gears\SimpleBuilder, Energine\share\gears\Data;
 /**
  * News line.
  *
@@ -23,12 +23,6 @@ class NewsFeed;
  * @endcode
  */
 class NewsFeed extends ExtendedFeed {
-    /**
-     * Calendar.
-     * @var Calendar $calendar
-     */
-    private $calendar;
-
     /**
      * @copydoc ExtendedFeed::__construct
      */
@@ -40,20 +34,6 @@ class NewsFeed extends ExtendedFeed {
         if ($this->document->getRights() < ACCESS_EDIT) {
             $this->addFilterCondition(array('news_is_active' => true));
         }
-        if (!$this->document->getProperty('single') && $this->getParam('hasCalendar'))
-            $this->createCalendar();
-    }
-
-    /**
-     * @copydoc ExtendedFeed::defineParams
-     */
-    // Определяет допустимые параметры компонента и их значения по-умолчанию в виде массива array(paramName => defaultValue).
-    protected function defineParams() {
-        $result = array_merge(parent::defineParams(),
-            array(
-                'hasCalendar' => false
-            ));
-        return $result;
     }
 
     /**
@@ -199,94 +179,6 @@ class NewsFeed extends ExtendedFeed {
         }
         if ($this->pager) {
             $this->pager->setProperty('additional_url', 'tag/' . $tagID . '/');
-        }
-    }
-
-    /**
-     * Create calendar.
-     * Calendar helps to navigate over the news.
-     */
-    protected function createCalendar() {
-        $calendarParams = array();
-        $ap = $this->getStateParams(true);
-        if ($this->getState() == 'main') {
-            if (isset($ap['year']) && isset($ap['month']) &&
-                isset($ap['day'])
-            ) {
-                if ($this->getParam('hasCalendar')) {
-                    $calendarParams['month'] = $ap['month'];
-                    $calendarParams['year'] = $ap['year'];
-                    $calendarParams['date'] =
-                        \DateTime::createFromFormat('Y-m-d',
-                            $ap['year'] . '-' . $ap['month'] . '-' .
-                            $ap['day']);
-                }
-
-                $additionalFilter =
-                    'DAY(news_date) = "' . $ap['day'] .
-                    '" AND MONTH(news_date) = "' .
-                    $ap['month'] .
-                    '" AND YEAR(news_date) = "' .
-                    $ap['year'] . '"';
-            } elseif (isset($ap['year']) && isset($ap['month'])) {
-                if ($this->getParam('hasCalendar')) {
-                    $calendarParams['month'] = $ap['month'];
-                    $calendarParams['year'] = $ap['year'];
-                }
-                $additionalFilter =
-                    'MONTH(news_date) = "' . $ap['month'] .
-                    '" AND YEAR(news_date) = "' .
-                    $ap['year'] . '"';
-            } elseif (isset($ap['year'])) {
-                if ($this->getParam('hasCalendar')) {
-                    $calendarParams['year'] = $ap['year'];
-                }
-                $additionalFilter =
-                    'YEAR(news_date) = "' . $ap['year'] . '"';
-            }
-
-            if ($this->getParam('tags')) {
-
-                $filteredIDs = TagManager::getFilter($this->getParam('tags'), $this->getTableName());
-
-                if (!empty($filteredIDs)) {
-                    $this->addFilterCondition(array($this->getTableName() . '.news_id' => $filteredIDs));
-
-                } else {
-                    $this->addFilterCondition(array($this->getTableName() . '.news_id' => 0));
-                }
-            }
-        } elseif (($this->getState() == 'view') &&
-            ($this->getParam('hasCalendar'))
-        ) {
-            // в режиме просмотра параметров года, месяца и дня нет — их чтение роняло страницу новости.
-            // Показываем месяц открытой новости, иначе календарь остаётся на текущем месяце.
-            if (!empty($ap['id'])
-                && ($newsDate = $this->dbh->getScalar($this->getTableName(), 'news_date', ['news_id' => (int)$ap['id']]))
-                && ($newsDateTime = \DateTime::createFromFormat('Y-m-d H:i:s', $newsDate))
-            ) {
-                $calendarParams['year'] = $newsDateTime->format('Y');
-                $calendarParams['month'] = $newsDateTime->format('n');
-                $calendarParams['date'] = $newsDateTime;
-            }
-        }
-
-        if ($this->getParam('hasCalendar')) {
-            $calendarParams['filter'] = $this->getFilter();
-            $calendarParams['tableName'] = $this->getTableName();
-            // адрес ленты для ссылок календаря: без него дни вели в корень сайта.
-            // DataSet дописывает к параметру завершающий слеш
-            $calendarParams['template'] = rtrim($this->request->getPath(Request::PATH_TEMPLATE, true), '/');
-            //Создаем компонент календаря новостей
-            $this->document->componentManager->addComponent(
-                $this->calendar =
-                    $this->document->componentManager->createComponent('calendar', 'Energine\apps\components\NewsCalendar', $calendarParams)
-            );
-            $this->calendar->run();
-        }
-
-        if (isset($additionalFilter)) {
-            $this->addFilterCondition($additionalFilter);
         }
     }
 

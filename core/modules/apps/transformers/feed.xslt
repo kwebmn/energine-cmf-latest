@@ -113,8 +113,6 @@
     <!-- фид новостей -->
     <xsl:template match="component[@class='NewsFeed']">
         <div class="feed news">
-            <!-- календарь создаётся лентой в корне документа, поэтому выводим его отсюда -->
-            <xsl:apply-templates select="$COMPONENTS[@name='calendar'][@class='NewsCalendar']"/>
             <xsl:apply-templates/>
         </div>
     </xsl:template>

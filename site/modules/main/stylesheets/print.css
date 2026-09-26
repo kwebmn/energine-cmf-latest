@@ -25,7 +25,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 #pageToolbar, hr.separator, .e-topframe, .e-sideframe,
-.breadcrumbs, .lang_switcher, .main_menu, .login_form, .top_adblock, .left_adblock {
+.breadcrumbs, .lang_switcher, .main_menu, .login_form, .top_adblock {
 	display: none;
 }
 .main {

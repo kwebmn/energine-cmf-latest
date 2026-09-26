@@ -19,14 +19,7 @@ return array(
         'share'     => $energine_release . '/core/modules/share',
         'user'      => $energine_release . '/core/modules/user',
         'apps'      => $energine_release . '/core/modules/apps',
-        'forms'     => $energine_release . '/core/modules/forms',
         'seo'       => $energine_release . '/core/modules/seo',
-        'calendar'  => $energine_release . '/core/modules/calendar',
-        'comments'  => $energine_release . '/core/modules/comments',
-        'mail'      => $energine_release . '/core/modules/mail',
-        'ads'       => $energine_release . '/core/modules/ads',
-        'blog'      => $energine_release . '/core/modules/blog',
-        'shop'      => $energine_release . '/core/modules/shop',
     ),
 
     // настройки подключения к mysql
@@ -119,15 +112,6 @@ return array(
     'mail' => array(
         // адрес отправителя почтовой корреспонденции
         'from' => 'noreply@energine.org',
-        // адрес менеджера
-        'manager' => 'demo@energine.org',
-        // адрес для сообщений обратной связи
-        'feedback' => 'demo@energine.org',
-        // источники данных для рассылок (mail_subscriptions.subscription_type => класс)
-        'subscriptions' => array(
-            'news' => 'Energine\\mail\\gears\\MailSourceNews',
-            'crm' => 'Energine\\mail\\gears\\MailSourceCRM',
-        ),
     ),
 
     // настройки файловых репозитариев

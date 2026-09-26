@@ -72,14 +72,7 @@
     </xsl:template>
 
     <xsl:template match="/" mode="favicon">
-        <link rel="shortcut icon" type="image/x-icon">
-            <xsl:attribute name="href">
-                <xsl:choose>
-                    <xsl:when test="$DOC_PROPS[@name='base']/@favicon!=''"><xsl:value-of select="$DOC_PROPS[@name='base']/@favicon"/></xsl:when>
-                    <xsl:otherwise><xsl:value-of select="$STATIC_URL"/>images/energine.ico</xsl:otherwise>
-                </xsl:choose>
-            </xsl:attribute>
-        </link>
+        <link rel="shortcut icon" type="image/x-icon" href="{$STATIC_URL}images/energine.ico"/>
     </xsl:template>
 
     <xsl:template match="/" mode="stylesheets">
