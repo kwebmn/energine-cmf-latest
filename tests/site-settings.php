@@ -144,6 +144,48 @@ try {
     [$code] = http("$B/google-sitemap/");
     check('NOINDEX: google-sitemap — 404', $code == 404, "HTTP $code");
 
+    // все флажки сняты: браузер не отправляет поле набора вовсе — запрет индексации снимается
+    [$code, $body] = http($single . 'save/', encode(with(with($pairs, "share_sites_translation[$ru][site_name]", $names[$ru]),
+        'share_sites[site_meta_robots]', [])), ['X-Request: JSON']);
+    $j = json_decode((string)$body, true);
+    [, $robots] = http($robotsUrl);
+    [$gcode] = http("$B/google-sitemap/");
+    check('флажки сняты формой: robots.txt снова открыт, google-sitemap — 200',
+        $code == 200 && !empty($j['result']) && str_contains($robots, 'Allow: /') && !str_contains($robots, 'Disallow') && $gcode == 200,
+        "HTTP $code, robots " . json_encode(substr($robots, 0, 60)) . ", google-sitemap $gcode");
+
+    // дополнительные параметры сайта (вкладка формы): добавление, правка значения, повтор имени — отказ, удаление
+    $props = $single . "$id/properties/";
+    [, $propsPage] = http($props);
+    $ptok = preg_match('~<meta name="csrf-token" content="([^"]*)"~', (string)$propsPage, $m) ? $m[1] : $tok;
+    $propName = 'claude_test_' . bin2hex(random_bytes(3));
+    $propId = fn() => $pdo->query("SELECT prop_id FROM share_sites_properties WHERE prop_name = '$propName'")->fetchColumn();
+    [$code, $addForm] = http($props . 'add/');
+    [$addPairs] = [formFields($addForm)];
+    $addPairs = with(with($addPairs, 'share_sites_properties[prop_name]', $propName), 'share_sites_properties[prop_value]', 'один');
+    [$code, $body] = http($props . 'save/', encode($addPairs), ['X-Request: JSON']);
+    $j = json_decode((string)$body, true);
+    $pid = $propId();
+    check('параметр сайта добавляется', $code == 200 && !empty($j['result']) && $pid, "HTTP $code " . substr((string)$body, 0, 200));
+    if ($pid) {
+        [$code, $editForm] = http($props . "$pid/edit/");
+        [$code, $body] = http($props . 'save/', encode(with(formFields($editForm), 'share_sites_properties[prop_value]', 'два')),
+            ['X-Request: JSON']);
+        $j = json_decode((string)$body, true);
+        $value = $pdo->query("SELECT prop_value FROM share_sites_properties WHERE prop_id = $pid")->fetchColumn();
+        check('значение параметра сайта правится', $code == 200 && !empty($j['result']) && $value === 'два',
+            "HTTP $code, «{$value}» " . substr((string)$body, 0, 200));
+        [$code, $body] = http($props . 'save/', encode($addPairs), ['X-Request: JSON']);
+        $j = json_decode((string)$body, true);
+        $msg = json_encode($j['errors'] ?? null, JSON_UNESCAPED_UNICODE);
+        check('параметр с тем же именем — отказ с понятным сообщением',
+            is_array($j) && empty($j['result']) && $msg !== 'null' && !preg_match('/duplicate|sqlstate|\bsql\b/i', $msg)
+            && (int)$pdo->query("SELECT COUNT(*) FROM share_sites_properties WHERE prop_name = '$propName'")->fetchColumn() === 1,
+            "HTTP $code " . substr((string)$body, 0, 200));
+        [$code, $body] = http($props . "$pid/delete/", '', ['X-Request: JSON', "X-CSRF-Token: $ptok"]);
+        check('параметр сайта удаляется', !$propId(), "HTTP $code " . substr((string)$body, 0, 200));
+    }
+
     // без токена — отказ 422, запись та же
     $restore();
     $noToken = array_values(array_filter(with($pairs, "share_sites_translation[$ru][site_name]", 'Claude без токена'),
@@ -154,6 +196,7 @@ try {
 
 } finally {
     $restore();
+    if (isset($propName)) $pdo->prepare('DELETE FROM share_sites_properties WHERE prop_name = ?')->execute([$propName]);
     @unlink($jar);
 }
 echo "== site-settings failures: $fail\n";

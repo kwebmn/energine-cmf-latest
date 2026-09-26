@@ -54,4 +54,26 @@ final class SiteManager extends Primitive {
     public function getCurrentSite() {
         return $this->site;
     }
+
+    /**
+     * Та же страница по адресу сайта, если GET или HEAD пришёл по другому имени или порту (www, IP, поддельный Host).
+     * У сайта один адрес: формы страницы, открытой по другому имени, уходили бы на адрес из конфига с чужим Origin
+     * и отклонялись проверкой Csrf, а поисковики видели бы копии сайта. POST не переадресуется (его отклонит Csrf),
+     * консоль — тоже.
+     *
+     * @return string|null адрес для переадресации 301 или null — запрос уже на адресе сайта
+     */
+    public function canonicalLocation() {
+        if (E()->Utils->is_PHP_CLI() || !in_array($_SERVER['REQUEST_METHOD'] ?? 'GET', ['GET', 'HEAD'], true)) {
+            return null;
+        }
+        $uri = URI::create();
+        $domain = (string)$this->getConfigValue('site.domain');
+        $port = (int)(explode(':', $domain, 2)[1] ?? ($uri->getScheme() == 'https' ? 443 : 80));
+        if (strcasecmp($uri->getHost(), Site::hostOf($domain)) === 0 && (int)$uri->getPort() === $port) {
+            return null;
+        }
+
+        return $uri->getScheme() . '://' . $domain . ($_SERVER['REQUEST_URI'] ?? '/');
+    }
 }

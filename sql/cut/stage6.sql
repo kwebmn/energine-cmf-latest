@@ -15,7 +15,17 @@ BEGIN NOT ATOMIC
 END //
 DELIMITER ;
 
--- 1. Адрес сайта — из конфига (site.domain, site.root): таблиц доменов нет.
+-- 1. Адрес сайта — из конфига (site.domain, site.root): таблиц доменов нет. Их адреса перед удалением печатаются:
+--    сверьте их с site.domain и site.root конфига; страницы по другим именам переадресуются на адрес из конфига.
+DELIMITER //
+BEGIN NOT ATOMIC
+    IF EXISTS (SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'share_domains') THEN
+        SELECT CONCAT(`domain_protocol`, '://', `domain_host`, ':', `domain_port`, `domain_root`)
+                   AS `stage6.sql: адреса из share_domains (таблица удаляется) — сверьте с site.domain и site.root`
+          FROM `share_domains` ORDER BY `domain_id`;
+    END IF;
+END //
+DELIMITER ;
 DROP TABLE IF EXISTS `share_domain2site`, `share_domains`;
 
 -- 2. «Настройки сайта» (admin/settings/) вместо редактора сайтов и доменов (admin/structure/sites/): та же страница

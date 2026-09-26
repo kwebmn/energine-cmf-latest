@@ -64,6 +64,8 @@ pre6 m6 || exit 2
 TM --default-character-set=utf8mb4 m6 <<'SQL' || { echo "свойства сайта" >&2; exit 2; }
 INSERT INTO share_sites_properties (site_id, prop_name, prop_value) VALUES (NULL, 'phone', 'общий'), (1, 'phone', 'свой'),
   (NULL, 'email', 'общий e-mail');
+INSERT INTO share_domains (domain_protocol, domain_port, domain_host, domain_root) VALUES ('https', 443, 'www.claude-alias.example', '/');
+INSERT INTO share_domain2site (domain_id, site_id) VALUES (LAST_INSERT_ID(), 1);
 SQL
 content6() { TM -N --default-character-set=utf8mb4 m6 -e "SELECT CONCAT_WS(' # ',
   (SELECT GROUP_CONCAT(CONCAT(smap_id, ':', IFNULL(smap_pid, '-'), ':', smap_segment) ORDER BY smap_id) FROM share_sitemap
@@ -74,6 +76,9 @@ content6() { TM -N --default-character-set=utf8mb4 m6 -e "SELECT CONCAT_WS(' # '
      FROM apps_news n JOIN apps_news_translation t USING (news_id)))"; }
 before6=$(content6)
 out=$(TM --default-character-set=utf8mb4 m6 < "$R/sql/cut/stage6.sql" 2>&1) || bad "stage6.sql" "$(tail -3 <<< "$out")"
+# адреса таблицы доменов, которой больше нет, названы в выводе: сверить с site.domain и site.root конфига
+grep -q 'https://www.claude-alias.example:443/' <<< "$out" && ok "stage6.sql называет адреса удаляемой таблицы доменов" \
+  || bad "stage6.sql не называет адреса таблицы доменов" "$(head -3 <<< "$out")"
 [ "$(content6)" = "$before6" ] && ok "stage6.sql: разделы с адресами, права, тексты и новости те же" \
   || bad "stage6.sql изменил содержимое сайта" "$(content6 | cut -c1-200)"
 is6() { if [ "$2" = "$3" ]; then ok "$1"; else bad "$1" "ожидалось «$3», получено «$2»"; fi; }

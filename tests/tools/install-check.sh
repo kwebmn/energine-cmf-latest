@@ -9,7 +9,7 @@
 #  2. отказы до первого изменения базы: непустая база, неверный e-mail, нет пароля администратора;
 #  3. пустой сайт отвечает — встроенный сервер PHP на 127.0.0.1 от имени владельца площадки: главная,
 #     вход, регистрация, восстановление пароля, карта сайта; администратор входит и видит админку;
-#     неизвестный адрес — 404; ссылок на демо-разделы нет; <base> и форма входа — адрес из конфига и при чужом Host;
+#     неизвестный адрес — 404; ссылок на демо-разделы нет; <base> — адрес из конфига; другое имя (Host) — 301 на него;
 #     cookie на адресе с портом — без Domain;
 #  4. вторая установка — с доменом площадки (--domain) — и setup demo поверх: отпечаток
 #     (fingerprint.php) совпадает с базой площадки; повторное демо — отказ.
@@ -149,12 +149,12 @@ for p in "" login/ register/ restore-password/ sitemap/; do
 done
 page "" > /dev/null
 is "<base> — адрес из конфига" "$(grep -o '<base href="[^"]*"' "$T/page.html" | head -1)" "<base href=\"$URL\""
-# чужой Host (поддельный заголовок, вход по другому имени) адреса не меняет: <base> и действие формы входа — из конфига
-curl -s -o "$T/evil.html" -H "Host: evil.example" "${URL}login/"
-is "Host: evil.example — <base> из конфига" "$(grep -o '<base href="[^"]*"' "$T/evil.html" | head -1)" "<base href=\"$URL\""
-act=$(grep -o 'action="[^"]*auth\.php[^"]*"' "$T/evil.html" | head -1)
-[[ "$act" == "action=\"${URL}auth.php"* ]] && ok "Host: evil.example — форма входа ведёт на адрес из конфига" \
-  || bad "форма входа при чужом Host" "${act:-формы нет}"
+# другое имя (www, IP, поддельный Host): GET и HEAD уходят на ту же страницу по адресу из конфига (301) — страницы
+# и их формы живут только на адресе из конфига, где Origin формы совпадает с хостом запроса
+is "Host: evil.example — 301 на ту же страницу по адресу из конфига" \
+  "$(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' -H "Host: evil.example" "${URL}login/?x=1")" "301 ${URL}login/?x=1"
+is "HEAD по другому имени (www) — 301" "$(curl -s -I -o /dev/null -w '%{http_code}' -H "Host: www.127.0.0.1:$PORT" "$URL")" 301
+is "адрес из конфига — без переадресации" "$(curl -s -o /dev/null -w '%{http_code}' "${URL}login/")" 200
 demo=$(grep -oE 'href="[^"]*/(news|media|features|info|contacts)/' "$T/page.html" | head -3 | tr '\n' ' ')
 [ -z "$demo" ] && ok "на главной нет ссылок на демо-разделы" || bad "ссылки на демо-разделы" "$demo"
 is "неизвестный адрес — 404" "$(page claude-no-such-page/)" 404

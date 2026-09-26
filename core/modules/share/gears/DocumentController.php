@@ -117,6 +117,15 @@ class DocumentController extends Primitive {
      * -# Transform XML-document
      */
     public function run() {
+        // у сайта один адрес (site.domain): страница, открытая по другому имени, — переадресация на него
+        // (без Response::setRedirect: подстановка %lang% в нём требует языка, а он ещё не выбран)
+        if ($location = E()->getSiteManager()->canonicalLocation()) {
+            $response = E()->getResponse();
+            $response->setStatus(301);
+            $response->setHeader('Location', $location);
+            $response->setHeader('Content-Length', 0);
+            $response->commit();
+        }
         $csrfRefused = false;
         try {
             $language = E()->getLanguage();

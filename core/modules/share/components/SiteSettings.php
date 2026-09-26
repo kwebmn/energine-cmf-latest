@@ -56,6 +56,19 @@ class SiteSettings extends Grid {
     }
 
     /**
+     * Флажки site_meta_robots — набор (SET): снятые флажки браузер не отправляет, и без поля в запросе сохранение
+     * оставило бы прежнее значение — запрет индексации нельзя было бы снять. Нет поля — пустой набор.
+     */
+    protected function saveData() {
+        $table = $this->getTableName();
+        if (isset($_POST[$table]) && is_array($_POST[$table]) && !isset($_POST[$table]['site_meta_robots'])) {
+            $_POST[$table]['site_meta_robots'] = [];
+        }
+
+        return parent::saveData();
+    }
+
+    /**
      * Дополнительные параметры сайта — грид share_sites_properties во вкладке формы.
      */
     protected function properties() {
