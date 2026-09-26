@@ -3,7 +3,6 @@ admin/feedback-editor/
 admin/feedback-editor/recipients/
 admin/mail-templates/
 admin/news-editor/
-admin/polls/
 admin/structure/
 admin/structure/sites/
 admin/translations/
@@ -20,7 +19,6 @@ register/
 restore-password/
 robots.txt/
 sitemap/
-test-feed/
 news/1--dobro-pozhalovaty/
 news/5--linuxfmonlajn-radio-veshhajushheje-iskhodnyj-kod-jadra-linux/
 news/2--new-gcc-4-8-0/

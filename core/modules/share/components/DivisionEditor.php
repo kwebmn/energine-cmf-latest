@@ -16,7 +16,6 @@ final class DivisionEditor;
  */
 namespace Energine\share\components;
 
-use Energine\apps\gears\AdsManager;
 use Energine\share\gears;
 use Energine\share\gears\Builder;
 use Energine\share\gears\Data;
@@ -410,7 +409,6 @@ class DivisionEditor extends Grid implements SampleDivisionEditor {
         }
 
         //Ads
-        //        $ads = new AdsManager($result, $this->getState());
         //        $adsID = $ads->save();
 
 
@@ -478,14 +476,6 @@ class DivisionEditor extends Grid implements SampleDivisionEditor {
         $tm = new TagManager($this->getDataDescription(), $this->getData(), $this->getTableName());
         $tm->createFieldDescription();
         $tm->createField('menu');
-
-        //Ads
-        if (class_exists('Energine\\apps\\gears\\AdsManager')
-            && \Energine\apps\gears\AdsManager::isActive()
-        ) {
-            $ads = new \Energine\apps\gears\AdsManager();
-            $ads->add($this->getDataDescription());
-        }
     }
 
     /**
@@ -585,13 +575,6 @@ class DivisionEditor extends Grid implements SampleDivisionEditor {
         $tm->createField();
 
         $this->getDataDescription()->getFieldDescriptionByName('smap_id')->setType(FieldDescription::FIELD_TYPE_INT)->setMode(FieldDescription::FIELD_MODE_READ);
-
-        if (class_exists('Energine\\apps\\gears\\AdsManager')
-            && \Energine\apps\gears\AdsManager::isActive()
-        ) {
-            $ads = new \Energine\apps\gears\AdsManager();
-            $ads->edit($this->getData(), $this->getDataDescription());
-        }
     }
 
     /**

@@ -1,16 +1,12 @@
 admin/
 admin/action-log/
-admin/branding/
 admin/feedback-editor/
 admin/feedback-editor/recipients/
 admin/mail-templates/
 admin/news-categories/
 admin/news-editor/
-admin/polls/
 admin/structure/
 admin/structure/sites/
-admin/tops-groups/
-admin/tops/
 admin/translations/
 admin/translations/languages/
 admin/users/
@@ -36,4 +32,3 @@ register/
 restore-password/
 robots.txt/
 sitemap/
-test-feed/

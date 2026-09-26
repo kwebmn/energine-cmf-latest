@@ -17,8 +17,6 @@ register/
 restore-password/
 robots.txt/
 sitemap/
-test-feed/
-news/rss/
 news/2013/4/
 news/tag/13/
 news/2--new-gcc-4-8-0/

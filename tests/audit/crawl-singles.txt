@@ -1,13 +1,9 @@
 admin/action-log/single/actionsList/
-admin/branding/single/bEditor/
 admin/feedback-editor/single/feedbackList/
 admin/mail-templates/single/mailTemplateEditor/
 admin/news-categories/single/newsCategoriesEditor/
 admin/news-editor/single/newsRepo/
-admin/polls/single/voteEditor/
 admin/structure/single/divEditor/
-admin/tops/single/bEditor/
-admin/tops-groups/single/bEditor/
 admin/translations/single/transEditor/
 admin/users/single/userEditor/
 admin/widgets/single/widgetsRepository/

@@ -15,7 +15,6 @@ class DivisionSaver;
  */
 namespace Energine\share\gears;
 
-use Energine\apps\gears\AdsManager;
 
 /**
  * Saver for division editor.
@@ -103,19 +102,6 @@ class DivisionSaver extends ExtendedSaver {
                 }
             }
         }
-        /**
-         * @todo remove
-         */
-        if (class_exists('Energine\\apps\\gears\\AdsManager')
-            && \Energine\apps\gears\AdsManager::isActive()
-            && isset($_POST[\Energine\apps\gears\AdsManager::TABLE_NAME])
-            && is_array($adsData = $_POST[\Energine\apps\gears\AdsManager::TABLE_NAME])
-        ) {
-            $ads = new \Energine\apps\gears\AdsManager();
-            $adsData['smap_id'] = $smapID;
-            $ads->save($adsData);
-        }
-
         return $result;
     }
 }

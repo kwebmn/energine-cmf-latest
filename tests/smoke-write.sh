@@ -5,7 +5,7 @@ envsh=$(php8.5 "$SCR/env.php" --shell) || exit 1; eval "$envsh"
 A=$B/admin
 J=$SCR/smoke-write-cookies.txt
 R=$SCR/smoke-write.json
-q() { mysql -N -h "$DB_HOST" -u "$DB_USER" "$DB_NAME" -e "$1"; }
+q() { mysql -N --default-character-set=utf8mb4 -h "$DB_HOST" -u "$DB_USER" "$DB_NAME" -e "$1"; }
 ADMIN_ID=$(q "SELECT u_id FROM user_users WHERE u_name='$ADMIN_EMAIL'")
 fail=0
 ok()  { echo "OK   $1"; }
@@ -107,12 +107,6 @@ FID=$(q "SELECT upl_id FROM share_uploads WHERE upl_pid='$DID' LIMIT 1")
 rm -f $WEB/uploads/temp/claude-test.png
 [ "$(q "SELECT COUNT(*) FROM share_uploads WHERE upl_title LIKE 'claude-test%'")" = 0 ] && [ ! -e $WEB/uploads/public/claude-test-dir ] && ok "repo cleanup" || bad "repo cleanup"
 
-# --- vote as guest, then revert the counter
-before=$(q "SELECT vote_question_counter FROM apps_vote_question WHERE vote_question_id=4")
-curl -sS -o $R "$B/single/Vote6093/vote/4/?html"
-after=$(q "SELECT vote_question_counter FROM apps_vote_question WHERE vote_question_id=4")
-[ "$after" = "$((before+1))" ] && ok "vote" || bad "vote"
-q "UPDATE apps_vote_question SET vote_question_counter=$before WHERE vote_question_id=4"
 
 # --- logout
 curl -sS -c $J -b $J -o /dev/null -e "$B/" --data-urlencode 'user[logout]=1' $B/auth.php

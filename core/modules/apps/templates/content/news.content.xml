@@ -32,11 +32,6 @@
                     <param name="recordsPerPage">10</param>
                 </params>
             </component>
-            <component name="news1" class="Energine\apps\components\SimilarNews">
-                <params>
-                    <param name="bind">news</param>
-                </params>
-            </component>
         </container>
     </container>
     <component name="newsEditor" class="Energine\apps\components\NewsEditor">

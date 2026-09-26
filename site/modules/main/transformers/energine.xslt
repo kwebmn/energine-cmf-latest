@@ -26,12 +26,6 @@
 
     <!-- page body -->
     <xsl:template match="document">
-        <!-- врезка страницы: компонент apps отдаёт HTML-код каждого места отдельным полем -->
-        <xsl:if test="$COMPONENTS[@name='pageAds']/recordset/record/field[@name='ad_top_728_90'] != ''">
-            <div class="top_adblock">
-                <xsl:value-of select="$COMPONENTS[@name='pageAds']/recordset/record/field[@name='ad_top_728_90']" disable-output-escaping="yes"/>
-            </div>
-        </xsl:if>
         <xsl:if test="$COMPONENTS[@class='CrossDomainAuth']">
             <img src="{$COMPONENTS[@class='CrossDomainAuth']/@authURL}?return={$COMPONENTS[@class='CrossDomainAuth']/@returnURL}" width="1" height="1" style="display:none;" alt="" onload="document.location = document.location.href;"/>
         </xsl:if>
@@ -48,13 +42,6 @@
                 <xsl:apply-templates select="$COMPONENTS[@class='LangSwitcher']"/>
             </div>
             <div class="main">
-                <xsl:if test="$COMPONENTS[@name='pageAds']/recordset/record/field[@name='ad_content_468_60'] != ''">
-                    <div class="content_adblock">
-                        <xsl:value-of select="$COMPONENTS[@name='pageAds']/recordset/record/field[@name='ad_content_468_60']" disable-output-escaping="yes"/>
-                    </div>
-                </xsl:if>
-                <!-- оформление раздела выводится над содержимым -->
-                <xsl:apply-templates select="$COMPONENTS[@class='Branding']"/>
                 <xsl:apply-templates select="$COMPONENTS[@name='breadCrumbs']"/>
                 <!-- страница ошибки: компонент добавляется в корень документа, а не в content -->
                 <xsl:apply-templates select="$COMPONENTS[@class='ErrorComponent']"/>
