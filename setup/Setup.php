@@ -1014,8 +1014,7 @@ final class Setup {
                                     (strpos($pi['dirname'], 'jodit') === false)
                                     &&
                                     (strpos($pi['dirname'], 'codemirror') === false)
-                                    &&
-                                    (strpos($pi['dirname'], 'FileAPI') === false)
+
                                 ) {
                                     $this->text('Минифицируем и копируем ', $fo, ' --> ', $dest);
                                     file_put_contents($dest, $JSMIn->squeeze(file_get_contents($fo), true, false, false));

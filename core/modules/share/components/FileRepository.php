@@ -948,18 +948,6 @@ class FileRepository extends Grid implements SampleFileRepository {
             $response['error_message'] = (string)$e->getMessage();
         }
 
-        // IE9 no-flash / iframe upload (fallback)
-        $jsonp = isset($_REQUEST['callback']) ? trim($_REQUEST['callback']) : null;
-        if (!empty($jsonp)) {
-            echo '<script type="text/javascript">'
-                . '(function(ctx,jsonp){'
-                . 'if(ctx&&ctx[jsonp]){'
-                . 'ctx[jsonp](200, "OK", "' . addslashes(json_encode($response)) . '")'
-                . '}'
-                . '})(this.parent, "' . $jsonp . '")'
-                . '</script>';
-            exit();
-        }
 
         $builder->setProperties($response);
     }

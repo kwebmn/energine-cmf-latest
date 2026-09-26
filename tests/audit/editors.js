@@ -6,6 +6,7 @@
 const { chromium } = require(process.env.PLAYWRIGHT || '/root/.npm/_npx/e41f203b7505f1fb/node_modules/playwright');
 const { execFileSync } = require('child_process');
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 
 if (!process.env.BASE || !process.env.ADMIN_PASSWORD || !process.env.WEB) {
@@ -157,6 +158,28 @@ const appendHtml = (page, selector, html) => page.evaluate(([sel, h]) => {
             if (fs.existsSync(tmp)) fs.unlinkSync(tmp);
         }
         check('форма файла: без ошибок JS и 404', !errors.length, errors.join(' | '));
+        await p.close();
+    }
+
+    // 5. a file the server refuses (.php) is reported in the form, not swallowed
+    {
+        const p = await ctx.newPage();
+        await p.goto(BASE + 'admin/users/single/adminPanel/file-library/1/add/', { waitUntil: 'networkidle' });
+        const probe = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'editors-')), 'claude-probe.php');
+        fs.writeFileSync(probe, "<?php echo 'executed';");
+        const [resp] = await Promise.all([
+            p.waitForResponse((r) => r.url().includes('upload-temp'), { timeout: 20000 }),
+            p.setInputFiles('#uploader', probe),
+        ]);
+        fs.rmSync(path.dirname(probe), { recursive: true, force: true });
+        const j = await resp.json().catch(() => null);
+        check('сервер отверг .php', j && j.error, JSON.stringify(j));
+        await p.waitForTimeout(500);
+        const shown = await p.evaluate(() => {
+            const f = document.getElementById('uploader'), err = document.querySelector('div.error');
+            return !!(f && f.classList.contains('invalid') && err && err.textContent.trim());
+        });
+        check('отказ сервера показан в форме', shown);
         await p.close();
     }
 

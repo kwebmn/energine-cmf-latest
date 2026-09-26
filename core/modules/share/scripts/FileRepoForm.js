@@ -5,14 +5,13 @@
  * </ul>
  *
  * @requires Form
- * @requires FileAPI/FileAPI.min
  *
  * @author Pavel Dubenko
  *
  * @version 1.0.0
  */
 
-ScriptLoader.load('Form', 'FileAPI/FileAPI.min');
+ScriptLoader.load('Form');
 
 /**
  * FileRepoForm
@@ -28,9 +27,6 @@ var FileRepoForm = new Class(/** @lends FileRepoForm# */{
     // constructor
     initialize:function (el) {
         this.parent(el);
-
-        FileAPI.staticPath = Energine.base + 'scripts/FileAPI/';
-        FileAPI.debug = false;
 
         var uploader = this.element.getElementById('uploader');
         if (uploader) {
@@ -77,7 +73,7 @@ var FileRepoForm = new Class(/** @lends FileRepoForm# */{
      */
     showThumbPreview:function (evt) {
         var el = $(evt.target);
-        var files = FileAPI.getFiles(evt);
+        var files = Array.from(el.files || []);
 
         for (var i = 0; i < files.length; i++) {
             if (files[i].type.match('image.*')) {
@@ -123,60 +119,29 @@ var FileRepoForm = new Class(/** @lends FileRepoForm# */{
      * @param {} response_callback
      * @returns {*|XMLHttpRequestEventTarget}
      */
-    xhrFileUpload: function(field_name, files, response_callback) {
-        var f = {};
-        f[field_name] = files;
+    xhrFileUpload: function (field_name, files, response_callback) {
+        var body = new FormData(),
+            field = this.element.getElementById(field_name);
+        body.append('key', field_name);
+        body.append('pid', $('upl_pid').get('value'));
+        body.append(field_name, files[0]);
 
-        return FileAPI.upload({
-            url: this.singlePath + 'upload-temp/?json',
-            data: {
-                'key': field_name,
-                'pid': $('upl_pid').get('value')
-            },
-            files: f,
-            prepare: function (file, options){
-                options.data[FileAPI.uid()] = 1;
-            },
-            beforeupload: function (){
-                // FileAPI.log('beforeupload:', arguments);
-            },
-
-            upload: function (){
-                // FileAPI.log('upload:', arguments);
-            },
-
-            fileupload: function (file, xhr){
-                // FileAPI.log('fileupload:', file.name);
-            },
-
-            fileprogress: function (evt, file){
-                // FileAPI.log('fileprogress:', file.name, '--', evt.loaded/evt.total*100);
-            },
-
-            filecomplete: function (err, xhr, file){
-                // FileAPI.log('filecomplete:', err, file.name);
-
-                if( !err ){
-                    try {
-                        var result = FileAPI.parseJSON(xhr.responseText);
-                        // FileAPI.log(result);
-                        if (result && !result.error) {
-                            response_callback(result);
-                        }
-                    } catch (er){
-                        //FileAPI.log('PARSE ERROR:', er.message);
-                    }
+        this.validator.removeError(field);
+        return fetch(this.singlePath + 'upload-temp/?json', {method: 'POST', body: body, credentials: 'same-origin'})
+            .then(function (response) {
+                return response.json();
+            })
+            .then(function (result) {
+                if (result && !result.error) {
+                    response_callback(result);
+                } else {
+                    // отказ сервера (запрещённый тип файла, нет прав, нет места) показывается у поля
+                    this.validator.showError(field, (result && result.error_message) || 'ERR_UPLOAD');
                 }
-            },
-
-            progress: function (evt, file){
-                //FileAPI.log('progress:', evt.loaded/evt.total*100, '('+file.name+')');
-            },
-
-            complete: function (err, xhr){
-                //FileAPI.log('complete:', err, xhr);
-            }
-        });
+            }.bind(this))
+            .catch(function (e) {
+                this.validator.showError(field, e.message);
+            }.bind(this));
     },
 
     /**
@@ -192,7 +157,7 @@ var FileRepoForm = new Class(/** @lends FileRepoForm# */{
         }
         previewElement.setProperty('src', Energine.base + 'images/loading.gif');
 
-        var files = FileAPI.getFiles(evt);
+        var files = Array.from($(evt.target).files || []);
         var enableTab = this.tabPane.enableTab.pass(1, this.tabPane);
         var generatePreviews = this.generatePreviews.bind(this);
         for (var i = 0; i < files.length; i++) {
