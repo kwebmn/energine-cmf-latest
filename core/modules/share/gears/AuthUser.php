@@ -24,11 +24,12 @@ class AuthUser;
  */
 class AuthUser extends User {
     /**
-     * Лимит попыток входа: окно (секунд) и сколько неудач в нём допускается на один логин и с одного IP.
-     * Следующая попытка отклоняется без проверки пароля.
+     * Лимит попыток входа: окно (секунд) и сколько неудач в нём допускается на один логин с одного IP
+     * и всего с одного IP. Следующая попытка отклоняется без проверки пароля. Неудачи считаются по паре
+     * «логин — IP»: иначе любой, кто знает логин администратора, закрывал бы ему вход пятью ошибками.
      */
     const LOGIN_WINDOW = 900;
-    const LOGIN_FAILURES_PER_LOGIN = 5;
+    const LOGIN_FAILURES_PER_LOGIN_IP = 5;
     const LOGIN_FAILURES_PER_IP = 20;
 
     //todo VZ: Why not to use 0 as the default user id?
@@ -85,7 +86,7 @@ class AuthUser extends User {
     }
 
     /**
-     * Попытки входа исчерпаны: для этого логина или с этого IP за окно было слишком много неудач.
+     * Попытки входа исчерпаны: с этого IP за окно было слишком много неудач — для этого логина или всего.
      *
      * @param string $login
      * @param string $ip
@@ -95,8 +96,8 @@ class AuthUser extends User {
         $since = time() - self::LOGIN_WINDOW;
         $db = E()->getDB();
 
-        return $db->getScalar('SELECT COUNT(*) FROM user_login_attempts WHERE la_login = %s AND la_date > %s',
-                self::attemptLogin($login), $since) >= self::LOGIN_FAILURES_PER_LOGIN
+        return $db->getScalar('SELECT COUNT(*) FROM user_login_attempts WHERE la_login = %s AND la_ip = %s AND la_date > %s',
+                self::attemptLogin($login), (string)$ip, $since) >= self::LOGIN_FAILURES_PER_LOGIN_IP
             || $db->getScalar('SELECT COUNT(*) FROM user_login_attempts WHERE la_ip = %s AND la_date > %s',
                 $ip, $since) >= self::LOGIN_FAILURES_PER_IP;
     }
@@ -115,12 +116,14 @@ class AuthUser extends User {
     }
 
     /**
-     * Удачный вход: неудачи этого логина забываются (неудачи IP остаются).
+     * Удачный вход: неудачи этого логина с этого IP забываются (неудачи с других IP и по другим логинам остаются).
      *
      * @param string $login
+     * @param string $ip
      */
-    public static function clearFailures($login) {
-        E()->getDB()->modify(QAL::DELETE, 'user_login_attempts', null, ['la_login' => self::attemptLogin($login)]);
+    public static function clearFailures($login, $ip) {
+        E()->getDB()->modify(QAL::DELETE, 'user_login_attempts', null,
+            ['la_login' => self::attemptLogin($login), 'la_ip' => (string)$ip]);
     }
 
     /**

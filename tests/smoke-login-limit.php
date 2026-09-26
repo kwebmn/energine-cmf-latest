@@ -1,7 +1,8 @@
 <?php
-// Лимит попыток входа (этап 5а): 5 неудач на один логин или 20 с одного IP за 15 минут — следующая
-// попытка отклоняется без проверки пароля. Временный пользователь и строки попыток теста убираются
-// в любом случае: запертый IP — это IP всех тестов этой машины.
+// Лимит попыток входа (этап 5а): 5 неудач на один логин с одного IP или 20 с одного IP за 15 минут —
+// следующая попытка отклоняется без проверки пароля. Неудачи с чужого IP вход владельца не запирают:
+// иначе любой, кто знает логин администратора, закрывал бы ему вход. Временный пользователь и строки
+// попыток теста убираются в любом случае: запертый IP — это IP всех тестов этой машины.
 require __DIR__ . '/testlib.php';
 
 $login = 'claude-limit-' . getmypid() . '@localhost';
@@ -44,6 +45,18 @@ q('UPDATE user_login_attempts SET la_date = la_date - 16 * 60 WHERE la_login = ?
 [$in] = attempt($login, $password);
 check('через 15 минут вход открыт', $in);
 check('удачный вход очистил неудачи логина', (int)scalar('SELECT COUNT(*) FROM user_login_attempts WHERE la_login = ?', [$login]) === 0);
+
+echo "-- неудачи с другого IP\n";
+// кто-то с другого адреса исчерпал попытки для этого логина — владелец со своего IP всё равно входит
+$otherIp = '203.0.113.7';
+for ($i = 0; $i < 5; $i++) {
+    q('INSERT INTO user_login_attempts (la_ip, la_login, la_date) VALUES (?, ?, ?)', [$otherIp, $login, time()]);
+}
+[$in, $message] = attempt($login, $password);
+check('5 неудач логина с другого IP не запирают вход со своего', $in, $message);
+check('удачный вход не стёр неудачи другого IP', (int)scalar('SELECT COUNT(*) FROM user_login_attempts WHERE la_login = ? AND la_ip = ?',
+    [$login, $otherIp]) === 5);
+q('DELETE FROM user_login_attempts WHERE la_login = ?', [$login]);
 
 echo "-- заблокированный пользователь\n";
 q('UPDATE user_users SET u_is_active = 0 WHERE u_name = ?', [$login]);

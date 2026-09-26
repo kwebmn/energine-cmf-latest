@@ -29,7 +29,7 @@ if (!Csrf::verify()) {
     if (AuthUser::isThrottled($login, $ip)) {
         $response->addCookie(UserSession::FAILED_LOGIN_COOKIE_NAME, 'ERR_TOO_MANY_ATTEMPTS', time() + 60, false, '/', true);
     } elseif ($UID = AuthUser::authenticate($login, (string)$_POST['user']['password'])) {
-        AuthUser::clearFailures($login);
+        AuthUser::clearFailures($login, $ip);
         E()->UserSession->start($UID);
     } else {
         AuthUser::registerFailure($login, $ip);
