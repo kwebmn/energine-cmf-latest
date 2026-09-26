@@ -68,6 +68,17 @@ function header_of($eml, $name) {
     $head = preg_replace("/\n[ \t]+/", ' ', $head);
     return preg_match('/^' . preg_quote($name, '/') . ':\s*(.*)$/mi', $head, $m) ? iconv_mime_decode($m[1], 0, 'UTF-8') : null;
 }
+// часть письма по типу содержимого, раскодированная (quoted-printable или как есть)
+function part_of($eml, $type) {
+    foreach (preg_split('/^--\S+$/m', str_replace("\r\n", "\n", $eml)) as $part) {
+        [$head, $body] = explode("\n\n", ltrim($part, "\n"), 2) + ['', ''];
+        if (preg_match('~^Content-Type:\s*' . preg_quote($type, '~') . '~mi', $head)) {
+            return preg_match('/^Content-Transfer-Encoding:\s*quoted-printable/mi', $head)
+                ? str_replace("\r\n", "\n", quoted_printable_decode($body)) : $body;
+        }
+    }
+    return null;
+}
 $fails = function (callable $f) {
     try {
         $f();
@@ -91,8 +102,8 @@ check('заголовки: тема и отправитель в UTF-8, полу
     && header_of($eml, 'From') === 'Сайт «Тест» <' . FROM . '>' && str_contains((string)header_of($eml, 'To'), TO2)
     && header_of($eml, 'Date') && preg_match('/^<[^@>]+@simple\.energine\.org>$/', (string)header_of($eml, 'Message-ID')), $eml);
 check('строки из точки удвоены в разговоре и восстановлены в письме', preg_match('/^\.\.$/m', $data)
-    && preg_match('/^\.\.точка в начале$/m', $data) && str_contains(str_replace("\r\n", "\n", $eml), TEXT), $data);
-check('HTML-часть на месте', str_contains($eml, '<p>HTML <b>часть</b></p>'), $eml);
+    && preg_match('/^\.\.\S/m', $data) && str_contains((string)part_of($eml, 'text/plain'), TEXT), $data);
+check('HTML-часть на месте', str_contains((string)part_of($eml, 'text/html'), '<p>HTML <b>часть</b></p>'), $eml);
 
 echo "-- STARTTLS и AUTH LOGIN\n";
 $f = fake('starttls', ['auth=LOGIN', 'password=s3cret-login']);
@@ -162,6 +173,51 @@ check('перевод строки в адресе — отказ до соед�
 Primitive::setConfig(['mail' => ['from' => FROM], 'site' => ['domain' => 'simple.energine.org']]);
 check('перевод строки в адресе — отказ и без SMTP (mail())', message(TO1 . "\nBcc: " . TO2)->send() === false);
 
+echo "-- шифрование: регистр, синоним, опечатка\n";
+foreach (['TLS', 'starttls'] as $enc) {
+    $f = fake('starttls');
+    smtp(['host' => 'localhost', 'port' => $f['port'], 'encryption' => $enc, 'cafile' => "$dir/cert.pem", 'timeout' => 10]);
+    $sent = message(TO1)->send();
+    $log = finish($f);
+    check("encryption=$enc — это STARTTLS: письмо ушло только после перехода на TLS", $sent === true
+        && preg_match('/STARTTLS\n(EHLO|HELO)/', $log) && str_contains($log, 'MAIL FROM'), $log);
+}
+$f = fake('plain');
+smtp(['host' => '127.0.0.1', 'port' => $f['port'], 'encryption' => 'tsl', 'timeout' => 10]);
+$sent = message(TO1)->send();
+$log = finish($f);
+check('неизвестное шифрование (tsl) — отказ, открытым текстом ничего не ушло', $sent === false && !str_contains($log, 'MAIL FROM'), $log);
+
+echo "-- конверт: отправитель с именем, получатели списком\n";
+// так бывает в конфиге (mail.from «Имя <адрес>») и в получателях обратной связи (rcp_recipients через запятую)
+$f = fake('plain');
+smtp(['host' => '127.0.0.1', 'port' => $f['port'], 'encryption' => '', 'timeout' => 10]);
+$sent = (new Mail())->setFrom('Energine Simple <' . FROM . '>')->setSubject(SUBJECT)->setText(TEXT)->setHtmlText('<p>x</p>')
+    ->addTo(TO1 . ', ' . TO2)->send();
+$log = finish($f);
+check('отправитель с именем: в конверте только адрес', $sent === true && str_contains($log, 'MAIL FROM:<' . FROM . '>'), $log);
+check('получатели через запятую: каждый — своей командой RCPT', str_contains($log, 'RCPT TO:<' . TO1 . '>')
+    && str_contains($log, 'RCPT TO:<' . TO2 . '>'), $log);
+
+echo "-- STARTTLS: лишний ответ до перехода на TLS\n";
+$f = fake('starttls', ['inject=1']);
+smtp(['host' => 'localhost', 'port' => $f['port'], 'encryption' => 'tls', 'cafile' => "$dir/cert.pem", 'timeout' => 10]);
+$sent = message(TO1)->send();
+$log = finish($f);
+check('данные вслед за «220» на STARTTLS — отказ, письмо не ушло', $sent === false && !str_contains($log, 'MAIL FROM'), $log);
+
+echo "-- длинная строка и 8-битный текст\n";
+// абзац обратной связи или HTML из редактора одной строкой: строгий сервер не принимает строки длиннее 998 октетов
+$long = str_repeat('Длинная строка обратной связи без переводов. ', 40);
+$f = fake('plain', ['maxline=998']);
+smtp(['host' => '127.0.0.1', 'port' => $f['port'], 'encryption' => '', 'timeout' => 10]);
+$sent = (new Mail())->setFrom(FROM)->setSubject(SUBJECT)->setText($long)->setHtmlText('<p>' . $long . '</p>')->addTo(TO1)->send();
+$log = finish($f);
+$eml = (string)@file_get_contents($f['log'] . '.eml');
+check('строка длиннее 998 октетов: строгий сервер принял письмо', $sent === true && str_contains($log, 'DATA'), $log);
+check('текст и HTML после раскодирования — те же', trim((string)part_of($eml, 'text/plain')) === trim($long)
+    && str_contains((string)part_of($eml, 'text/html'), '<p>' . $long . '</p>'), substr($eml, 0, 600));
+
 // только через 127.0.0.1: на публичный адрес postfix отвечает на DATA «451 Try again later» (его политика
 // для внешних соединений); TLS и проверка сертификата проверены выше поддельным сервером
 echo "-- postfix этой машины, письмо в локальный ящик\n";
@@ -174,7 +230,9 @@ foreach ([['127.0.0.1', '']] as [$host, $enc]) {
     $got = false;
     for ($i = 0; $i < 60 && !$got; $i++) {
         clearstatcache();
-        $got = is_file(MAILBOX_FILE) && str_contains((string)file_get_contents(MAILBOX_FILE, false, null, $offset), "текст $marker");
+        // тело письма — в quoted-printable: ищется раскодированный текст
+        $got = is_file(MAILBOX_FILE)
+            && str_contains(quoted_printable_decode((string)file_get_contents(MAILBOX_FILE, false, null, $offset)), "текст $marker");
         if (!$got) usleep(500000);
     }
     check("postfix $host" . ($enc ? " ($enc)" : '') . ': письмо доставлено в локальный ящик', $sent === true && $got);

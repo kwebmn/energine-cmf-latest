@@ -28,8 +28,12 @@ function mboxRead($offset) {
         foreach (explode("\n", preg_replace("/\n[ \t]+/", ' ', $head)) as $line) {
             if (preg_match('/^([\w-]+):\s*(.*)$/', $line, $m)) $headers[strtolower($m[1])] = $m[2];
         }
+        // части письма — в quoted-printable (раньше 8bit): текст раскодируется
         $part = function ($type) use ($body) {
-            return preg_match('~Content-Type: text/' . $type . '; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\n(.*?)\n\n--~s', $body, $m) ? $m[1] : '';
+            if (!preg_match('~Content-Type: text/' . $type . '; charset=UTF-8\nContent-Transfer-Encoding: (8bit|quoted-printable)\n\n(.*?)\n\n--~s', $body, $m)) {
+                return '';
+            }
+            return $m[1] === 'quoted-printable' ? str_replace("\r\n", "\n", quoted_printable_decode($m[2])) : $m[2];
         };
         $result[] = ['to' => $headers['to'] ?? '', 'from' => $headers['from'] ?? '', 'subject' => iconv_mime_decode($headers['subject'] ?? '', 0, 'UTF-8'),
             'text' => $part('plain'), 'html' => $part('html'), 'raw' => $msg];

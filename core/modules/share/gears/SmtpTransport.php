@@ -17,10 +17,11 @@ namespace Energine\share\gears;
 /**
  * Отправка письма через SMTP-сервер — свой клиент, без сторонних библиотек.
  *
- * Шифрование: ssl — TLS сразу при соединении (обычно порт 465), tls — STARTTLS (порт 587 или 25),
- * пусто — без шифрования. Вход — AUTH PLAIN или LOGIN, смотря что предлагает сервер. Сертификат
- * сервера проверяется по имени хоста; свой центр сертификации задаётся в cafile. Если при tls сервер
- * не предлагает STARTTLS, письмо не уходит: открытым текстом оно не отправляется.
+ * Шифрование: ssl — TLS сразу при соединении (обычно порт 465), tls (или starttls) — STARTTLS (порт 587
+ * или 25), пусто — без шифрования; регистр не важен, другое значение — ошибка (письмо не уходит). Вход —
+ * AUTH PLAIN или LOGIN, смотря что предлагает сервер. Сертификат сервера проверяется по имени хоста; свой
+ * центр сертификации задаётся в cafile. Если при tls сервер не предлагает STARTTLS или вслед за его
+ * согласием пришли лишние данные, письмо не уходит: открытым текстом оно не отправляется.
  *
  * Любой неожиданный ответ сервера — \RuntimeException с командой, кодом и текстом ответа. Данные
  * входа (логин и пароль) в текст исключения не попадают.
@@ -53,6 +54,17 @@ final class SmtpTransport {
     public function __construct(array $config) {
         $this->config = $config + ['host' => '', 'port' => 25, 'encryption' => '', 'username' => '', 'password' => '',
                 'timeout' => 15, 'cafile' => '', 'helo' => ''];
+        // регистр не важен, starttls — то же, что tls; незнакомое значение (опечатка) — отказ, а не открытый текст
+        $encryption = $this->config['encryption'];
+        $name = strtolower(trim(is_scalar($encryption) ? (string)$encryption : ''));
+        if ($name === 'starttls') {
+            $name = 'tls';
+        }
+        if (!in_array($name, ['', 'ssl', 'tls'], true) || !(is_scalar($encryption) || $encryption === null)) {
+            throw new \RuntimeException('SMTP: unknown encryption "' . (is_scalar($encryption) ? $encryption : gettype($encryption))
+                . '" (ssl, tls or empty)');
+        }
+        $this->config['encryption'] = $name;
     }
 
     /**
@@ -73,6 +85,11 @@ final class SmtpTransport {
                     throw new \RuntimeException('SMTP: the server does not offer STARTTLS, the mail is not sent in clear text');
                 }
                 $this->command('STARTTLS', [220]);
+                // всё, что пришло вслед за «220» до рукопожатия, прислано открытым текстом: посредник мог подмешать
+                // ответы, которые клиент принял бы за ответы сервера по защищённому каналу
+                if ($this->pending()) {
+                    throw new \RuntimeException('SMTP: data after the STARTTLS reply, the connection is not trusted');
+                }
                 if (!@stream_socket_enable_crypto($this->socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
                     throw new \RuntimeException('SMTP: TLS negotiation failed (certificate of ' . $this->config['host'] . '?)');
                 }
@@ -120,6 +137,22 @@ final class SmtpTransport {
                 . ($error ? ' — ' . $error : ''));
         }
         stream_set_timeout($this->socket, (int)$this->config['timeout']);
+    }
+
+    /**
+     * Есть ли непрочитанные данные: в буфере потока PHP или уже пришедшие в сокет.
+     *
+     * @return bool
+     */
+    private function pending() {
+        if ((stream_get_meta_data($this->socket)['unread_bytes'] ?? 0) > 0) {
+            return true;
+        }
+        stream_set_blocking($this->socket, false);
+        $extra = fread($this->socket, 1);
+        stream_set_blocking($this->socket, true);
+
+        return is_string($extra) && $extra !== '';
     }
 
     /**

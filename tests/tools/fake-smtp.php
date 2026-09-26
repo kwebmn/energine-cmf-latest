@@ -5,6 +5,9 @@
 //   php8.5 fake-smtp.php <файл-порт> <журнал> <режим> [auth=PLAIN,LOGIN] [password=…] [cert=… key=…]
 // Режимы: plain — без шифрования; starttls — предлагает STARTTLS; nostarttls — не предлагает;
 // ssl — TLS сразу при соединении. С password=… почта принимается только после AUTH с этим паролем.
+// maxline=N — письмо со строкой длиннее N октетов отклоняется (как строгий сервер: RFC 5321 — 998);
+// inject=1 — вслед за «220» на STARTTLS открытым текстом дописывается лишний ответ (так его подмешал бы
+// посредник: клиент не должен принять его за ответ сервера после перехода на TLS).
 [, $portFile, $log, $mode] = $argv + [null, null, null, 'plain'];
 $opt = [];
 foreach (array_slice($argv, 4) as $a) {
@@ -52,7 +55,7 @@ while (($line = $read()) !== false) {
             break;
         case 'STARTTLS':
             if ($mode !== 'starttls' || $secure) { $say('502 5.5.1 not offered'); break; }
-            $say('220 2.0.0 go ahead');
+            $say('220 2.0.0 go ahead' . (!empty($opt['inject']) ? "\r\n250 2.0.0 injected" : ''));
             $secure = stream_socket_enable_crypto($conn, true, STREAM_CRYPTO_METHOD_TLS_SERVER);
             if (!$secure) exit(1);
             break;
@@ -86,7 +89,8 @@ while (($line = $read()) !== false) {
             while (($d = $read()) !== false && $d !== '.') $raw[] = $d;
             file_put_contents($log . '.data', implode("\n", $raw));
             file_put_contents($log . '.eml', implode("\n", array_map(fn($l) => str_starts_with($l, '.') ? substr($l, 1) : $l, $raw)));
-            $say('250 2.0.0 Ok: queued');
+            $long = isset($opt['maxline']) ? array_filter($raw, fn($l) => strlen($l) > (int)$opt['maxline']) : [];
+            $say($long ? '500 5.5.2 line too long' : '250 2.0.0 Ok: queued');
             break;
         case 'RSET':
         case 'NOOP':

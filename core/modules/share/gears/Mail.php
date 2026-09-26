@@ -222,17 +222,17 @@ final class Mail extends Primitive {
         # Text Version
         $message .= "--".$MIMEBoundary2.self::EOL;
         $message .= "Content-Type: text/plain; charset=UTF-8".self::EOL;
-        $message .= "Content-Transfer-Encoding: 8bit".self::EOL.self::EOL;
-        $message .= $this->text .self::EOL.self::EOL;
+        $message .= "Content-Transfer-Encoding: quoted-printable".self::EOL.self::EOL;
+        $message .= self::quotedPrintable($this->text) .self::EOL.self::EOL;
 
         # HTML Version
         $message .= "--".$MIMEBoundary2.self::EOL;
         $message .= "Content-Type: text/html; charset=UTF-8".self::EOL;
-        $message .= "Content-Transfer-Encoding: 8bit".self::EOL.self::EOL;
+        $message .= "Content-Transfer-Encoding: quoted-printable".self::EOL.self::EOL;
         if (strpos($this->html_text, '<html') === false) {
-            $message .= '<HTML><HEAD><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></HEAD><BODY>' . $this->html_text . '</BODY></HTML>' . self::EOL . self::EOL;
+            $message .= self::quotedPrintable('<HTML><HEAD><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></HEAD><BODY>' . $this->html_text . '</BODY></HTML>') . self::EOL . self::EOL;
         } else {
-            $message .= $this->html_text . self::EOL . self::EOL;
+            $message .= self::quotedPrintable($this->html_text) . self::EOL . self::EOL;
         }
 
         # Finished
@@ -269,8 +269,14 @@ final class Mail extends Primitive {
                 $headers[] = 'Subject: ' . $this->subject;
                 $headers[] = 'Date: ' . date('r');
                 $headers[] = 'Message-ID: <' . bin2hex(random_bytes(16)) . '@' . $domain . '>';
+                // в конверте — только адреса: без имени («Сайт <адрес>») и по одному из списка через запятую
+                $recipients = [];
+                foreach (array_keys($this->to) as $to) {
+                    $recipients = array_merge($recipients, self::envelopeAddresses($to));
+                }
                 (new SmtpTransport($smtp + ['helo' => $domain]))
-                    ->send($this->senderAddress, array_keys($this->to), implode("\r\n", $headers) . "\r\n\r\n" . $message);
+                    ->send(self::envelopeAddresses($this->senderAddress)[0] ?? '', array_values(array_unique($recipients)),
+                        implode("\r\n", $headers) . "\r\n\r\n" . $message);
                 $result = true;
             } else {
                 $result = mail(implode(',', $this->to), $this->subject, $message, implode(self::EOL, $this->headers));
@@ -279,6 +285,42 @@ final class Mail extends Primitive {
             // как у mail(): письмо не ушло — false; причина — в журнал ошибок PHP
             error_log('Mail: ' . $e->getMessage());
             $result = false;
+        }
+
+        return $result;
+    }
+
+    /**
+     * Тело части в quoted-printable: только ASCII и строки не длиннее 76 символов — письмо проходит любой
+     * сервер (RFC 5321: строка не длиннее 998 октетов), а переводы строк остаются переводами строк.
+     *
+     * @param string $text
+     * @return string
+     */
+    private static function quotedPrintable($text) {
+        // перевод строки — только CRLF: одиночный LF quoted_printable_encode записал бы как =0A
+        $encoded = quoted_printable_encode(preg_replace("/\r\n|\r|\n/", "\r\n", (string)$text));
+
+        return str_replace("\r\n", self::EOL, $encoded);
+    }
+
+    /**
+     * Адреса для конверта SMTP: из «Имя <адрес>» — только адрес, список через запятую — по одному
+     * (запятая внутри кавычек имени список не делит).
+     *
+     * @param string $value
+     * @return string[]
+     */
+    private static function envelopeAddresses($value) {
+        $result = [];
+        foreach (preg_split('/,(?=(?:[^"]*"[^"]*")*[^"]*$)/', (string)$value) as $item) {
+            $item = trim($item);
+            if (preg_match('/<([^<>]*)>$/', $item, $m)) {
+                $item = trim($m[1]);
+            }
+            if ($item !== '') {
+                $result[] = $item;
+            }
         }
 
         return $result;
