@@ -43,3 +43,8 @@ code{
 .nrgnEditor:focus {
     outline: 2px dashed #0D0;
 }
+
+/* блок, который сервер не сохранил: остаётся несохранённым до следующей удачной попытки */
+.nrgnEditor.nrgnEditorError {
+    outline: 2px solid #C00;
+}

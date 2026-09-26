@@ -905,7 +905,7 @@ class FileRepository extends Grid implements SampleFileRepository {
                 $key = (isset($_POST['key'])) ? $_POST['key'] : 'unknown';
                 // $pid = (isset($_POST['pid'])) ? (int) $_POST['pid']: false;
                 // $repo = $this->getRepositoryInstance($pid);
-                if (isset($_FILES[$key]) and is_uploaded_file($_FILES[$key]['tmp_name'])) {
+                if (isset($_FILES[$key]) and $_FILES[$key]['error'] === UPLOAD_ERR_OK and is_uploaded_file($_FILES[$key]['tmp_name'])) {
                     // the temporary directory is served by the web server, so a script must not land there
                     FileUploader::assertNotExecutable($_FILES[$key]['name']);
                     $tmp_name = $this->getTmpFilePath($_FILES[$key]['name']);
@@ -922,11 +922,11 @@ class FileRepository extends Grid implements SampleFileRepository {
                         $response['size'] = $_FILES[$key]['size'];
                     } else {
                         $response['error'] = true;
-                        $response['error_message'] = 'ERR_NO_FILE';
+                        $response['error_message'] = $this->translate('ERR_UPLOAD_FAILED');
                     }
                 } else {
                     $response['error'] = true;
-                    $response['error_message'] = 'ERR_NO_FILE';
+                    $response['error_message'] = self::uploadError($_FILES[$key] ?? null);
                 }
             } else {
                 $response['error'] = true;
@@ -940,6 +940,34 @@ class FileRepository extends Grid implements SampleFileRepository {
 
 
         $builder->setProperties($response);
+    }
+
+    /**
+     * Почему файл не пришёл — текст для формы: больше допустимого размера (файл больше upload_max_filesize
+     * или запрос больше post_max_size — тогда PHP отбрасывает всё тело), не дошёл целиком, не выбран.
+     *
+     * @param array|null $file элемент $_FILES
+     * @return string
+     */
+    private static function uploadError($file) {
+        $limits = array_map(function ($value) {
+            $value = trim((string)$value);
+            $bytes = (int)$value;
+            switch (strtoupper(substr($value, -1))) {
+                case 'G': $bytes *= 1024;
+                case 'M': $bytes *= 1024;
+                case 'K': $bytes *= 1024;
+            }
+            return $bytes;
+        }, [ini_get('upload_max_filesize'), ini_get('post_max_size')]);
+        $limit = min(array_filter($limits) ?: [0]);
+        $tooBig = ($file && in_array($file['error'], [UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE], true))
+            || (!$file && empty($_POST) && $limit && (int)($_SERVER['CONTENT_LENGTH'] ?? 0) > $limit);
+        if ($tooBig) {
+            return str_replace('%size%', (string)round($limit / 1048576), E()->Utils->translate('ERR_UPLOAD_TOO_BIG'));
+        }
+
+        return E()->Utils->translate(($file && $file['error'] !== UPLOAD_ERR_NO_FILE) ? 'ERR_UPLOAD_FAILED' : 'ERR_NO_FILE');
     }
 
     /**

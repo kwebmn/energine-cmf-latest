@@ -65,11 +65,13 @@
         <h3 class="feed_name">
             <xsl:if test="ancestor::component/@editable">
                 <xsl:attribute name="class">nrgnEditor feed_name</xsl:attribute>
+                <!-- заголовок — простой текст: правится без визуального редактора (PageEditor) -->
+                <xsl:attribute name="data-plain">1</xsl:attribute>
                 <xsl:attribute name="num"><xsl:value-of select="@name"/></xsl:attribute>
                 <xsl:attribute name="single_template"><xsl:value-of select="$BASE"/><xsl:value-of select="$LANG_ABBR"/><xsl:value-of select="ancestor::component/@single_template"/></xsl:attribute>
                 <xsl:attribute name="eID"><xsl:value-of select="../field[@index='PRI']"/></xsl:attribute>
             </xsl:if>
-            <xsl:value-of select="." disable-output-escaping="yes"/>
+            <xsl:value-of select="."/>
         </h3>
     </xsl:template>
 
@@ -157,11 +159,11 @@
                 <xsl:choose>
                     <xsl:when test="field[@name='news_text_rtf']=1">
                         <a href="{$BASE}{$LANG_ABBR}{field[@name='category']/@url}{field[@name='news_id']}--{field[@name='news_segment']}/">
-                            <xsl:value-of select="field[@name='news_title']" disable-output-escaping="yes"/>
+                            <xsl:value-of select="field[@name='news_title']"/>
                         </a>
                     </xsl:when>
                     <xsl:otherwise>
-                        <xsl:value-of select="field[@name='news_title']" disable-output-escaping="yes"/>
+                        <xsl:value-of select="field[@name='news_title']"/>
                     </xsl:otherwise>
                 </xsl:choose>
             </h4>

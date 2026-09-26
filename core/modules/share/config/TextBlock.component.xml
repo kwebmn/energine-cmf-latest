@@ -4,6 +4,9 @@
 			<javascript>
 				<behavior name="PageEditor"/>
 			</javascript>
+			<translations>
+				<translation const="ERR_TEXT_NOT_SAVED"/>
+			</translations>
 	    </state>
 		<state name="save" rights="3">
 			<uri_patterns>

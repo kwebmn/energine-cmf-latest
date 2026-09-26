@@ -712,7 +712,8 @@ class DBDataSet extends DataSet {
      * Save text.
      */
     protected function saveText() {
-        $result = '';
+        // ответ — JSON: правка на странице (PageEditor) считает сохранённым только {result: true}
+        $response = ['result' => false, 'errors' => [['message' => $this->translate('ERR_TEXT_NOT_SAVED')]]];
         if ($this->getParam('editable') && isset($_POST['ID']) && isset($_POST['num']) && isset($_POST['data'])) {
             $result = DataSet::cleanupHTML($_POST['data']);
             $langID = E()->getLanguage()->getCurrent();
@@ -720,11 +721,11 @@ class DBDataSet extends DataSet {
             $field = $_POST['num'];
             $this->dbh->modify(gears\QAL::UPDATE, $this->getTranslationTableName(), [$field => $result],
                 ['lang_id' => $langID, $this->getPK() => $entityId]);
-
+            $response = ['result' => true, 'data' => $result];
         }
 
-        $this->response->setHeader('Content-Type', 'application/xml; charset=utf-8');
-        $this->response->write($result);
+        $this->response->setHeader('Content-Type', 'application/json; charset=utf-8');
+        $this->response->write(json_encode($response, JSON_UNESCAPED_UNICODE));
         $this->response->commit();
     }
 }

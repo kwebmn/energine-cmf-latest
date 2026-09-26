@@ -117,6 +117,7 @@ class DocumentController extends Primitive {
      * -# Transform XML-document
      */
     public function run() {
+        $csrfRefused = false;
         try {
             $language = E()->getLanguage();
             $language->setCurrent($language->getIDByAbbr(E()->getRequest()->getLang(), true));
@@ -204,9 +205,6 @@ class DocumentController extends Primitive {
                     $document->componentManager->add($ec);
                 }
                 $ec->setError($e);
-                if ($csrfRefused) {
-                    E()->getResponse()->setStatus(422);
-                }
 
                 $document->runComponents();
 
@@ -216,6 +214,10 @@ class DocumentController extends Primitive {
         } catch (\Exception $e) {
             $document = E()->ErrorDocument;
             $document->attachException($e)->build();
+        }
+        // отказ по токену — 422, каким бы путём ни строилась страница ошибки (у single-адресов — через ErrorDocument)
+        if ($csrfRefused) {
+            E()->getResponse()->setStatus(422);
         }
         E()->getResponse()->write($this->transform($document));
     }

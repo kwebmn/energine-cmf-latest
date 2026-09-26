@@ -22,9 +22,25 @@ var EnergineEditor = {
 
     /**
      * Встроенные модули Jodit, которые не нужны: свои загрузка и выбор файлов, видео, печать и т. п.
+     * wrap-nodes при открытии оборачивает текст вне абзаца в <p> — сохранённый текст менялся без правки.
      */
     disabledPlugins: ['about', 'ai-assistant', 'drag-and-drop', 'drag-and-drop-element', 'file', 'image',
-        'image-processor', 'image-properties', 'media', 'powered-by-jodit', 'print', 'speech-recognize', 'video'],
+        'image-processor', 'image-properties', 'media', 'powered-by-jodit', 'print', 'speech-recognize', 'video',
+        'wrap-nodes'],
+
+    /**
+     * Существующая разметка остаётся как есть, как у прежнего редактора (allowedContent: true):
+     * карты во iframe, скрипты виджетов, пустые значки <i class="fa …">, <b>, ссылки target="_blank".
+     * Обработчики событий в атрибутах и ссылки javascript: Jodit по-прежнему убирает.
+     */
+    cleanHTML: {
+        denyTags: false,
+        removeEmptyElements: false,
+        replaceOldTags: false,
+        fillEmptyParagraph: false,
+        safeLinksTarget: false,
+        sandboxIframesInContent: false
+    },
 
     cssLoaded: false,
 
@@ -53,6 +69,7 @@ var EnergineEditor = {
             askBeforePasteHTML: false,
             askBeforePasteFromWord: false,
             disablePlugins: EnergineEditor.disabledPlugins,
+            cleanHTML: EnergineEditor.cleanHTML,
             uploader: {insertImageAsBase64URI: false},
             // режим исходника — простое поле, без Ace и js-beautify с внешнего CDN
             sourceEditor: 'area',

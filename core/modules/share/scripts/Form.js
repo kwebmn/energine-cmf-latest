@@ -807,16 +807,23 @@ Form.RichEditor = new Class(/** @lends Form.RichEditor# */{
          */
         this.form = form;
 
+        /**
+         * Текст поля, как он пришёл с сервера, и значение редактора сразу после открытия:
+         * если администратор текст не менял, сохраняется исходный текст, а не его прочтение редактором.
+         * @type {string}
+         */
+        this.original = this.textarea.value;
         this.editor = EnergineEditor.make(this.textarea, {singlePath: this.form.singlePath});
+        this.opened = this.editor.value;
     },
 
     /**
-     * Перед отправкой формы текст редактора переносится в textarea.
+     * Перед отправкой формы текст редактора переносится в textarea — только если его меняли.
      * @function
      * @public
      */
     onSaveForm: function () {
-        this.textarea.value = this.editor.value;
+        this.textarea.value = (this.editor.value === this.opened) ? this.original : this.editor.value;
     }
 });
 

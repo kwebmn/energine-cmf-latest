@@ -128,22 +128,62 @@ var FileRepoForm = new Class(/** @lends FileRepoForm# */{
         body.append(field_name, files[0]);
 
         this.validator.removeError(field);
-        return fetch(this.singlePath + 'upload-temp/?json', {method: 'POST', body: body, credentials: 'same-origin'})
+        // токен ещё и в заголовке: тело больше post_max_size PHP отбрасывает целиком, и отказ должен
+        // объяснить размер, а не «устаревшую форму»
+        return fetch(this.singlePath + 'upload-temp/?json', {method: 'POST', body: body, credentials: 'same-origin',
+            headers: {'X-CSRF-Token': Energine.csrf || ''}})
             .then(function (response) {
-                return response.json();
-            })
-            .then(function (result) {
-                if (result && !result.error && result.tmp_name) {
-                    response_callback(result);
-                } else {
-                    // отказ сервера (запрещённый тип файла, нет прав, нет места, устаревшая форма) показывается у поля
-                    this.validator.showError(field, (result && (result.error_message
-                        || (result.errors && result.errors[0] && result.errors[0].message))) || 'ERR_UPLOAD');
-                }
+                return response.text().then(function (text) {
+                    var result = null;
+                    try {
+                        result = JSON.parse(text);
+                    } catch (e) {
+                    }
+                    if (result && !result.error && result.tmp_name) {
+                        response_callback(result);
+                        return;
+                    }
+                    // отказ сервера (запрещённый тип файла, размер, нет прав, устаревшая форма) или ответ
+                    // не сервера сайта (страница прокси) — причина у поля
+                    this.uploadFailed(field, (result && (result.error_message
+                        || (result.errors && result.errors[0] && result.errors[0].message)))
+                        || this.uploadFailedText(response.status));
+                }.bind(this));
             }.bind(this))
-            .catch(function (e) {
-                this.validator.showError(field, e.message);
+            .catch(function () {
+                this.uploadFailed(field, this.uploadFailedText(0));
             }.bind(this));
+    },
+
+    /**
+     * Общий текст неудачной загрузки.
+     * @param {number} status код ответа (0 — ответа нет)
+     * @returns {string}
+     */
+    uploadFailedText: function (status) {
+        return (Energine.translations.get('ERR_UPLOAD_FAILED') || 'Upload failed') + (status ? ' (HTTP ' + status + ')' : '');
+    },
+
+    /**
+     * Загрузка не состоялась: причина у поля — текстом (Validator вставляет HTML), а форма забывает файл:
+     * превью и путь прошлой загрузки сбрасываются, тот же файл можно выбрать снова.
+     *
+     * @param {Element} field поле файла
+     * @param {string} message
+     */
+    uploadFailed: function (field, message) {
+        this.validator.showError(field, String(message)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'));
+        var isMain = (field.get('id') == 'uploader'),
+            preview = isMain ? $('preview') : $(field.getProperty('preview')),
+            data = isMain ? $('data') : $(field.getProperty('data'));
+        if (preview) {
+            preview.removeProperty('src').addClass('hidden');
+        }
+        if (data) {
+            data.set('value', '');
+        }
+        field.value = '';
     },
 
     /**

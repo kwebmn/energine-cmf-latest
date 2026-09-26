@@ -67,10 +67,12 @@ PageEditor.BlockEditor = new Class(/** @lends PageEditor.BlockEditor# */{
         this.ID = this.area.getProperty('eID') || '';
         this.num = this.area.getProperty('num') || '';
 
-        this.editor = EnergineEditor.make(this.area, {
-            singlePath: this.singlePath,
-            jodit: {inline: true, toolbarInline: true, toolbarInlineForSelection: false, showPlaceholder: false}
-        });
+        this.editor = this.area.getProperty('data-plain')
+            ? PageEditor.BlockEditor.plain(this.area)
+            : EnergineEditor.make(this.area, {
+                singlePath: this.singlePath,
+                jodit: {inline: true, toolbarInline: true, toolbarInlineForSelection: false, showPlaceholder: false}
+            });
         /**
          * Текст, который уже на сервере.
          * @type {string}
@@ -106,30 +108,54 @@ PageEditor.BlockEditor = new Class(/** @lends PageEditor.BlockEditor# */{
     },
 
     /**
-     * Сохранить блок, если он изменился.
+     * Адрес сохранения: ответ JSON, в том числе при отказе (?json — маяк заголовков не передаёт).
+     * @returns {string}
+     */
+    url: function () {
+        return this.singlePath + 'save-text?json';
+    },
+
+    /**
+     * Сохранить блок, если он изменился. Сохранённым считается только ответ {result: true}:
+     * страница вместо ответа (нет прав, сессия закончилась) и отказ сервера оставляют блок несохранённым.
      */
     save: function () {
         if (!this.isDirty()) {
             return;
         }
         var value = this.editor.value;
-        fetch(this.singlePath + 'save-text', {method: 'POST', body: this.body(value), credentials: 'same-origin'})
+        fetch(this.url(), {method: 'POST', body: this.body(value), credentials: 'same-origin'})
             .then(function (response) {
-                if (response.ok) {
-                    this.saved = value;
-                    return;
-                }
-                // блок не сохранён (например, форма устарела): правка остаётся, администратор узнаёт причину
-                return response.json().catch(function () {
-                    return null;
-                }).then(function (result) {
-                    alert((result && result.errors && result.errors[0] && result.errors[0].message)
-                        || ('HTTP ' + response.status));
-                });
+                return response.text().then(function (text) {
+                    var result = null;
+                    try {
+                        result = JSON.parse(text);
+                    } catch (e) {
+                    }
+                    if (response.ok && result && result.result) {
+                        this.saved = value;
+                        this.area.removeClass('nrgnEditorError');
+                    } else {
+                        this.fail(result, response.status);
+                    }
+                }.bind(this));
             }.bind(this))
-            .catch(function (e) {
-                console.warn(e);
-            });
+            .catch(function () {
+                this.fail(null, 0);
+            }.bind(this));
+    },
+
+    /**
+     * Блок не сохранён: он помечается и остаётся несохранённым (следующий уход из блока или со страницы
+     * отправит его снова), администратор узнаёт причину.
+     *
+     * @param {Object} result ответ сервера, если это JSON
+     * @param {number} status код ответа
+     */
+    fail: function (result, status) {
+        this.area.addClass('nrgnEditorError');
+        alert((result && result.errors && result.errors[0] && result.errors[0].message)
+            || ((Energine.translations.get('ERR_TEXT_NOT_SAVED') || 'Error') + (status ? ' (HTTP ' + status + ')' : '')));
     },
 
     /**
@@ -138,9 +164,37 @@ PageEditor.BlockEditor = new Class(/** @lends PageEditor.BlockEditor# */{
     beacon: function () {
         if (this.isDirty()) {
             var value = this.editor.value;
-            if (navigator.sendBeacon(this.singlePath + 'save-text', this.body(value))) {
+            if (navigator.sendBeacon(this.url(), this.body(value))) {
                 this.saved = value;
             }
         }
     }
 });
+
+/**
+ * Поле простого текста (data-plain, например заголовок новости): правится без визуального редактора,
+ * сохраняется текст без разметки, Enter завершает правку. Возвращает то же, что нужно BlockEditor от Jodit:
+ * value и events.on.
+ *
+ * @param {Element} area
+ * @returns {{value: string, events: {on: function}}}
+ */
+PageEditor.BlockEditor.plain = function (area) {
+    area.setAttribute('contenteditable', 'plaintext-only');
+    area.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            area.blur();
+        }
+    });
+    return {
+        get value() {
+            return area.textContent.trim();
+        },
+        events: {
+            on: function (name, handler) {
+                area.addEventListener(name, handler);
+            }
+        }
+    };
+};

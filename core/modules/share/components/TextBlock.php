@@ -234,13 +234,15 @@ class TextBlock extends DataSet implements SampleTextBlock{
 
 
             $this->dbh->commit();
+            $response = ['result' => true, 'data' => $result];
         } catch (\Exception $e) {
             $this->dbh->rollback();
-            $result = $e->getMessage();
+            $response = ['result' => false, 'errors' => [['message' => $e->getMessage()]]];
         }
 
-        $this->response->setHeader('Content-Type', 'application/xml; charset=utf-8');
-        $this->response->write($result);
+        // ответ — JSON: правка на странице (PageEditor) считает сохранённым только {result: true}
+        $this->response->setHeader('Content-Type', 'application/json; charset=utf-8');
+        $this->response->write(json_encode($response, JSON_UNESCAPED_UNICODE));
         $this->response->commit();
     }
 }

@@ -15,3 +15,27 @@ DELETE FROM `share_lang_tags` WHERE `ltag_name` IN (
     'BTN_OL', 'BTN_UL', 'BTN_VIEWSOURCE', 'TXT_ADDRESS', 'TXT_H1', 'TXT_H2', 'TXT_H3', 'TXT_H4',
     'TXT_H5', 'TXT_H6', 'TXT_PREVIEW', 'TXT_RESET'
 );
+
+-- 2. Правка на странице: блок, который сервер не сохранил (нет прав, сессия закончилась, отказ),
+--    не считается сохранённым — администратор видит это сообщение.
+INSERT IGNORE INTO `share_lang_tags` (`ltag_name`) VALUES ('ERR_TEXT_NOT_SAVED');
+INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`)
+    SELECT t.`ltag_id`, l.`lang_id`, IF(l.`lang_abbr` = 'ua',
+           'Текст не збережено. Правка залишилася на сторінці — спробуйте ще раз або оновіть сторінку.',
+           'Текст не сохранён. Правка осталась на странице — попробуйте ещё раз или обновите страницу.')
+      FROM `share_lang_tags` t JOIN `share_languages` l
+     WHERE t.`ltag_name` = 'ERR_TEXT_NOT_SAVED';
+
+-- 3. Загрузка файла, которая не состоялась: причина вместо имени константы (переводов не было).
+INSERT IGNORE INTO `share_lang_tags` (`ltag_name`) VALUES ('ERR_UPLOAD_TOO_BIG'), ('ERR_UPLOAD_FAILED'), ('ERR_NO_FILE');
+INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`)
+    SELECT t.`ltag_id`, l.`lang_id`,
+           CASE t.`ltag_name`
+               WHEN 'ERR_UPLOAD_TOO_BIG' THEN IF(l.`lang_abbr` = 'ua', 'Файл більший за допустимий розмір: %size% МБ.',
+                                                                          'Файл больше допустимого размера: %size% МБ.')
+               WHEN 'ERR_UPLOAD_FAILED' THEN IF(l.`lang_abbr` = 'ua', 'Файл не завантажено. Спробуйте ще раз.',
+                                                                         'Файл не загружен. Попробуйте ещё раз.')
+               ELSE IF(l.`lang_abbr` = 'ua', 'Файл не вибрано.', 'Файл не выбран.')
+           END
+      FROM `share_lang_tags` t JOIN `share_languages` l
+     WHERE t.`ltag_name` IN ('ERR_UPLOAD_TOO_BIG', 'ERR_UPLOAD_FAILED', 'ERR_NO_FILE');

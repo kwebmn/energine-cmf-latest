@@ -71,6 +71,9 @@
         </toolbar>
     </state>
     <state name="add">
+        <translations>
+            <translation const="ERR_UPLOAD_FAILED"/>
+        </translations>
         <uri_patterns>
             <!--<pattern>/add/</pattern>-->
             <pattern>/[pid]/add/</pattern>
@@ -102,6 +105,9 @@
         </toolbar>
     </state>
     <state name="edit">
+        <translations>
+            <translation const="ERR_UPLOAD_FAILED"/>
+        </translations>
         <uri_patterns>
             <pattern>/[int]/edit/</pattern>
         </uri_patterns>
