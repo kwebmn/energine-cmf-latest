@@ -1462,30 +1462,6 @@ var GridManager = new Class(/** @lends GridManager# */{
             this.delConfirmCounter = 0;
         }
     },
-     /**
-     * Copy action.
-     * @function
-     * @public modBySD
-     */
-    copy: function () {
-            this.overlay.show();
-	    //catalogue/single/goodsEditor/16487/copy/ ERR_DEV_NO_BUILDER:GOODSEDITOR: COPY	    
-            Energine.request(this.singlePath + this.grid.getSelectedRecordKey() +
-                '/copy/', null,
-                function () {		  
-                    this.overlay.hide();
-                    this.grid.fireEvent('dirty');
-                    this.loadPage(this.pageList.currentPage);
-                }.bind(this),
-                function (responseText) {
-                    this.overlay.hide();
-                }.bind(this),
-                function (responseText) {
-                    alert(responseText);
-                    this.overlay.hide();
-                }.bind(this)
-            );
-    },   
     /**
      * Use action
      * Return selected record as a result of modal box call

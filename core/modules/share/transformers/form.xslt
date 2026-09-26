@@ -36,7 +36,6 @@
             <script  type="text/javascript" src="scripts/codemirror/mode/css/css.js"></script>
             <link rel="stylesheet" href="scripts/codemirror/theme/elegant.css" />
             <script  type="text/javascript" src="scripts/codemirror/mode/htmlmixed/htmlmixed.js"></script>
-            <!--<link rel="stylesheet" href="scripts/codemirror/css/docs.css" />-->
         </xsl:if>
 
         <form method="post" action="{@action}" class="e-grid-form">

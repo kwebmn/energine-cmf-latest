@@ -288,28 +288,6 @@
         </select>
     </xsl:template>
 
-    <xsl:template match="field[@type='lookup' and ancestor::component[@type='form' and (@exttype='feed' or @exttype='grid')]]" mode="field_input">
-        <!--<input>
-            <xsl:call-template name="FORM_ELEMENT_ATTRIBUTES"/>
-            <xsl:attribute name="type">hidden</xsl:attribute>
-            <xsl:attribute name="id"><xsl:value-of select="@name"/></xsl:attribute>
-            <xsl:attribute name="value"><xsl:value-of select="value/@id"/></xsl:attribute>
-        </input>-->
-        <div class="with_append lookup">
-            <!--multiple="multiple"-->
-            <select id="{@name}_name"  class="text acpl" style="width:100%;" data-lang="{$DOC_PROPS[@name='lang']/@real_abbr}" data-placeholder="...">
-                <xsl:call-template name="FORM_ELEMENT_ATTRIBUTES"/>
-                <xsl:if test="value">
-                    <option value="{value/@id}" selected="selected"><xsl:value-of select="value"/></option>
-                    <!--<xsl:attribute name="data-value">{id:'<xsl:value-of select="value/@id"/>',text:'<xsl:value-of select="value"/>'}</xsl:attribute>-->
-                </xsl:if>
-            </select>
-            <div class="appended_block">
-                <button type="button"  style="height: 18px;">...</button>
-            </div>
-        </div>
-    </xsl:template>
-
     <xsl:template match="field[@type='select' and @editor][ancestor::component[@exttype='grid' or @exttype='feed']]" mode="field_input">
             <select id="{@name}">
                 <xsl:attribute name="name"><xsl:choose>
@@ -769,7 +747,8 @@
                     <xsl:attribute name="alt"><xsl:value-of select="recordset/record[1]/field[@name='name']"/></xsl:attribute>
                 </xsl:when>
                 <xsl:otherwise>
-                    <xsl:attribute name="src">//placehold.it/<xsl:value-of select="$PREVIEW_WIDTH"/>x<xsl:value-of select="$PREVIEW_HEIGHT"/>/</xsl:attribute>
+                    <!-- локальная заглушка того же размера: серый SVG в data: (вместо внешнего сервиса заглушек) -->
+                    <xsl:attribute name="src">data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='<xsl:value-of select="$PREVIEW_WIDTH"/>' height='<xsl:value-of select="$PREVIEW_HEIGHT"/>'%3E%3Crect width='100%25' height='100%25' fill='%23e5e5e5'/%3E%3C/svg%3E</xsl:attribute>
                     <xsl:attribute name="alt"><xsl:value-of select="$TRANSLATION[@const='TXT_NO_IMAGE']"/></xsl:attribute>
                 </xsl:otherwise>
             </xsl:choose>

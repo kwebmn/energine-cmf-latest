@@ -281,6 +281,19 @@ var Energine = /** @lends Energine */{
  */
 Energine.request.request = Energine.request;
 
+/**
+ * Local placeholder for an image of the given size: a grey SVG in a data: URL.
+ * It replaced an external placeholder service (dead, and a third party saw every address).
+ *
+ * @param {number|string} width
+ * @param {number|string} height
+ * @returns {string}
+ */
+Energine.placeholder = function (width, height) {
+    return "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='" + width + "' height='" + height
+        + "'%3E%3Crect width='100%25' height='100%25' fill='%23e5e5e5'/%3E%3C/svg%3E";
+};
+
 $(window).addEvent('domready', function () {
     if (Energine.debug)
         document.getElements('img').each(function (el) {
@@ -292,7 +305,7 @@ $(window).addEvent('domready', function () {
                 &&
                     (matches.length >2)
                 ) {
-                     image.setProperty('src', '//placehold.it/'+matches[1]+'x'+matches[2]);
+                     image.setProperty('src', Energine.placeholder(matches[1], matches[2]));
                 }
             };
         });

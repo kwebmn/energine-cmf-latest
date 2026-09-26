@@ -158,17 +158,6 @@ class Builder extends XMLBuilder {
 			$result->setAttribute( 'smap_name',
 				E()->getSiteManager()->getSiteByPage( $fieldValue )->name . ' : ' . $this->dbh->getScalar( 'share_sitemap_translation',
 					'smap_name', [ 'smap_id' => $fieldValue, 'lang_id' => E()->getLanguage()->getCurrent() ] ) );
-		} elseif ( $fieldInfo->getType() == FieldDescription::FIELD_TYPE_LOOKUP && $fieldValue ) {
-                        if (isset($fieldValue['value'])) {
-                            $value = $this->document->createElement( 'value', $fieldValue['value'] );
-                            if (isset($fieldValue['id'])) 
-                                $value->setAttribute( 'id', $fieldValue['id'] );
-                            } else { 
-                                $data=$fieldInfo->getAvailableValues()[$fieldValue];
-                                $value = $this->document->createElement( 'value', $data['value'] );
-                                $value->setAttribute( 'id', $fieldValue );
-                            }
-			$fieldValue = $value;
 		} elseif ( $fieldInfo->getType() == FieldDescription::FIELD_TYPE_PHONE && $fieldValue) {
 			$fieldValue = $this->formatPhone($fieldInfo, $fieldValue);
 		}

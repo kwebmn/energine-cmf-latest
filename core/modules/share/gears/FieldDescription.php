@@ -145,12 +145,6 @@ class FieldDescription extends Primitive implements \Iterator {
     const FIELD_TYPE_VALUE = 'value';
 
     /**
-     * Visual field type for select value.
-     * @var string FIELD_TYPE_LOOKUP
-     */
-    const FIELD_TYPE_LOOKUP = 'lookup';
-
-    /**
      * Visual field type for date and time.
      * @var string FIELD_TYPE_DATETIME
      */

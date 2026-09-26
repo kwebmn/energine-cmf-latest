@@ -97,7 +97,7 @@ Grid.implement(/** @lends Grid# */{
                         image.setProperty('src', Energine.resizer + 'w60-h45/' + record[fieldName])
                             .addEvents({
                                 'error': function () {
-                                    image.setProperty('src', '//placehold.it/60x45/');
+                                    image.setProperty('src', Energine.placeholder(60, 45));
                                     container.removeEvents('mouseenter').removeEvents('mouseleave');
                                 }
                             })

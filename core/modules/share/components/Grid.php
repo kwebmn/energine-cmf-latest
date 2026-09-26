@@ -72,11 +72,6 @@ class Grid extends DBDataSet {
      */
     protected $filter_control;
 
-    /**
-     * Grid for select fields
-     * @var \Lookup
-     */
-    protected $lookupEditor = NULL;
 
     /**
      * @var ActionLog
@@ -300,35 +295,6 @@ class Grid extends DBDataSet {
         }
     }
 
-    /**
-     * Lookup state
-     *
-     * @throws SystemException
-     */
-    protected function lookup() {
-        $params = $this->getStateParams(true);
-        $FKField = $params['fk_field_name'];
-
-        if (array_key_exists('editor_class', $params)) {
-            $lookupClass = str_replace('.', '\\', $params['editor_class']);
-        } else {
-            $lookupClass = implode('\\', ['Energine', 'share', 'components', 'Lookup']);
-        }
-
-        $columns = $this->dbh->getColumnsInfo($this->getTableName());
-        if (!isset($columns[$FKField]) || !is_array($columns[$FKField]['key'])) {
-            throw new SystemException('ERR_NO_FIELD', SystemException::ERR_DEVELOPER, $FKField);
-        }
-
-        $params = [
-            'tableName' => $columns[$FKField]['key']['tableName']
-        ];
-
-        $this->request->shiftPath(2);
-        $this->lookupEditor = $this->document->componentManager->createComponent('lookupEditor', $lookupClass, $params);
-        $this->lookupEditor->run();
-    }
-
     //todo VZ: What is the trick with external and internal methods?
     /**
      * Save.
@@ -542,9 +508,6 @@ class Grid extends DBDataSet {
         switch ($this->getState()) {
             case 'attachments':		
                 return $this->attachmentEditor->build();
-                break;
-            case 'lookup':
-                return $this->lookupEditor->build();
                 break;
             default:
                 // do nothing

@@ -49,9 +49,7 @@
         <script type="text/javascript" src="scripts/codemirror/mode/xml/xml.js"></script>
         <script  type="text/javascript" src="scripts/codemirror/mode/javascript/javascript.js"></script>
         <script  type="text/javascript" src="scripts/codemirror/mode/css/css.js"></script>
-        <link rel="stylesheet" href="scripts/codemirror/theme/default.css" />
         <script  type="text/javascript" src="scripts/codemirror/mode/htmlmixed/htmlmixed.js"></script>
-        <link rel="stylesheet" href="scripts/codemirror/css/docs.css" />
         <form method="post" action="{@action}" class="e-grid-form">
             <input type="hidden" name="componentAction" value="{@componentAction}" id="componentAction"/>
             <xsl:apply-templates/>

@@ -218,55 +218,6 @@ class DBDataSet extends DataSet {
             }
         }
 
-        $lookupField =
-            $this->getDataDescription()->getFieldDescriptionsByType(FieldDescription::FIELD_TYPE_LOOKUP);
-
-        if (!empty($lookupField)) {
-            //Готовим инфу для получения данных их связанных таблиц
-            foreach ($lookupField as $valueFieldName => $valueField) {
-                $relInfo = $valueField->getPropertyValue('key');
-
-                if (is_array($relInfo)) {
-                    $langTable = $this->dbh->getTranslationTablename($relInfo['tableName']);
-                    $relations[$valueFieldName] = [
-                        'table' => (!$langTable) ? $relInfo['tableName'] : $langTable,
-                        'field' => $relInfo['fieldName'],
-                        'lang' => ($langTable) ? E()->getLanguage()->getCurrent() : false,
-                        'valueField' => substr($relInfo['fieldName'], 0, strrpos($relInfo['fieldName'], '_')) . '_name'
-                    ];
-
-                    $cond = [
-                        $relations[$valueFieldName]['field'] => simplifyDBResult($data, $valueFieldName)
-                    ];
-
-
-                    if ($relations[$valueFieldName]['lang']) {
-                        $cond['lang_id'] = $relations[$valueFieldName]['lang'];
-                    }
-                    $values[$valueFieldName] = convertDBResult($this->dbh->select($relations[$valueFieldName]['table'],
-                        [$relations[$valueFieldName]['field'], $relations[$valueFieldName]['valueField']], $cond),
-                        $relations[$valueFieldName]['field'], true);
-
-                }
-
-            }
-
-            unset($lookupField, $langTable, $relInfo);
-            foreach ($data as $key => $row) {
-                foreach ($row as $name => $value) {
-                    // an empty lookup (NULL) has no name; null as an array key is deprecated since PHP 8.5
-                    if (in_array($name, array_keys($relations)) && is_array($values[$name]) && ($value !== null) && array_key_exists($value,
-                            $values[$name])
-                    ) {
-                        $data[$key][$name] = [
-                            'id' => $value,
-                            'value' => $values[$name][$value][$relations[$name]['valueField']]
-                        ];
-                    }
-                }
-            }
-        }
-
         return $data;
     }
 
@@ -656,34 +607,6 @@ class DBDataSet extends DataSet {
                             }
                         }
                         //если нет значит это забота программиста наполнить значениями
-                        break;
-                    case FieldDescription::FIELD_TYPE_LOOKUP:
-                        if ($editor = $fieldMetaData->getPropertyValue('editor')) {
-                            $url = $fieldMetaData->getName() . '-' . $editor;
-                        } else {
-                            $url = $fieldMetaData->getName();
-                        }
-                        //Problem with safari where urlencoded backslash(%5C) converted into backslash
-                        $fieldMetaData->setProperty('url', '/' . str_replace('\\', '.', $url) . '/lookup/');
-                        $table = $keyInfo['tableName'];
-                        if ($this->dbh->tableExists($table)) {
-                            if ($t = $this->dbh->getTranslationTablename($table)) {
-                                $table = $t;
-                                unset($t);
-                            }
-
-                            $valueFieldName = '';
-
-                            foreach (array_keys($this->dbh->getColumnsInfo($table)) as $row){
-                                if (strpos($row, '_name')) {
-                                    $valueFieldName = $row;
-                                    break;
-                                }
-                            }
-                            $fieldMetaData->setProperty('value_field', $valueFieldName);
-                            $fieldMetaData->setProperty('value_table', $table);
-                            $fieldMetaData->setProperty('key_field', $keyInfo['fieldName']);
-                        }
                         break;
                 }
                 if (!empty($values)) {

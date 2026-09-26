@@ -23,7 +23,7 @@
  * @version 1.0.1
  */
 
-ScriptLoader.load('ckeditor/ckeditor', 'TabPane', 'Toolbar', 'Validator', 'ModalBox', 'Overlay', 'datepicker', 'Lookup');
+ScriptLoader.load('ckeditor/ckeditor', 'TabPane', 'Toolbar', 'Validator', 'ModalBox', 'Overlay', 'datepicker');
 
 /**
  * Form.
@@ -55,8 +55,6 @@ var Form = new Class(/** @lends Form# */{
      * @type {RichEditor[]}
      */
     richEditors: [],
-
-    lookups: [],
 
     /**
      * Array of text boxes.
@@ -145,10 +143,6 @@ var Form = new Class(/** @lends Form# */{
                 theme: 'elegant',
                 autofocus: false
             }));
-        }, this);
-
-        this.form.getElements('div.type_lookup').each(function (el) {
-            this.lookups.push(new Lookup(el, this.singlePath));
         }, this);
 
 

@@ -189,7 +189,6 @@
         <link rel="stylesheet" href="scripts/codemirror/lib/codemirror.css" />
         <script type="text/javascript" src="scripts/codemirror/lib/codemirror.js"></script>
         <script type="text/javascript" src="scripts/codemirror/mode/xml/xml.js"></script>
-        <link rel="stylesheet" href="scripts/codemirror/theme/default.css" />
 
         <div>
             <xsl:attribute name="class">field clearfix<xsl:choose>
