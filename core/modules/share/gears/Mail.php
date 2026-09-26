@@ -263,7 +263,8 @@ final class Mail extends Primitive {
             $smtp = $this->getConfigValue('mail.smtp');
             if (is_array($smtp) && !empty($smtp['host'])) {
                 // через SMTP письмо целиком: заголовки, которые mail() и почтовый сервер добавили бы сами
-                $domain = (string)$this->getConfigValue('site.domain') ?: (gethostname() ?: 'localhost');
+                // хост сайта без порта: в Message-ID двоеточие недопустимо
+                $domain = Site::hostOf((string)$this->getConfigValue('site.domain')) ?: (gethostname() ?: 'localhost');
                 $headers = array_map('rtrim', $this->headers);
                 $headers[] = 'To: ' . implode(', ', $this->to);
                 $headers[] = 'Subject: ' . $this->subject;

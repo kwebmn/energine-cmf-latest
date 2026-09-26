@@ -126,23 +126,10 @@ final class Response extends Primitive {
      */
     public function addCookie($name = UserSession::DEFAULT_SESSION_NAME, $value = '', $expire = 0, $domain = false, $path = '/', $httpOnly = false) {
         if (!$domain) {
-            if ($domain = $this->getConfigValue('site.domain')) {
-                $domain = '.' . $domain;
-                $path = '/';
-            } else {
-                $path = E()->getSiteManager()->getCurrentSite()->root;
-                $domain = E()->getSiteManager()->getCurrentSite()->domain;
-            }
-        }
-        //todo VZ: remove this?
-        /*if ($this->getConfigValue('site.domain')) {
+            // домен cookie сайта: .хост, для адреса с портом, IP и localhost — без Domain (Site::cookieDomainOf)
+            $domain = E()->getSiteManager()->getCurrentSite()->cookieDomain;
             $path = '/';
-            $domain = '.' . $this->getConfigValue('site.domain');
         }
-        else {
-            $path = E()->getSiteManager()->getCurrentSite()->root;
-            $domain = '';
-        }*/
         $secure = (E()->getRequest()->getURI()->getScheme() == 'https');
         $_COOKIE[$name] = $value;
         $this->cookies[$name] =

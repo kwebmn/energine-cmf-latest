@@ -18,7 +18,10 @@ namespace Energine\share\gears;
 class Site;
  * @endcode
  * @property-read int $id
- * @property-read string $base
+ * @property-read string $base адрес сайта: схема запроса, site.domain и site.root из конфига
+ * @property-read string $root корень сайта (site.root): /, /sub/
+ * @property-read string $host хост из site.domain без порта
+ * @property-read string $cookieDomain атрибут Domain для cookie (см. cookieDomainOf)
  * @property-read bool $isIndexed
  * @property-read array $metaRobots
  * @property-read string $metaKeywords
@@ -91,14 +94,58 @@ class Site extends Primitive {
     }
 
     /**
-     * Load domain information.
+     * Адрес сайта — из конфига, а не из заголовка Host запроса: поддельный Host не меняет ни ссылок,
+     * ни письма восстановления пароля, ни редиректов.
+     *
+     * @param string $scheme схема запроса (http, https)
+     * @param string $domain site.domain: хост и, если нестандартный, порт
+     * @param string|null $root site.root
      */
-    public function setDomain($domainData) {
-        $this->data = array_merge($this->data, $domainData);
-        $this->data['base'] =
-            $this->data['protocol'] . '://' .
-            $this->data['host'] . ((in_array($this->data['port'], [80, 443])) ? '' : ':' . $this->data['port']) .
-            $this->data['root'];
+    public function setAddress($scheme, $domain, $root) {
+        $this->data['root'] = self::normalizeRoot($root);
+        $this->data['host'] = self::hostOf($domain);
+        $this->data['cookieDomain'] = self::cookieDomainOf($domain);
+        $this->data['base'] = $scheme . '://' . $domain . $this->data['root'];
+    }
+
+    /**
+     * Хост без порта: 'example.org:8080' → 'example.org'.
+     *
+     * @param string $domain
+     * @return string
+     */
+    public static function hostOf($domain) {
+        return explode(':', (string)$domain, 2)[0];
+    }
+
+    /**
+     * Атрибут Domain для cookie сайта: '.example.org' — cookie видна и поддоменам (www).
+     * Для адреса с портом, IP и имени без точки (localhost) — '': Domain=.127.0.0.1:8123 и Domain=.localhost
+     * браузер отбрасывает, cookie ставится только этому хосту.
+     *
+     * @param string $domain site.domain
+     * @return string
+     */
+    public static function cookieDomainOf($domain) {
+        $domain = (string)$domain;
+        if ($domain === '' || str_contains($domain, ':') || !str_contains($domain, '.')
+            || filter_var($domain, FILTER_VALIDATE_IP)) {
+            return '';
+        }
+
+        return '.' . $domain;
+    }
+
+    /**
+     * Корень сайта со слешами с обеих сторон: '' и '/' → '/', 'sub' и '/sub' → '/sub/'.
+     *
+     * @param string|null $root site.root
+     * @return string
+     */
+    public static function normalizeRoot($root) {
+        $root = trim((string)$root, '/');
+
+        return ($root === '') ? '/' : '/' . $root . '/';
     }
 
     /**

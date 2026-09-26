@@ -36,10 +36,10 @@ chown -R "$SITE_USER:$(id -gn "$SITE_USER")" "$WEB" "$(dirname "$R")"
 
 echo "== setup install и setup demo"
 setup() { (cd "$WEB" && runuser -u "$SITE_USER" -- php8.5 index.php setup "$@" < /dev/null 2>&1); }
-out=$(setup install --admin-email="$ADMIN_EMAIL" --admin-name=Admin) || { echo "$out" | tail -8; exit 1; }
+inst=$(setup install --admin-email="$ADMIN_EMAIL" --admin-name=Admin) || { echo "$inst" | tail -8; exit 1; }
 out=$(setup demo) || { echo "$out" | tail -8; exit 1; }
 unset ENERGINE_ADMIN_PASSWORD
 echo "таблиц: $(M "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE()"), страниц: $(M 'SELECT COUNT(*) FROM share_sitemap')"
-echo "домены: $(M "SELECT GROUP_CONCAT(CONCAT(domain_protocol, ':', domain_port, ' ', domain_host)) FROM share_domains")"
+echo "адрес сайта: $(grep -m1 '^Готово: ' <<< "$inst" | cut -d' ' -f2-)"
 chown -R "$SITE_USER:$(id -gn "$SITE_USER")" "$WEB" "$(dirname "$R")"
 echo "== готово"

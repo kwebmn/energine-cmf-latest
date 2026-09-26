@@ -131,19 +131,9 @@ final class UserSession implements \SessionHandlerInterface {
         session_set_save_handler($this);
         session_name(self::DEFAULT_SESSION_NAME);
 
-        // устанавливаем время жизни cookie
-        if (Primitive::getConfigValue('site.domain')) {
-            $path = '/';
-            // bySD проверка на наличие порта в адресе. не обрабатывает ipv6
-            if (substr_count(Primitive::getConfigValue('site.domain'),":")==1) {
-	      $domain = '';
-	    } else {
-	      $domain = '.' . Primitive::getConfigValue('site.domain');	      
-            }            
-        } else {
-            $path = E()->getSiteManager()->getCurrentSite()->root;
-            $domain = '';
-        }
+        // домен cookie — как у остальных cookie сайта (Site::cookieDomainOf), путь — весь сайт
+        $path = '/';
+        $domain = E()->getSiteManager()->getCurrentSite()->cookieDomain;
         // из JS сессия не читается; SameSite=Lax — с чужого сайта cookie не приходит с POST
         session_set_cookie_params([
             'lifetime' => $this->lifespan, 'path' => $path, 'domain' => $domain,

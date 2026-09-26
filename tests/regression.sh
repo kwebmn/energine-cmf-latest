@@ -18,6 +18,7 @@ echo "### smoke-upload"; php8.5 smoke-upload.php
 echo "### csrf"; php8.5 smoke-csrf.php
 echo "### smoke-profile"; php8.5 smoke-profile.php
 echo "### session-id"; php8.5 session-id.php
+echo "### site-address"; php8.5 site-address.php
 echo "### menu"; php8.5 menu.php
 
 echo "### mail (recipients -> local mailbox)"

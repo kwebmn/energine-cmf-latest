@@ -499,16 +499,6 @@ final class Document extends Primitive implements IDocument {
             */
             $this->componentManager->add($this->componentManager->createComponent('breadCrumbs',
                 $this->breadCrumbsClass));
-            //Если пользователь не авторизован и авторизационный домен не включает текущеий домен - то добавляем компонент для кроссдоменной авторизации
-            if (
-                !$this->user->isAuthenticated()
-                &&
-                (strpos(E()->getSiteManager()->getCurrentSite()->host, $this->getConfigValue('site.domain')) === false)
-            ) {
-                $this->componentManager->add(
-                    $this->componentManager->createComponent('cdAuth', 'Energine\share\components\CrossDomainAuth')
-                );
-            }
         }
 
     }

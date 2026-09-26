@@ -3,12 +3,14 @@
 # не трогаются. Установщик запускается от имени владельца площадки из копии точки входа — у неё свой
 # конфиг (--config) и нет статики (--no-static); ядро — сам репозиторий.
 #  1. setup install в пустую базу: 31 таблица и 3 хранимые процедуры, языки ru и ua, администратор в группе
-#     администраторов (пароль сверяется с хэшем), адрес сайта, конфиг с режимом 600, служебные страницы
+#     администраторов (пароль сверяется с хэшем), адрес сайта в конфиге (домен с портом, корень; в базе доменов нет),
+#     конфиг с режимом 600, служебные страницы
 #     без демо-строк; паролей нет в выводе;
 #  2. отказы до первого изменения базы: непустая база, неверный e-mail, нет пароля администратора;
 #  3. пустой сайт отвечает — встроенный сервер PHP на 127.0.0.1 от имени владельца площадки: главная,
 #     вход, регистрация, восстановление пароля, карта сайта; администратор входит и видит админку;
-#     неизвестный адрес — 404; ссылок на демо-разделы нет;
+#     неизвестный адрес — 404; ссылок на демо-разделы нет; <base> и форма входа — адрес из конфига и при чужом Host;
+#     cookie на адресе с портом — без Domain;
 #  4. вторая установка — с доменом площадки (--domain: http и https) — и setup demo поверх: отпечаток
 #     (fingerprint.php) совпадает с базой площадки; повторное демо — отказ.
 #   bash tests/tools/install-check.sh
@@ -95,8 +97,10 @@ is "администратор в группе администраторов" "
   AND smap_id = (SELECT smap_id FROM share_sitemap WHERE smap_pid IS NULL))")" 1
 [ -n "$hash" ] && php8.5 -r 'exit(password_verify(getenv("ENERGINE_ADMIN_PASSWORD"), $argv[1]) ? 0 : 1);' "$hash" \
   && ok "пароль администратора сверяется с хэшем" || bad "пароль администратора не сверяется с хэшем"
-is "адрес сайта" "$(Q "SELECT CONCAT(d.domain_protocol, '://', d.domain_host, ':', d.domain_port, d.domain_root) FROM share_domains d
-  JOIN share_domain2site USING (domain_id)")" "http://127.0.0.1:$PORT/"
+# адрес сайта — в конфиге: домен с нестандартным портом и корень; записей доменов в базе нет
+is "конфиг: адрес сайта (домен с портом, корень)" "$(php8.5 -r 'define("ROOT_DIR", $argv[2]); $c = include $argv[1];
+  echo $c["site"]["domain"] ?? "-", " ", $c["site"]["root"] ?? "-";' "$S/web/system.config.php" "$R" 2>/dev/null)" "127.0.0.1:$PORT /"
+is "записей доменов в базе нет" "$(Q 'SELECT COUNT(*) FROM share_domains')" 0
 is "конфиг: режим 600, владелец площадки" "$(stat -c '%a %U' "$S/web/system.config.php" 2>/dev/null)" "600 $SITE_USER"
 # рабочему сайту отладка не нужна: с ней посетитель видит пути сервера и цепочку вызовов на странице ошибки
 php8.5 -r 'define("ROOT_DIR", $argv[2]); $c = include $argv[1]; exit(empty($c["site"]["debug"]) ? 0 : 1);' \
@@ -139,16 +143,30 @@ for p in "" login/ register/ restore-password/ sitemap/; do
   else bad "/$p" "код $code: $(grep -o '<title>[^<]*' "$T/page.html" | head -1)"; fi
 done
 page "" > /dev/null
+is "<base> — адрес из конфига" "$(grep -o '<base href="[^"]*"' "$T/page.html" | head -1)" "<base href=\"$URL\""
+# чужой Host (поддельный заголовок, вход по другому имени) адреса не меняет: <base> и действие формы входа — из конфига
+curl -s -o "$T/evil.html" -H "Host: evil.example" "${URL}login/"
+is "Host: evil.example — <base> из конфига" "$(grep -o '<base href="[^"]*"' "$T/evil.html" | head -1)" "<base href=\"$URL\""
+act=$(grep -o 'action="[^"]*auth\.php[^"]*"' "$T/evil.html" | head -1)
+[[ "$act" == "action=\"${URL}auth.php"* ]] && ok "Host: evil.example — форма входа ведёт на адрес из конфига" \
+  || bad "форма входа при чужом Host" "${act:-формы нет}"
 demo=$(grep -oE 'href="[^"]*/(news|media|features|info|contacts)/' "$T/page.html" | head -3 | tr '\n' ' ')
 [ -z "$demo" ] && ok "на главной нет ссылок на демо-разделы" || bad "ссылки на демо-разделы" "$demo"
 is "неизвестный адрес — 404" "$(page claude-no-such-page/)" 404
 [ -n "${INSTALL_DEBUG:-}" ] && cp "$T/page.html" "$INSTALL_DEBUG/404.html"
+# cookie токена гостя и сессии на адресе с портом — без атрибута Domain (Domain=.127.0.0.1:порт браузер отбрасывает);
+# cookie токена ставится первому запросу гостя — страница входа без cookie
+curl -s -D "$T/login.hdr" -o /dev/null "${URL}login/"
 page login/ > /dev/null
 token=$(grep -o '<meta name="csrf-token" content="[^"]*"' "$T/page.html" | sed 's/.*content="//;s/"$//')
 # пароль — через stdin (@-), не аргументом
-printf '%s' "$ENERGINE_ADMIN_PASSWORD" | curl -s -o /dev/null -b "$jar" -c "$jar" -e "${URL}login/" -H "X-CSRF-Token: $token" \
+printf '%s' "$ENERGINE_ADMIN_PASSWORD" | curl -s -D "$T/auth.hdr" -o /dev/null -b "$jar" -c "$jar" -e "${URL}login/" -H "X-CSRF-Token: $token" \
   --data-urlencode "user[login]=1" --data-urlencode "user[username]=$ADMIN_LOGIN" \
   --data-urlencode "user[password]@-" "${URL}auth.php"
+grep -qi '^set-cookie: nrgn_csrf=' "$T/login.hdr" && grep -qi '^set-cookie: NRGNSID=' "$T/auth.hdr" \
+  && ! grep -qi '^set-cookie:.*domain=' "$T/login.hdr" "$T/auth.hdr" \
+  && ok "cookie токена и сессии на адресе с портом — без Domain" \
+  || bad "cookie на адресе с портом" "$(grep -hi '^set-cookie:' "$T/login.hdr" "$T/auth.hdr" | cut -c1-90 | tr '\r\n' '  ')"
 code=$(page admin/)
 [ -n "${INSTALL_DEBUG:-}" ] && cp "$T/page.html" "$INSTALL_DEBUG/admin.html" && cp "$jar" "$INSTALL_DEBUG/cookies.txt"
 [ "$code" = 200 ] && grep -q 'admin' "$T/page.html" && grep -qi 'users\|пользовател' "$T/page.html" \

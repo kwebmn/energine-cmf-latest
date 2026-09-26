@@ -1,5 +1,5 @@
 -- Energine Simple: базовые данные пустого сайта — языки, сайт, служебные страницы и админка, группы и права,
--- переводы, почтовые шаблоны, корень файлового репозитория. Администратора и домен пишет установщик.
+-- переводы, почтовые шаблоны, корень файлового репозитория. Администратора создаёт установщик, адрес сайта — в конфиге.
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 INSERT INTO `share_languages` (`lang_id`, `lang_locale`, `lang_abbr`, `lang_name`, `lang_default`, `lang_order_num`) VALUES (1,'ru_UA.UTF8','ru','Русский',1,1);
@@ -1026,6 +1026,8 @@ INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2791,'TXT_MENU');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2792,'TXT_BREADCRUMBS');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2793,'FIELD_U_PASSWORD_CURRENT');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2794,'FIELD_U_PASSWORD_NEW');
+INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2795,'TXT_PREVIOUS_PAGE');
+INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2796,'TXT_NEXT_PAGE');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (14,1,'Значение');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (14,2,'Значення');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (15,1,'Выйти');
@@ -3052,6 +3054,10 @@ INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2793,2,'Поточний пароль');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2794,1,'Новый пароль');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2794,2,'Новий пароль');
+INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2795,1,'Предыдущая страница');
+INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2795,2,'Попередня сторінка');
+INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2796,1,'Следующая страница');
+INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2796,2,'Наступна сторінка');
 INSERT INTO `mail_templates` (`template_id`, `template_sysname`, `template_is_active`, `template_hints`) VALUES (1,'user_registration',1,'[user_name] - имя пользователя, [user_login] - логин (e-mail), [user_password] - пароль, [site_name] - название сайта (константа TXT_SITE_NAME), [site_url] - адрес сайта');
 INSERT INTO `mail_templates` (`template_id`, `template_sysname`, `template_is_active`, `template_hints`) VALUES (2,'user_restore_password',1,'[sex_suffix_hello] - окончание обращения по полу пользователя (константы TXT_EMAIL_SUFFIX_SEX_M/F/UNKNOWN), [user_name] - имя, [user_login] - логин (e-mail), [restore_link] - ссылка для смены пароля (действует час), [site_name] - название сайта, [site_url] - адрес сайта');
 INSERT INTO `mail_templates` (`template_id`, `template_sysname`, `template_is_active`, `template_hints`) VALUES (3,'feedback_form',1,'Письмо посетителю, указавшему e-mail. Доступны поля формы: [feed_author] - имя, [feed_email] - e-mail, [feed_theme] - тема, [feed_text] - сообщение. Значения не экранируются.');
@@ -3164,14 +3170,4 @@ INSERT INTO `share_access_level` (`smap_id`, `group_id`, `right_id`) VALUES (372
 INSERT INTO `share_access_level` (`smap_id`, `group_id`, `right_id`) VALUES (3725,1,3);
 INSERT INTO `share_access_level` (`smap_id`, `group_id`, `right_id`) VALUES (3727,1,3);
 INSERT INTO `share_uploads` (`upl_id`, `upl_pid`, `upl_childs_count`, `upl_path`, `upl_filename`, `upl_name`, `upl_title`, `upl_description`, `upl_publication_date`, `upl_data`, `upl_internal_type`, `upl_mime_type`, `upl_width`, `upl_height`, `upl_is_active`) VALUES (1,NULL,0,'uploads/public','public','public','Локальный репозиторий',NULL,NULL,NULL,'repo','repo/local',NULL,NULL,1);
--- листалка по страницам: подписи стрелок «назад» и «вперёд» (добавлены после сводки, как в sql/cut/stage5.sql, блок 9)
-INSERT IGNORE INTO `share_lang_tags` (`ltag_name`) VALUES ('TXT_PREVIOUS_PAGE'), ('TXT_NEXT_PAGE');
-INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`)
-    SELECT t.`ltag_id`, l.`lang_id`,
-           CASE t.`ltag_name`
-               WHEN 'TXT_PREVIOUS_PAGE' THEN IF(l.`lang_abbr` = 'ua', 'Попередня сторінка', 'Предыдущая страница')
-               ELSE IF(l.`lang_abbr` = 'ua', 'Наступна сторінка', 'Следующая страница')
-           END
-      FROM `share_lang_tags` t JOIN `share_languages` l
-     WHERE t.`ltag_name` IN ('TXT_PREVIOUS_PAGE', 'TXT_NEXT_PAGE');
 SET FOREIGN_KEY_CHECKS = 1;

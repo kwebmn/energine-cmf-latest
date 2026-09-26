@@ -84,47 +84,6 @@ final class Setup {
     }
 
     /**
-     * Filter input arguments from potential attacks.
-     * If input argument contain symbols except letters, numbers, @c "-", @c "." and @c "/" then exception error will be thrown.
-     *
-     * @param string $var Input argument.
-     * @return string
-     *
-     * @throws Exception 'Некорректные данные системных переменных, возможна атака на сервер.'
-     */
-    private function filterInput($var) {
-        if (preg_match('/^[\~\-0-9a-zA-Z\/\.\_]+$/i', $var))
-            return $var;
-        else
-            throw new \Exception('Некорректные данные системных переменных, возможна атака на сервер.' . $var);
-    }
-
-    /**
-     * Get site host name.
-     *
-     * @return string
-     */
-    private function getSiteHost() {
-        if (!isset($_SERVER['HTTP_HOST'])
-            || $_SERVER['HTTP_HOST'] == ''
-        )
-            return $this->filterInput($_SERVER['SERVER_NAME']);
-        else
-            return $this->filterInput($_SERVER['HTTP_HOST']);
-    }
-
-    /**
-     * Get site root directory.
-     *
-     * @return string
-     */
-    private function getSiteRoot() {
-        $siteRoot = $this->filterInput($_SERVER['PHP_SELF']);
-        $siteRoot = str_replace('index.php', '', $siteRoot);
-        return $siteRoot;
-    }
-
-    /**
      * Check system environment.
      * It checks:
      * - PHP version
@@ -148,15 +107,6 @@ final class Setup {
         }
 
         $this->config = include($configName);
-
-        // Если скрипт запущен не с консоли, необходимо вычислить хост сайта и его рут директорию
-        /*if (!$this->isFromConsole) {
-            $this->config['site']['domain'] = $this->getSiteHost();
-            $this->config['site']['root'] = $this->getSiteRoot();
-        }*/
-        //все вышеизложенное - очень подозрительно
-        //что нам мешает просто прочитать значения из конфига?
-        //Если бы мы потом это в конфиг писали - то еще куда ни шло ... а так ... до выяснения  - закомментировал
 
         if (!is_array($this->config)) {
             throw new \Exception('Странный какой то конфиг. Пользуясь ним я не могу ничего сконфигурить. Или возьмите нормальный конфиг, или - извините.');
@@ -286,7 +236,8 @@ final class Setup {
      * ENERGINE_DB_PASSWORD, администратора — ENERGINE_ADMIN_PASSWORD; без переменной — запрос с терминала
      * без эха. Всё проверяется до первого изменения базы: расширения, параметры, пароли, соединение,
      * пустота базы. Затем — схема и базовые данные (sql/structure.sql, sql/data.sql), администратор
-     * в группе с полным доступом к корню, адрес сайта в share_domains, статика (без --no-static).
+     * в группе с полным доступом к корню, статика (без --no-static). Адрес сайта — только в конфиге:
+     * site.domain (хост и нестандартный порт из --url) и site.root.
      */
     private function installAction(...$args) {
         $o = $this->options($args, ['config', 'domain', 'url', 'db-host', 'db-port', 'db-socket', 'db-name', 'db-user',
@@ -327,17 +278,20 @@ final class Setup {
                 'password' => $this->secret('ENERGINE_DB_PASSWORD', 'пароль базы'),
             ];
         }
-        $urls = $this->siteUrls($o, $config['site'] ?? []);
-        // другой домен при готовом конфиге разошёлся бы с ним: cookie сессии привязаны к домену из конфига
-        if ($config && (!empty($o['domain']) || !empty($o['url'])) && strcasecmp($urls[0]['host'], (string)($config['site']['domain'] ?? '')) !== 0) {
-            throw new \Exception('Конфиг площадки уже есть (' . $configFile . '): домен сайта в нём — «' . ($config['site']['domain'] ?? '')
-                . '», другой (--domain, --url) не применяется. Уберите параметр или удалите этот конфиг.');
+        $address = $this->siteAddress($o, $config['site'] ?? []);
+        // другой адрес при готовом конфиге разошёлся бы с ним: ссылки и cookie сайта строятся от адреса из конфига
+        if ($config && (!empty($o['domain']) || !empty($o['url']))) {
+            $current = $this->siteAddress([], $config['site'] ?? []);
+            if (strcasecmp($address['domain'] . $address['root'], $current['domain'] . $current['root']) !== 0) {
+                throw new \Exception('Конфиг площадки уже есть (' . $configFile . '): адрес сайта в нём — «' . $current['domain']
+                    . $current['root'] . '», другой (--domain, --url) не применяется. Уберите параметр или удалите этот конфиг.');
+            }
         }
         // новый конфиг: указанный файл или configs/system.config.ДОМЕН.php и ссылка на него из web/
         $configTarget = null;
         if (!$config) {
             $configTarget = isset($o['config']) ? $configFile
-                : implode(DIRECTORY_SEPARATOR, [ROOT_DIR, 'configs', 'system.config.' . $urls[0]['host'] . '.php']);
+                : implode(DIRECTORY_SEPARATOR, [ROOT_DIR, 'configs', 'system.config.' . $address['host'] . '.php']);
             if (file_exists($configTarget) || !is_writable(dirname($configTarget))) {
                 throw new \Exception('Конфиг не записать: ' . $configTarget . ' уже есть или каталог закрыт для записи');
             }
@@ -369,7 +323,7 @@ final class Setup {
         // файлы, записанные этим запуском: при сбое они удаляются — повтор начнётся с тех же параметров
         $written = [];
         if ($configTarget) {
-            $this->writeConfig($configTarget, $database, $urls[0]);
+            $this->writeConfig($configTarget, $database, $address);
             $written[] = $configTarget;
             if ($configTarget !== $configFile) {
                 if (!@symlink($configTarget, $configFile)) {
@@ -385,7 +339,6 @@ final class Setup {
             $this->text('Базовые данные: ', $this->runSqlFile($pdo, ROOT_DIR . '/sql/data.sql'), ' запросов');
             $this->createAdmin($pdo, $email, $name, $password);
             $this->text('Администратор: ', $email);
-            $this->writeDomains($pdo, $urls);
         } catch (\Exception $e) {
             foreach (array_reverse($written) as $file) {
                 @unlink($file);
@@ -399,8 +352,7 @@ final class Setup {
             $this->linkerAction();
             $this->scriptMapAction();
         }
-        $this->text('Готово: ', $urls[0]['protocol'], '://', $urls[0]['host'],
-            in_array($urls[0]['port'], [80, 443]) ? '' : ':' . $urls[0]['port'], $urls[0]['root']);
+        $this->text('Готово: ', $address['scheme'], '://', $address['domain'], $address['root']);
     }
 
     /**
@@ -573,13 +525,13 @@ final class Setup {
     }
 
     /**
-     * Конфиг площадки из шаблона: база и домен; режим 600.
+     * Конфиг площадки из шаблона: база и адрес сайта (домен с нестандартным портом, корень); режим 600.
      *
      * @param string $file
      * @param array $db
-     * @param array $url
+     * @param array $address siteAddress()
      */
-    private function writeConfig($file, array $db, array $url) {
+    private function writeConfig($file, array $db, array $address) {
         $text = (string)file_get_contents(implode(DIRECTORY_SEPARATOR, [ROOT_DIR, 'configs', 'system.config.default.php']));
         $values = [
             "'host' => 'DB HOST NAME'" => "'host' => " . var_export((string)$db['host'], true),
@@ -588,7 +540,8 @@ final class Setup {
             "'db' => 'DB NAME'" => "'db' => " . var_export((string)$db['db'], true),
             "'username' => 'DB LOGIN'" => "'username' => " . var_export((string)$db['username'], true),
             "'password' => 'DB PASSWORD'" => "'password' => " . var_export((string)$db['password'], true),
-            "'domain' => 'PROJECT DOMAIN NAME'" => "'domain' => " . var_export($url['host'], true),
+            "'domain' => 'PROJECT DOMAIN NAME'" => "'domain' => " . var_export($address['domain'], true),
+            "'root' => '/'" => "'root' => " . var_export($address['root'], true),
         ];
         foreach ($values as $from => $to) {
             if (substr_count($text, $from) !== 1) {
@@ -605,31 +558,32 @@ final class Setup {
     }
 
     /**
-     * Адреса сайта для share_domains: --url — ровно он; --domain — http и https на стандартных портах;
-     * без них — домен и корень из конфига площадки.
+     * Адрес сайта для конфига: --url — ровно он (порт — если нестандартный для схемы); --domain — хост
+     * (и порт), корень — из конфига или /; без них — адрес из конфига площадки.
      *
      * @param array $o
      * @param array $site раздел site конфига
-     * @return array[] protocol, host, port, root
+     * @return array scheme, domain (хост[:порт] — site.domain), host, root (site.root)
      */
-    private function siteUrls(array $o, array $site) {
+    private function siteAddress(array $o, array $site) {
         if (!empty($o['url'])) {
             $u = parse_url($o['url']);
             if (empty($u['host']) || !in_array($u['scheme'] ?? '', ['http', 'https'], true)) {
                 throw new \Exception('Неверный --url: нужен http(s)://хост[:порт]/путь/');
             }
-            $root = '/' . trim($u['path'] ?? '', '/');
-            return [['protocol' => $u['scheme'], 'host' => $u['host'], 'port' => (int)($u['port'] ?? ($u['scheme'] === 'https' ? 443 : 80)),
-                'root' => rtrim($root, '/') . '/']];
-        }
-        $host = (string)($o['domain'] ?? ($site['domain'] ?? ''));
-        if (!preg_match('/^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$/i', $host)) {
-            throw new \Exception('Неверный домен сайта: «' . $host . '» (--domain=…)');
-        }
-        $root = rtrim('/' . trim((string)($site['root'] ?? '/'), '/'), '/') . '/';
+            $port = (int)($u['port'] ?? 0);
+            $domain = $u['host'] . (($port && $port !== ($u['scheme'] === 'https' ? 443 : 80)) ? ':' . $port : '');
 
-        return [['protocol' => 'http', 'host' => $host, 'port' => 80, 'root' => $root],
-            ['protocol' => 'https', 'host' => $host, 'port' => 443, 'root' => $root]];
+            return ['scheme' => $u['scheme'], 'domain' => $domain, 'host' => $u['host'],
+                'root' => \Energine\share\gears\Site::normalizeRoot($u['path'] ?? '/')];
+        }
+        $domain = (string)($o['domain'] ?? ($site['domain'] ?? ''));
+        if (!preg_match('/^[a-z0-9]([a-z0-9.-]*[a-z0-9])?(:\d{1,5})?$/i', $domain)) {
+            throw new \Exception('Неверный домен сайта: «' . $domain . '» (--domain=…)');
+        }
+
+        return ['scheme' => 'http', 'domain' => $domain, 'host' => \Energine\share\gears\Site::hostOf($domain),
+            'root' => \Energine\share\gears\Site::normalizeRoot($site['root'] ?? '/')];
     }
 
     /**
@@ -649,22 +603,6 @@ final class Setup {
         $pdo->prepare('INSERT INTO user_users (u_name, u_password, u_fullname, u_is_active) VALUES (?, ?, ?, 1)')
             ->execute([$email, password_hash($password, PASSWORD_DEFAULT), $name]);
         $pdo->prepare('INSERT INTO user_user_groups (u_id, group_id) VALUES (?, ?)')->execute([$pdo->lastInsertId(), $group]);
-    }
-
-    /**
-     * Адреса сайта — единственного сайта базовых данных.
-     *
-     * @param \PDO $pdo
-     * @param array[] $urls
-     */
-    private function writeDomains(\PDO $pdo, array $urls) {
-        $site = $pdo->query('SELECT site_id FROM share_sites ORDER BY site_id LIMIT 1')->fetchColumn();
-        foreach ($urls as $u) {
-            $pdo->prepare('INSERT INTO share_domains (domain_protocol, domain_port, domain_host, domain_root) VALUES (?, ?, ?, ?)')
-                ->execute([$u['protocol'], $u['port'], $u['host'], $u['root']]);
-            $pdo->prepare('INSERT INTO share_domain2site (domain_id, site_id) VALUES (?, ?)')->execute([$pdo->lastInsertId(), $site]);
-            $this->text('Адрес сайта: ', $u['protocol'], '://', $u['host'], ':', $u['port'], $u['root']);
-        }
     }
 
     /**
@@ -1051,32 +989,6 @@ final class Setup {
             }
         }
 
-    }
-
-    /**
-     * Create segment <tt>Google sitemap</tt> into @c share_sitemap.
-     * It sets for that segment read-only access for non-authorized users. @n
-     * Segment name should be defined in configurations.
-     */
-    private function createSitemapSegment() {
-        $this->dbConnect->query('INSERT INTO share_sitemap(site_id,smap_layout,smap_content,smap_segment,smap_pid) '
-            . 'SELECT sso.site_id,\'' . $this->config['seo']['sitemapTemplate'] . '.layout.xml\','
-            . '\'' . $this->config['seo']['sitemapTemplate'] . '.content.xml\','
-            . '\'' . $this->config['seo']['sitemapSegment'] . '\','
-            . '(SELECT smap_id FROM share_sitemap ss2 WHERE ss2.site_id = sso.site_id AND smap_pid IS NULL LIMIT 0,1) '
-            . 'FROM share_sites sso '
-            . 'WHERE NOT FIND_IN_SET(\'NOINDEX\', site_meta_robots) AND site_is_active '
-            . 'AND (SELECT COUNT(ssi.site_id) FROM share_sites ssi '
-            . 'INNER JOIN share_sitemap ssm ON ssi.site_id = ssm.site_id '
-            . 'WHERE ssm.smap_segment = \'' . $this->config['seo']['sitemapSegment'] . '\' AND ssi.site_id = sso.site_id) = 0');
-        $smIdsInfo = $this->dbConnect->query('SELECT smap_id FROM share_sitemap WHERE '
-            . 'smap_segment = \'' . $this->config['seo']['sitemapSegment'] . '\'');
-        while ($smIdInfo = $smIdsInfo->fetch()) {
-            $this->dbConnect->query('INSERT INTO share_access_level SELECT ' . $smIdInfo[0] . ',group_id,'
-                . '(SELECT right_id FROM `user_group_rights` WHERE right_const = \'ACCESS_READ\') FROM `user_groups` ');
-            $this->dbConnect->query('INSERT INTO share_sitemap_translation(smap_id,lang_id,smap_name,smap_is_disabled) '
-                . 'VALUES (' . $smIdInfo[0] . ',(SELECT lang_id FROM `share_languages` WHERE lang_default),\'Google sitemap\',0)');
-        }
     }
 
     /**

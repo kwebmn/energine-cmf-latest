@@ -16,7 +16,7 @@ class LoginForm;
 
 namespace Energine\user\components;
 
-use Energine\share\components\DataSet, Energine\share\gears\Primitive, Energine\share\gears\FieldDescription, Energine\share\gears\UserSession, Energine\share\gears\Field;
+use Energine\share\components\DataSet, Energine\share\gears\FieldDescription, Energine\share\gears\UserSession, Energine\share\gears\Field;
 
 /**
  * Show login form.
@@ -37,11 +37,6 @@ class LoginForm extends DataSet implements SampleLoginForm {
 		parent::__construct( $name, $params );
 		$this->setTitle( $this->translate( 'TXT_LOGIN_FORM' ) );
 		$base = E()->getSiteManager()->getCurrentSite()->base;
-		if ( strpos( $currDomain = E()->getSiteManager()->getCurrentSite()->host,
-				Primitive::getConfigValue( 'site.domain' ) ) === false
-		) {
-			$base = 'http://' . Primitive::getConfigValue( 'site.domain' ) . '/';
-		}
  		$lang = E()->getLanguage()->getCurrent();
  		//$lang=E()->getLanguage()->getAbbrByID($lang);
  		$lang=( isset( $_SERVER['HTTP_REFERER'] ))?'?lang='.$lang:'&lang='.$lang;

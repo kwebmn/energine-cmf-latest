@@ -33,9 +33,6 @@
 
     <!-- страница -->
     <xsl:template match="document">
-        <xsl:if test="$COMPONENTS[@class='CrossDomainAuth']">
-            <img src="{$COMPONENTS[@class='CrossDomainAuth']/@authURL}?return={$COMPONENTS[@class='CrossDomainAuth']/@returnURL}" width="1" height="1" style="display:none;" alt="" onload="document.location = document.location.href;"/>
-        </xsl:if>
         <a class="skip-link" href="#content"><xsl:value-of select="$TRANSLATION[@const='TXT_SKIP_TO_CONTENT']"/></a>
         <header class="site-header">
             <div class="wrap site-header__inner">

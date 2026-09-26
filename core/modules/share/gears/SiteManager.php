@@ -52,61 +52,26 @@ final class SiteManager extends Primitive implements \Iterator {
     private $currentSiteID = NULL;
 
     /**
-     * @copydoc DBWorker::__construct
+     * Адрес сайта — из конфига (site.domain, site.root), схема — из запроса. Заголовок Host адреса не меняет.
      *
-     * @throws SystemException 'ERR_NO_SITE'
-     * @throws SystemException 'ERR_403'
+     * @throws SystemException 'ERR_NO_SITE' нет site.domain в конфиге или сайта в базе
+     * @throws SystemException 'ERR_403' сайт не активен
      */
     public function __construct() {
         parent::__construct();
-        $uri = URI::create();
         $this->data = Site::load();
-
-        if (!($this->getConfigValue('site.debug')
-            && $res = $this->getConfigValue('site.dev_domains'))
-        ) {
-            $request = 'SELECT d . * , site_id as domain_site
-                      FROM `share_domains` d
-                      LEFT JOIN share_domain2site d2c
-                      USING ( domain_id ) ';
-            $res = $this->dbh->select($request);
+        if (!($domain = (string)$this->getConfigValue('site.domain')) || !$this->data) {
+            throw new SystemException('ERR_NO_SITE', SystemException::ERR_DEVELOPER, 'site.domain');
         }
-
-        if (!$res) {
-            throw new SystemException('ERR_NO_SITE', SystemException::ERR_DEVELOPER);
-        }
-
-        foreach ($res as $domainData) {
-            $domainData = E()->Utils->convertFieldNames($domainData, 'domain_');
-            //Если не установлен уже домен - для сайта - дописываем
-            //по сути первый домен будет дефолтным
-            if (isset($domainData['site']) && is_null($this->data[$domainData['site']]->base)) {
-                $tmp = $domainData;
-                unset($tmp['id'], $tmp['site']);
-                $this->data[$domainData['site']]->setDomain($tmp);
-                unset($tmp);
-            }
-            if (
-                ($domainData['protocol'] == $uri->getScheme()) &&
-                ($domainData['host'] == $uri->getHost()) &&
-                ($domainData['port'] == $uri->getPort())
-            ) {
-                $realPathSegments = array_values(array_filter(explode('/', $domainData['root'])));
-                $pathSegments = array_slice($uri->getPath(false), 0, sizeof($realPathSegments));
-                if ($realPathSegments == $pathSegments) {
-                    $this->currentSiteID = $domainData['site'];
-                    unset($domainData['id'], $domainData['site']);
-                    $this->data[$this->currentSiteID]->setDomain($domainData);
-                }
+        $scheme = URI::create()->getScheme();
+        foreach ($this->data as $siteID => $site) {
+            $site->setAddress($scheme, $domain, $this->getConfigValue('site.root'));
+            if ($site->isDefault == 1) {
+                $this->currentSiteID = $siteID;
             }
         }
-
         if (is_null($this->currentSiteID)) {
-            foreach ($this->data as $siteID => $site) {
-                if ($site->isDefault == 1) {
-                    $this->currentSiteID = $siteID;
-                }
-            }
+            $this->currentSiteID = array_key_first($this->data);
         }
         //Если текущий сайт не активный
         if (!$this->data[$this->currentSiteID]->isActive) {
