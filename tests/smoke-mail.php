@@ -81,12 +81,16 @@ freshJar('user');
 $off = mboxSize();
 [$c, $html] = http('/register/');
 check('register page without captcha', $c == 200 && clean($html) && stripos($html, 'captcha') === false, $html);
-$registration = ['user_users[u_name]' => TEST_EMAIL, 'user_users[u_fullname]' => USER_NAME];
+// u_phone — колонка таблицы, которой нет в форме регистрации: сохраняются только поля формы
+$registration = ['user_users[u_name]' => TEST_EMAIL, 'user_users[u_fullname]' => USER_NAME, 'user_users[u_phone]' => 'claude-extra-field'];
 sleep(3);   // как человек: форма, отправленная сразу после показа, отклоняется (FormGuard)
 [$c, $body] = http('/register/save-new-user/', formIn($html, 'register/save-new-user', $registration));
 $uid = scalar('SELECT u_id FROM user_users WHERE u_name = ?', [TEST_EMAIL]);
 $formError = preg_match('~<div class="alert[^"]*"[^>]*>(.*?)</div>~s', $body, $mm) ? strip_tags($mm[1]) : '';
 check("user registered (u_id $uid, HTTP $c) $formError", $uid && $c == 302 && scalar('SELECT COUNT(*) FROM user_user_groups WHERE u_id = ? AND group_id = 4', [$uid]), $body);
+check('registration saves only the form fields (u_phone ignored)',
+    $uid && (string)scalar("SELECT COALESCE(u_phone, '') FROM user_users WHERE u_id = ?", [$uid]) === '',
+    scalar('SELECT u_phone FROM user_users WHERE u_id = ?', [$uid]));
 $messages = mboxWait($off, 1);
 $m = bySubject($messages, 'Регистрация на сайте ' . translation('TXT_SITE_NAME'));
 check('registration mail delivered', $m && $m['to'] === TEST_EMAIL && count($messages) == 1 && str_contains($m['text'], 'Здравствуйте, ' . USER_NAME . '!'), brief($messages));
@@ -94,6 +98,18 @@ check('registration mail: name escaped in HTML', $m && str_contains($m['html'], 
 $password = ($m && preg_match('/Пароль: (\S+)/u', $m['text'], $mm)) ? $mm[1] : null;
 check('HTML part has the password', $m && $password && str_contains($m['html'], "<strong>$password</strong>"), $m['html'] ?? '');
 check('login with the mailed password', $password && loginAs(TEST_EMAIL, $password));
+// тот же логин ещё раз: отказ ERR_USER_EXISTS, второго пользователя и письма нет
+freshJar('user2');
+[, $html] = http('/register/');
+sleep(3);
+$off = mboxSize();
+[$c, $body] = http('/register/save-new-user/', formIn($html, 'register/save-new-user',
+    ['user_users[u_name]' => TEST_EMAIL, 'user_users[u_fullname]' => USER_NAME]));
+sleep(2);
+$refusal = strip_tags((string)translation('ERR_USER_EXISTS'));
+check("the same login again is refused (HTTP $c)", $refusal !== '' && str_contains($body, $refusal)
+    && (int)scalar('SELECT COUNT(*) FROM user_users WHERE u_name = ?', [TEST_EMAIL]) === 1 && mboxSize() === $off,
+    substr(strip_tags($body), 0, 300));
 
 // =====================================================================================================
 echo "-- restore password\n";

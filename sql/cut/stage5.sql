@@ -114,3 +114,14 @@ INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_va
 -- Своё XML содержимого со старой раскладкой (меню и вход в колонке — теперь они в шапке) заменяется
 -- шаблоном страницы: так у демо-главной; как у админки, пустая строка — «брать шаблон».
 UPDATE `share_sitemap` SET `smap_content_xml` = '' WHERE `smap_content_xml` LIKE '%mainMenuContainer%';
+
+-- 7. Профиль (исправления этапа 5а): смена пароля — с текущим паролем; поле пароля — «новый пароль».
+INSERT IGNORE INTO `share_lang_tags` (`ltag_name`) VALUES ('FIELD_U_PASSWORD_CURRENT'), ('FIELD_U_PASSWORD_NEW');
+INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`)
+    SELECT t.`ltag_id`, l.`lang_id`,
+           CASE t.`ltag_name`
+               WHEN 'FIELD_U_PASSWORD_CURRENT' THEN IF(l.`lang_abbr` = 'ua', 'Поточний пароль', 'Текущий пароль')
+               ELSE IF(l.`lang_abbr` = 'ua', 'Новий пароль', 'Новый пароль')
+           END
+      FROM `share_lang_tags` t JOIN `share_languages` l
+     WHERE t.`ltag_name` IN ('FIELD_U_PASSWORD_CURRENT', 'FIELD_U_PASSWORD_NEW');

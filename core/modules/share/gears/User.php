@@ -153,6 +153,9 @@ class User extends Primitive {
     public function create($data) {
         //проверяем имеются ли все необходимые значения
         $tableInfo = $this->dbh->getColumnsInfo(self::USER_TABLE_NAME);
+        // только колонки таблицы и без ключа: имена колонок QAL вставляет в SQL как есть
+        $data = array_intersect_key((array)$data, $tableInfo);
+        unset($data['u_id']);
         $necessaryFields = $uniqueFields = [];
         foreach ($tableInfo as $columnName => $columnInfo) {
             //отбираем все поля !nullable, не PRI, и без дефолтного значения
@@ -168,14 +171,10 @@ class User extends Primitive {
         if ($undefinedFields = array_diff($necessaryFields, array_keys($data))) {
             throw new SystemException('ERR_INSUFFICIENT_DATA', SystemException::ERR_WARNING, $undefinedFields);
         }
-        //проверяем являются ли введенные поля уникальными
-        if (!empty($uniqueFields)) {
-            $condition = [];
-            foreach ($uniqueFields as $fieldname) {
-                $condition[] = $fieldname . ' = "' . $data[$fieldname] . '"';
-            }
-            $condition = implode(' OR ', $condition);
-            if ($this->dbh->getScalar(self::USER_TABLE_NAME, 'COUNT(u_id) as num', $condition) > 0) {
+        //проверяем являются ли введенные поля уникальными (значения — параметрами запроса, не текстом SQL)
+        foreach ($uniqueFields as $fieldname) {
+            if (isset($data[$fieldname]) && $data[$fieldname] !== ''
+                && $this->dbh->getScalar(self::USER_TABLE_NAME, 'COUNT(u_id)', [$fieldname => $data[$fieldname]]) > 0) {
                 throw new SystemException('ERR_NOT_UNIQUE_DATA', SystemException::ERR_WARNING);
             }
         }
@@ -206,10 +205,16 @@ class User extends Primitive {
 //             if ($this->getID() != $this->dbh->getScalar('user_users', 'u_id', ['u_name' => $data['u_name']])) {
 //                 throw new SystemException('ERR_DUPLICATE_LOGIN');
 //             }
+            // только колонки таблицы и без ключа: имена колонок QAL вставляет в SQL как есть
+            $data = array_intersect_key((array)$data, $this->dbh->getColumnsInfo(self::USER_TABLE_NAME));
+            unset($data['u_id']);
             if (isset($data['u_password'])) {
                 $data['u_password'] = password_hash($data['u_password'], PASSWORD_DEFAULT);
             }
-            $result = $this->dbh->modify(QAL::UPDATE, self::USER_TABLE_NAME, $this->info = $data, ['u_id' => $this->getID()]);
+            if ($data) {
+                $result = $this->dbh->modify(QAL::UPDATE, self::USER_TABLE_NAME, $data, ['u_id' => $this->getID()]);
+                $this->info = array_merge((array)$this->info, $data);
+            }
         }
         return $result;
     }

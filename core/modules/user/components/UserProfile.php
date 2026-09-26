@@ -89,61 +89,54 @@ class UserProfile extends DBDataSet {
 
     /**
      * Save.
+     * Сохраняются только поля формы (без ключа и служебных колонок). Пароль меняется, только если задан
+     * новый: он должен совпасть с повтором, а текущий пароль — быть верным. Раньше проверка сравнивала
+     * хэш из базы с новым паролем, всегда отказывала, и профиль не сохранялся вовсе.
      */
     protected function save() {
-
-        $_POST[$this->getTableName()]['u_id'] = $this->document->getUser()->getID();
-
+        $user = $this->document->user;
+        if (!$user->isAuthenticated()) {
+            throw new SystemException('ERR_DEV_NO_AUTH_USER', SystemException::ERR_DEVELOPER);
+        }
+        $this->setFilter($user->getID());
         $this->prepare();
+        $posted = (array)($_POST[$this->getTableName()] ?? []);
 
-        $dd = $this->getDataDescription();
-        $fields = $dd->getFieldDescriptionList();
+        $data = [];
+        foreach ($this->getDataDescription() as $name => $fd) {
+            if ($fd->getPropertyValue('customField') || $fd->getPropertyValue('key') === true
+                || !array_key_exists($name, $posted) || !is_scalar($posted[$name])) {
+                continue;
+            }
+            $data[$name] = (string)$posted[$name];
+        }
 
-        if ($dd->getFieldDescriptionByName('u_password')) {
-            if (!password_verify($this->document->user->getValue('u_password'), password_hash($_POST[$this->getTableName()]['u_password'], PASSWORD_DEFAULT))) {
+        $newPassword = $data['u_password'] ?? '';
+        unset($data['u_password']);
+        if ($newPassword !== '') {
+            if ($newPassword !== (string)($_POST['u_password2'] ?? '')) {
+                $this->fail('ERR_PWD_MISMATCH');
+            }
+            if (!password_verify((string)($_POST['u_password_current'] ?? ''), (string)$user->getValue('u_password'))) {
                 $this->fail('TXT_USER_PROFILE_WRONG_PWD');
             }
-
-            if (!empty($_POST[$this->getTableName()]['u_password'])) {
-                if ($_POST[$this->getTableName()]['u_password'] != $_POST['u_password2']) {
-                    // здесь вызывался generateError(), которого у DBDataSet нет: трейт DBWorker
-                    // молча возвращал false, и несовпавший пароль всё равно сохранялся
-                    $this->fail('ERR_PWD_MISMATCH');
-                }
-                unset($_POST['u_password2']);
-                $_POST[$this->getTableName()]['u_password'] = password_hash($_POST[$this->getTableName()]['u_password'], PASSWORD_DEFAULT);
-            }
+            // хэширует User::update
+            $data['u_password'] = $newPassword;
         }
-
-        /*
-        if (array_diff($fields, array_keys($_POST[$this->getTableName()])) != array()) {
-            throw new SystemException('ERR_BAD_DATA', SystemException::ERR_CRITICAL);
+        // логин (e-mail) другого пользователя не занимается
+        if (isset($data['u_name']) && $data['u_name'] !== (string)$user->getValue('u_name')
+            && $this->dbh->getScalar('user_users', 'COUNT(*)', ['u_name' => $data['u_name']])) {
+            $this->fail('ERR_USER_EXISTS');
         }
-        */
-        $data = $_POST[$this->getTableName()];
 
         try {
-            $this->document->user->update($data);
+            $user->update($data);
             $_SESSION['saved'] = true;
-
-            //переадресация
             $this->response->redirectToCurrentSection('success/');
-        }
-            //Отлавливаем все ошибки которые могли произойти при сохранении в БД, чтобы вывести нужную информацию об ошибке на уровне компонента
-            /*catch (FormException $formError) {
-                $errors = $this->saver->getErrors();
-                foreach ($errors as $errorFieldName) {
-                    $message = $this->saver->getDataDescription()->getFieldDescriptionByName($errorFieldName)->getPropertyValue('message');
-                    $this->generateError(SystemException::ERR_NOTICE, $message);
-                }
-                //переадресация
-                //$this->response->redirectToCurrentSection();
-            }*/
-        catch (SystemException $e) {
-            stop($e);
-            $this->generateError(SystemException::ERR_NOTICE, $e->getMessage(), $e->getCustomMessage());
-            //переадресация
-            //$this->response->redirectToCurrentSection();
+        } catch (SystemException $e) {
+            // например, обязательное поле пустое: причина — в журнал, посетителю — общий текст
+            error_log('UserProfile: ' . $e->getMessage());
+            $this->fail('ERR_DATABASE_ERROR');
         }
     }
 
@@ -244,14 +237,33 @@ class UserProfile extends DBDataSet {
     // Для метода success переопределен метод создания объекта метаданных
     protected function createDataDescription() {
         $result = parent::createdataDescription();
-        if ($field = $result->getFieldDescriptionByName('u_is_active')) {
-            $result->removeFieldDescription($field);
+        // служебные колонки посетитель не видит и не меняет: активность, ссылка восстановления пароля
+        foreach (['u_is_active', 'u_restore_hash', 'u_restore_until'] as $name) {
+            if ($field = $result->getFieldDescriptionByName($name)) {
+                $result->removeFieldDescription($field);
+            }
         }
 
+        // пароли не обязательны: пустой новый пароль — пароль не меняется
+        $optional = function (FieldDescription $field) {
+            $field->setProperty('nullable', true);
+            $field->removeProperty('pattern');
+            $field->removeProperty('message');
+
+            return $field;
+        };
         if ($field = $result->getFieldDescriptionByName('u_password')) {
             $field->setProperty('message2', $this->translate('ERR_PWD_MISMATCH'));
+            $field->setProperty('title', 'FIELD_U_PASSWORD_NEW');
             $result->removeFieldDescription($field);
-            $result->addFieldDescription($field);
+            if ($this->getState() !== 'save') {
+                $current = new FieldDescription('u_password_current');
+                $current->setType(FieldDescription::FIELD_TYPE_PWD);
+                $current->setProperty('customField', true);
+                $current->setProperty('title', 'FIELD_U_PASSWORD_CURRENT');
+                $result->addFieldDescription($optional($current));
+            }
+            $result->addFieldDescription($optional($field));
         }
 
         if ($this->getState() !== 'save') {
@@ -263,7 +275,7 @@ class UserProfile extends DBDataSet {
                 $field->setProperty('customField', true);
                 //$field->setProperty('title', $this->translate('FIELD_U_PASSWORD2'));
                 $field->setProperty('title', 'FIELD_U_PASSWORD2');
-                $result->addFieldDescription($field);
+                $result->addFieldDescription($optional($field));
             }
         }
 

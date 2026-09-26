@@ -138,10 +138,18 @@ class Register extends DBDataSet {
      * @throws SystemException
      */
     protected function saveData() {
-        $password = $_POST[$this->getTableName()]['u_password'] = User::generatePassword();
+        // только поля формы регистрации (конфиг, состояние main): остальные колонки посетитель не задаёт
+        $posted = (array)($_POST[$this->getTableName()] ?? []);
+        $data = [];
+        foreach ($this->formFieldNames() as $name) {
+            if (array_key_exists($name, $posted) && is_scalar($posted[$name])) {
+                $data[$name] = (string)$posted[$name];
+            }
+        }
+        $password = $data['u_password'] = User::generatePassword();
         try {
 
-            $result = $this->user->create($_POST[$this->getTableName()]);
+            $result = $this->user->create($data);
 
             $template = new MailTemplate('user_registration', [
                     'user_login' => $this->user->getValue('u_name'),
@@ -163,6 +171,23 @@ class Register extends DBDataSet {
         } catch (\Exception $error) {
             throw new SystemException($error->getMessage(), SystemException::ERR_WARNING);
         }
+    }
+
+    /**
+     * Поля формы регистрации — из конфига (состояние main), без ключа, активности и пароля.
+     *
+     * @return string[]
+     */
+    private function formFieldNames() {
+        $names = [];
+        $state = $this->getConfig()->getStateConfig('main');
+        if (isset($state->fields->field)) {
+            foreach ($state->fields->field as $field) {
+                $names[] = (string)$field['name'];
+            }
+        }
+
+        return array_values(array_diff($names, ['u_id', 'u_is_active', 'u_password']));
     }
 
     /**
