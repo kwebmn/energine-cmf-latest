@@ -92,7 +92,6 @@ Grid.implement(/** @lends Grid# */{
 
                         break;
 
-                    case 'video':
                     case 'image':
                         dimensions = {'width': 60, 'height': 45};
                         image.setProperty('src', Energine.resizer + 'w60-h45/' + record[fieldName])
@@ -127,10 +126,6 @@ Grid.implement(/** @lends Grid# */{
                                 }
                             }
                         });
-
-                        if (record['upl_internal_type'] == 'video') {
-                            container.grab(new Element('div', {'class': 'video_file'}));
-                        }
 
                         cell.requestFilesSize = new XMLHttpRequest();
                         cell.requestFilesSize.ImageProps = cell;
@@ -194,39 +189,14 @@ Grid.implement(/** @lends Grid# */{
                      new Element('td', {'colspan': 2, 'html':'<a href="#">'+ record['upl_path'] + '</a>'}),
                      ]
                      );*/
-                    if (!record['upl_is_ready']) {
-                        new Element('tr').inject(propsTable).adopt([
-                            new Element('td', {'html': this.metadata['upl_is_ready'].title + ' :'}),
-                            new Element('td', {'html': Energine.translations['TXT_NOT_READY']})
-                        ]);
-                    }
                     if (record['upl_mime_type']) {
-                        var video_types = [];
-                        if (record['upl_is_mp4'] && record['upl_is_mp4'] == '1') {
-                            video_types.push('mp4');
-                        }
-                        if (record['upl_is_webm'] && record['upl_is_webm'] == '1') {
-                            video_types.push('webm');
-                        }
-                        if (record['upl_is_flv'] && record['upl_is_flv'] == '1') {
-                            video_types.push('flv');
-                        }
-
                         new Element('tr').inject(propsTable).adopt([
                             new Element('td', {'html': this.metadata['upl_mime_type'].title + ' :'}),
-                            new Element('td', {'html': (video_types.length) ? video_types.join(', ') : record['upl_mime_type']})
+                            new Element('td', {'html': record['upl_mime_type']})
                         ]);
                     }
 
                     switch (record['upl_internal_type']) {
-                        case 'video':
-                            if (record['upl_duration']) {
-                                new Element('tr').inject(propsTable).adopt([
-                                    new Element('td', {'html': this.metadata['upl_duration'].title + ' :'}),
-                                    new Element('td', {'html': record['upl_duration']})
-                                ]);
-                            }
-                            break;
                         case 'image':
                             if (record['upl_width']) {
                                 new Element('tr').inject(propsTable).adopt([
@@ -339,7 +309,7 @@ var FileRepository = new Class(/** @lends FileRepository# */{
 
             case 'repo':
                 this.toolbar.disableControls();
-                if (openBtn && r.upl_is_ready) {
+                if (openBtn) {
                     openBtn.enable();
                 }
                 break;
@@ -436,19 +406,15 @@ var FileRepository = new Class(/** @lends FileRepository# */{
                 break;
 
             default:
-                if (r.upl_is_ready) {
-                    if (this.toolbar.getControlById('open')) {
-                        if (r['upl_path']) {
-                            var t = r['upl_path'].split('?');
-                            r['upl_path'] = t[0];
-                        }
-                        ModalBox.setReturnValue(r);
-                        ModalBox.close();
-                    } else {
-                        this.edit();
+                if (this.toolbar.getControlById('open')) {
+                    if (r['upl_path']) {
+                        var t = r['upl_path'].split('?');
+                        r['upl_path'] = t[0];
                     }
+                    ModalBox.setReturnValue(r);
+                    ModalBox.close();
                 } else {
-                    alert(Energine.translations['ERR_UPL_NOT_READY']);
+                    this.edit();
                 }
                 break;
         }

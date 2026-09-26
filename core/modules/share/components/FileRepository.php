@@ -476,21 +476,7 @@ class FileRepository extends Grid implements SampleFileRepository {
                 $data['upl_internal_type'] = $fi->type;
                 $data['upl_width'] = $fi->width;
                 $data['upl_height'] = $fi->height;
-                $data['upl_is_ready'] = $fi->ready;
                 $data['upl_publication_date'] = date('Y-m-d H:i:s');
-
-                $ext = strtolower(pathinfo($data['upl_filename'], PATHINFO_EXTENSION));
-                switch ($ext) {
-                    case 'mp4':
-                        $data['upl_is_mp4'] = '1';
-                        break;
-                    case 'webm':
-                        $data['upl_is_webm'] = '1';
-                        break;
-                    case 'flv':
-                        $data['upl_is_flv'] = '1';
-                        break;
-                }
 
                 $result = $this->dbh->modify($mode, $this->getTableName(), $data);
 
@@ -734,23 +720,6 @@ class FileRepository extends Grid implements SampleFileRepository {
                 $data->load([$newData]);
             }
         }
-    }
-
-    /**
-     * Method for adding video in text blocks.
-     */
-    protected function putVideo() {
-        $sp = $this->getStateParams();
-        $uplID = intval($sp[0]);
-        $this->setType(self::COMPONENT_TYPE_FORM_ALTER);
-        $this->setBuilder($this->createBuilder());
-        $this->setDataDescription($this->createDataDescription());
-        $this->addFilterCondition(['upl_id' => $uplID]);
-        $this->setData($this->createData());
-
-        $this->addToolbar($this->loadToolbar());
-        $this->js = $this->buildJS();
-        $this->setAction('save/');
     }
 
     /**

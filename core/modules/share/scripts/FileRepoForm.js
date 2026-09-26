@@ -203,7 +203,7 @@ var FileRepoForm = new Class(/** @lends FileRepoForm# */{
                 document.getElementById('data').set('value', response.tmp_name);
                 document.getElementById('upl_title').set('value', response.name.split('.')[0]);
 
-                if (response.type.match('image.*') || response.type.match('video.*')) {
+                if (response.type.match('image.*')) {
                     previewElement.removeProperty('src').addClass('hidden');
                     previewElement.setProperty('src', Energine.base + 'resizer/' + 'w0-h0/' + response.tmp_name);
                     generatePreviews(response.tmp_name);
@@ -225,19 +225,5 @@ var FileRepoForm = new Class(/** @lends FileRepoForm# */{
      */
     buildSaveURL: function() {
         return Energine.base + this.form.getProperty('action');
-    },
-
-    /**
-     * Returns video params, such as
-     * player height, player width.
-     * @function
-     * @public
-     */
-    getPlayerParams: function () {
-        var player = {};
-        player.width = this.element.getElementById('width').value || '';
-        player.height = this.element.getElementById('height').value || '';
-        ModalBox.setReturnValue(player);
-        this.close();
     }
 });

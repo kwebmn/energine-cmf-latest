@@ -67,7 +67,7 @@ class Robots extends DataSet {
         if (!array_key_exists('seo', $cfg)) {
             return false;
         }
-        foreach (['sitemapSegment', 'sitemapTemplate', 'maxVideosInMap'] as $seoParam) {
+        foreach (['sitemapSegment', 'sitemapTemplate'] as $seoParam) {
             if (!array_key_exists($seoParam, $cfg['seo'])) {
                 return false;
             }

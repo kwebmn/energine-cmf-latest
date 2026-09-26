@@ -31,19 +31,14 @@
             <field name="upl_childs_count" type="hidden"/>
             <field name="upl_internal_type" type="hidden"/>
             <field name="upl_mime_type" type="hidden"/>
-            <field name="upl_duration" type="hidden"/>
             <field name="upl_width" type="hidden"/>
             <field name="upl_height" type="hidden"/>
-            <field name="upl_is_ready" type="hidden"/>
             <field name="upl_allows_create_dir" type="hidden"/>
             <field name="upl_allows_upload_file" type="hidden"/>
             <field name="upl_allows_edit_file" type="hidden"/>
             <field name="upl_allows_edit_dir" type="hidden"/>
             <field name="upl_allows_delete_dir" type="hidden"/>
             <field name="upl_allows_delete_file" type="hidden"/>
-            <field name="upl_is_mp4" type="hidden"/>
-            <field name="upl_is_webm" type="hidden"/>
-            <field name="upl_is_flv" type="hidden"/>
         </fields>
         <toolbar>
             <control id="open" title="BTN_OPEN" type="button" onclick="open"/>
@@ -125,23 +120,6 @@
         <toolbar>
             <control id="save" title="BTN_SAVE" type="button" onclick="save"/>
             <control id="list" title="BTN_CLOSE" type="button" onclick="close"/>
-        </toolbar>
-    </state>
-    <state name="putVideo">
-        <uri_patterns>
-            <pattern>/[int]/put-video/</pattern>
-        </uri_patterns>
-        <javascript>
-            <behavior name="FileRepoForm"/>
-        </javascript>
-        <fields>
-            <field name="upl_id"/>
-            <field name="upl_path" type="file" mode="1" title="TXT_PREVIEW"/>
-            <field name="width" title="TXT_WIDTH" type="string"/>
-            <field name="height" title="TXT_HEIGHT" type="string"/>
-        </fields>
-        <toolbar>
-            <control type="button" id="insert" title="BTN_INSERT_VIDEO" onclick="getPlayerParams"/>
         </toolbar>
     </state>
     <state name="saveDir" rights="3">

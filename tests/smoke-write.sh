@@ -7,6 +7,11 @@ J=$SCR/smoke-write-cookies.txt
 R=$SCR/smoke-write.json
 q() { mysql -N --default-character-set=utf8mb4 -h "$DB_HOST" -u "$DB_USER" "$DB_NAME" -e "$1"; }
 ADMIN_ID=$(q "SELECT u_id FROM user_users WHERE u_name='$ADMIN_EMAIL'")
+# добавление страницы сдвигает smap_order_num всему сайту (так устроено ядро): порядок запоминается
+# и возвращается при выходе, чтобы и одиночный прогон не оставлял сдвига
+ORDER=$(mktemp)
+q "SELECT CONCAT('UPDATE share_sitemap SET smap_order_num=', smap_order_num, ' WHERE smap_id=', smap_id, ';') FROM share_sitemap" > $ORDER
+trap 'mysql --default-character-set=utf8mb4 -h "$DB_HOST" -u "$DB_USER" "$DB_NAME" < $ORDER && rm -f $ORDER' EXIT
 fail=0
 ok()  { echo "OK   $1"; }
 bad() { echo "FAIL $1: $(head -c 300 $R | tr '\n' ' ')"; fail=$((fail+1)); }
@@ -104,6 +109,20 @@ post "${F}save" --data-urlencode "componentAction=add" --data-urlencode "share_u
 isok && ok "file save" || bad "file save"
 FPATH=$(q "SELECT upl_path FROM share_uploads WHERE upl_pid='$DID' LIMIT 1")
 [ -n "$FPATH" ] && [ "$(curl -sS -o /dev/null -w '%{http_code}' "$B/resizer/w40-h30/$FPATH")" = 200 ] && ok "file via resizer" || bad "file via resizer"
+# видеофайл — обычный файл: без плеера и перекодировки, тип unknown (раньше video)
+MP4=$(mktemp); printf '\x00\x00\x00\x18ftypmp42\x00\x00\x00\x00mp42isom' > $MP4
+curl -sS -c $J -b $J -X POST -H 'X-Request: JSON' -F "key=file" -F "file=@$MP4;filename=claude-test.mp4;type=video/mp4" -o $R "${F}upload-temp/"
+isok && ok "upload temp mp4" || bad "upload temp mp4"
+rm -f $MP4
+post "${F}save" --data-urlencode "componentAction=add" --data-urlencode "share_uploads[upl_id]=" --data-urlencode "share_uploads[upl_pid]=$DID" \
+  --data-urlencode "share_uploads[upl_path]=uploads/temp/claude-test.mp4" --data-urlencode "share_uploads[upl_title]=claude-test-mp4" \
+  --data-urlencode "share_uploads[upl_name]=claude-test-mp4" --data-urlencode "share_uploads[upl_filename]=claude-test.mp4"
+isok && ok "mp4 save" || bad "mp4 save"
+MID=$(q "SELECT upl_id FROM share_uploads WHERE upl_title='claude-test-mp4'")
+[ "$(q "SELECT CONCAT(upl_mime_type, ' ', upl_internal_type) FROM share_uploads WHERE upl_title='claude-test-mp4'")" = "video/mp4 unknown" ] \
+  && ok "mp4 stored as a plain file" || { echo "FAIL mp4 stored as a plain file: $(q "SELECT CONCAT(upl_mime_type, ' ', upl_internal_type) FROM share_uploads WHERE upl_title='claude-test-mp4'")"; fail=$((fail+1)); }
+[ -n "$MID" ] && { post "${F}${MID}/delete/"; isok && ok "mp4 delete" || bad "mp4 delete"; }
+rm -f $WEB/uploads/temp/claude-test.mp4
 post "${F}${DID}/get-data/"
 php8.5 -r '$d=json_decode(file_get_contents($argv[1]),true); exit(isset($d["breadcrumbs"]) && count($d["breadcrumbs"]) == 2 ? 0 : 1);' $R && ok "dir listing breadcrumbs" || bad "dir listing breadcrumbs"
 FID=$(q "SELECT upl_id FROM share_uploads WHERE upl_pid='$DID' LIMIT 1")

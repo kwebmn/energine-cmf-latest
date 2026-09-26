@@ -68,14 +68,6 @@ Author: Yuriy Ponomarev (mailto:yourick.po@gmail.com)
     display: block;
     border: 1px solid silver;
 }
-.carousel_image .play_icon {
-    display: block;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    z-index: 2;
-    margin: -16px 0 0 -16px;
-}
 .carousel .viewbox a:link, .carousel .viewbox a:visited, .carousel .viewbox a:hover, .carousel .viewbox a:active {
     text-decoration: none;
     outline: 0;

@@ -2,7 +2,6 @@
  * @file Contain the description of the next classes:
  * <ul>
  *     <li>[Form]{@link Form}</li>
- *     <li>[Form.Uploader]{@link Form.Uploader}</li>
  *     <li>[Form.Sked]{@link Form.Sked}</li>
  *     <li>[Form.SmapSelector]{@link Form.SmapSelector}</li>
  *     <li>[Form.AttachmentSelector]{@link Form.AttachmentSelector}</li>
@@ -18,7 +17,6 @@
  * @requires ModalBox
  * @requires Overlay
  * @requires datepicker
- * @requires Swiff.Uploader
  *
  * @author Pavel Dubenko
  *
@@ -26,7 +24,6 @@
  */
 
 ScriptLoader.load('ckeditor/ckeditor', 'TabPane', 'Toolbar', 'Validator', 'ModalBox', 'Overlay', 'datepicker', 'Lookup');
-//ScriptLoader.load('ckeditor/ckeditor', 'TabPane', 'Toolbar', 'Validator', 'ModalBox', 'Overlay', 'datepicker', 'Swiff.Uploader', 'Tags', 'Lookup');
 
 /**
  * Form.
@@ -60,12 +57,6 @@ var Form = new Class(/** @lends Form# */{
     richEditors: [],
 
     lookups: [],
-
-    /**
-     * Array of Uploaders.
-     * @type {Uploader[]}
-     */
-    uploaders: [],
 
     /**
      * Array of text boxes.
@@ -186,9 +177,6 @@ var Form = new Class(/** @lends Form# */{
             new Form.AttachmentSelector(el, this);
         }, this);
 
-        this.element.getElements('.uploader').each(function (uploader) {
-            this.uploaders.push(new Form.Uploader(uploader, this, 'upload/'));
-        }, this);
         var cps;
         if(cps = this.element.getElements('input.inp_color')){
             cps.each(function(colorElement){
@@ -449,9 +437,6 @@ var Form = new Class(/** @lends Form# */{
                 case 'image':
                     src = Energine.media + result['upl_path'];
                     break;
-                case 'video':
-                    src = Energine.resizer + 'w0-h0/' + result['upl_path'];
-                    break;
                 default:
                     src = Energine['static'] + 'images/icons/icon_undefined.gif';
             }
@@ -544,148 +529,6 @@ var Form = new Class(/** @lends Form# */{
                 }
             }.bind(this)
         });
-    }
-});
-
-/**
- * File uploader.
- *
- * @constructor
- * @param uploaderElement
- * @param form
- * @param path
- */
-Form.Uploader = new Class(/** @lends Form.Uploader# */{
-    // constructor
-    initialize: function (uploaderElement, form, path) {
-        /**
-         * The main uploader element.
-         * @type {Element}
-         */
-        this.element = $(uploaderElement);
-        if (!this.element) {
-            return;
-        }
-
-        /*var cookieKeys = /(\w+)=(\w+);/i;
-         console.log(cookieKeys.exec(document.cookie), document.cookie);
-         //console.log(document.cookie.split(';').map(function(cook){console.log(cook); return 1;}));*/
-
-        /**
-         * The form.
-         * @type {Form}
-         */
-        this.form = form;
-
-        /**
-         * swf uploader.
-         * @type {Swiff.Uploader}
-         */
-        this.swfUploader = new Swiff.Uploader({
-            path: 'scripts/Swiff.Uploader.swf',
-            url: this.form.singlePath + path + '?json',
-            verbose: (Energine.debug) ? true : false,
-            queued: false,
-            multiple: false,
-            target: this.element,
-            instantStart: true,
-            appendCookieData: false,
-            timeLimit: 0,
-            data: {
-                'NRGNCookie': document.cookie,
-                'path': (typeOf(ModalBox.getExtraData()) == 'string') ? ModalBox.getExtraData() : '',
-                'element': this.element.getProperty('nrgn:input')
-            },
-            typeFilter: {
-                'All files (*.*)': '*.*',
-                'Images (*.jpg, *.jpeg, *.gif, *.png)': '*.jpg; *.jpeg; *.gif; *.png',
-                'Flash video (*.flv)': '*.flv'
-            },
-            onFileComplete: this.afterUpload.bind(this),
-            onFileProgress: function (uploadInfo) {
-                form.form.getElementById('indicator').set('text', uploadInfo.progress.percentLoaded + "%")
-            },
-            onFileOpen: function () {
-                form.form.getElementById('loader').removeClass('hidden');
-                form.form.getElementById('indicator').removeClass('hidden');
-            },
-            onComplete: function () {
-                form.form.getElementById('loader').addClass('hidden');
-                form.form.getElementById('indicator').addClass('hidden');
-            },
-            onFail: this.handleError.bind(this),
-            onSelectFail: this.handleError.bind(this)
-        });
-    },
-
-    /**
-     * Callback function after upload.
-     *
-     * @function
-     * @public
-     * @param {} uploadInfo
-     */
-    afterUpload: function (uploadInfo) {
-        this._show_preview(uploadInfo);
-    },
-
-    /**
-     * Callback function for error handling.
-     * @function
-     * @public
-     */
-    handleError: function () {
-        this.form.validator.showError(this.element, 'При загрузке файла произошла ошибка');
-    },
-
-    /**
-     * Show the preview.
-     *
-     * @function
-     * @private
-     * @param file
-     */
-    _show_preview: function (file) {
-        if (!file.response.error) {
-            var data = JSON.decode(file.response.text, false);
-            var preview, input, previewImg;
-            if ((preview = $(data.element + '_preview')) &&
-                (input = $(data.element))) {
-                input.set('value', data.file);
-                if ($('upl_name') &&
-                    (!$('upl_name').get('value'))) $('upl_name').set('value', data.title);
-                if (!(previewImg = preview.getElement('img'))) {
-                    previewImg =
-                        new Element('img', {'border': 0}).inject(preview);
-                }
-                previewImg.setProperty('src', data.preview);
-            }
-        }
-        else {
-            this.form.validator.showError(this.element, 'При загрузке файла произошла ошибка');
-        }
-    },
-
-    //todo Сделать удаление файла
-    /**
-     * Remove the file preview.
-     *
-     * @function
-     * @public
-     * @param {string} fieldId Field identifier.
-     * @param {} control
-     */
-    removeFilePreview: function (fieldId, control) {
-        var tmpNode;
-        $(fieldId).value = '';
-
-        if (tmpNode = $(fieldId + '_preview')) {
-            tmpNode.setProperty('src', '');
-        }
-
-        if (tmpNode = $(fieldId + '_link')) {
-            tmpNode.set('html', '');
-        }
     }
 });
 
@@ -833,7 +676,7 @@ Form.AttachmentSelector = new Class(/** @lends Form.AttachmentSelector# */{
         if (result) {
             this.uplName.set('value', result.upl_path);
             this.uplId.set('value', result.upl_id);
-            if (['image', 'video'].indexOf(result.upl_internal_type) != -1) {
+            if (result.upl_internal_type == 'image') {
                 this.uplPreview.removeClass('hidden');
                 this.uplPreview.getElement('img').setProperty('src', result.upl_path);
             }
@@ -996,7 +839,7 @@ Form.RichEditor = new Class(/** @lends Form.RichEditor# */{
      */
     setupEditors: function () {
         if (!Form.RichEditor.ckeditor_init) {
-            CKEDITOR.config.extraPlugins = 'energineimage,energinevideo,energinefile';
+            CKEDITOR.config.extraPlugins = 'energineimage,energinefile';
             CKEDITOR.config.allowedContent = true;
             CKEDITOR.config.toolbar = [
                 {name: 'document', groups: ['mode'], items: ['Source']},
@@ -1007,7 +850,7 @@ Form.RichEditor = new Class(/** @lends Form.RichEditor# */{
                 },
                 {name: 'editing', groups: ['find', 'selection'], items: ['Find', 'Replace', '-', 'SelectAll']},
                 {name: 'links', items: ['Link', 'Unlink', 'Anchor']},
-                {name: 'insert', items: ['Image', 'Flash', 'Table', 'EnergineImage', 'EnergineVideo', 'EnergineFile']},
+                {name: 'insert', items: ['Image', 'Table', 'EnergineImage', 'EnergineFile']},
                 {name: 'tools', items: ['ShowBlocks']},
                 '/',
                 {

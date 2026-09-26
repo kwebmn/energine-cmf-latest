@@ -7,9 +7,4 @@
             <pattern>/map/</pattern>
         </uri_patterns>
     </state>
-    <state name="videomap">
-        <uri_patterns>
-            <pattern>/videomap/[mapNumber]/</pattern>
-        </uri_patterns>
-    </state>
 </configuration>

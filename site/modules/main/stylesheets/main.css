@@ -282,29 +282,6 @@ optgroup option {
 .error, .error_message {
     color: red;
 }
-.play_button {
-    display: block;
-    left: 50%;
-    margin: -16px 0 0 -16px;
-    position: absolute;
-    width: 32px;
-    height: 32px;
-    top: 50%;
-    z-index: 1;
-    background: url("../../images/play_button_small.png") left top no-repeat;
-}
-.image_info {
-    display: block;
-    position: absolute;
-    right: 1px;
-    bottom: 1px;
-    z-index: 1;
-    padding: 1px 4px;
-    background: black;
-    text-decoration: none;
-    font-size: 0.847em; /* =11px */
-    color: white;
-}
 /* ----- /misc ----- */
 
 /* ----- block ----- */
@@ -635,29 +612,15 @@ ul.inline.wo-separator li + li {
 }
 /* ----- /pager ----- */
 
-/* ----- player ----- */
+/* ----- media ----- */
 .media_box {
     margin-bottom: 1em;
-}
-.player_box {    
-    padding: 1px;
-    border: 1px solid silver;
-}
-.player {
-    position: relative;
-    background: black;
-}
-.player .play_button {
-    margin: -50px 0 0 -50px;
-    width: 100px;
-    height: 100px;
-    background: url("../../images/play_button_large.png") left top no-repeat;
 }
 .carousel_box {
     margin-top: 1px;
     border: 1px solid silver;
 }
-/* ----- /player ----- */
+/* ----- /media ----- */
 
 /* ----- feed ----- */
 .feed_list {

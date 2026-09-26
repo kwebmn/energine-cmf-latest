@@ -854,10 +854,6 @@ final class Setup {
                                 $uplWidth = $tmp[0];
                                 $uplHeight = $tmp[1];
                                 break;
-                            case 'video/x-flv':
-                            case 'video/mp4':
-                                $internalType = 'video';
-                                break;
                             case 'text/csv':
                                 $internalType = 'text';
                                 break;
@@ -1009,13 +1005,9 @@ final class Setup {
                                 if (
                                     (strpos($pi['filename'], 'mootools') === false)
                                     &&
-                                    (strpos($pi['filename'], 'Swiff.Uploader') === false)
-                                    &&
                                     (strpos($pi['filename'], 'mootools-more') === false)
                                     &&
                                     (strpos($pi['filename'], 'mootools-ext') === false)
-                                    &&
-                                    (strpos($pi['filename'], 'jwplayer') === false)
                                     &&
                                     (strpos($pi['dirname'], 'ckeditor') === false)
                                     &&

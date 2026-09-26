@@ -20,7 +20,7 @@ use Energine\share\gears\Data;
 use Energine\share\gears\SystemException;
 
 /**
- * Component for generation Google Sitemap, Google Sitemap Index and Google Video Sitemap.
+ * Component for generation Google Sitemap and Google Sitemap Index.
  *
  * @code
 class GoogleSitemap;
@@ -35,30 +35,11 @@ class GoogleSitemap;
 class GoogleSitemap extends SitemapTree {
 
     /**
-     * Maximal amount of records with information about video in file <tt>video sitemap</tt>.
-     * @var int $maxVideos
-     */
-    protected $maxVideos;
-
-    /**
-     * Exemplar of PDO class.
-     * @var \PDO $pdoDB
-     */
-    protected $pdoDB;
-
-    /**
-     * Default maximal amount of videos in file <tt>sitemap</tt>
-     */
-    const DEFAULT_MAX_VIDEOS = 40000;
-
-    /**
      * @copydoc SitemapTree::__construct
      */
     public function __construct($name, ?array $params = NULL) {
         parent::__construct($name, $params);
         E()->getResponse()->setHeader('Content-Type', 'text/xml; charset=utf-8');
-        $this->pdoDB = $this->dbh->getPDO();
-        $this->maxVideos = ((int)$this->getConfigValue('seo.maxVideosInMap')) ? (int)$this->getConfigValue('seo.maxVideosInMap') : self::DEFAULT_MAX_VIDEOS;
     }
 
     protected function defineParams() {
@@ -88,17 +69,6 @@ class GoogleSitemap extends SitemapTree {
 
         $sitePath = $siteinfo->base;
         $fullPath = $this->request->getPath(1, true);
-        if ($this->dbh->tableExists('seo_sitemap_videos')) {
-            $this->pdoDB->query('SELECT SQL_CALC_FOUND_ROWS videos_id FROM seo_sitemap_videos WHERE site_id = ' . $siteinfo->id . ' ORDER BY videos_date DESC');
-            $rows_info = $this->pdoDB->query('SELECT FOUND_ROWS() as num_rows');
-            $rows_info = $rows_info->fetch();
-
-            $totalMaps = ceil($rows_info[0] / $this->maxVideos);
-            for ($i = 1; $i <= $totalMaps; $i++) {
-                array_push($sitemaps, ['path' => $sitePath . $fullPath . 'videomap/' . $i]);
-            }
-        }
-
         array_push($sitemaps, ['path' => $sitePath . $fullPath . 'map']);
 
         $d->load($sitemaps);
@@ -150,46 +120,4 @@ class GoogleSitemap extends SitemapTree {
         $this->getData()->load($result);
         $this->setBuilder(new SimpleBuilder());
     }
-
-    /**
-     * Generate <tt>video sitemap</tt>.
-     *
-     * <tt>Video sitemap</tt> holds an information about video files.
-     */
-    protected function videomap() {
-        $respone = E()->getResponse();
-
-        $params = $this->getStateParams();
-        $mapNumber = ((int)$params[0]) ? (int)$params[0] : 1;
-        $limStart = ($mapNumber - 1) * $this->maxVideos;
-        $limEnd = $this->maxVideos;
-
-        $siteinfo = E()->getSiteManager()->getCurrentSite();
-
-        $videosInfo = $this->pdoDB->query('SELECT * FROM seo_sitemap_videos WHERE site_id = ' . $siteinfo->id . ' ORDER BY videos_date DESC LIMIT ' . $limStart . ',' . $limEnd);
-
-        {
-            $respone->write('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" '
-                . 'xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">' . PHP_EOL);
-
-            while ($videoInfo = $videosInfo->fetch()) {
-                E()->getResponse()->write('<url>' . PHP_EOL
-                    . '<loc>' . $videoInfo['videos_loc'] . '</loc>' . PHP_EOL
-                    . "\t" . '<video:video>' . PHP_EOL
-                    . "\t\t" . '<video:thumbnail_loc>' . $videoInfo['videos_thumb'] . '</video:thumbnail_loc>' . PHP_EOL
-                    . "\t\t" . '<video:title>' . $videoInfo['videos_title'] . '</video:title>' . PHP_EOL
-                    . "\t\t" . '<video:description><![CDATA[' . $videoInfo['videos_desc'] . ']]></video:description>' . PHP_EOL
-                    . "\t\t" . '<video:content_loc>' . $videoInfo['videos_path'] . '</video:content_loc>' . PHP_EOL
-                    . "\t\t" . '<video:publication_date>' . $videoInfo['videos_date'] . '</video:publication_date>' . PHP_EOL
-                    . "\t" . '</video:video>' . PHP_EOL
-                    . '</url>' . PHP_EOL);
-            }
-
-            $respone->write('</urlset>' . PHP_EOL);
-        }
-
-        E()->getResponse()->commit();
-    }
-
-
 }

@@ -145,31 +145,10 @@ class Builder extends XMLBuilder {
 				}
 			}
 			if ( $fieldValue ) {
-				$repoPath  = E()->FileRepoInfo->getRepositoryRoot( $fieldValue );
-				$is_secure = ( E()->getConfigValue( 'repositories.ftp.' . $repoPath . '.secure', 0 ) ) ? true : false;
-				$result->setAttribute( 'secure', $is_secure );
-
 				try {
 					if ( $info = E()->FileRepoInfo->analyze( $fieldValue ) ) {
 						$result->setAttribute( 'media_type', $info->type );
 						$result->setAttribute( 'mime', $info->mime );
-						$playlist = [ ];
-						$base     = pathinfo( $fieldValue, PATHINFO_DIRNAME ) . '/' . pathinfo( $fieldValue,
-								PATHINFO_FILENAME );
-
-						if ( $info->is_mp4 ) {
-							$playlist[] = $base . '.mp4';
-						}
-						if ( $info->is_webm ) {
-							$playlist[] = $base . '.webm';
-						}
-						if ( $info->is_flv ) {
-							$playlist[] = $base . '.flv';
-						}
-
-						if ( $playlist ) {
-							$result->setAttribute( 'playlist', implode( ',', $playlist ) );
-						}
 					}
 				} catch ( SystemException $e ) {
 

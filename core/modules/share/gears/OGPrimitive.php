@@ -42,12 +42,6 @@ class OGPrimitive extends Primitive {
      * @var array $images
      */
     private $images = array();
-    /**
-     * og:video
-     *
-     * @var array $video
-     */
-    private $video = array();
 
     /**
      * og:title
@@ -120,32 +114,6 @@ class OGPrimitive extends Primitive {
     }
 
     /**
-     * @param $url
-     * @param $duration
-     * @param $mime
-     * @param $type
-     * @param int $width
-     * @param int $height
-     */
-    public function setVideo($url, $duration, $mime, $width = self::DEFAULT_WIDTH, $height = self::DEFAULT_HEIGHT, $type = 'video.other') {
-        $duration = explode(':', $duration);
-        if (sizeof($duration) == 2) {
-            $duration = (int)$duration[0] * 60 + (int)$duration[1];
-        } else {
-            $duration = '';
-        }
-        $this->video = array(
-            'url' => $url,
-            'duration' => $duration,
-            'type' => ($type) ? $type : 'video.other',
-            'mime' => $mime,
-            'width' => ($width) ? $width : self::DEFAULT_WIDTH,
-            'height' => ($height) ? $height : self::DEFAULT_HEIGHT
-        );
-    }
-
-
-    /**
      * Build.
      * @return DOMElement
      */
@@ -187,32 +155,6 @@ class OGPrimitive extends Primitive {
                 $prop->setAttribute('name', 'image:height');
                 $result->appendChild($prop);
             }
-        }
-        if (!empty($this->video)) {
-            if (strpos($this->video['url'], 'https://') !== false) {
-                $video_url = $this->video['url'];
-            } else {
-                $video_url = (($url =
-                        $this->getConfigValue('site.media')) ? $url : (E()->getSiteManager()->getDefaultSite()->base)) . $this->video['url'];
-            }
-            $prop = $doc->createElement('property', $video_url);
-            $prop->setAttribute('name', 'video');
-            $result->appendChild($prop);
-            $prop = $doc->createElement('property', $this->video['width']);
-            $prop->setAttribute('name', 'video:width');
-            $result->appendChild($prop);
-            $prop = $doc->createElement('property', $this->video['height']);
-            $prop->setAttribute('name', 'video:height');
-            $result->appendChild($prop);
-            $prop = $doc->createElement('property', $this->video['duration']);
-            $prop->setAttribute('name', 'duration');
-            $result->appendChild($prop);
-            $prop = $doc->createElement('property', $this->video['type']);
-            $prop->setAttribute('name', 'type');
-            $result->appendChild($prop);
-            $prop = $doc->createElement('property', $this->video['mime']);
-            $prop->setAttribute('name', 'video:type');
-            $result->appendChild($prop);
         }
 
         return $result;

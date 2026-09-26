@@ -127,8 +127,7 @@ return array(
     // настройка SEO модуля
     'seo' => array(
         'sitemapSegment' => 'google-sitemap',
-        'sitemapTemplate' => 'google_sitemap',
-        'maxVideosInMap' => '10'
+        'sitemapTemplate' => 'google_sitemap'
     ),
 
     // параметри пользовательских стилей RichText редактора

@@ -96,3 +96,16 @@ UPDATE `share_textblocks_translation`
    SET `tb_content` = REGEXP_REPLACE(`tb_content`, '<li>Управление файлами\\.[^<]*FTP[^<]*</li>',
        '<li>Управление файлами. Файлы хранятся в репозитории на сервере сайта и используются в текстах страниц, новостях и галерее раздела.</li>')
  WHERE `tb_id` = 59 AND `tb_content` LIKE '%FTP%';
+
+-- 7. Видео: флаги форматов, длительность и готовность (перекодировка) и счётчик просмотров
+--    upl_views, который нигде не используется. Индекс abc (upl_id, upl_is_ready, upl_views) без
+--    этих колонок повторял бы первичный ключ. Видеофайлы становятся обычными файлами; фраза о
+--    перекодировке уходит из путеводителя «Файлы и медиа».
+UPDATE `share_uploads` SET `upl_internal_type` = 'unknown' WHERE `upl_internal_type` = 'video';
+ALTER TABLE `share_uploads` DROP INDEX IF EXISTS `abc`;
+ALTER TABLE `share_uploads`
+    DROP COLUMN IF EXISTS `upl_is_mp4`, DROP COLUMN IF EXISTS `upl_is_webm`, DROP COLUMN IF EXISTS `upl_is_flv`,
+    DROP COLUMN IF EXISTS `upl_duration`, DROP COLUMN IF EXISTS `upl_is_ready`, DROP COLUMN IF EXISTS `upl_views`;
+UPDATE `share_textblocks_translation` SET `tb_content` = REPLACE(`tb_content`,
+       '<p>Перекодировка видео требует ffmpeg, на этом хосте он не установлен.</p>', '')
+ WHERE `tb_id` = 69 AND `lang_id` = 1;

@@ -162,7 +162,7 @@ class AttachmentEditor extends Grid {
     /**
      * @copydoc Grid::loadData
      */
-    // Дополняет набор данных значениями полей upl_path, upl_name и upl_duration
+    // Дополняет набор данных значениями полей upl_path и upl_name
     protected function loadData() {
         $data = parent::loadData();
 
@@ -172,7 +172,7 @@ class AttachmentEditor extends Grid {
 
             $res = $this->dbh->select(
                 'share_uploads',
-                ['upl_id', 'upl_path', 'upl_title as upl_name', 'upl_duration'],
+                ['upl_id', 'upl_path', 'upl_title as upl_name'],
                 ['upl_id' => $upl_ids]
             );
             foreach ($data as $i => $row) {

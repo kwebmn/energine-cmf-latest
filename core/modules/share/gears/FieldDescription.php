@@ -194,12 +194,6 @@ class FieldDescription extends Primitive implements \Iterator {
      */
     const FIELD_TYPE_TAB = 'tab';
     /**
-     * Visual field type for video data.
-     * In flv format. If the 'ffmpeg' is set that it will be converted from one of the supported formats.
-     * @var string FIELD_TYPE_VIDEO
-     */
-    const FIELD_TYPE_VIDEO = 'video';
-    /**
      * Visual field type for media data.
      * @var string FIELD_TYPE_MEDIA
      */
@@ -498,7 +492,6 @@ class FieldDescription extends Primitive implements \Iterator {
 
                 break;
             case self::FIELD_TYPE_FILE:
-            case self::FIELD_TYPE_VIDEO:
                 if ($this->getPropertyValue('nullable') === false) {
                     $this->setProperty('pattern', '/^.+$/');
                     $this->setProperty('message', 'MSG_FILE_IS_NOT_NULL');
@@ -771,8 +764,6 @@ class FieldDescription extends Primitive implements \Iterator {
                     $result = self::FIELD_TYPE_PHONE;
                 } elseif (strpos($name, '_file') || strpos($name, '_img')) {
                     $result = self::FIELD_TYPE_FILE;
-                } elseif (strpos($name, '_video')) {
-                    $result = self::FIELD_TYPE_VIDEO;
                 } elseif (strpos($name, '_color')) {
                     $result = self::FIELD_TYPE_COLOR;
                 } else {

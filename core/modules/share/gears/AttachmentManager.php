@@ -182,9 +182,8 @@ class AttachmentManager extends Primitive {
 
                 $request = 'SELECT spu.' . $mapFieldName .
                     ',spu.upl_id as id, spu.*, ' .
-                    'upl_path as file, upl_name as name, upl_title as title, upl_width as width, upl_height as height, TIME_FORMAT(upl_duration, "%i:%s") as duration,
-                            upl_internal_type as type,upl_mime_type as mime, upl_data as data, ' .
-                    'upl_is_mp4 as is_mp4, upl_is_webm as is_webm, upl_is_flv as is_flv ' .
+                    'upl_path as file, upl_name as name, upl_title as title, upl_width as width, upl_height as height,
+                            upl_internal_type as type,upl_mime_type as mime, upl_data as data ' .
                     (($langMapTableName && $lang_pk) ? ', spt.*' : '') .
                     'FROM ' . self::ATTACH_TABLENAME . ' su ' .
                     'LEFT JOIN `' . $mapTableName .
@@ -192,7 +191,7 @@ class AttachmentManager extends Primitive {
                     (($langMapTableName && $lang_pk) ? 'LEFT JOIN `' . $langMapTableName . '` spt ON spu.' . $lang_pk . ' = spt.' . $lang_pk . ' AND spt.lang_id = ' . E()->getDocument()->getLang() : '') .
                     ' WHERE ' . $mapFieldName . ' IN (' .
                     implode(',', $filteredMapValue) .
-                    ') AND (su.upl_is_ready=1) AND (su.upl_is_active = 1)';
+                    ') AND (su.upl_is_active = 1)';
 
                 // получаем имя колонки _order_num и сортируем по этому полю, если оно есть
                 if ($columns) {
@@ -207,9 +206,6 @@ class AttachmentManager extends Primitive {
 
                 if ($images) {
                     foreach ($images as $row) {
-                        $repoPath = E()->FileRepoInfo->getRepositoryRoot($row['file']);
-                        $row['secure'] = (E()->getConfigValue('repositories.ftp.' . $repoPath . '.secure', 0)) ? true : false;
-
                         // делаем преобразование имен из $additional_fiels (отрезаем prefix)
                         if ($additional_fields) {
                             foreach ($additional_fields as $old_field => $new_field) {
@@ -239,19 +235,6 @@ class AttachmentManager extends Primitive {
                                 foreach ($imageData[$mapValue[$i]] as $row) {
                                     E()->getOGObject()->addImage($row['file']);
                                 }
-                                $attachment = $imageData[$mapValue[$i]];
-                                if (isset($attachment[0]) && ($attachment[0]['type'] === 'video')) {
-                                    //inspect($attachment);
-                                    E()->getOGObject()->setVideo(
-                                        $attachment[0]['file'],
-                                        $attachment[0]['duration'],
-                                        $attachment[0]['mime'],
-                                        $attachment[0]['width'],
-                                        $attachment[0]['height']
-                                    );
-                                }
-
-
                             }
                             $builder = new SimplestBuilder();
                             $localData = new Data();
@@ -267,14 +250,9 @@ class AttachmentManager extends Primitive {
 
                             $fd = new FieldDescription('file');
                             $fd->setType(FieldDescription::FIELD_TYPE_STRING);
-                            $base = pathinfo($imageData[$mapValue[$i]][0]['file'], PATHINFO_DIRNAME) . '/' . pathinfo($imageData[$mapValue[$i]][0]['file'], PATHINFO_FILENAME);
                             $dataDescription->addFieldDescription($fd);
 
                             $fd = new FieldDescription('type');
-                            $fd->setType(FieldDescription::FIELD_TYPE_STRING);
-                            $dataDescription->addFieldDescription($fd);
-
-                            $fd = new FieldDescription('duration');
                             $fd->setType(FieldDescription::FIELD_TYPE_STRING);
                             $dataDescription->addFieldDescription($fd);
 
@@ -301,24 +279,6 @@ class AttachmentManager extends Primitive {
 
                             $fd_name = new FieldDescription('name');
                             $dataDescription->addFieldDescription($fd_name);
-
-                            $fd = new FieldDescription('secure');
-                            $fd->setType(FieldDescription::FIELD_TYPE_HIDDEN);
-                            $dataDescription->addFieldDescription($fd);
-
-                            $playlist = [];
-                            foreach (['mp4', 'webm', 'flv'] as $fileType) {
-                                if ($imageData[$mapValue[$i]][0]['is_' . $fileType] == '1') {
-                                    $playlist[] = ['id' => $base . '.' . $fileType, 'type' => $fileType];
-                                }
-                            }
-
-                            if ($playlist && count($playlist) > 1) {
-                                $fd = new FieldDescription('playlist');
-                                $fd->setType(FieldDescription::FIELD_TYPE_SELECT);
-                                $fd->loadAvailableValues($playlist, 'id', 'id');
-                                $dataDescription->addFieldDescription($fd);
-                            }
 
                             // дополнительные поля из основной и языковой таблицы _uploads
                             foreach ($additional_fields as $new_name) {

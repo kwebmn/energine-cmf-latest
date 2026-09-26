@@ -30,6 +30,5 @@ class DataSetConfig extends ComponentConfig {
         $this->registerState('source', array('/source/'));
         $this->registerState('imageManager', array('/imagemanager/'));
         $this->registerState('fileLibrary', array('/file-library/', '/file-library/[any]/'));
-        $this->registerState('embedPlayer', array('/embed-player/[uplId]/'));
     }
 }

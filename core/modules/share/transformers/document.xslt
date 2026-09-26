@@ -3,9 +3,8 @@
     version="1.0" 
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:og="http://ogp.me/ns#"
-    xmlns:video="http://ogp.me/ns/video#"
     xmlns:nrgn="http://energine.net#"
-    exclude-result-prefixes="og video nrgn"
+    exclude-result-prefixes="og nrgn"
     >
     <xsl:variable name="DOC_PROPS" select="/document/properties/property"/>
     <xsl:variable name="VARS" select="/document/variables/var"/>
@@ -97,12 +96,9 @@
     </xsl:template>
 
     <xsl:template match="/" mode="og">
-        <xsl:for-each select="document/og/property[@name!='duration']">
+        <xsl:for-each select="document/og/property">
             <meta property="og:{@name}" content="{.}" />
         </xsl:for-each>
-        <xsl:if test="document/og/property[@name='duration']">
-            <meta property="video:duration" content="{document/og/property[@name='duration']}" />
-        </xsl:if>
         <xsl:if test="document/og/property[@name='image']">
             <link rel="image_src" href="{document/og/property[@name='image']}" />
         </xsl:if>

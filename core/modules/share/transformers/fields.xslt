@@ -219,7 +219,6 @@
                 <xsl:if test=".!=''">
                     <xsl:attribute name="src"><xsl:value-of select="$MEDIA_URL"/><xsl:choose>
                         <xsl:when test="@media_type='image'"><xsl:value-of select="."/></xsl:when>
-                        <xsl:when test="@media_type='video'">resizer/w0-h0/<xsl:value-of select="."/></xsl:when>
                         <xsl:otherwise>images/icons/icon_undefined.gif</xsl:otherwise>
                     </xsl:choose></xsl:attribute>
                 </xsl:if>
@@ -577,13 +576,12 @@
     <xsl:template match="field[@type='file'][@mode='1'][ancestor::component[@type='form']]" mode="field_input_readonly">
         <div>
         <xsl:choose>
-            <xsl:when test="(@media_type='video' or @media_type='image') and .!=''">
+            <xsl:when test="@media_type='image' and .!=''">
                 <a class="preview" id="{generate-id(.)}_preview" target="_blank">
                     <xsl:attribute name="href"><xsl:value-of select="$MEDIA_URL"/><xsl:value-of select="."/></xsl:attribute>
                         <img alt="">
                                 <xsl:attribute name="src"><xsl:value-of select="$MEDIA_URL"/><xsl:choose>
                                     <xsl:when test="@media_type='image'"><xsl:value-of select="."/></xsl:when>
-                                    <xsl:when test="@media_type='video'">resizer/w0-h0/<xsl:value-of select="."/></xsl:when>
                                     <xsl:otherwise>images/icons/icon_undefined.gif</xsl:otherwise>
                                 </xsl:choose></xsl:attribute>
                         </img>
@@ -776,29 +774,11 @@
                 </xsl:otherwise>
             </xsl:choose>
         </img>
-        <xsl:if test="recordset/record[1]/field[@name='file']/video or recordset/record[1]/field[@name='type'] = 'video'">
-            <i class="play_button"></i>
-            <span class="image_info">00:00</span>
-        </xsl:if>
     </xsl:template>
 
-    <!-- в виде плеера -->
-    <xsl:template match="field[@name='attachments']" mode="player">
-        <xsl:param name="PLAYER_WIDTH"/>
-        <xsl:param name="PLAYER_HEIGHT"/>
-        <xsl:if test="recordset and (count(recordset/record[field[@name='type'] = 'video']) &gt; 0)">
-            <div class="player_box" id="playerBox">
-                <xsl:call-template name="VIDEO_PLAYER">
-                    <xsl:with-param name="PLAYER_WIDTH" select="$PLAYER_WIDTH"/>
-                    <xsl:with-param name="PLAYER_HEIGHT" select="$PLAYER_HEIGHT"/>
-                    <xsl:with-param name="FILE" select="recordset/record[field[@name='type'] = 'video'][1]/field[@name='file']"/>
-                </xsl:call-template>
-            </div>
-        </xsl:if>
-    </xsl:template>
 
     <!-- в виде карусели -->
-    <!-- тип вложения: поле type (текущий AttachmentManager) или дочерний элемент image/video поля file (старый формат) -->
+    <!-- тип вложения: поле type (текущий AttachmentManager) или дочерний элемент image поля file (старый формат) -->
     <xsl:template match="field[@name='attachments']" mode="carousel">
         <xsl:param name="PREVIEW_WIDTH">90</xsl:param>
         <xsl:param name="PREVIEW_HEIGHT">68</xsl:param>
@@ -831,9 +811,6 @@
                                     <div class="carousel_image" id="{field[@name='id']}_imgc">
                                         <a href="{$FILE}" xmlns:nrgn="http://energine.org" nrgn:media_type="{$TYPE}">
                                             <img src="{$RESIZER_URL}w{$PREVIEW_WIDTH}-h{$PREVIEW_HEIGHT}/{$PREVIEW}" alt="{field[@name='name']}" width="{$PREVIEW_WIDTH}" height="{$PREVIEW_HEIGHT}"/>
-                                             <xsl:if test="$TYPE = 'video'">
-                                                 <i class="icon play_icon"></i>
-                                             </xsl:if>
                                          </a>
                                      </div>
                                  </li>
@@ -862,7 +839,6 @@
                 <img alt="">
                     <xsl:attribute name="src"><xsl:value-of select="$MEDIA_URL"/><xsl:choose>
                         <xsl:when test="@media_type='image'"><xsl:value-of select="@upl_path"/></xsl:when>
-                        <xsl:when test="@media_type='video'">resizer/w0-h0/<xsl:value-of select="@upl_path"/></xsl:when>
                         <xsl:otherwise>images/icons/icon_undefined.gif</xsl:otherwise>
                     </xsl:choose></xsl:attribute>
                 </img>

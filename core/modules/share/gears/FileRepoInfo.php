@@ -29,11 +29,6 @@ class FileRepoInfo extends Primitive {
      */
     const META_TYPE_IMAGE = 'image';
     /**
-     * Video meta type.
-     * @var string META_TYPE_VIDEO
-     */
-    const META_TYPE_VIDEO = 'video';
-    /**
      * Audio meta type.
      * @var string META_TYPE_AUDIO
      */
@@ -72,7 +67,7 @@ class FileRepoInfo extends Primitive {
     public function __construct() {
         parent::__construct();
         $this->finfo = new \finfo(FILEINFO_MIME_TYPE);
-        $this->getFInfoSQL = $this->dbh->getPDO()->prepare('SELECT upl_internal_type as type, upl_mime_type as mime, upl_width as width, upl_height as height, upl_is_mp4 as is_mp4, upl_is_webm as is_webm, upl_is_flv as is_flv FROM share_uploads WHERE upl_path = ?');
+        $this->getFInfoSQL = $this->dbh->getPDO()->prepare('SELECT upl_internal_type as type, upl_mime_type as mime, upl_width as width, upl_height as height FROM share_uploads WHERE upl_path = ?');
     }
 
     /**
@@ -101,9 +96,6 @@ class FileRepoInfo extends Primitive {
             $result['mime'] = 'unknown/mime-type';
             $result['width'] = null;
             $result['height'] = null;
-            $result['is_flv'] = false;
-            $result['is_webm'] = false;
-            $result['is_mp4'] = false;
         }
 
         return (object)$result;
@@ -118,9 +110,6 @@ class FileRepoInfo extends Primitive {
     private function getFileInfoData($filename) {
         $result['width'] = '';
         $result['height'] = '';
-        $result['is_mp4'] = false;
-        $result['is_webm'] = false;
-        $result['is_flv'] = false;
 
         // hotfix для php на продакшне без поддержки https://
         // todo: пофиксить, до выяснения
@@ -145,10 +134,6 @@ class FileRepoInfo extends Primitive {
                     $result['width'] = $tmp[0];
                     $result['height'] = $tmp[1];
                     break;
-                case 'video/x-flv':
-                case 'video/mp4':
-                    $result['type'] = self::META_TYPE_VIDEO;
-                    break;
                 case 'text/csv':
                 case 'text/plain':
                     $result['type'] = self::META_TYPE_TEXT;
@@ -169,7 +154,6 @@ class FileRepoInfo extends Primitive {
     //todo VZ: where it throws?
     /**
      * Get repository instance by ID.
-     * It returns IFileRepository for processing video files into the repository.
      *
      * @param int $upl_id Uploads ID.
      * @return IFileRepository|FileRepositoryLocal
@@ -185,7 +169,6 @@ class FileRepoInfo extends Primitive {
     //todo VZ: where it throws?
     /**
      * Get repository instance by path.
-     * It returns IFileRepository for processing video files into the repository.
      *
      * @param string $upl_path Uploads path.
      * @return IFileRepository
