@@ -128,6 +128,27 @@ const inspect = (page) => page.evaluate(() => {
             && t.renamed.text === PAYLOAD && !t.renamed.img && !t.ran, JSON.stringify(t));
         check('дерево страниц: без ошибок JS и 404', !errors.list().length, errors.list().join(' | '));
         await p.close();
+
+        // «Настройки сайта» с панели страницы: окно с гридом единственной записи сайта
+        const sp = await ctx.newPage();
+        const spErrors = watch(sp);
+        await sp.goto(BASE, { waitUntil: 'networkidle' });
+        const btn = sp.locator('ul.toolbar li', { hasText: 'Настройки сайта' }).first();
+        if (check('панель страницы: кнопка «Настройки сайта»', await btn.count() > 0)) {
+            await btn.click();
+            const frameEl = await sp.waitForSelector('.e-modalbox iframe', { timeout: 10000 }).catch(() => null);
+            const frame = frameEl && await frameEl.contentFrame();
+            let rows = -1, src = '';
+            if (frame) {
+                await frame.waitForSelector('tbody tr td', { timeout: 10000 }).catch(() => null);
+                src = frame.url();
+                rows = await frame.evaluate(() => [...document.querySelectorAll('tbody tr')].filter((tr) => tr.querySelector('td')).length);
+            }
+            check('панель страницы: «Настройки сайта» — окно с гридом одной записи', /site-settings\/$/.test(src) && rows === 1,
+                `src=${src} rows=${rows}`);
+        }
+        check('панель страницы, «Настройки сайта»: без ошибок JS и 404', !spErrors.list().length, spErrors.list().join(' | '));
+        await sp.close();
     } finally {
         db('remove');
     }

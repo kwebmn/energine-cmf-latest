@@ -6,7 +6,7 @@ admin/mail-templates/
 admin/news-categories/
 admin/news-editor/
 admin/structure/
-admin/structure/sites/
+admin/settings/
 admin/translations/
 admin/translations/languages/
 admin/users/

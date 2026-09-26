@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <content>
-    <container name="siteContainer" block="alfa">
-        <component name="siteEditor" class="Energine\share\components\SiteEditor">
+    <container name="siteSettingsContainer" block="alfa">
+        <component name="settings" class="Energine\share\components\SiteSettings">
             <params>
                 <param name="rights">3</param>
             </params>

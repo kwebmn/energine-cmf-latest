@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- «Настройки сайта»: единственная запись share_sites. Добавить, удалить, переставить сайт нельзя — таких состояний нет. -->
+<configuration>
+    <state name="main" rights="3">
+        <fields>
+            <field name="site_id"/>
+            <field name="site_name"/>
+        </fields>
+        <javascript>
+            <behavior name="GridManager"/>
+        </javascript>
+        <toolbar>
+            <control id="edit" title="BTN_EDIT" type="button" onclick="edit"/>
+            <control id="sep1" type="separator"/>
+            <control id="close" title="BTN_CLOSE" type="button" onclick="close"/>
+        </toolbar>
+    </state>
+    <state name="getRawData" rights="3">
+        <uri_patterns>
+            <pattern>/get-data/</pattern>
+            <pattern>/get-data/page-[pageNumber]/</pattern>
+            <pattern>/get-data/[sortField]-[sortDir]/</pattern>
+            <pattern>/get-data/[sortField]-[sortDir]/page-[pageNumber]/</pattern>
+        </uri_patterns>
+    </state>
+    <!-- поля формы — и они же сохраняются: остальные колонки записи форма не трогает -->
+    <state name="edit" rights="3">
+        <uri_patterns>
+            <pattern>/[int]/edit/</pattern>
+        </uri_patterns>
+        <fields>
+            <field name="site_id"/>
+            <field name="site_name"/>
+            <field name="site_meta_keywords"/>
+            <field name="site_meta_description"/>
+            <field name="site_meta_robots"/>
+        </fields>
+        <javascript>
+            <behavior name="Form"/>
+        </javascript>
+        <toolbar>
+            <control id="save" title="BTN_SAVE" type="button" onclick="save"/>
+            <control id="list" title="BTN_CLOSE" type="button" onclick="close"/>
+        </toolbar>
+    </state>
+    <state name="save" rights="3">
+        <uri_patterns>
+            <pattern>/save/</pattern>
+        </uri_patterns>
+    </state>
+    <!-- дополнительные параметры сайта (share_sites_properties) — вкладка формы -->
+    <state name="properties" rights="3">
+        <uri_patterns>
+            <pattern>/[site_id]/properties/[any]/</pattern>
+        </uri_patterns>
+    </state>
+</configuration>

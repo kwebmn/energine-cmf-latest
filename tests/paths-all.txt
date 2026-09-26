@@ -4,7 +4,7 @@ admin/feedback-editor/recipients/
 admin/mail-templates/
 admin/news-editor/
 admin/structure/
-admin/structure/sites/
+admin/settings/
 admin/translations/
 admin/translations/languages/
 admin/users/

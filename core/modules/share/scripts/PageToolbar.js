@@ -214,12 +214,12 @@ var PageToolbar = new Class(/** @lends PageToolbar# */{
     },
 
     /**
-     * Show site editor.
+     * «Настройки сайта»: единственная запись сайта во всплывающем окне.
      * @function
      * @public
      */
-    showSiteEditor: function () {
-        ModalBox.open({'url': this.componentPath + 'sites'});
+    showSiteSettings: function () {
+        ModalBox.open({'url': this.componentPath + 'site-settings/'});
     },
 
     //todo: Why not to inject this to the editMode() method? - try

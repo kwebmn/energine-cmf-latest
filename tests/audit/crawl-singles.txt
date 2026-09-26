@@ -6,7 +6,7 @@ admin/news-editor/single/newsRepo/
 admin/structure/single/divEditor/
 admin/translations/single/transEditor/
 admin/users/single/userEditor/
-admin/structure/sites/single/siteEditor/
+admin/settings/single/settings/
 admin/translations/languages/single/langEditor/
 admin/users/roles/single/roleEditor/
 admin/feedback-editor/recipients/single/feedbackRecipientsEditor/

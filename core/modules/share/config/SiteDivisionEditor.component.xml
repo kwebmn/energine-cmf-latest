@@ -54,7 +54,6 @@
     </state>
     <state name="resetTemplates" rights="3">
         <uri_patterns>
-            <pattern>/[site_id]/reset-templates/</pattern>
             <pattern>/reset-templates/[smap_id]/</pattern>
             <pattern>/reset-templates/</pattern>
         </uri_patterns>

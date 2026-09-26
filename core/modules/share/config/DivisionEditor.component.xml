@@ -20,9 +20,9 @@
             <pattern>/languages/[any]/</pattern>
         </uri_patterns>
     </state>
-    <state name="showSiteEditor" rights="3">
+    <state name="showSiteSettings" rights="3">
         <uri_patterns>
-            <pattern>/sites/[any]/</pattern>
+            <pattern>/site-settings/[any]/</pattern>
         </uri_patterns>
     </state>
     <state name="main" rights="3">
@@ -78,7 +78,6 @@
     </state>
     <state name="resetTemplates" rights="3">
         <uri_patterns>
-            <pattern>/[site_id]/reset-templates/</pattern>
             <pattern>/reset-templates/[smap_id]/</pattern>
             <pattern>/reset-templates/</pattern>
         </uri_patterns>
@@ -198,7 +197,7 @@
             <control id="sep5" type="separator"/>
             <control id="fileRepository" title="BTN_FILE_REPOSITORY" type="button" onclick="showFileRepository"/>
             <control id="sep6" type="separator"/>
-            <control id="siteEditor" title="BTN_SITE_EDITOR" type="button" onclick="showSiteEditor"/>
+            <control id="siteSettings" title="BTN_SITE_SETTINGS" type="button" onclick="showSiteSettings"/>
         </toolbar>
         <javascript>
             <behavior name="PageToolbar"/>

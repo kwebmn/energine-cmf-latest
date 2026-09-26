@@ -4,9 +4,9 @@
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 
     >
 
-    <xsl:template match="document/translations[translation[@component=//component[@sample='DivisionEditor' or @class='SiteEditor']/@name]]">
+    <xsl:template match="document/translations[translation[@component=//component[@sample='DivisionEditor']/@name]]">
             <script type="text/javascript">
-                <xsl:for-each select="translation[@component=$COMPONENTS[@sample='DivisionEditor' or @class='SiteEditor']/@name]">
+                <xsl:for-each select="translation[@component=$COMPONENTS[@sample='DivisionEditor']/@name]">
                     Energine.translations.set('<xsl:value-of select="@const"/>', '<xsl:value-of select="." disable-output-escaping="yes"/>');
                 </xsl:for-each>
             </script>

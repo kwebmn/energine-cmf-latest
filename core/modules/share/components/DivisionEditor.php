@@ -40,10 +40,10 @@ final class DivisionEditor;
  */
 class DivisionEditor extends Grid implements SampleDivisionEditor {
     /**
-     * Site editor.
-     * @var SiteEditor $siteEditor
+     * «Настройки сайта» во всплывающем окне панели страницы.
+     * @var SiteSettings $siteSettings
      */
-    private $siteEditor;
+    private $siteSettings;
     /**
      * Translation editor.
      * @var TranslationEditor $transEditor
@@ -624,8 +624,8 @@ class DivisionEditor extends Grid implements SampleDivisionEditor {
             case 'showLangEditor':
                 $result = $this->langEditor->build();
                 break;
-            case 'showSiteEditor':
-                $result = $this->siteEditor->build();
+            case 'showSiteSettings':
+                $result = $this->siteSettings->build();
                 break;
             default:
                 $result = parent::build();
@@ -757,13 +757,13 @@ class DivisionEditor extends Grid implements SampleDivisionEditor {
     }
 
     /**
-     * Show site editor.
+     * «Настройки сайта» — окно панели страницы.
      */
-    protected function showSiteEditor() {
+    protected function showSiteSettings() {
         $this->request->shiftPath(1);
-        $this->siteEditor =
-            $this->document->componentManager->createComponent('siteEditor', 'Energine\share\components\SiteEditor', ['config' => 'core/modules/share/config/SiteEditorModal.component.xml']);
-        $this->siteEditor->run();
+        $this->siteSettings =
+            $this->document->componentManager->createComponent('siteSettings', 'Energine\share\components\SiteSettings', null);
+        $this->siteSettings->run();
     }
 
     /**
@@ -772,12 +772,7 @@ class DivisionEditor extends Grid implements SampleDivisionEditor {
      */
     protected function resetTemplates() {
         $ap = $this->getStateParams(true);
-        $filter = ['smap_id' => $this->document->getID()];
-        if (isset($ap['site_id'])) {
-            $filter = ['site_id' => $ap['site_id']];
-        } elseif (isset($ap['smap_id'])) {
-            $filter = ['smap_id' => $ap['smap_id']];
-        }
+        $filter = ['smap_id' => $ap['smap_id'] ?? $this->document->getID()];
 
         $smapID = $this->dbh->getColumn($this->getTableName(), ['smap_id'], $filter);
         $this->dbh->beginTransaction();

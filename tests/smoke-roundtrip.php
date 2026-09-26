@@ -56,7 +56,7 @@ $csrf = preg_match('~<meta name="csrf-token" content="([^"]*)"~', $loginPage, $m
 http("$B/auth.php", http_build_query(['csrf_token' => $csrf, 'user' => ['login' => 1, 'username' => $E['ADMIN_EMAIL'], 'password' => $E['ADMIN_PASSWORD']]]));
 
 $editors = [
-    'site'                => '/admin/structure/sites/single/siteEditor/1/edit/',
+    'site settings'       => '/admin/settings/single/settings/1/edit/',
     'language'            => '/admin/translations/languages/single/langEditor/1/edit/',
     'role'                => '/admin/users/roles/single/roleEditor/1/edit/',
     'feedback recipient'  => '/admin/feedback-editor/recipients/single/feedbackRecipientsEditor/5/edit/',
