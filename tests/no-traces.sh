@@ -188,7 +188,8 @@ case "$HAS_WIDGETS" in 0|1) ;; *) echo "FAIL db: $HAS_WIDGETS"; echo "база �
 for m in "${mods[@]}"; do
   if [ "$m" = i18n ]; then
     [ "$scope" = code ] && continue
-    names=$(sed -n '/DELETE FROM `share_lang_tags` WHERE `ltag_name` IN (/,/);/p' "$R"/sql/cut/*.sql \
+    # списки удаления — от «IN (» до «);» того же запроса, в одну строку или в несколько
+    names=$(perl -0777 -ne 'print "$1\n" while /DELETE FROM `share_lang_tags` WHERE `ltag_name` IN \((.*?)\);/gs' "$R"/sql/cut/*.sql \
             | grep -oE "'[A-Za-z0-9_]+'" | sort -u | paste -sd, -)
     [ -z "$names" ] && { report i18n db "__DBERROR__ в sql/cut/*.sql нет списков удаления переводов"; continue; }
     report i18n db "$(M "SELECT CONCAT('constant ', ltag_name) FROM share_lang_tags WHERE ltag_name IN ($names)")"
