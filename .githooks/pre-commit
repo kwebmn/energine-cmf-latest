@@ -1,7 +1,16 @@
 #!/bin/sh
 # Не даёт закоммитить пароль базы или администратора из локальных конфигов.
 root=$(git rev-parse --show-toplevel)
-if ! php8.5 "$root/.githooks/secret-scan.php" --staged; then
-    echo "pre-commit: в индексе пароль из локального конфига, коммит отменён" >&2
-    exit 1
+php=$(command -v php8.5 || command -v php)
+if [ -z "$php" ]; then
+    echo "pre-commit: PHP не найден, проверка паролей пропущена" >&2
+    exit 0
 fi
+"$php" "$root/.githooks/secret-scan.php" --staged
+case $? in
+    0) exit 0 ;;
+    1) echo "pre-commit: в индексе пароль из локального конфига, коммит отменён" >&2
+       exit 1 ;;
+    *) echo "pre-commit: проверка паролей не выполнилась, коммит отменён; причина выше" >&2
+       exit 1 ;;
+esac
