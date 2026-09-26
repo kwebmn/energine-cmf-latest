@@ -549,8 +549,9 @@ var Grid = (function () {
                     }).inject(cell);
                     cell.setStyles({'text-align': 'center', 'vertical-align': 'middle'});
                     break;
+                // значения — текстом: в данных может оказаться разметка посетителя (обратная связь, регистрация)
                 case 'value':
-                    cell.set('html', record[fieldName]['value']);
+                    cell.set('text', record[fieldName]['value']);
                     break;
                 case 'file':
                     if (record[fieldName]) {
@@ -575,11 +576,7 @@ var Grid = (function () {
                         fieldValue = '';
                         prevRow.getFirst().setStyle('font-weight', 'bold');
                     }
-                    if (fieldValue != '') {
-                        cell.set('html', fieldValue);
-                    } else {
-                        cell.set('html', '&#160;');
-                    }
+                    cell.set('text', (fieldValue != '') ? fieldValue : '\u00a0');
             }
         }.protect(),
 

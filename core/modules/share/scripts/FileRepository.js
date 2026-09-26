@@ -151,8 +151,8 @@ Grid.implement(/** @lends Grid# */{
                                         }
                                         size = (size).toPrecision(3);
                                         new Element('tr').inject(props[0].getElementsByTagName("tbody")[0]).adopt([
-                                            new Element('td', {'html': Energine.translations.get('TXT_FILE_SIZE') + ":"}),
-                                            new Element('td', {'html': size + " " + size_abbr})
+                                            new Element('td', {'text': Energine.translations.get('TXT_FILE_SIZE') + ":"}),
+                                            new Element('td', {'text': size + " " + size_abbr})
                                         ]);
                                     }
                                 }
@@ -174,7 +174,7 @@ Grid.implement(/** @lends Grid# */{
                 if (record[fieldName]) {
                     fieldValue = record[fieldName].clean();
                 }
-                cell.set('html', fieldValue);
+                cell.set('text', fieldValue);
                 break;
 
             case 'upl_properties':
@@ -191,8 +191,8 @@ Grid.implement(/** @lends Grid# */{
                      );*/
                     if (record['upl_mime_type']) {
                         new Element('tr').inject(propsTable).adopt([
-                            new Element('td', {'html': this.metadata['upl_mime_type'].title + ' :'}),
-                            new Element('td', {'html': record['upl_mime_type']})
+                            new Element('td', {'text': this.metadata['upl_mime_type'].title + ' :'}),
+                            new Element('td', {'text': record['upl_mime_type']})
                         ]);
                     }
 
@@ -200,14 +200,14 @@ Grid.implement(/** @lends Grid# */{
                         case 'image':
                             if (record['upl_width']) {
                                 new Element('tr').inject(propsTable).adopt([
-                                    new Element('td', {'html': this.metadata['upl_width'].title + ' :'}),
-                                    new Element('td', {'html': record['upl_width']})
+                                    new Element('td', {'text': this.metadata['upl_width'].title + ' :'}),
+                                    new Element('td', {'text': record['upl_width']})
                                 ]);
                             }
                             if (record['upl_height']) {
                                 new Element('tr').inject(propsTable).adopt([
-                                    new Element('td', {'html': this.metadata['upl_height'].title + ' :'}),
-                                    new Element('td', {'html': record['upl_height']})
+                                    new Element('td', {'text': this.metadata['upl_height'].title + ' :'}),
+                                    new Element('td', {'text': record['upl_height']})
                                 ]);
                             }
 
@@ -224,10 +224,11 @@ Grid.implement(/** @lends Grid# */{
                     fieldValue = record[fieldName].clean();
                 }
 
+                // название — текстом: его пишет редактор, в нём может оказаться разметка
                 if (!record['upl_internal_type'].test('folder|repo')) {
-                    cell.set('html', '<a target="_blank" href="' + Energine.media + record['upl_path'] + '">' + fieldValue + '</a>')
+                    cell.grab(new Element('a', {'target': '_blank', 'href': Energine.media + record['upl_path'], 'text': fieldValue}));
                 } else {
-                    cell.set('html', fieldValue);
+                    cell.set('text', fieldValue);
                 }
                 break;
 

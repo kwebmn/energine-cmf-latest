@@ -327,7 +327,7 @@ TreeView.Node = new Class(/** @lends TreeView.Node# */{
                     .setProperties({
                         'href': Energine.base + Energine.lang + '/' + nodeInfo['data']['segment']
                     })
-                    .set('html', nodeInfo['name'])
+                    .set('text', nodeInfo['name'])
             );
             this.id = nodeInfo['id'];
             this.data = nodeInfo['data'];
@@ -674,7 +674,8 @@ TreeView.Node = new Class(/** @lends TreeView.Node# */{
      * @param {string} name Name.
      */
     setName: function(name) {
-        this.element.getElement('a').set('html', name);
+        // имя страницы — текстом, как при создании узла
+        this.element.getElement('a').set('text', name);
     },
 
     /**
