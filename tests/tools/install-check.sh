@@ -77,6 +77,9 @@ is "администратор в группе администраторов" "
 is "адрес сайта" "$(Q "SELECT CONCAT(d.domain_protocol, '://', d.domain_host, ':', d.domain_port, d.domain_root) FROM share_domains d
   JOIN share_domain2site USING (domain_id)")" "http://127.0.0.1:$PORT/"
 is "конфиг: режим 600, владелец площадки" "$(stat -c '%a %U' "$S/web/system.config.php" 2>/dev/null)" "600 $SITE_USER"
+# рабочему сайту отладка не нужна: с ней посетитель видит пути сервера и цепочку вызовов на странице ошибки
+php8.5 -r 'define("ROOT_DIR", $argv[2]); $c = include $argv[1]; exit(empty($c["site"]["debug"]) ? 0 : 1);' \
+  "$S/web/system.config.php" "$R" 2>/dev/null && ok "конфиг: режим отладки выключен" || bad "конфиг: режим отладки включён"
 is "служебные страницы" "$(Q "SELECT GROUP_CONCAT(smap_segment ORDER BY smap_segment) FROM share_sitemap WHERE smap_pid IS NULL
   OR smap_pid = (SELECT smap_id FROM share_sitemap WHERE smap_pid IS NULL)")" \
   ",admin,google-sitemap,login,profile,register,restore-password,robots.txt,sitemap"

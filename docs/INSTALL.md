@@ -1,13 +1,14 @@
 # Energine Simple — установка
 
-Состояние: **этап 5а**. Вырезаны модули shop, blog, comments, calendar, forms, ads и рассылки
+Состояние: **этап 5г**. Вырезаны модули shop, blog, comments, calendar, forms, ads и рассылки
 модуля mail; отправка писем и шаблоны писем живут в ядре. Из модуля apps остались новости
 и обратная связь. Из share ушли теги, виджеты и редактор блоков, нелокальные хранилища
 файлов, водяные знаки, видео и Flash, выбор из справочника (Lookup, select2); меню сайта
 строится по флагу страницы «Показывать в меню». Визуальный редактор — Jodit (в формах и
-при правке на странице), файлы загружаются через `fetch`; CKEditor и FileAPI удалены.
-Формы защищены токеном против подделки запросов, вход — лимитом попыток, пароль
-восстанавливается по одноразовой ссылке (см. README). Остаются модули share, user, apps и seo.
+при правке на странице), файлы загружаются через `fetch`. Формы защищены токеном против
+подделки запросов, вход — лимитом попыток, пароль восстанавливается по одноразовой ссылке;
+почта — через `mail()` или SMTP; тема — своя, без фреймворков (см. README). Сайт ставится
+одной командой установщика в пустую базу. Остаются модули share, user, apps и seo.
 Что и в каком порядке вырезается дальше, описано в спецификации:
 `docs/superpowers/specs/2026-09-26-energine-simple-design.md`.
 
@@ -63,81 +64,64 @@ R=$H/private/energine
    cp -a $R/htdocs/resizer $H/web/
    cp -a $R/htdocs/uploads $H/web/
    ```
-3. **Конфиг площадки** — из шаблона. Заполнить `database` и `site.domain`, режим 600:
-   ```sh
-   cp $R/configs/system.config.default.php $R/configs/system.config.simple.energine.org.php
-   chmod 600 $R/configs/system.config.simple.energine.org.php
-   ln -s $R/configs/system.config.simple.energine.org.php $H/web/system.config.php
-   chown -R web97:client1 $H/private $H/web
-   ```
-4. **Зависимости:**
+3. **Зависимости:**
    ```sh
    cd $R && runuser -u web97 -- env HOME=$H/tmp COMPOSER_HOME=$H/.composer php8.5 /usr/bin/composer install --no-dev
+   chown -R web97:client1 $H/private $H/web
    ```
-5. **База.** Восемь файлов установки полной системы, затем переходные скрипты этапов
-   по порядку номеров: `sql/cut/stage1.sql` — вырезанные модули, `sql/cut/stage2.sql` —
-   вырезанные части apps, `sql/cut/stage3.sql` — вырезанное из share и флаг меню,
-   `sql/cut/stage4.sql` — переводы старой панели редактора и сообщения правки на странице и
-   загрузки файлов, `sql/cut/stage5.sql` — безопасность: таблица попыток входа, ссылка
-   восстановления пароля и письмо с ней, сообщения об отказах. Каждый
-   скрипт рассчитан на базу предыдущего этапа, поэтому они идут строго по порядку. Пароль
-   берётся из конфига и в вывод не попадает:
+4. **Установка** — одна команда в пустую базу (база и её пользователь заводятся в ISPConfig):
    ```sh
-   cd $R/sql
-   export MYSQL_PWD="$(php8.5 -r 'define("ROOT_DIR", $argv[1]); echo (include ROOT_DIR."/configs/system.config.simple.energine.org.php")["database"]["password"];' "$R")"
-   for f in starter.structure.sql starter.routines.sql starter.data.demo.sql starter.structure.fixes.sql \
-            starter.data.demo.fixes.sql modules.structure.sql modules.data.sql demo.content.sql \
-            $(ls cut/stage*.sql | sort -V); do
-     mysql --default-character-set=utf8 -u c1newenergine c1senergine < $f || break
-   done
-   unset MYSQL_PWD
+   cd $H/web && runuser -u web97 -- php8.5 index.php setup install --domain=simple.energine.org \
+     --db-name=c1senergine --db-user=c1newenergine --admin-email=demo@energine.org
    ```
-   Получается 31 таблица и 34 страницы, 8 новостей. Сведение установки в один файл — этап 5.
-   Изображения демо-контента в SQL не входят: их архив лежит на new.energine.org,
-   `private/project/backup/uploads-demo-*.tar.gz`, распаковывается в `web/`. После
-   распаковки удаляются файлы, которые больше ни к чему не привязаны, — списки
-   `sql/cut/stageN.files`:
+   Установщик:
+   - проверяет расширения PHP (pdo_mysql, dom, xsl, simplexml, mbstring, gd, openssl, fileinfo);
+   - пишет конфиг площадки из шаблона `configs/system.config.default.php` —
+     `configs/system.config.<домен>.php`, режим 600, и ссылку на него `web/system.config.php`;
+     отладка в нём выключена (`site.debug` = 0: с ней посетитель видел бы пути сервера на странице
+     ошибки), стенду разработки её включают вручную;
+     если конфиг уже есть (например, заполнен вручную), берёт базу и домен из него, тогда
+     нужен только `--admin-email`;
+   - до первого изменения базы проверяет параметры, e-mail и пароли, соединение и то, что база
+     пуста: в непустую базу установка не ставится;
+   - ставит схему и базовые данные (`sql/structure.sql`, `sql/data.sql`): языки, служебные
+     страницы и админку, группы и права, переводы, почтовые шаблоны;
+   - создаёт администратора (`--admin-email`, `--admin-name`, по умолчанию `Admin`) в группе
+     с полным доступом;
+   - записывает адрес сайта — `http` и `https` для `--domain` (или ровно `--url=http(s)://хост[:порт]/`);
+   - раскладывает статику (`setup linker`, `setup scriptMap`).
+
+   Пароли в аргументах не принимаются — их видно в списке процессов и в истории команд. Без
+   переменных окружения установщик спросит пароль базы и пароль администратора с терминала
+   без эха. В сценариях — переменные `ENERGINE_DB_PASSWORD` и `ENERGINE_ADMIN_PASSWORD`
+   (например, из файла с режимом 600). Ошибка — код выхода 1 и причина; если установка
+   прервалась на середине, база заполнена частично: её нужно очистить и запустить установку
+   снова. Параметры базы: `--db-host`, `--db-port` или `--db-socket` (сокет сервера базы, тогда
+   хост и порт не нужны). `--config=ФАЙЛ` — конфиг в другом месте, `--no-static` — без статики.
+5. **Демо-контент** (для `simple.energine.org`; в установку не входит):
    ```sh
-   cd $H/web && for l in $(ls $R/sql/cut/stage*.files | sort -V); do xargs -a $l rm -f; done
+   cd $H/web && runuser -u web97 -- php8.5 index.php setup demo
    ```
-   Шаги 5–8 целиком, с удалением прежней базы, повторяет `tests/tools/rebuild.sh`
-   (см. `tests/README.md`). Сверить установку с нуля с базой площадки, не трогая её,
-   можно `tests/tools/fresh-check.sh`: он ставит базу во временный экземпляр MariaDB.
-6. **Администратор — до того, как сайт откроется.** Демо-данные создают
-   `demo@energine.org` с паролем `demo`, а этот пароль опубликован на new.energine.org.
-   Под этим паролем открыта вся админка, в том числе правка XML страниц и файловый
-   репозиторий. Поэтому пароль меняется сразу после загрузки базы, до `setup install`.
-   Команда ставит случайный пароль, пишет его в `tests/local.php` (режим 600, вне git),
-   а в базу — только хэш. Сам пароль не печатается, для входа в админку он берётся из
-   этого файла:
-   ```sh
-   cd $R
-   php8.5 -r '
-   define("ROOT_DIR", getcwd());
-   $d = (include ROOT_DIR . "/configs/system.config.simple.energine.org.php")["database"];
-   $pw = rtrim(strtr(base64_encode(random_bytes(18)), "+/", "-_"), "=");
-   $pdo = new PDO("mysql:host={$d["host"]};dbname={$d["db"]};charset=utf8", $d["username"], $d["password"]);
-   $st = $pdo->prepare("UPDATE user_users SET u_password = ? WHERE u_name = ?");
-   $st->execute([password_hash($pw, PASSWORD_DEFAULT), "demo@energine.org"]);
-   umask(0077);
-   file_put_contents("tests/local.php", "<?php\nreturn [\n    \"admin_email\" => \"demo@energine.org\",\n    \"admin_password\" => " . var_export($pw, true) . ",\n    \"mailbox\" => \"web97@loki.kweb.biz\",\n];\n");
-   echo $st->rowCount(), "\n";'
-   chown web97:client1 tests/local.php
-   ```
-   Ожидается `1`. `mailbox` — локальный ящик владельца площадки: туда тесты шлют письма.
-7. **`setup install`** проверяет базу, записывает домен из конфига в `share_domains`
-   (`http:80`) и раскладывает статику модулей:
-   ```sh
-   cd $H/web && runuser -u web97 -- php8.5 index.php setup install
-   ```
-8. **HTTPS-домен.** Сайт определяется по связке протокол + хост + порт, нужна и запись
-   `https:443`:
-   ```sql
-   INSERT IGNORE INTO share_domains (domain_protocol, domain_port, domain_host, domain_root)
-     VALUES ('https', 443, 'simple.energine.org', '/');
-   INSERT IGNORE INTO share_domain2site (domain_id, site_id)
-     SELECT domain_id, 1 FROM share_domains WHERE domain_host = 'simple.energine.org';
-   ```
+   Разделы и тексты, новости, галерея, обратная связь с получателями, демо-посетители
+   (`sql/demo.sql`) и их файлы (`sql/demo/uploads` → `web/uploads`). Ставится только на свежую
+   установку.
+6. **Тесты:** `tests/local.php` (образец — `tests/local.php.example`, режим 600, вне git) —
+   e-mail и пароль администратора, локальный почтовый ящик для писем тестов.
+
+Установку заново — снять всю базу, поставить установщиком и демо, с новым случайным паролем
+администратора в `tests/local.php` — делает `tests/tools/rebuild.sh --yes-drop-everything`.
+Сверить установку с нуля с базой площадки, не трогая её, — `tests/tools/fresh-check.sh`,
+проверить сам установщик — `tests/tools/install-check.sh` (временный экземпляр MariaDB).
+
+### Переход базы полной системы на форк
+
+Сайт, работающий на полной системе Energine (как `new.energine.org`), переходит на форк без
+переустановки: к его базе по порядку применяются `sql/cut/stage1.sql` … `stage5.sql` — каждый
+рассчитан на базу предыдущего этапа. Скрипты убирают таблицы, колонки и переводы вырезанного,
+добавляют новое; тексты сайта не трогают. Страницы со своим XML в старой раскладке (меню и
+вход в колонке, контейнер `mainMenuContainer`) сбрасываются на шаблон страницы — `stage5.sql`
+перечисляет их в выводе клиента `mysql`, их раскладку при необходимости собрать заново в
+админке. Проверка — `tests/tools/migration-check.sh`.
 
 ## Тема
 
@@ -145,8 +129,11 @@ R=$H/private/energine
 вход), содержимое, боковая колонка, подвал. Стили — один файл
 `site/modules/main/stylesheets/main.css`; страница ошибки вне раскладки сайта —
 `core/modules/share/transformers/error_page.xslt`. Меню, вход и переключатель языка — компоненты
-раскладки (`default.layout.xml`), в шаблонах содержимого их нет. Админка (гриды, формы, режим
-правки) тему не использует: `energine.css` и `grid.css` подключаются только администратору.
+раскладки (`default.layout.xml`), в шаблонах содержимого их нет. У админки (гриды, формы, режим
+правки) свои стили — `energine.css` и `grid.css`, они подключаются только администратору; окна
+админки (режим single) тему не подключают вовсе, а в разделах админки внутри страниц сайта
+элементные стили темы (таблицы, списки, поля, кнопки) не касаются её контейнеров — `.e-pane`,
+панели администратора, рамки окна.
 
 В `web/` стили попадают ссылками (`setup linker`). nginx площадки отдаёт файл по ссылке, только
 если у ссылки и файла один владелец (`disable_symlinks if_not_owner`): файл темы, записанный от
@@ -177,6 +164,8 @@ SMTP-сервер, в конфиг площадки добавляется бл�
 bash $R/tests/setup-linker.sh      # linker не трогает модули в core/modules
 bash $R/tests/no-traces.sh         # в коде и базе нет следов вырезанного на этапах 1–4 и старой темы
 bash $R/tests/regression.sh        # все сценарные наборы и журнал ошибок PHP
+bash $R/tests/tools/install-check.sh   # установщик на временном экземпляре MariaDB
+bash $R/tests/tools/fresh-check.sh     # установка с нуля и демо == база площадки
 ```
 
 Обход браузером и подробности по тестам — в `tests/README.md`.
@@ -201,4 +190,5 @@ bash $R/tests/regression.sh        # все сценарные наборы и �
   пункт «Own Error-Documents». Поэтому отказ по токену формы отвечает кодом 422, а не 403:
   страницу 403 nginx подменил бы своей, и посетитель не узнал бы, что форму нужно
   отправить ещё раз.
-- **Администратор.** Пароль администратора не `demo` (см. шаг 6).
+- **Администратор.** Пароль администратора задан при установке, он не `demo`
+  (для тестов — в `tests/local.php`).
