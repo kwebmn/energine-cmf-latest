@@ -714,11 +714,13 @@ class DBDataSet extends DataSet {
     protected function saveText() {
         // ответ — JSON: правка на странице (PageEditor) считает сохранённым только {result: true}
         $response = ['result' => false, 'errors' => [['message' => $this->translate('ERR_TEXT_NOT_SAVED')]]];
-        if ($this->getParam('editable') && isset($_POST['ID']) && isset($_POST['num']) && isset($_POST['data'])) {
+        // num — имя поля: только колонка таблицы переводов, кроме ключей (оно попадает в SQL как имя колонки)
+        $field = (string)($_POST['num'] ?? '');
+        $fields = array_diff(array_keys((array)$this->dbh->getColumnsInfo($this->getTranslationTableName())), [$this->getPK(), 'lang_id']);
+        if ($this->getParam('editable') && isset($_POST['ID']) && isset($_POST['data']) && in_array($field, $fields, true)) {
             $result = DataSet::cleanupHTML($_POST['data']);
             $langID = E()->getLanguage()->getCurrent();
             $entityId = (int)$_POST['ID'];
-            $field = $_POST['num'];
             $this->dbh->modify(gears\QAL::UPDATE, $this->getTranslationTableName(), [$field => $result],
                 ['lang_id' => $langID, $this->getPK() => $entityId]);
             $response = ['result' => true, 'data' => $result];
