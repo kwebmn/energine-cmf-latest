@@ -1011,6 +1011,8 @@ final class Setup {
                                     &&
                                     (strpos($pi['dirname'], 'ckeditor') === false)
                                     &&
+                                    (strpos($pi['dirname'], 'jodit') === false)
+                                    &&
                                     (strpos($pi['dirname'], 'codemirror') === false)
                                     &&
                                     (strpos($pi['dirname'], 'FileAPI') === false)
