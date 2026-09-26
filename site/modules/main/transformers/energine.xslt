@@ -54,12 +54,12 @@
     </xsl:template>
     <!-- /page body -->
 
-    <!-- PageList and NavigationMenu -->
-    <xsl:template match="component[@class='PageList' or @class='NavigationMenu']">
+    <!-- PageList -->
+    <xsl:template match="component[@class='PageList']">
         <xsl:apply-templates/>
     </xsl:template>
     
-    <xsl:template match="recordset[ancestor::component[@class='PageList'] or ancestor::component[@class='NavigationMenu']]">
+    <xsl:template match="recordset[ancestor::component[@class='PageList']]">
         <xsl:if test="not(@empty)">
             <ul class="menu clearfix">
                 <xsl:apply-templates/>
@@ -107,24 +107,8 @@
             </xsl:if>
         </li>
     </xsl:template>
-    
-    <xsl:template match="record[ancestor::component[@class='NavigationMenu']]">
-        <li class="menu_item">
-            <a>
-                <xsl:if test="$DOC_PROPS[@name='ID']!=field[@name='Id']">
-                    <xsl:attribute name="href">
-                                <xsl:choose>
-                                    <xsl:when test="field[@name='Redirect']=''"><xsl:value-of select="$LANG_ABBR"/><xsl:value-of select="field[@name='Segment']"/></xsl:when>
-                                    <xsl:otherwise><xsl:value-of select="field[@name='Redirect']"/></xsl:otherwise>
-                                </xsl:choose>
-                            </xsl:attribute>
-                </xsl:if>
-                <xsl:value-of select="field[@name='Name']"/>
-            </a>
-            <xsl:apply-templates select="recordset"/>
-        </li>
-    </xsl:template>
-    <!-- /PageList and NavigationMenu -->
+
+    <!-- /PageList -->
 
     <!-- MainMenu -->
     <xsl:template match="component[@name='mainMenu']">

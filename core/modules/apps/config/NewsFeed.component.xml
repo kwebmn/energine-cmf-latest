@@ -43,28 +43,6 @@
             <translation const="TXT_BACK_TO_LIST"/>
         </translations>
     </state>
-    <!-- фильтр ленты по тегу: метод tag() был в коде, но состояния не было, и облако тегов вело в никуда -->
-    <state name="tag">
-        <uri_patterns>
-            <pattern>/tag/[tagID]/</pattern>
-            <pattern>/tag/[tagID]/page-[pageNumber]/</pattern>
-        </uri_patterns>
-        <fields>
-            <field name="news_id"/>
-            <field name="news_date" outputFormat="%E"/>
-            <field name="news_segment"/>
-            <field name="news_title"/>
-            <field name="news_announce_rtf"/>
-            <field name="news_text_rtf" type="boolean"/>
-        </fields>
-        <toolbar>
-            <control id="view" title="TXT_READ_MORE" type="link"/>
-        </toolbar>
-        <translations>
-            <translation const="TXT_ALL_NEWS"/>
-            <translation const="TXT_NEWS_BY_TAG"/>
-        </translations>
-    </state>
 
     <state name="main">
         <uri_patterns>

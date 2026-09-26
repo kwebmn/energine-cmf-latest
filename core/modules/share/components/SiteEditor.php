@@ -15,7 +15,7 @@ class SiteEditor;
  */
 namespace Energine\share\components;
 
-use Energine\share\gears\SiteSaver, Energine\share\gears\SiteEditorConfig, Energine\share\gears\FieldDescription, Energine\share\gears\Field, Energine\share\gears\TagManager, Energine\share\gears\SystemException;
+use Energine\share\gears\SiteSaver, Energine\share\gears\SiteEditorConfig, Energine\share\gears\FieldDescription, Energine\share\gears\Field, Energine\share\gears\SystemException;
 
 /**
  * Site editor.
@@ -89,11 +89,6 @@ class SiteEditor extends Grid {
             if ($this->getData()->getFieldByName('site_is_default')->getRowData(0) == 1) {
                 $this->getDataDescription()->getFieldDescriptionByName('site_is_default')->setMode(FieldDescription::FIELD_MODE_READ);
             }
-            $tagField = new FieldDescription('tags');
-            $tagField->setType(FieldDescription::FIELD_TYPE_STRING);
-            $tagField->removeProperty('pattern');
-            $this->getDataDescription()->addFieldDescription($tagField);
-
             if ($this->getState() == 'add') {
                 //Добавляем селект позволяющий скопировать структуру одного из существующих сайтов в новый
                 $fd = new FieldDescription('copy_site_structure');
@@ -102,9 +97,6 @@ class SiteEditor extends Grid {
                 $this->getDataDescription()->addFieldDescription($fd);
             } else {
                 $this->getDataDescription()->getFieldDescriptionByName($this->getPK())->setType(FieldDescription::FIELD_TYPE_INT)->setMode(FieldDescription::FIELD_MODE_READ);
-                $tm = new TagManager($this->getDataDescription(), $this->getData(), $this->getTableName());
-                $tm->createFieldDescription();
-                $tm->createField();
             }
         }
     }

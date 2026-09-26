@@ -15,7 +15,6 @@ class SiteList;
  */
 namespace Energine\share\components;
 use Energine\share\gears\SimpleBuilder;
-use Energine\share\gears\TagManager;
 /**
  * Site list.
  *
@@ -36,11 +35,10 @@ class SiteList extends DataSet {
     /**
      * @copydoc DataSet::defineParams
      */
-    // Добавлены теги, количество принудительно сброшено
+    // Количество принудительно сброшено
     protected function defineParams() {
         $result = array_merge(parent::defineParams(),
             [
-                'tags' => '',
                 'recordsPerPage' => false,
                 'site' => false
             ]);
@@ -53,25 +51,13 @@ class SiteList extends DataSet {
     // Загружаем данные SiteManager
     protected function loadData() {
         $result = [];
-        $filteredIDs = true;
-
-        if ($this->getParam('tags'))
-            $filteredIDs = TagManager::getFilter($this->getParam('tags'), 'share_sites');
-
-        if (!empty($filteredIDs))
-            foreach (E()->getSiteManager() as $siteID => $site) {
-                if (
-                    ($filteredIDs !== true) && in_array($siteID, $filteredIDs)
-                    ||
-                    ($filteredIDs === true)
-                ) {
-                    $result[] = [
-                        'site_id' => $site->id,
-                        'site_name' => $site->name,
-                        'site_host' => $site->protocol . '://' . $site->host . (($site->port != 80) ? ':' . $site->port : '') . $site->root
-                    ];
-                }
-            }
+        foreach (E()->getSiteManager() as $site) {
+            $result[] = [
+                'site_id' => $site->id,
+                'site_name' => $site->name,
+                'site_host' => $site->protocol . '://' . $site->host . (($site->port != 80) ? ':' . $site->port : '') . $site->root
+            ];
+        }
         return $result;
     }
 }

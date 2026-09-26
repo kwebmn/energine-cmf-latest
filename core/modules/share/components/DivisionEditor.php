@@ -28,7 +28,6 @@ use Energine\share\gears\JSONCustomBuilder;
 use Energine\share\gears\JSONDivBuilder;
 use Energine\share\gears\QAL;
 use Energine\share\gears\SystemException;
-use Energine\share\gears\TagManager;
 
 /**
  * Division editor.
@@ -472,10 +471,6 @@ class DivisionEditor extends Grid implements SampleDivisionEditor {
                 $field->setRowProperty($i, 'segment', $smapSegment);
             }
         }
-
-        $tm = new TagManager($this->getDataDescription(), $this->getData(), $this->getTableName());
-        $tm->createFieldDescription();
-        $tm->createField('menu');
     }
 
     /**
@@ -565,14 +560,6 @@ class DivisionEditor extends Grid implements SampleDivisionEditor {
             $field->setRowProperty($i, 'data_name', $smapName);
             $field->setRowProperty($i, 'segment', $smapSegment);
         }
-
-        $tm = new TagManager(
-            $this->getDataDescription(),
-            $this->getData(),
-            $this->getTableName()
-        );
-        $tm->createFieldDescription();
-        $tm->createField();
 
         $this->getDataDescription()->getFieldDescriptionByName('smap_id')->setType(FieldDescription::FIELD_TYPE_INT)->setMode(FieldDescription::FIELD_MODE_READ);
     }

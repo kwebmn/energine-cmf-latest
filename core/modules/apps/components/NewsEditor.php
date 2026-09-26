@@ -53,7 +53,6 @@ class NewsEditor extends ExtendedFeedEditor {
         if (in_array($this->getState(), ['add', 'edit'])) {
             $fd = new FieldDescription('news_is_top');
             $fd->setType(FieldDescription::FIELD_TYPE_BOOL);
-            $fd->setProperty('tag', 'top');
             $result->addFieldDescription($fd, DataDescription::FIELD_POSITION_AFTER, $this->getPK());
         }
         return $result;

@@ -13,7 +13,6 @@
     <xsl:include href="toolbar.xslt"/>
     <xsl:include href="file.xslt"/>
     <xsl:include href="divisionEditor.xslt"/>
-    <xsl:include href="tagEditor.xslt"/>
     <xsl:include href="text.xslt"/>
     <xsl:include href="media.xslt"/>
     <xsl:include href="error.xslt"/>

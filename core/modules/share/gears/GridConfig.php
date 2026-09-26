@@ -32,7 +32,5 @@ class GridConfig extends DataSetConfig {
         $this->registerState('upload', array('/upload/'));
         $this->registerState('cleanup', array('/cleanup/'));
         $this->registerState('attachments', array('/attachments/[any]/', '/[id]/attachments/[any]/'));
-        $this->registerState('tags', array('/tags/[any]/', '/[id]/tags/[any]/'));
-        $this->registerState('autoCompleteTags', array('/tag-autocomplete/'));
     }
 }

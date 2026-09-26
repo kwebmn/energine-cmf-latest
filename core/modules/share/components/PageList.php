@@ -14,7 +14,7 @@ class PageList;
  */
 namespace Energine\share\components;
 
-use Energine\share\gears\TreeBuilder, Energine\share\gears\SimpleBuilder, Energine\share\gears\FieldDescription, Energine\share\gears\Response, Energine\share\gears\TagManager, Energine\share\gears\AttachmentManager;
+use Energine\share\gears\TreeBuilder, Energine\share\gears\SimpleBuilder, Energine\share\gears\FieldDescription, Energine\share\gears\Response, Energine\share\gears\AttachmentManager;
 
 /**
  * Show the list of subsections.
@@ -75,7 +75,6 @@ class PageList extends DataSet {
      * @copydoc DataSet::defineParams
      */
     /*
-     * Добавлены параметр tags - теги
      * menu - только страницы с флагом «Показывать в меню» (smap_in_menu)
      * id - идентификатор страницы или CURRENT_PAGE | PARENT_PAGE | ALL_PAGES
      * site - идентфиикатор сайта
@@ -84,7 +83,6 @@ class PageList extends DataSet {
     protected function defineParams() {
         $result = array_merge(parent::defineParams(),
             [
-                'tags' => '',
                 'menu' => false,
                 'id' => false,
                 'site' => false,
@@ -129,16 +127,6 @@ class PageList extends DataSet {
             if ($f = $this->getData()->getFieldByName('Id'))
                 $am->createField('smap_id', !$this->getParam('allAttachments'), $f->getData());
         }
-        if ($this->getDataDescription()->getFieldDescriptionByName('tags')) {
-            $m = new TagManager(
-                $this->getDataDescription(),
-                $this->getData(),
-                'share_sitemap'
-            );
-            $m->createFieldDescription();
-            $m->createField();
-        }
-
     }
 
     /**
@@ -179,10 +167,7 @@ class PageList extends DataSet {
             if ($this->getParam('site')) {
                 $sitemap = E()->getMap($this->getParam('site'));
             }
-            $param = $sitemap->getPagesByTag($this->getParam('id'));
-            if(!empty($param)){
-                list($param) = $param;
-            }
+            $param = (int)$this->getParam('id');
         }
 
         $data = call_user_func([$sitemap, $methodName], $param);
@@ -194,14 +179,10 @@ class PageList extends DataSet {
             $hasDescriptionRtf =
                 (bool)$this->getDataDescription()->getFieldDescriptionByName('DescriptionRtf');
 
-            //По умолчанию - фильтрация отсутствует
+            //По умолчанию - фильтрация отсутствует; menu — только страницы с флагом «Показывать в меню»
             $filteredIDs = true;
-            if ($this->getParam('tags'))
-                $filteredIDs =
-                    TagManager::getFilter($this->getParam('tags'), 'share_sitemap');
             if ($this->getParam('menu')) {
-                $inMenu = $this->dbh->getColumn('share_sitemap', 'smap_id', ['smap_in_menu' => 1]);
-                $filteredIDs = is_array($filteredIDs) ? array_intersect($filteredIDs, $inMenu) : $inMenu;
+                $filteredIDs = $this->dbh->getColumn('share_sitemap', 'smap_id', ['smap_in_menu' => 1]);
             }
 
             reset($data);

@@ -15,7 +15,7 @@ class ExtendedFeed;
  */
 namespace Energine\apps\components;
 
-use Energine\share\components\DBDataSet, Energine\share\gears\FieldDescription, Energine\share\gears\Field, Energine\share\gears\AttachmentManager, Energine\share\gears\TagManager;
+use Energine\share\components\DBDataSet, Energine\share\gears\FieldDescription, Energine\share\gears\Field, Energine\share\gears\AttachmentManager;
 
 /**
  * Extended list.
@@ -33,8 +33,7 @@ class ExtendedFeed extends Feed {
         return array_merge(
             parent::defineParams(),
             [
-                'editable' => true,
-                'tags' => false
+                'editable' => true
             ]
         );
     }
@@ -68,16 +67,6 @@ class ExtendedFeed extends Feed {
         return $res;
     }
 
-    protected function loadData() {
-        if ($tags = $this->getParam('tags')) {
-            if (!($tagFilter = TagManager::getFilter(TagManager::getID($tags), $this->getTableName()))) {
-                return false;
-            }
-            $this->addFilterCondition([$this->getTableName().'.'.$this->getPK() => $tagFilter]);
-        }
-        $result = parent::loadData();
-        return $result;
-    }
 
     /**
      * @copydoc Feed::createData
@@ -113,14 +102,6 @@ class ExtendedFeed extends Feed {
         );
         $m->createFieldDescription();
         $m->createField($this->getPK(), true);
-
-        $m = new TagManager(
-            $this->getDataDescription(),
-            $this->getData(),
-            $this->getTableName()
-        );
-        $m->createFieldDescription();
-        $m->createField();
     }
 
     /**

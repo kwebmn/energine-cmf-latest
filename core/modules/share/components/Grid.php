@@ -29,7 +29,6 @@ use Energine\share\gears\JSONCustomBuilder;
 use Energine\share\gears\QAL;
 use Energine\share\gears\Saver;
 use Energine\share\gears\SystemException;
-use Energine\share\gears\TagManager;
 
 /**
  * Grid.
@@ -54,12 +53,6 @@ class Grid extends DBDataSet {
      * @var AttachmentEditor $attachmentEditor
      */
     protected $attachmentEditor;
-
-    /**
-     * Tag editor.
-     * @var TagEditor $tagEditor
-     */
-    protected $tagEditor;
 
     /**
      * Saver.
@@ -550,9 +543,6 @@ class Grid extends DBDataSet {
             case 'attachments':		
                 return $this->attachmentEditor->build();
                 break;
-            case 'tags':
-                return $this->tagEditor->build();
-                break;
             case 'lookup':
                 return $this->lookupEditor->build();
                 break;
@@ -812,15 +802,6 @@ class Grid extends DBDataSet {
         $this->attachmentEditor->run();
     }
 
-    /**
-     * Show component: tag editor.
-     */
-    protected function tags() {
-        $this->request->setPathOffset($this->request->getPathOffset() + 1);
-        $this->tagEditor = $this->document->componentManager->createComponent('tageditor', 'Energine\share\components\TagEditor',
-            ['config' => 'core/modules/share/config/TagEditorModal.component.xml']);
-        $this->tagEditor->run();
-    }
     /**
      * Set column name for user sorting.
      * @param string $columnName Column name.
@@ -1248,48 +1229,6 @@ class Grid extends DBDataSet {
             $field->setData($tab_url, true);
             $this->getData()->addField($field);
         }
-
-        if ($this->dbh->getTagsTablename($this->getTableName())) {
-            $tm = new TagManager($this->getDataDescription(), $this->getData(), $this->getTableName());
-            $tm->createFieldDescription();
-            $tm->createField();
-        }
-    }
-
-    /**
-     * Autocomplete tag names.
-     * @throws SystemException 'ERR_NO_DATA'
-     */
-    protected function autoCompleteTags() {
-        $b = new JSONCustomBuilder();
-        $this->setBuilder($b);
-
-        try {
-            if (!isset($_POST['value'])) {
-                throw new SystemException('ERR_NO_DATA', SystemException::ERR_CRITICAL);
-            } else {
-
-                $tags = TagManager::getTagStartedWith($_POST['value'], 10);
-                $result['result'] = true;
-
-                if (is_array($tags) && !empty($tags)) {
-                    foreach ($tags as $tag) {
-                        $result['data'][] = [
-                            'key' => $tag,
-                            'value' => $tag
-                        ];
-                    }
-                }
-            }
-        } catch (\Exception $e) {
-            $result = [
-                'result' => false,
-                'data' => false,
-                'errors' => []
-            ];
-        }
-
-        $b->setProperties($result);
     }
 
     /**

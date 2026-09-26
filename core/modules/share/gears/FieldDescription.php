@@ -205,12 +205,6 @@ class FieldDescription extends Primitive implements \Iterator {
      */
     const FIELD_TYPE_MEDIA = 'media';
     /**
-     * Visual field type for textbox list.
-     * Used for tags.
-     * @var string FIELD_TYPE_TEXTBOX_LIST
-     */
-    const FIELD_TYPE_TEXTBOX_LIST = 'textbox';
-    /**
      * Visual field type for section selecting.
      * Forwarding through /selector/ shall be provided.
      * @var string FIELD_TYPE_SMAP_SELECTOR

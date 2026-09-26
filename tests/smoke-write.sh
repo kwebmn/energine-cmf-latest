@@ -27,7 +27,7 @@ pagefields() {
     --data-urlencode "share_sitemap[smap_layout]=default.layout.xml" --data-urlencode "share_sitemap[smap_content]=textblock.content.xml" \
     --data-urlencode "share_sitemap[smap_segment]=claude-test" --data-urlencode "share_sitemap[smap_redirect_url]=" \
     --data-urlencode "share_sitemap[smap_in_menu]=1" \
-    --data-urlencode "right_id[1]=3" --data-urlencode "right_id[3]=1" --data-urlencode "right_id[4]=1" --data-urlencode "tags="
+    --data-urlencode "right_id[1]=3" --data-urlencode "right_id[3]=1" --data-urlencode "right_id[4]=1"
 }
 tr_fields() { for l in 1 2; do for f in smap_title smap_html_title smap_meta_keywords smap_meta_description smap_description_rtf; do
   printf -- '--data-urlencode\nshare_sitemap_translation[%s][%s]=\n' $l $f; done; done; }
@@ -57,7 +57,7 @@ post "${N}save" --data-urlencode "componentAction=add" --data-urlencode "apps_ne
   --data-urlencode "apps_news[news_is_active]=1" --data-urlencode "apps_news[news_is_top]=0" --data-urlencode "apps_news[news_show_image]=0" \
   --data-urlencode "apps_news_translation[1][news_title]=Тестовая новость" --data-urlencode "apps_news_translation[1][news_announce_rtf]=<p>анонс</p>" \
   --data-urlencode "apps_news_translation[1][news_text_rtf]=<p>текст</p>" --data-urlencode "apps_news_translation[2][news_title]=Тест" \
-  --data-urlencode "apps_news_translation[2][news_announce_rtf]=" --data-urlencode "apps_news_translation[2][news_text_rtf]=" --data-urlencode "tags="
+  --data-urlencode "apps_news_translation[2][news_announce_rtf]=" --data-urlencode "apps_news_translation[2][news_text_rtf]="
 NID=$(php8.5 -r '$d=json_decode(file_get_contents($argv[1]),true); echo is_array($d) && ($d["mode"] ?? "") === "insert" ? (int)$d["data"] : "";' $R)
 isok && [ -n "$NID" ] && ok "news add ($NID)" || bad "news add"
 if [ -n "$NID" ]; then

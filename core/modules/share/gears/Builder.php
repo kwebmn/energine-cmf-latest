@@ -227,16 +227,6 @@ class Builder extends XMLBuilder {
 			} catch ( \Exception $e ) {
 				$result->appendChild( $this->document->importNode( $fieldValue, true ) );
 			}
-		} elseif ( $fieldInfo->getType() ==
-		           FieldDescription::FIELD_TYPE_TEXTBOX_LIST
-		) {
-			if ( $fieldValue = $this->createTextBoxItems( $fieldValue ) ) {
-				try {
-					$result->appendChild( $fieldValue );
-				} catch ( \Exception $e ) {
-					$result->appendChild( $this->document->importNode( $fieldValue, true ) );
-				}
-			}
 		} elseif ( ( $fieldInfo->getType() == FieldDescription::FIELD_TYPE_MEDIA ) &&
 		           $fieldValue
 		) {
@@ -323,34 +313,6 @@ class Builder extends XMLBuilder {
 					$dom_option->setAttribute( 'selected', 'selected' );
 				}
 				$fieldValue->appendChild( $dom_option );
-			}
-		}
-
-		return $fieldValue;
-	}
-
-	/**
-	 * Create the set of field values with type 'textbox'.
-	 *
-	 * @param array $data Data.
-	 *
-	 * @return mixed
-	 */
-	protected function createTextBoxItems( $data = [ ] ) {
-		$fieldValue = false;
-
-		if ( $data === false ) {
-			return false;
-		} elseif ( ! is_array( $data ) ) {
-			$data = [ $data ];
-		}
-
-		if ( ! empty( $data ) ) {
-			$fieldValue = $this->document->createElement( 'items' );
-			foreach ( $data as $itemId => $itemData ) {
-				$item = $this->document->createElement( 'item', (string) $itemData );
-				$item->setAttribute( 'id', $itemId );
-				$fieldValue->appendChild( $item );
 			}
 		}
 

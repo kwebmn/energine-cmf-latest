@@ -32,3 +32,29 @@ INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_va
     SELECT t.`ltag_id`, l.`lang_id`, IF(l.`lang_abbr` = 'ua', 'Показувати в меню', 'Показывать в меню')
       FROM `share_lang_tags` t JOIN `share_languages` l
      WHERE t.`ltag_name` = 'FIELD_SMAP_IN_MENU';
+
+-- 4. Теги: таблицы (список из information_schema; внешние ключи между ними отключаются только
+--    на время удаления) и упоминание в путеводителе «Возможности».
+SET @cut_tables := (
+    SELECT GROUP_CONCAT(CONCAT('`', `TABLE_NAME`, '`') SEPARATOR ', ')
+      FROM `information_schema`.`TABLES`
+     WHERE `TABLE_SCHEMA` = DATABASE() AND `TABLE_TYPE` = 'BASE TABLE'
+       AND `TABLE_NAME` IN ('share_tags', 'share_tags_translation', 'share_sitemap_tags', 'share_sites_tags',
+                            'share_uploads_tags', 'apps_news_tags')
+);
+SET @sql := IF(@cut_tables IS NULL, 'DO 0', CONCAT('DROP TABLE IF EXISTS ', @cut_tables));
+SET FOREIGN_KEY_CHECKS = 0;
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET FOREIGN_KEY_CHECKS = 1;
+UPDATE `share_textblocks_translation` SET `tb_content` = REPLACE(`tb_content`,
+       'вложения, теги, архив по датам.', 'вложения, архив по датам.')
+ WHERE `tb_id` = 62 AND `lang_id` = 1;
+UPDATE `share_textblocks_translation` SET `tb_content` = REPLACE(`tb_content`,
+       'вкладення, теги, архів за датами.', 'вкладення, архів за датами.')
+ WHERE `tb_id` = 62 AND `lang_id` = 2;
+UPDATE `share_textblocks_translation` SET `tb_content` = REPLACE(`tb_content`,
+       '<li><a href="/news/tag/13/">Новости по тегу</a></li>', '')
+ WHERE `tb_id` = 62 AND `lang_id` = 1;
+UPDATE `share_textblocks_translation` SET `tb_content` = REPLACE(`tb_content`,
+       '<li><a href="/ua/news/tag/13/">Новини за тегом</a></li>', '')
+ WHERE `tb_id` = 62 AND `lang_id` = 2;

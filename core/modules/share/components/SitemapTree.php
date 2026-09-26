@@ -15,7 +15,6 @@ class SitemapTree;
  */
 namespace Energine\share\components;
 
-use Energine\share\gears\TagManager;
 use Energine\share\gears\TreeBuilder;
 
 /**
@@ -27,32 +26,10 @@ class SitemapTree;
  */
 class SitemapTree extends DataSet
 {
-    /**
-     * @copydoc Component::defineParams
-     */
-    protected function defineParams()
-    {
-        return array_merge(
-            parent::defineParams(),
-            [
-                'tags' => false
-            ]
-        );
-    }
-
     protected function main()
     {
         $this->setType(self::COMPONENT_TYPE_LIST);
         parent::main();
-        if ($this->getDataDescription()->getFieldDescriptionByName('tags')) {
-            $m = new TagManager(
-                $this->getDataDescription(),
-                $this->getData(),
-                'share_sitemap'
-            );
-            $m->createFieldDescription();
-            $m->createField();
-        }
     }
 
     /**
@@ -63,21 +40,15 @@ class SitemapTree extends DataSet
     {
         $sitemap = E()->getMap();
         $res = $sitemap->getInfo();
-        $filteredIDs = [];
-
-        if ($this->getParam('tags'))
-            $filteredIDs =
-                TagManager::getFilter($this->getParam('tags'), 'share_sitemap');
-
+        // все доступные страницы: до параметра tags (2015) карта так и работала, а с ним по
+        // умолчанию фильтр был пустым, и в карте оставалась одна главная
         foreach ($res as $id => $info) {
-            if (in_array($id, $filteredIDs) || !$info['Pid']) {
-                $result [] = array(
-                    'Id' => $id,
-                    'Pid' => $info['Pid'],
-                    'Name' => $info['Name'],
-                    'Segment' => $sitemap->getURLByID($id)
-                );
-            }
+            $result [] = array(
+                'Id' => $id,
+                'Pid' => $info['Pid'],
+                'Name' => $info['Name'],
+                'Segment' => $sitemap->getURLByID($id)
+            );
         }
 
         return $result;

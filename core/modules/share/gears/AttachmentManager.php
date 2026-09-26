@@ -69,10 +69,6 @@ class AttachmentManager extends Primitive {
      * @var bool $addOG
      */
     private $addOG;
-    /**
-     * @var string|boolean
-     */
-    private $hasTags = false;
 
     /**
      * Constructor.
@@ -87,8 +83,6 @@ class AttachmentManager extends Primitive {
     public function __construct(DataDescription $dataDescription, Data $data, $tableName, $addToOG = false) {
         parent::__construct();
         if ($this->isActive = $this->dbh->tableExists($this->tableName = $tableName . self::ATTACH_TABLE_SUFFIX)) {
-            $this->hasTags = $this->dbh->tableExists($this->tableName . '_tags');
-
             $this->dataDescription = $dataDescription;
             $this->data = $data;
             $this->addOG = $addToOG;
@@ -337,12 +331,6 @@ class AttachmentManager extends Primitive {
 
                             $builder->setData($localData);
                             $builder->setDataDescription($dataDescription);
-
-                            if ($this->dbh->getTagsTablename($mapTableName)) {
-                                $tm = new TagManager($dataDescription, $localData, $mapTableName);
-                                $tm->createFieldDescription();
-                                $tm->createField();
-                            }
                             $builder->build();
 
                             $f->setRowData($i, $builder->getResult());

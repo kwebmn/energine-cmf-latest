@@ -164,30 +164,4 @@ class NewsFeed extends ExtendedFeed {
         $am->createFieldDescription();
         $am->createField();
     }
-
-    /**
-     * Show news that correspond to specific tag.
-     *
-     * @note If tag is not exist then clean all previously received data.
-     */
-    protected function tag() {
-        $tagID = $this->getStateParams(true);
-        $tagID = (int)$tagID['tagID'];
-        $newsIDs = $this->dbh->select($this->dbh->getTagsTablename($this->getTableName()), 'news_id', array('tag_id' => $tagID));
-        if (is_array($newsIDs)) {
-            $newsIDs = array_keys(convertDBResult($newsIDs, 'news_id', true));
-            $this->addFilterCondition(array($this->getTableName() . '.news_id' => $newsIDs));
-            $tagName = $this->dbh->getScalar('SELECT tag_name FROM share_tags LEFT JOIN share_tags_translation USING(tag_id) WHERE (lang_id = %s) AND (tag_id = %s)', $this->document->getLang(), $tagID);
-            $pageTitle = $this->translate('TXT_NEWS_BY_TAG') . ': ' . $tagName;
-            E()->getDocument()->componentManager->getBlockByName('breadCrumbs')->addCrumb(null, $pageTitle);
-            E()->getDocument()->setProperty('title', $pageTitle);
-        }
-        $this->main();
-        if ($newsIDs === true) {
-            $this->setData(new Data());
-        }
-        if ($this->pager) {
-            $this->pager->setProperty('additional_url', 'tag/' . $tagID . '/');
-        }
-    }
 }

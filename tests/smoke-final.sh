@@ -39,6 +39,12 @@ check "404" "$B/no-such-page/" 404
 for u in news/foo/ ua/news/foo/ news/2026/13/ news/2026/1/32/; do check "404" "$B/$u" 404; done
 check "archive" "$B/news/$(date +%Y)/" 200
 check "robots" "$B/robots.txt/" 200
+# карта сайта (центральная колонка, не меню слева) перечисляет разделы, а не одну главную
+check "sitemap" "$B/sitemap/" 200
+miss=$(php8.5 -r '$d = new DOMDocument(); @$d->loadHTML(file_get_contents($argv[1])); $x = new DOMXPath($d); $h = [];
+  foreach ($x->query("//div[contains(concat(\" \", normalize-space(@class), \" \"), \" col2 \")]//a/@href") as $a) $h[] = trim(preg_replace("~^https?://[^/]+/~", "", $a->value), "/");
+  echo implode(" ", array_diff(["news", "contacts", "features"], $h));' $T)
+[ -z "$miss" ] || { echo "FAIL [sitemap] в карте сайта нет: $miss"; fail=$((fail+1)); }
 check "resizer" "$B/resizer/w90-h68/uploads/public/13662314846.png" 200
 check "static" "$B/scripts/Energine.js" 200
 

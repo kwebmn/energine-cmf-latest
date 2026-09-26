@@ -60,13 +60,13 @@ CODE[flash]='Swiff\.Uploader|expressInstall|swfobject|.Flash. *,|Flash video|\*\
 CODE[lookup]='\bLookup\b|LookupConfig|UserLookup|Lookup\.js|lookupEditor|FIELD_TYPE_LOOKUP|[Ss]elect2|\bacpl\b|/lookup/|registerState\(.lookup.|function lookup\('
 CODE[columns]='\b(u_fbid|u_vkid|u_company|u_position|news_show_image|upl_views)\b'
 CODE[placehold]='placehold\.it'
-FILES[tags]='core/modules/share/gears/TagManager.php core/modules/share/components/TagEditor.php core/modules/share/scripts/Tags.js core/modules/share/scripts/TagEditor.js core/modules/share/transformers/tagEditor.xslt core/modules/share/config/TagEditorModal.component.xml core/modules/share/stylesheets/tags.css core/modules/share/scripts/TextboxList.js core/modules/share/scripts/DropBoxList.js'
+FILES[tags]='core/modules/share/gears/TagManager.php core/modules/share/components/TagEditor.php core/modules/share/scripts/Tags.js core/modules/share/scripts/TagEditor.js core/modules/share/transformers/tagEditor.xslt core/modules/share/config/TagEditorModal.component.xml core/modules/share/stylesheets/tags.css core/modules/share/scripts/TextboxList.js core/modules/share/scripts/DropBoxList.js core/modules/share/stylesheets/acpl.css'
 FILES[widgets]='core/modules/share/components/WidgetsRepository.php core/modules/share/config/WidgetsRepository.component.xml core/modules/share/config/ModalWidgetsRepository.component.xml core/modules/share/scripts/LayoutManager.js core/modules/share/scripts/WidgetGridManager.js core/modules/share/scripts/ComponentParamsForm.js core/modules/share/scripts/NewTemplateForm.js core/modules/share/stylesheets/layout_manager.css site/modules/main/templates/content/widgets_repository.content.xml'
 FILES[storages]='core/modules/share/gears/FileRepositoryFTP.php core/modules/share/gears/FileRepositoryFTPRO.php core/modules/share/gears/FileRepositoryRO.php core/modules/share/gears/FTP.php'
 FILES[watermark]='core/modules/share/gears/WatermarkDefault.php core/modules/share/gears/FileRepositoryWatermark.php core/modules/share/gears/IWatermark.php'
 FILES[video]='core/modules/share/gears/VideoUploader.php core/modules/share/scripts/jwplayer core/modules/share/scripts/Player.js core/modules/share/scripts/Playlist.js core/modules/share/transformers/media.xslt core/modules/share/transformers/embed_player.xslt core/modules/share/scripts/ckeditor/plugins/energinevideo'
 FILES[flash]='core/modules/share/scripts/Swiff.Uploader.js core/modules/share/scripts/Swiff.Uploader.swf core/modules/share/scripts/expressInstall.swf core/modules/share/scripts/swfobject.js'
-FILES[lookup]='core/modules/share/components/Lookup.php core/modules/share/gears/LookupConfig.php core/modules/user/components/UserLookup.php core/modules/share/config/Lookup.component.xml core/modules/share/scripts/Lookup.js core/modules/share/scripts/select2 core/modules/share/stylesheets/select2 core/modules/share/stylesheets/acpl.css'
+FILES[lookup]='core/modules/share/components/Lookup.php core/modules/share/gears/LookupConfig.php core/modules/user/components/UserLookup.php core/modules/share/config/Lookup.component.xml core/modules/share/scripts/Lookup.js core/modules/share/scripts/select2 core/modules/share/stylesheets/select2'
 
 # база: TABLES — имена таблиц (REGEXP), PAGES — шаблоны содержимого страниц,
 # XMLCLASS — класс компонента в XML страниц и виджетов
@@ -133,6 +133,7 @@ NEWS[mail]="'rassylki-bez-spama'"
 NEWS[ads]="'bannery-adresno'"
 NEWS[tops]="'podborki-na-glavnoj'"
 LINKS[widgets]='admin/widgets'
+LINKS[tags]='news/tag'
 WORDS[tags]='(^|[^а-яёіїє])тег'
 WORDS[widgets]='виджет|віджет|перетаск|перетяг'
 WORDS[storages]='ftp|read-only'

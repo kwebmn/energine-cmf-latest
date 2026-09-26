@@ -14,7 +14,7 @@ class ExtendedFeedEditor;
  * @version 1.0.0
  */
 namespace Energine\apps\components;
-use Energine\share\gears\ExtendedSaver, Energine\share\gears\TagManager, Energine\share\gears\SystemException, Energine\share\gears\JSONCustomBuilder;
+use Energine\share\gears\ExtendedSaver, Energine\share\gears\JSONCustomBuilder;
 /**
  * Media feed editor.
  *
@@ -54,64 +54,6 @@ class ExtendedFeedEditor extends FeedEditor {
         parent::setParam($name, $value);
     }
 
-    /**
-     * @copydoc FeedEditor::add
-     */
-    protected function add() {
-        parent::add();
-        $tm = new TagManager($this->getDataDescription(), $this->getData(), $this->getTableName());
-        $tm->createFieldDescription();
-    }
-
-    /**
-     * @copydoc FeedEditor::edit
-     */
-    protected function edit() {
-        parent::edit();
-        $tm = new TagManager($this->getDataDescription(), $this->getData(), $this->getTableName());
-        $tm->createFieldDescription();
-        $tm->createField();
-    }
-    /**
-     * @copydoc FeedEditor::autoCompleteTags
-     *
-     * @throws SystemException 'ERR_NO_DATA'
-     */
-    protected function autoCompleteTags() {
-        $b = new JSONCustomBuilder();
-        $this->setBuilder($b);
-
-        try {
-            if (!isset($_POST['value'])) {
-                throw new SystemException('ERR_NO_DATA', SystemException::ERR_CRITICAL);
-            }
-            else {
-
-                $tags = TagManager::getTagStartedWith($_POST['value'], 10);
-                $result['result'] = true;
-
-                if(is_array($tags) && !empty($tags)){
-                    foreach($tags as $tag){
-                        $result['data'][] = array(
-                            'key' => $tag,
-                            'value' => $tag
-                        );
-                    }
-                }
-            }
-        }
-        catch (\Exception $e) {
-            $result = array(
-                'result' => false,
-                'data' => false,
-                'errors' => array(
-                    
-                )
-            );
-        }
-
-        $b->setProperties($result);
-    }
 
     /**
      * Publish material.

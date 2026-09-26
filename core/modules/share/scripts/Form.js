@@ -25,7 +25,7 @@
  * @version 1.0.1
  */
 
-ScriptLoader.load('ckeditor/ckeditor', 'TabPane', 'Toolbar', 'Validator', 'ModalBox', 'Overlay', 'datepicker', 'Tags', 'Lookup');
+ScriptLoader.load('ckeditor/ckeditor', 'TabPane', 'Toolbar', 'Validator', 'ModalBox', 'Overlay', 'datepicker', 'Lookup');
 //ScriptLoader.load('ckeditor/ckeditor', 'TabPane', 'Toolbar', 'Validator', 'ModalBox', 'Overlay', 'datepicker', 'Swiff.Uploader', 'Tags', 'Lookup');
 
 /**
@@ -159,17 +159,6 @@ var Form = new Class(/** @lends Form# */{
         this.form.getElements('div.type_lookup').each(function (el) {
             this.lookups.push(new Lookup(el, this.singlePath));
         }, this);
-
-        var tags = null;
-        this.form.getElements('input.tag_acpl').each(function (el) {
-            tags = new Tags(el);
-        }, this);
-
-        this.booleanTags = [];
-        if (tags)
-            this.form.getElements('input[data-tag]').each(function (el) {
-                this.booleanTags.push(new Form.BooleanTag(el, tags));
-            }, this);
 
 
         var showHideFunc = function (e) {
@@ -363,10 +352,6 @@ var Form = new Class(/** @lends Form# */{
             return;
         }
 
-        this.booleanTags.each(function(bt){
-            bt.save();
-        });
-
         this.overlay.show();
 
         Energine.request(
@@ -499,48 +484,6 @@ var Form = new Class(/** @lends Form# */{
                 this.processFileResult(result, button);
             }.bind(this)
         });
-    },
-
-    /**
-     * Open the tag editor.
-     *
-     * @function
-     * @public
-     * @param {Element|string} button Button element.
-     */
-    openTagEditor: function (button) {
-        var tags = $($(button).getProperty('link')).get('value');
-        if (tags == '') {
-            tags = null;
-        }
-        var overlay = this.overlay;
-        overlay.show();
-        new Request.JSON({
-            'url': this.singlePath + 'tags/get-tag-ids/',
-            'method': 'post',
-            'data': {
-                json: 1,
-                tags: tags
-            },
-            'evalResponse': true,
-            'onComplete': function (data) {
-                overlay.hide();
-                if (data) {
-                    ModalBox.open({
-                        url: this.singlePath + 'tags/show/' + ((data.data) ? encodeURIComponent(data.data.join(',')) + '/' : ''),
-                        extraData: data.data,
-                        onClose: function (result) {
-                            if (result) {
-                                $($(button).getProperty('link')).set('value', result);
-                            }
-                        }.bind(this)
-                    });
-                }
-            }.bind(this),
-            'onFailure': function (e) {
-                overlay.hide();
-            }
-        }).send();
     },
 
     /**
@@ -998,32 +941,6 @@ Form.Label = /** @lends Form.Label */{
         }
     }
 };
-Form.BooleanTag = new Class({
-    initialize: function (el, tagsControl) {
-        this.el = el;
-        this.tags = tagsControl;
-        var currentTags = this.tags.element.get('value').split(this.tags.separator);
-        var tag = this.el.getProperty('data-tag');
-        if(currentTags.indexOf(tag) !== -1){
-            this.el.setProperty('checked', 'checked');
-            currentTags.erase(tag);
-            this.tags.element.set('value', currentTags.join(this.tags.separator));
-        }
-    },
-    save: function(){
-        var value = this.el.getProperty('checked');
-        var currentTags = this.tags.element.get('value').split(this.tags.separator);
-        var tag = this.el.getProperty('data-tag');
-
-        if(value && (currentTags.indexOf(tag) === -1)){
-            currentTags.push(tag);
-        }
-        else if(!value && (currentTags.indexOf(tag) !== -1)){
-            currentTags.erase(tag);
-        }
-        this.tags.element.set('value', currentTags.join(this.tags.separator));
-    }
-});
 /**
  * The rich editor form.
  *

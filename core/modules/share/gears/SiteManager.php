@@ -153,25 +153,6 @@ final class SiteManager extends Primitive implements \Iterator {
 
     }
 
-    /**
-     * Return sites by tag
-     *
-     * @param string $tag
-     * @param boolean $asArray
-     * @return Site[]
-     */
-    public function getSitesByTag($tag, $asArray = false) {
-        $result = [];
-        $tagID = TagManager::getID($tag);
-        if ($tagID) $tagID = array_keys($tagID);
-        if ($sites = $this->dbh->getColumn('share_sites_tags', 'site_id', ['tag_id' => $tagID])) {
-            $result = array_map(function ($siteID) use ($asArray) {
-                return (!$asArray) ? $this->getSiteByID($siteID) : $siteID;
-            }, $sites);
-
-        }
-        return $result;
-    }
 
     /**
      * Get default site.

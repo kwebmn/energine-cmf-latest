@@ -49,10 +49,6 @@ class SiteSaver extends Saver {
             }
         }
 
-        //Записываем информацию в таблицу тегов
-        $tm = new TagManager($this->dataDescription, $this->data, 'share_sites');
-        $tm->save($id);
-
 
         if ($this->getMode() == QAL::INSERT) {
             //При создании нового проекта   ищем параметр конфигурации указывающий на идентификатор 
@@ -137,7 +133,7 @@ class SiteSaver extends Saver {
     private function copyStructure($sourceSiteID, $destinationSiteID) {
         $source = $this->dbh->select(
             'share_sitemap',
-            array('smap_id', 'smap_layout', 'smap_content', 'smap_pid', 'smap_segment', 'smap_order_num', 'smap_redirect_url'),
+            array('smap_id', 'smap_layout', 'smap_content', 'smap_pid', 'smap_segment', 'smap_in_menu', 'smap_order_num', 'smap_redirect_url'),
             array('site_id' => $sourceSiteID)
         );
 
@@ -166,13 +162,6 @@ class SiteSaver extends Saver {
                  FROM share_sitemap_translation
                  WHERE smap_id = %s
                  ', $newID, $oldID
-                );
-                $this->dbh->modify(
-                    'INSERT INTO share_sitemap_tags(smap_id, tag_id)
-                     SELECT %s, tag_id
-                        FROM share_sitemap_tags
-                        WHERE smap_id = %s
-                    ', $newID, $oldID
                 );
                 $this->dbh->modify(
                     'INSERT INTO share_access_level ' .

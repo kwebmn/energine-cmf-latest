@@ -215,17 +215,6 @@ final class Sitemap extends Primitive {
         return $result;
     }
 
-    /**
-     * @param string $tag
-     * @return array
-     */
-    public function getPagesByTag($tag) {
-        return $this->dbh->getColumn('SELECT *
-        FROM `share_sitemap_tags` st
-        RIGHT JOIN share_sitemap s On (st.smap_id = s.smap_id) AND (s.site_id= %s)
-        WHERE tag_id IN (%s)', $this->siteID, array_keys(TagManager::getID($tag)));
-    }
-
 
     /**
      * Prepare page information.

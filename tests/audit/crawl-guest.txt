@@ -18,7 +18,6 @@ restore-password/
 robots.txt/
 sitemap/
 news/2013/4/
-news/tag/13/
 news/2--new-gcc-4-8-0/
 google-sitemap/
 google-sitemap/map

@@ -68,14 +68,10 @@ class ExtendedSaver extends Saver {
     }
 
     /**
-     * Save data into the table of uploads and tags.
+     * Save data into the table of uploads.
      */
     public function save() {
         $result = parent::save();
-        $entityID = ($this->getMode() == QAL::INSERT) ? $result
-            : $this->getData()->getFieldByName($this->pk)->getRowData(0);
-        $tm = new TagManager($this->dataDescription, $this->data, $this->mainTableName);
-        $tm->save($entityID);
 
         // обновление записей из _uploads таблицы, в которых PK = NULL по ID сессии
         if ($result && $this->dbh->tableExists($this->getTableName() . AttachmentManager::ATTACH_TABLE_SUFFIX)) {

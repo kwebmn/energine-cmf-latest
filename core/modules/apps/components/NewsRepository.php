@@ -112,7 +112,6 @@ class NewsRepository extends NewsEditor {
 
             $fd = new FieldDescription('news_is_top');
             $fd->setType(FieldDescription::FIELD_TYPE_BOOL);
-            $fd->setProperty('tag', 'top');
             $dd->addFieldDescription($fd, DataDescription::FIELD_POSITION_AFTER, $this->getPK());
 
         }

@@ -136,37 +136,6 @@
         </input>
     </xsl:template>
 
-    <!-- поле с автодополнением (textbox) -->
-    <xsl:template match="field[@type='textbox'][ancestor::component[@type='form']]" mode="field_input">
-        <xsl:variable name="SEPARATOR" select="@separator"/>
-        <input class="text acpl tag_acpl">
-            <xsl:call-template name="FORM_ELEMENT_ATTRIBUTES"/>
-            <xsl:attribute name="data-url">
-                <xsl:value-of select="$BASE"/><xsl:value-of
-                    select="ancestor::component/@single_template"/><xsl:value-of select="@url"/>
-            </xsl:attribute>
-            <xsl:attribute name="data-separator">
-                <xsl:value-of select="$SEPARATOR"/>
-            </xsl:attribute>
-            <xsl:attribute name="value">
-                <xsl:for-each select="items/item">
-                    <xsl:value-of select="."/>
-                    <xsl:if test="position()!=last()">
-                        <xsl:value-of select="$SEPARATOR"/>
-                    </xsl:if>
-                </xsl:for-each>
-            </xsl:attribute>
-            <xsl:if test="@name = 'tags'">
-                <xsl:attribute name="component_id">
-                    <xsl:value-of select="generate-id(../..)"/>
-                </xsl:attribute>
-            </xsl:if>
-        </input>
-        <!--<input class="text inp_textbox">
-            <xsl:call-template name="FORM_ELEMENT_ATTRIBUTES"/>
-            <xsl:attribute name="value"><xsl:for-each select="items/item"><xsl:value-of select="."/><xsl:if test="position()!=last()">,</xsl:if></xsl:for-each></xsl:attribute>
-        </input>-->
-    </xsl:template>
 
     <!-- числовое поле (integer) -->
     <xsl:template match="field[@type='integer'][ancestor::component[@type='form']]" mode="field_input">
@@ -229,15 +198,6 @@
             <xsl:if test=". = 1">
                 <xsl:attribute name="checked">checked</xsl:attribute>
             </xsl:if>
-            <xsl:choose>
-                <xsl:when test="@tag">
-                    <xsl:attribute name="data-tag"><xsl:value-of select="@tag"/></xsl:attribute>
-                    <xsl:attribute name="value"><xsl:value-of select="@tag"/></xsl:attribute>
-                </xsl:when>
-                <xsl:otherwise>
-                    <xsl:attribute name="value">1</xsl:attribute>
-                </xsl:otherwise>
-            </xsl:choose>
         </input>
         <label for="{@name}{@language}">
             <xsl:value-of select="concat(' ', @title)" disable-output-escaping="yes"/>
@@ -932,25 +892,6 @@
         <div id="{generate-id(.)}"></div>
     </xsl:template>
 
-    <xsl:template match="field[@type='textbox'][@mode='1'][ancestor::component[@type='form']]" mode="field_input_readonly">
-           <xsl:variable name="SEPARATOR" select="@separator"/>
-           <input>
-               <xsl:call-template name="FORM_ELEMENT_ATTRIBUTES_READONLY"/>
-               <xsl:attribute name="value">
-                   <xsl:for-each select="items/item">
-                       <xsl:value-of select="."/>
-                       <xsl:if test="position()!=last()">
-                           <xsl:value-of select="$SEPARATOR"/>
-                       </xsl:if>
-                   </xsl:for-each>
-               </xsl:attribute>
-           </input>
-
-           <!--<input class="text inp_textbox">
-               <xsl:call-template name="FORM_ELEMENT_ATTRIBUTES"/>
-               <xsl:attribute name="value"><xsl:for-each select="items/item"><xsl:value-of select="."/><xsl:if test="position()!=last()">,</xsl:if></xsl:for-each></xsl:attribute>
-           </input>-->
-       </xsl:template>
     <xsl:template name="FORM_ELEMENT_ATTRIBUTES">
             <xsl:if test="not(@type='text') and not(@type='htmlblock')">
                 <xsl:attribute name="type">text</xsl:attribute>
