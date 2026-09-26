@@ -72,7 +72,8 @@ CODE[tags]+="|[\"']textbox[\"']"
 CODE[lookup]+="|[\"']lookup[\"']|@type=.lookup."
 CODE[columns]='\b(u_fbid|u_vkid|u_company|u_position|news_show_image|news_is_top|upl_views)\b'
 CODE[placehold]='placehold\.it'
-# этап 5в: font-awesome и классы fa ищутся только в теме сайта (site/) — админка свой font-awesome сохраняет
+# этап 5в: font-awesome и классы fa ищутся в теме сайта (site/) и во всех шаблонах XSLT — они выводят и страницы
+# сайта (листалка ленты была значками fa); скрипты и стили админки свой font-awesome сохраняют
 CODE[theme]='icons\.png|[jJ][qQ]uery|single\.xslt'
 THEME_SITE_CODE='font-awesome|(^|[^-a-z])fa fa-'
 FILES[theme]='core/modules/share/transformers/single.xslt site/modules/main/stylesheets/font-awesome site/modules/main/stylesheets/handheld.css site/modules/main/stylesheets/ie.css site/modules/main/stylesheets/print.css'
@@ -208,7 +209,8 @@ for m in "${mods[@]}"; do
       [ -f "$R/core/modules/share/gears/Mail.php" ] || found="$found"$'\n'"нет core/modules/share/gears/Mail.php"
     else
       found=$(G "${CODE[$m]}" "${CODE_DIRS[@]}" | cut -c1-160)
-      [ "$m" = theme ] && found+=$'\n'$(G "$THEME_SITE_CODE" site | cut -c1-160)
+      [ "$m" = theme ] && found+=$'\n'$(G "$THEME_SITE_CODE" site core/modules/share/transformers core/modules/user/transformers \
+        core/modules/apps/transformers core/modules/seo/transformers | cut -c1-160)
       for f in ${FILES[$m]}; do [ -e "$R/$f" ] && found+=$'\n'"file $f"; done
     fi
     report "$m" code "$(echo "$found" | sed '/^$/d')"
