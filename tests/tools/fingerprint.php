@@ -19,13 +19,20 @@ $skipTables = ['share_session', 'share_action_log'];
 // даты демо-контента считаются от момента импорта; пароль администратора случайный;
 // телефон нормализуется при первом сохранении формы пользователя (smoke-roundtrip)
 $skipCols = ['feed_date', 'news_date', 'vote_date', 'smap_last_mod', 'upl_publication_date', 'u_password', 'u_phone'];
+// справочник переводов сверяется по имени константы: суррогатный ltag_id зависит от того, сколько переводов
+// успели создать и удалить тесты на этой базе, а кроме переводов на него ничего не ссылается
+$byName = [
+    'share_lang_tags' => 'SELECT `ltag_name` FROM `share_lang_tags`',
+    'share_lang_tags_translation' => 'SELECT t.`ltag_name`, tr.`lang_id`, tr.`ltag_value_rtf` FROM `share_lang_tags_translation` tr'
+        . ' JOIN `share_lang_tags` t USING (`ltag_id`)',
+];
 $tables = $p->query("SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_TYPE = 'BASE TABLE' ORDER BY 1")->fetchAll(PDO::FETCH_COLUMN);
 foreach ($tables as $t) {
     if (in_array($t, $skipTables)) continue;
     $st = $p->prepare('SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? ORDER BY ORDINAL_POSITION');
     $st->execute([$t]);
     $use = array_values(array_diff($st->fetchAll(PDO::FETCH_COLUMN), $skipCols));
-    $rows = $p->query('SELECT ' . implode(', ', array_map(fn($c) => "`$c`", $use)) . " FROM `$t`")->fetchAll(PDO::FETCH_NUM);
+    $rows = $p->query($byName[$t] ?? 'SELECT ' . implode(', ', array_map(fn($c) => "`$c`", $use)) . " FROM `$t`")->fetchAll(PDO::FETCH_NUM);
     $lines = array_map(fn($r) => json_encode($r, JSON_UNESCAPED_UNICODE), $rows);
     sort($lines);
     // FP_ROWS=таблица,таблица — для разбора различий вывести сами строки этих таблиц
