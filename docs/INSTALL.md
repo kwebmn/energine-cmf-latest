@@ -1,8 +1,9 @@
 # Energine Simple — установка
 
-Состояние: **этап 0**. Из репозитория форка собирается полная система Energine, как на
-new.energine.org, — это точка отсчёта, от которой вырезается лишнее. Что и в каком порядке
-вырезается, описано в спецификации: `docs/superpowers/specs/2026-09-26-energine-simple-design.md`.
+Состояние: **этап 1**. Вырезаны модули shop, blog, comments, calendar, forms, ads и рассылки
+модуля mail; отправка писем и шаблоны писем живут в ядре. Остаются модули share, user, apps
+и seo. Что и в каком порядке вырезается дальше, описано в спецификации:
+`docs/superpowers/specs/2026-09-26-energine-simple-design.md`.
 
 Площадка: `simple.energine.org` (ISPConfig, `web97`), база `c1senergine`.
 
@@ -67,19 +68,25 @@ R=$H/private/energine
    ```sh
    cd $R && runuser -u web97 -- env HOME=$H/tmp COMPOSER_HOME=$H/.composer php8.5 /usr/bin/composer install --no-dev
    ```
-5. **База.** Восемь файлов по порядку. Пароль берётся из конфига и в вывод не попадает:
+5. **База.** Восемь файлов установки полной системы и переходные скрипты этапов
+   (`sql/cut/stage1.sql` — вырезанные модули). Пароль берётся из конфига и в вывод
+   не попадает:
    ```sh
    cd $R/sql
    export MYSQL_PWD="$(php8.5 -r 'define("ROOT_DIR", $argv[1]); echo (include ROOT_DIR."/configs/system.config.simple.energine.org.php")["database"]["password"];' "$R")"
    for f in starter.structure.sql starter.routines.sql starter.data.demo.sql starter.structure.fixes.sql \
-            starter.data.demo.fixes.sql modules.structure.sql modules.data.sql demo.content.sql; do
+            starter.data.demo.fixes.sql modules.structure.sql modules.data.sql demo.content.sql cut/stage1.sql; do
      mysql --default-character-set=utf8 -u c1newenergine c1senergine < $f || break
    done
    unset MYSQL_PWD
    ```
-   Получается 120 таблиц и 83 страницы.
+   Получается 54 таблицы и 40 страниц. Сведение установки в один файл — этап 5.
    Изображения демо-контента в SQL не входят: их архив лежит на new.energine.org,
-   `private/project/backup/uploads-demo-*.tar.gz`, распаковывается в `web/`.
+   `private/project/backup/uploads-demo-*.tar.gz`, распаковывается в `web/`. После
+   распаковки удаляются файлы, которые больше ни к чему не привязаны:
+   ```sh
+   cd $H/web && xargs -a $R/sql/cut/stage1.files rm -f
+   ```
 6. **Администратор — до того, как сайт откроется.** Демо-данные создают
    `demo@energine.org` с паролем `demo`, а этот пароль опубликован на new.energine.org.
    В демо-данных полная система: конструктор форм, репозиторий виджетов, который пишет
@@ -120,6 +127,7 @@ R=$H/private/energine
 
 ```sh
 bash $R/tests/setup-linker.sh      # linker не трогает модули в core/modules
+bash $R/tests/no-traces.sh         # в коде и базе нет следов вырезанных модулей
 bash $R/tests/regression.sh        # все сценарные наборы и журнал ошибок PHP
 ```
 
