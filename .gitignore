@@ -22,3 +22,6 @@
 /tests/**/*-cookies.txt
 /tests/**/*.out
 /tests/audit/crawl-*.json
+/tests/*.png
+/tests/smoke-write.json
+/tests/cookies-*.txt

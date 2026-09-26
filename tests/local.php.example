@@ -1,0 +1,8 @@
+<?php
+// Скопировать в local.php (в git не попадает) и заполнить.
+return [
+    'admin_email' => 'demo@energine.org',
+    'admin_password' => '',
+    // локальный ящик сервера: тестовые письма не должны уходить наружу
+    'mailbox' => 'web97@loki.kweb.biz',
+];
