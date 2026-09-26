@@ -1,7 +1,7 @@
 #!/bin/bash
 # Read-only smoke test of the site from env.php; prints HTTP/page failures and new PHP log messages.
 SCR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-eval "$(php8.5 "$SCR/env.php" --shell)" || exit 1
+envsh=$(php8.5 "$SCR/env.php" --shell) || exit 1; eval "$envsh"
 J=$SCR/smoke-cookies.txt
 T=$SCR/smoke-page.out
 start=$(wc -l < $LOG)

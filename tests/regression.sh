@@ -1,7 +1,7 @@
 #!/bin/bash
 # Full regression of the site from env.php: every smoke test, cleanups, PHP log summary.
 S="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-eval "$(php8.5 "$S/env.php" --shell)" || exit 1
+envsh=$(php8.5 "$S/env.php" --shell) || exit 1; eval "$envsh"
 M() { mysql -N -h "$DB_HOST" -u "$DB_USER" "$DB_NAME" -e "$1"; }
 start=$(wc -l < $LOG)
 echo "log start line: $start"
@@ -16,6 +16,8 @@ echo "### smoke-roundtrip"; php8.5 smoke-roundtrip.php
 echo "### smoke-editing"; php8.5 smoke-editing.php
 echo "### smoke-forms"; php8.5 smoke-forms.php
 echo "### smoke-comments"; php8.5 smoke-comments.php
+echo "### smoke-upload"; php8.5 smoke-upload.php
+echo "### smoke-profile"; php8.5 smoke-profile.php
 
 echo "### mail (recipients -> local mailbox)"
 RCP_ORIG=$(M "SELECT rcp_recipients FROM apps_feedback_recipient WHERE rcp_id=5")

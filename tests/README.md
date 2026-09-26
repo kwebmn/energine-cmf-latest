@@ -11,7 +11,8 @@
 - **Логин и пароль администратора, почтовый ящик** — из `tests/local.php`. Файл в git
   не попадает, образец — `local.php.example`.
 - `tests/env.php` собирает всё это вместе. PHP-наборы подключают его через `testlib.php`,
-  bash-скрипты выполняют `eval "$(php8.5 env.php --shell)"`.
+  bash-скрипты — через `envsh=$(php8.5 env.php --shell) || exit 1; eval "$envsh"`: если
+  настройки собрать не удалось, скрипт останавливается сразу.
 
 Пароли в коде тестов не пишутся никогда. Хук `.githooks/pre-commit` отклоняет коммит,
 если в нём оказался пароль из конфига площадки или из `local.php`. Подключается один
@@ -57,9 +58,12 @@ bash tests/regression.sh
 
 ```sh
 cd tests/audit
-eval "$(php8.5 ../env.php --shell)"
-node crawl.js crawl-guest.txt crawl-admin.txt crawl-singles.txt out.json
+( envsh=$(php8.5 ../env.php --shell) && eval "$envsh" \
+  && node crawl.js crawl-guest.txt crawl-admin.txt crawl-singles.txt out.json )
 ```
+
+Скобки — подоболочка: пароли из `env.php` не остаются в окружении терминала и не
+подхватятся следующими командами.
 
 Обход проходит гостем на двух языках, администратором и по формам добавления и правки
 всех гридов. Он ищет ошибки JavaScript, необработанные исключения и ответы с кодом 400+.

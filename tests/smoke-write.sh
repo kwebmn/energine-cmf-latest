@@ -1,7 +1,7 @@
 #!/bin/bash
 # Write-path smoke test: every created record is deleted again. Prints OK/FAIL per step.
 SCR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-eval "$(php8.5 "$SCR/env.php" --shell)" || exit 1
+envsh=$(php8.5 "$SCR/env.php" --shell) || exit 1; eval "$envsh"
 A=$B/admin
 J=$SCR/smoke-write-cookies.txt
 R=$SCR/smoke-write.json

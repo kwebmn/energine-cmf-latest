@@ -1,11 +1,11 @@
 // Headless Chrome crawl of the site from env.php: JS errors, failed requests, uncaught exceptions per page.
-// Run after: eval "$(php8.5 ../env.php --shell)"  (BASE, ADMIN_EMAIL, ADMIN_PASSWORD; PLAYWRIGHT = path to the module)
+// Run in a subshell after: envsh=$(php8.5 ../env.php --shell) && eval "$envsh"  (BASE, ADMIN_EMAIL, ADMIN_PASSWORD; PLAYWRIGHT = path to the module)
 // Only GET navigation and the read-only grid data requests the pages make themselves; no form is submitted except the login.
 // Usage: node crawl.js <guest-paths> <admin-paths> <grid-singles> <out.json>
 const { chromium } = require(process.env.PLAYWRIGHT || '/root/.npm/_npx/e41f203b7505f1fb/node_modules/playwright');
 const fs = require('fs');
 
-if (!process.env.BASE || !process.env.ADMIN_PASSWORD) { console.error('run eval "$(php8.5 ../env.php --shell)" first'); process.exit(2); }
+if (!process.env.BASE || !process.env.ADMIN_PASSWORD) { console.error('run: envsh=$(php8.5 ../env.php --shell) && eval "$envsh" first'); process.exit(2); }
 const BASE = process.env.BASE.replace(/\/$/, '') + '/';
 const [, , guestFile, adminFile, singlesFile, outFile] = process.argv;
 const lines = (f) => fs.readFileSync(f, 'utf8').split('\n').map((s) => s.trim()).filter(Boolean);
