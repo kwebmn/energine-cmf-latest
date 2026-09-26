@@ -1,6 +1,7 @@
 <?php
-// Отпечаток базы площадки по таблицам: строки в порядке сортировки, md5 по всем колонкам,
-// кроме времени импорта и значений, которые меняются от прогона к прогону.
+// Отпечаток базы площадки по таблицам: число строк, md5 строк в порядке сортировки по всем колонкам,
+// кроме времени импорта и значений, которые меняются от прогона к прогону, и md5 схемы
+// (SHOW CREATE TABLE без счётчика AUTO_INCREMENT): колонки, индексы и внешние ключи тоже сверяются.
 // Сравнение установки с нуля и переведённой базы:
 //   php8.5 tests/tools/fingerprint.php > before.txt; … ; php8.5 tests/tools/fingerprint.php > after.txt; diff before.txt after.txt
 $E = require dirname(__DIR__) . '/env.php';
@@ -20,5 +21,6 @@ foreach ($tables as $t) {
     $rows = $p->query('SELECT ' . implode(', ', array_map(fn($c) => "`$c`", $use)) . " FROM `$t`")->fetchAll(PDO::FETCH_NUM);
     $lines = array_map(fn($r) => json_encode($r, JSON_UNESCAPED_UNICODE), $rows);
     sort($lines);
-    printf("%s %d %s\n", $t, count($lines), md5(implode("\n", $lines)));
+    $schema = preg_replace('/ AUTO_INCREMENT=\d+/', '', $p->query("SHOW CREATE TABLE `$t`")->fetch(PDO::FETCH_NUM)[1]);
+    printf("%s %d %s %s\n", $t, count($lines), md5(implode("\n", $lines)), md5($schema));
 }

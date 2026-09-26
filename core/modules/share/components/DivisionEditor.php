@@ -408,10 +408,6 @@ class DivisionEditor extends Grid implements SampleDivisionEditor {
                 E()->getMap(E()->getSiteManager()->getSiteByPage($id)->id)->getURLByID($id);
         }
 
-        //Ads
-        //        $adsID = $ads->save();
-
-
         $transactionStarted = !($this->dbh->commit());
         if($this->logClass){
             $logger = new $this->logClass(get_class($this), $this->getName());

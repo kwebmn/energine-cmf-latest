@@ -25,14 +25,19 @@ checkjson() { # label url
 }
 
 rm -f $J
-# public pages, both languages
+# public pages, both languages; главная — отдельно: в списках путей её нет (пустые строки пропускаются)
 for lang in "" "ua/"; do
+  check "public" "$B/${lang}" 200
   while read p; do
     case "$p" in admin*) continue;; esac
     check "public" "$B/${lang}${p}" 200
   done < $SCR/paths-guest.txt
 done
 check "404" "$B/no-such-page/" 404
+# мусор вместо даты в архиве новостей — 404, а не пустая лента с кодом 200 (так же отвечает
+# и адрес вырезанной ленты RSS: нечисловой год)
+for u in news/foo/ ua/news/foo/ news/2026/13/ news/2026/1/32/; do check "404" "$B/$u" 404; done
+check "archive" "$B/news/$(date +%Y)/" 200
 check "robots" "$B/robots.txt/" 200
 check "resizer" "$B/resizer/w90-h68/uploads/public/13662314846.png" 200
 check "static" "$B/scripts/Energine.js" 200
@@ -44,11 +49,15 @@ curl -sS -c $J -b $J -o /dev/null -e "$B/login/" --data-urlencode 'user[login]=1
 grep -q NRGNSID $J || { echo "FAIL [login] no session cookie"; fail=$((fail+1)); }
 
 # admin pages and public pages as admin
+check "admin" "$B/" 200
 while read p; do check "admin" "$B/$p" 200; done < $SCR/paths-all.txt
-# grids
+# grids: тот же список, что у обхода браузером; без списка проверка не проходит
+L=$SCR/audit/crawl-singles.txt
+[ -s "$L" ] || { echo "FAIL [grid] нет списка ${L#$SCR/}"; fail=$((fail+1)); }
 while read s; do
-  case "$s" in *[dD]ivEditor*) checkjson "grid" "${s}1/get-data/";; *) checkjson "grid" "${s}get-data/page-1";; esac
-done < $SCR/singles-all.txt
+  [ -z "$s" ] && continue
+  case "$s" in *[dD]ivEditor*) checkjson "grid" "$B/${s}1/get-data/";; *) checkjson "grid" "$B/${s}get-data/page-1";; esac
+done < "$L"
 checkjson "filelib" "$B/admin/users/single/adminPanel/file-library/1/get-data/"
 # forms
 A=$B/admin

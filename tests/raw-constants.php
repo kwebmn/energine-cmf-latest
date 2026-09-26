@@ -43,15 +43,15 @@ function paths(string $file): array {
     return array_values(array_filter(array_map('trim', file(__DIR__ . '/' . $file)), 'strlen'));
 }
 
-// гость
+// гость; главная на обоих языках — отдельно: в списках путей её нет (пустые строки пропускаются)
 logout();
-foreach (paths('paths-guest.txt') as $p) {
+foreach (['', 'ua/', ...paths('paths-guest.txt')] as $p) {
     [, $html] = http('/' . ltrim($p, '/'));
     note(rawInHtml($html), 'guest /' . $p);
 }
 // администратор: страницы
 login();
-foreach (paths('paths-all.txt') as $p) {
+foreach (['', ...paths('paths-all.txt')] as $p) {
     [, $html] = http('/' . ltrim($p, '/'));
     note(rawInHtml($html), 'admin /' . $p);
 }

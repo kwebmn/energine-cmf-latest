@@ -9,6 +9,8 @@ if (!process.env.BASE || !process.env.ADMIN_PASSWORD) { console.error('run: envs
 const BASE = process.env.BASE.replace(/\/$/, '') + '/';
 const [, , guestFile, adminFile, singlesFile, outFile] = process.argv;
 const lines = (f) => fs.readFileSync(f, 'utf8').split('\n').map((s) => s.trim()).filter(Boolean);
+// главная обходится всегда: в списках путей её нет (пустые строки отбрасываются)
+const withHome = (list) => ['', ...list];
 // known and documented: missing icon sprite, placeholder images of an external service
 const IGNORE = [/images\/main\/icons\.png/, /images\/webworks\/icons\.png/, /placehold\.it/];
 // гриды без состояния add: журнал действий и обратная связь только читают,
@@ -39,6 +41,8 @@ const NO_EDIT = [/actionsList\/$/, /feedbackList\/$/];
         let unique = [...new Set(errors)].filter((e) => !IGNORE.some((re) => re.test(e)));
         // Chrome logs a 404 without its URL; drop it when the only 404 responses are the ignored ones
         if (!unique.some((e) => /^http 404: /.test(e))) unique = unique.filter((e) => e !== 'console: Failed to load resource: the server responded with a status of 404 ()');
+        // the same for a failed or blocked request (net::ERR_…): drop it when the only failed requests are the ignored ones
+        if (!unique.some((e) => /^failed: /.test(e))) unique = unique.filter((e) => !/^console: Failed to load resource: net::/.test(e));
         results.push({ label, url: url.replace(BASE, '/'), status, errors: unique });
         await page.close();
         process.stdout.write(unique.length ? 'E' : '.');
@@ -46,7 +50,7 @@ const NO_EDIT = [/actionsList\/$/, /feedbackList\/$/];
 
     // ---- guest
     const guest = await browser.newContext({ locale: 'ru-RU' });
-    for (const p of lines(guestFile)) {
+    for (const p of withHome(lines(guestFile))) {
         await visit(guest, 'guest', BASE + p);
         if (!p.startsWith('http')) await visit(guest, 'guest-ua', BASE + 'ua/' + p);
     }
@@ -62,7 +66,7 @@ const NO_EDIT = [/actionsList\/$/, /feedbackList\/$/];
     if (!cookies.some((c) => c.name === 'NRGNSID')) { console.error('login failed'); }
     await lp.close();
 
-    for (const p of lines(adminFile)) await visit(admin, 'admin', BASE + p, 1500);
+    for (const p of withHome(lines(adminFile))) await visit(admin, 'admin', BASE + p, 1500);
 
     // forms of every grid: add and edit of the first record (the modal content pages)
     for (const path of lines(singlesFile)) {

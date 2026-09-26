@@ -101,8 +101,14 @@ DELETE u FROM `share_uploads` u
 
 -- 8. Переводы вырезанных частей apps: подписи их кода, названия шаблонов и компонентов,
 --    поля их таблиц. Список собран tests/tools/cut-constants.php; оставшийся код эти имена
---    не использует и динамически не собирает. Переводы удаляются каскадом.
+--    не использует и динамически не собирает. Второй список — строки опросов, RSS, баннеров
+--    и облака тегов, которых не было ни в каком коде этой системы (инструмент их не видит).
+--    Переводы удаляются каскадом.
 DELETE FROM `share_lang_tags` WHERE `ltag_name` IN (
+    'BTN_VOTE', 'FIELD_AD_1', 'FIELD_AD_2', 'FIELD_VOTE_CREATED', 'FIELD_VOTE_END_DATE',
+    'FIELD_VOTE_START_DATE', 'TXT_ADS', 'TXT_ADS_WIDGET', 'TXT_ANSWERSEDITOR', 'TXT_BANNEREDITOR',
+    'TXT_QUESTIONEDITOR', 'TXT_RSS', 'TXT_SPONSORVOTEEDITOR', 'TXT_TAGS', 'TXT_VOTES_IN_FAVOUR',
+    'TXT_VOTE_TITLE', 'TXT_YOU_ALREADY_VOTED',
     'BTN_ADD_ARTICLE', 'BTN_DELETE_ARTICLE', 'BTN_EDIT_ARTICLE', 'CONTENT_BRANDING_EDITOR',
     'CONTENT_EXTFEED', 'CONTENT_VOTE_REPOSITORY', 'FIELD_BRAND_BGCOLOR', 'FIELD_BRAND_CSS_RULE',
     'FIELD_BRAND_ID', 'FIELD_BRAND_LAYOUT_CCLASS', 'FIELD_BRAND_MAIN_IMG', 'FIELD_BRAND_MIN_HEIGHT',

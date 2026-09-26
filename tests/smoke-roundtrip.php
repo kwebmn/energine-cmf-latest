@@ -64,6 +64,12 @@ $editors = [
     'translation'         => '/admin/translations/single/transEditor/14/edit/',
     'news'                => '/admin/news-editor/single/newsRepo/1/edit/',
 ];
+// права раздела сохраняются тем же запросом, что и форма; роундтрип не должен их менять
+$pdo = new PDO("mysql:host={$E['DB_HOST']};dbname={$E['DB_NAME']};charset=utf8", $E['DB_USER'], $E['MYSQL_PWD'],
+    [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+$rights = fn($id) => $pdo->query('SELECT CONCAT(group_id, ":", right_id) FROM share_access_level WHERE smap_id = ' . (int)$id . ' ORDER BY 1')
+    ->fetchAll(PDO::FETCH_COLUMN);
+$rightsBefore = $rights(3594);
 foreach ($editors as $label => $path) {
     [$code, $html] = http($B . $path);
     if ($code != 200) { echo "FAIL $label: edit form HTTP $code\n"; $fail++; continue; }
@@ -76,6 +82,19 @@ foreach ($editors as $label => $path) {
     } else {
         echo "FAIL $label save: HTTP $code ", substr(preg_replace('/\s+/', ' ', strip_tags($body)), 0, 300), "\n";
         $fail++;
+    }
+    if ($label === 'page (division)') {
+        $after = $rights(3594);
+        if ($rightsBefore && $after === $rightsBefore) {
+            echo "OK   $label rights kept (", implode(' ', $after), ")\n";
+        } else {
+            echo "FAIL $label rights: before ", implode(' ', $rightsBefore), ", after ", implode(' ', $after), "\n";
+            $fail++;
+            // права возвращаются, чтобы провал теста не закрыл раздел
+            $pdo->prepare('DELETE FROM share_access_level WHERE smap_id = 3594')->execute();
+            $ins = $pdo->prepare('INSERT INTO share_access_level (smap_id, group_id, right_id) VALUES (3594, ?, ?)');
+            foreach ($rightsBefore as $gr) $ins->execute(explode(':', $gr));
+        }
     }
 }
 echo "== roundtrip failures: $fail\n";

@@ -20,7 +20,8 @@
 //   - собирается тем же способом из слова оставшегося кода или базы (XML страниц и виджетов,
 //     права, шаблоны страниц), из колонки или таблицы оставшейся базы, из имени её шаблона;
 //   - начинается с литерального префикса оставшегося кода ('TXT_MONTH_' . …) — с запасом.
-// Библиотеки сторонних разработчиков (CKEditor, CodeMirror и т. п.) в словарь слов не входят.
+// Библиотеки сторонних разработчиков (CKEditor, CodeMirror, timthumb и т. п.) в словарь слов не входят.
+// Комментарии тоже: слово из закомментированного кода или описания константу не использует.
 // Печатает имена по одному в строке, сводку — в stderr.
 $E = require dirname(__DIR__) . '/env.php';
 $root = $E['ROOT'];
@@ -32,7 +33,7 @@ foreach (array_slice($argv, 1) as $a) {
 foreach (['old-db-config', 'cut-tables'] as $k) if (empty($opt[$k])) { fwrite(STDERR, "нужен --$k\n"); exit(2); }
 
 const DYNAMIC = ['FIELD', 'TXT', 'CONTENT', 'LAYOUT', 'TAB', 'CLASS'];
-const VENDOR = '~/scripts/(ckeditor|codemirror|select2|jwplayer|FileAPI)/|/scripts/(mootools[^/]*|swfobject|Swiff\.Uploader)\.js$~';
+const VENDOR = '~/scripts/(ckeditor|codemirror|select2|jwplayer|FileAPI)/|/scripts/(mootools[^/]*|swfobject|Swiff\.Uploader)\.js$|/resizer/~';
 
 function files(array $paths): Generator {
     foreach ($paths as $p) {
@@ -54,7 +55,25 @@ function scan(iterable $texts): array {
     }
     return [$words, array_keys($prefixes)];
 }
-function fileTexts(array $paths): Generator { foreach (files($paths) as $f) yield file_get_contents($f); }
+// текст файла без комментариев. PHP разбирается токенизатором; в JS и CSS снимаются только
+// комментарии с начала строки: хвост «код; // …» и /* внутри строк ('image/*') остаются —
+// лишнее слово может уберечь ненужную константу, но не удалить нужную
+function stripComments(string $path, string $text): string {
+    switch (pathinfo($path, PATHINFO_EXTENSION)) {
+        case 'php':
+            $out = '';
+            foreach (token_get_all($text) as $t) {
+                if (is_array($t) && in_array($t[0], [T_COMMENT, T_DOC_COMMENT], true)) { $out .= ' '; continue; }
+                $out .= is_array($t) ? $t[1] : $t;
+            }
+            return $out;
+        case 'xml': case 'xslt': case 'html':
+            return preg_replace('/<!--.*?-->/s', ' ', $text);
+        default:
+            return preg_replace(['~^[ \t]*/\*.*?\*/~ms', '~^[ \t]*//.*$~m'], ' ', $text);
+    }
+}
+function fileTexts(array $paths): Generator { foreach (files($paths) as $f) yield stripComments($f, file_get_contents($f)); }
 function templateNames(array $paths): array {
     $n = [];
     foreach (files($paths) as $f) {

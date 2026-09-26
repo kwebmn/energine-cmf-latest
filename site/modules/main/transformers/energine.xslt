@@ -270,17 +270,6 @@
     </xsl:template>
     <!-- /PageMedia -->
 
-    <!-- QuestionEditor -->
-    <xsl:template match="/document/translations[translation[@component='questionEditor']]">
-        <xsl:if test="$COMPONENTS[@class='QuestionEditor']/@type='form'">
-            <script type="text/javascript">
-                <xsl:for-each select="translation">
-                    Energine.translations.set('<xsl:value-of select="@const"/>', '<xsl:value-of select="."/>');
-                </xsl:for-each>
-            </script>
-        </xsl:if>
-    </xsl:template>
-    <!-- /QuestionEditor -->
     <xsl:template match="component[@name='topNews']">
         <div class="feed short_feed news short_news">
             <xsl:apply-templates/>

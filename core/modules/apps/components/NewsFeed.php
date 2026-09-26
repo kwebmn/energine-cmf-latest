@@ -68,6 +68,15 @@ class NewsFeed extends ExtendedFeed {
     protected function main() {
         $ap = $this->getStateParams(true);
 
+        // архив по датам: год, месяц и день — числа в своих пределах, иначе такого адреса нет
+        // (иначе адрес вырезанной ленты RSS и любой мусор отдавали пустую ленту с кодом 200)
+        foreach (['year' => [1, 9999], 'month' => [1, 12], 'day' => [1, 31]] as $parameterName => [$min, $max]) {
+            if (isset($ap[$parameterName]) && (!ctype_digit((string)$ap[$parameterName])
+                    || $ap[$parameterName] < $min || $ap[$parameterName] > $max)) {
+                throw new SystemException('ERR_404', SystemException::ERR_404);
+            }
+        }
+
         foreach ($dateArr = array(
             'year' => 'YEAR(%s)',
             'month' => 'MONTH(%s)',

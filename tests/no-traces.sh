@@ -6,7 +6,8 @@
 # i18n — в справочнике переводов нет ни одной константы из списков удаления в sql/cut/*.sql.
 # mail-core — отправка писем живёт в ядре: класс Energine\share\gears\Mail есть,
 # а оставшийся код не ссылается на Energine\mail\gears\Mail*.
-# Выход 0 — следов нет, 1 — найденное печатается, 2 — база недоступна.
+# Выход 0 — следов нет, 1 — найденное печатается, 2 — проверка не выполнена: база недоступна
+# или поиск по коду завершился ошибкой (например, сломано выражение).
 R="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 scope=${1:-all}; shift
 mods=("$@")
@@ -28,11 +29,11 @@ CODE[forms]='Energine\\forms\\|modules/forms/|frm_forms|\bform_[0-9]+\b|form-bui
 CODE[ads]='Energine\\ads\\|modules/ads/|ads_items|ads_types|topBanner|leftAdBlock|left_adblock'
 CODE[blog]='Energine\\blog\\|modules/blog/|blog_post|blog_title|Blog(Form|Editor)'
 CODE[shop]='Energine\\shop\\|modules/shop/|\bshop_[a-z]|site_country|site_address|currency_id|country_id|countryId|smap_features_multi|share_sites_uploads|GridExtender|redirectToReferer'
-CODE[pageads]='apps\\components\\Ads\b|AdsManager|\bapps_ads\b|pageAds|ad_top_728_90|top_adblock'
-CODE[branding]='apps\\components\\Branding|\bapps_branding\b|\bbrand_id\b|branding_editor|branding\.xslt|brand_main_img'
+CODE[pageads]='apps\\components\\Ads\b|AdsManager|\bapps_ads\b|pageAds|ad_top_728_90|top_adblock|content_adblock|ad_content_468_60'
+CODE[branding]='apps\\components\\Branding|\bBranding\b|\bapps_branding\b|\bbrand_id\b|branding_editor|branding\.xslt|brand_main_img'
 CODE[tops]='TopOfThePops|\bapps_tops|apps_top_groups|totp|TOTP'
-CODE[vote]='apps\\components\\Vote|VoteEditor|VoteQuestionEditor|\bapps_vote|Vote\.js|single_vote|vote\.xslt|voteEditor|vote_repository|vote_question'
-CODE[feed]='\bapps_feed\b|apps_feed_(tags|translation|uploads)|test_feed|extfeed|ExtendedFeed\.component|ExtendedFeedEditor\.component'
+CODE[vote]='apps\\components\\Vote|\bVote\b|VoteEditor|QuestionEditor|\bapps_vote|Vote\.js|single_vote|vote\.xslt|voteEditor|vote_repository|vote_question'
+CODE[feed]='\bapps_feed\b|apps_feed_(tags|translation|uploads)|test_feed|testFeed|extfeed|ExtendedFeed\.component|ExtendedFeedEditor\.component'
 CODE[tagcloud]='TagCloud|tagcloud'
 CODE[similar]='SimilarNews|similarNews'
 CODE[rss]='rss\.xslt|state name="rss"|function rss\(|/rss/'
@@ -112,12 +113,18 @@ M() { ( envsh=$(php8.5 "$R/tests/env.php" --shell 2>&1) || { echo "__DBERROR__ $
         # и кириллица в запросах молча не совпадает
         mysql -N --default-character-set=utf8mb4 -h "$DB_HOST" -u "$DB_USER" "$DB_NAME" -e "$1" 2>&1 || echo "__DBERROR__ mysql" ); }
 
+# поиск по коду: код 2 у grep (ошибка в выражении, нечитаемый файл) печатается строкой с меткой
+# __GREPERROR__ — как и с базой, пустой ответ не должен засчитываться как «следов нет»
+G() { local out; out=$(cd "$R" && grep -rnIE "${EXCLUDE[@]}" "$@" 2>&1); [ $? -gt 1 ] && echo "__GREPERROR__ $out" || echo "$out"; }
+
 fail=0
 dberror=0
+greperror=0
 report() { # category scope found
   if [ -n "$3" ]; then echo "FAIL $1 $2:"; echo "$3" | head -8 | sed 's/^/     /'; fail=1
   else echo "ok   $1 $2"; fi
   grep -q '__DBERROR__' <<<"$3" && dberror=1
+  grep -q '__GREPERROR__' <<<"$3" && greperror=1
 }
 
 for m in "${mods[@]}"; do
@@ -131,10 +138,10 @@ for m in "${mods[@]}"; do
   fi
   if [ "$scope" != db ]; then
     if [ "$m" = mail-core ]; then
-      found=$(cd "$R" && grep -rnIE "${EXCLUDE[@]}" "${CODE[$m]}" "${KEPT_DIRS[@]}" 2>/dev/null)
+      found=$(G "${CODE[$m]}" "${KEPT_DIRS[@]}")
       [ -f "$R/core/modules/share/gears/Mail.php" ] || found="$found"$'\n'"нет core/modules/share/gears/Mail.php"
     else
-      found=$(cd "$R" && grep -rnIE "${EXCLUDE[@]}" "${CODE[$m]}" "${CODE_DIRS[@]}" 2>/dev/null | cut -c1-160)
+      found=$(G "${CODE[$m]}" "${CODE_DIRS[@]}" | cut -c1-160)
       for f in ${FILES[$m]}; do [ -e "$R/$f" ] && found+=$'\n'"file $f"; done
     fi
     report "$m" code "$(echo "$found" | sed '/^$/d')"
@@ -180,5 +187,6 @@ for m in "${mods[@]}"; do
     report "$m" db "$(echo "$found" | sed '/^$/d')"
   fi
 done
+[ $greperror = 1 ] && { echo "поиск по коду завершился ошибкой: проверка кода не выполнена"; exit 2; }
 [ $dberror = 1 ] && { echo "база недоступна: проверка по базе не выполнена"; exit 2; }
 exit $fail
