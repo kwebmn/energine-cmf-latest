@@ -339,9 +339,6 @@ final class Document extends Primitive implements IDocument {
         if (!isset($jsLibs['mootools'])) {
             $jsLibs['mootools'] = $staticURL . 'scripts/mootools.min.js';
         }
-        if (!isset($jsLibs['jquery'])) {
-            $jsLibs['jquery'] = 'https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js';
-        }
         $dom_javascript = $this->doc->createElement('javascript');
 
         foreach ($jsLibs as $name => $path) {

@@ -5,6 +5,7 @@
 # Этап 2 — части apps: pageads branding tops vote feed tagcloud similar rss sockets htmlcap
 # Этап 3 — share: tags widgets storages watermark video flash lookup columns placehold
 # Этап 4 — редактор и загрузка: ckeditor fileapi jsonp
+# Этап 5в — тема: theme (спрайты и стили старой темы, jQuery, single.xslt; в текстах — вход администратора demo)
 # i18n — в справочнике переводов нет ни одной константы из списков удаления в sql/cut/*.sql.
 # mail-core — отправка писем живёт в ядре: класс Energine\share\gears\Mail есть,
 # а оставшийся код не ссылается на Energine\mail\gears\Mail*.
@@ -16,7 +17,7 @@ mods=("$@")
 [ ${#mods[@]} -eq 0 ] && mods=(mail-core mail calendar comments forms ads blog shop
                                 pageads branding tops vote feed tagcloud similar rss sockets htmlcap
                                 tags widgets storages watermark video flash lookup columns placehold
-                                ckeditor fileapi jsonp i18n)
+                                ckeditor fileapi jsonp theme i18n)
 
 # код: весь репозиторий, кроме истории (docs), переходного SQL (sql) и инструментов чистки
 CODE_DIRS=(core site htdocs configs cli setup tests)
@@ -71,6 +72,10 @@ CODE[tags]+="|[\"']textbox[\"']"
 CODE[lookup]+="|[\"']lookup[\"']|@type=.lookup."
 CODE[columns]='\b(u_fbid|u_vkid|u_company|u_position|news_show_image|news_is_top|upl_views)\b'
 CODE[placehold]='placehold\.it'
+# этап 5в: font-awesome и классы fa ищутся только в теме сайта (site/) — админка свой font-awesome сохраняет
+CODE[theme]='icons\.png|[jJ][qQ]uery|single\.xslt'
+THEME_SITE_CODE='font-awesome|(^|[^-a-z])fa fa-'
+FILES[theme]='core/modules/share/transformers/single.xslt site/modules/main/stylesheets/font-awesome site/modules/main/stylesheets/handheld.css site/modules/main/stylesheets/ie.css site/modules/main/stylesheets/print.css'
 FILES[tags]='core/modules/share/gears/TagManager.php core/modules/share/components/TagEditor.php core/modules/share/scripts/Tags.js core/modules/share/scripts/TagEditor.js core/modules/share/transformers/tagEditor.xslt core/modules/share/config/TagEditorModal.component.xml core/modules/share/stylesheets/tags.css core/modules/share/scripts/TextboxList.js core/modules/share/scripts/DropBoxList.js core/modules/share/stylesheets/acpl.css core/modules/share/images/remove_item.gif'
 FILES[widgets]='core/modules/share/components/WidgetsRepository.php core/modules/share/config/WidgetsRepository.component.xml core/modules/share/config/ModalWidgetsRepository.component.xml core/modules/share/scripts/LayoutManager.js core/modules/share/scripts/WidgetGridManager.js core/modules/share/scripts/ComponentParamsForm.js core/modules/share/scripts/NewTemplateForm.js core/modules/share/stylesheets/layout_manager.css site/modules/main/templates/content/widgets_repository.content.xml core/modules/share/images/default_90x68.png core/modules/share/images/toolbar/minimize.gif core/modules/share/images/toolbar/restore.gif'
 FILES[storages]='core/modules/share/gears/FileRepositoryFTP.php core/modules/share/gears/FileRepositoryFTPRO.php core/modules/share/gears/FileRepositoryRO.php core/modules/share/gears/FTP.php'
@@ -151,6 +156,8 @@ WORDS[storages]='ftp|read-only'
 WORDS[watermark]='водян'
 WORDS[video]='видео|відео|ffmpeg'
 WORDS[flash]='flash|флеш'
+# вход администратора demo/demo — неправда на площадке со своим паролем; «обломно» — недопереведённая главная
+WORDS[theme]='demo@energine\.org|обломно'
 
 # ошибка доступа к базе печатается строкой с меткой __DBERROR__: пустой ответ не должен
 # засчитываться как «следов нет»
@@ -201,6 +208,7 @@ for m in "${mods[@]}"; do
       [ -f "$R/core/modules/share/gears/Mail.php" ] || found="$found"$'\n'"нет core/modules/share/gears/Mail.php"
     else
       found=$(G "${CODE[$m]}" "${CODE_DIRS[@]}" | cut -c1-160)
+      [ "$m" = theme ] && found+=$'\n'$(G "$THEME_SITE_CODE" site | cut -c1-160)
       for f in ${FILES[$m]}; do [ -e "$R/$f" ] && found+=$'\n'"file $f"; done
     fi
     report "$m" code "$(echo "$found" | sed '/^$/d')"

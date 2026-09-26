@@ -186,6 +186,16 @@ async function inspect(page) {
         });
         check(`новость, ${tag}: заголовок h1 — название новости`, n.h1.length === 1 && n.h1[0] === n.crumb, JSON.stringify(n));
         check(`новость, ${tag}: картинка видна и помещается`, n.img && n.fits, JSON.stringify(n));
+        if (w > 600) {
+            // картинка для соцсетей (og:image) — существующая: адрес ресайзера отдаёт изображение
+            const og = await p.evaluate(() => [...document.querySelectorAll('meta[property="og:image"]')].map((m) => m.content));
+            const answers = [];
+            for (const u of og) {
+                const a = await p.request.get(u);
+                answers.push(`${a.status()} ${a.headers()['content-type'] || ''}`);
+            }
+            check('новость: og:image отдаётся картинкой', og.length > 0 && answers.every((x) => /^200 image\//.test(x)), JSON.stringify({ og, answers }));
+        }
         await p.close();
 
         // галерея: превью сеткой, каждое — ссылка на файл; кнопок карусели без скрипта нет

@@ -11,8 +11,6 @@ const [, , guestFile, adminFile, singlesFile, outFile] = process.argv;
 const lines = (f) => fs.readFileSync(f, 'utf8').split('\n').map((s) => s.trim()).filter(Boolean);
 // главная обходится всегда: в списках путей её нет (пустые строки отбрасываются)
 const withHome = (list) => ['', ...list];
-// known and documented: missing icon sprite, placeholder images of an external service
-const IGNORE = [/images\/main\/icons\.png/, /images\/webworks\/icons\.png/, /placehold\.it/];
 // гриды без состояния add: журнал действий и обратная связь только читают,
 // а разделы новостей создаёт редактор структуры
 const NO_ADD = [/actionsList\/$/, /feedbackList\/$/, /newsCategoriesEditor\/$/];
@@ -38,11 +36,8 @@ const NO_EDIT = [/actionsList\/$/, /feedbackList\/$/];
         } catch (e) {
             errors.push('goto: ' + e.message.split('\n')[0]);
         }
-        let unique = [...new Set(errors)].filter((e) => !IGNORE.some((re) => re.test(e)));
-        // Chrome logs a 404 without its URL; drop it when the only 404 responses are the ignored ones
-        if (!unique.some((e) => /^http 404: /.test(e))) unique = unique.filter((e) => e !== 'console: Failed to load resource: the server responded with a status of 404 ()');
-        // the same for a failed or blocked request (net::ERR_…): drop it when the only failed requests are the ignored ones
-        if (!unique.some((e) => /^failed: /.test(e))) unique = unique.filter((e) => !/^console: Failed to load resource: net::/.test(e));
+        // исключений нет (этап 5в): спрайт старой темы и внешние заглушки картинок убраны, любая 404 — ошибка
+        const unique = [...new Set(errors)];
         results.push({ label, url: url.replace(BASE, '/'), status, errors: unique });
         await page.close();
         process.stdout.write(unique.length ? 'E' : '.');

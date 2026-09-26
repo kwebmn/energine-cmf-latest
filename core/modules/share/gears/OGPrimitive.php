@@ -142,10 +142,11 @@ class OGPrimitive extends Primitive {
             $result->appendChild($prop);
         }
         if (!empty($this->images)) {
+            // адрес ресайзера — w<ширина>-h<высота>, как у превью страниц (режима rw ресайзер не знает: был 404)
             foreach ($this->images as $imageProps) {
 
                 $prop = $doc->createElement('property', (($resizerURL =
-                        $this->getConfigValue('site.resizer')) ? $resizerURL : (E()->getSiteManager()->getDefaultSite()->base . 'resizer/')) . 'rw' . $imageProps['width'] . '-h' . $imageProps['height'] . '/' . $imageProps['url'] . '?preview.jpg');
+                        $this->getConfigValue('site.resizer')) ? $resizerURL : (E()->getSiteManager()->getDefaultSite()->base . 'resizer/')) . 'w' . $imageProps['width'] . '-h' . $imageProps['height'] . '/' . $imageProps['url']);
                 $prop->setAttribute('name', 'image');
                 $result->appendChild($prop);
                 $prop = $doc->createElement('property', $imageProps['width']);

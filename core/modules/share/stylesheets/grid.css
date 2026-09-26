@@ -185,14 +185,13 @@ div.grid div.filters_block .filters .filter_add_block button {
     width: 21px;
     height: 20px;
     line-height: 1 !important;
-    color: transparent; /* Fix for Firefox */
-    background: url("../../images/webworks/icons.png") no-repeat transparent;
-    border: none !important;
+    /* знак кнопки («+») — текстом: картинки-спрайта старой темы в поставке нет */
+    color: #444;
+    font-weight: bold;
+    background: #eee;
+    border: 1px solid #bbb !important;
+    border-radius: 3px;
     box-shadow: none;
-    background-position: -235px -31px;
-    /* -233px -29px;
-        margin-left: 5px;
-        box-shadow: 0px 0px 23px rgb(134, 134, 134);*/
 }
 
 div.grid div.filters_block .filters .filter_remove_block button {
@@ -208,11 +207,13 @@ div.grid div.filters_block .filters .filter_remove_block button {
     width: 21px;
     height: 20px;
     line-height: 1 !important;
-    color: transparent; /* Fix for Firefox */
-    border: none !important;
-    background: url("../../images/webworks/icons.png") no-repeat transparent;
+    /* знак кнопки («-») — текстом: картинки-спрайта старой темы в поставке нет */
+    color: #444;
+    font-weight: bold;
+    background: #eee;
+    border: 1px solid #bbb !important;
+    border-radius: 3px;
     box-shadow: none;
-    background-position: -235px -4px; /*-233px -2px;*/
 }
 
 div.grid div.filters_block .filters .filter_add_block button:disabled,

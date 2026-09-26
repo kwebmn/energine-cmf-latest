@@ -22,8 +22,6 @@ function check(label, cond, detail = '') {
     if (!cond) fail++;
     return cond;
 }
-// known and documented (as in crawl.js): the missing icon sprites of the old theme
-const IGNORE = [/images\/main\/icons\.png/, /images\/webworks\/icons\.png/];
 function watch(page) {
     const raw = [];
     page.on('console', (m) => { if (m.type() === 'error') raw.push('console: ' + m.text()); });
@@ -31,8 +29,8 @@ function watch(page) {
     page.on('response', (r) => { if (r.status() >= 400) raw.push(`http ${r.status()}: ${r.url()}`); });
     return {
         list() {
-            let e = [...new Set(raw)].filter((x) => !IGNORE.some((re) => re.test(x)));
-            if (!e.some((x) => /^http 404: /.test(x))) e = e.filter((x) => x !== 'console: Failed to load resource: the server responded with a status of 404 ()');
+            // исключений нет (этап 5в): спрайт старой темы убран, любая 404 — ошибка
+            const e = [...new Set(raw)];
             return e;
         },
     };

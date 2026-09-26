@@ -125,3 +125,31 @@ INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_va
            END
       FROM `share_lang_tags` t JOIN `share_languages` l
      WHERE t.`ltag_name` IN ('FIELD_U_PASSWORD_CURRENT', 'FIELD_U_PASSWORD_NEW');
+
+-- 8. Демо-тексты (тема, этап 5в). Вход администратора demo@energine.org / demo — неправда на площадке со своим
+--    паролем: боковой блок главной и страница «Админка» раздела «Возможности» его больше не называют.
+--    Приветствие главной — о Energine Simple; украинская версия была русским текстом с припиской
+--    «перекладати було обломно».
+UPDATE `share_textblocks_translation` tt
+  JOIN `share_textblocks` tb ON tb.`tb_id` = tt.`tb_id`
+  JOIN `share_languages` l ON l.`lang_id` = tt.`lang_id`
+   SET tt.`tb_content` = IF(l.`lang_abbr` = 'ua',
+       '<p>Це демонстраційний сайт Energine Simple. Адміністратор входить за посиланням «Вхід» угорі сторінки.</p>',
+       '<p>Это демонстрационный сайт Energine Simple. Администратор входит по ссылке «Вход» вверху страницы.</p>')
+ WHERE tb.`tb_num` = 'sidebarTextBlock' AND tb.`smap_id` IS NULL;
+UPDATE `share_textblocks_translation` tt
+  JOIN `share_textblocks` tb ON tb.`tb_id` = tt.`tb_id`
+  JOIN `share_sitemap` s ON s.`smap_id` = tb.`smap_id`
+  JOIN `share_languages` l ON l.`lang_id` = tt.`lang_id`
+   SET tt.`tb_content` = IF(l.`lang_abbr` = 'ua',
+       '<p>Розділи адмінки зібрані на <a href="/ua/admin/">одній сторінці</a>; вхід — за посиланням «Вхід» угорі сторінки.</p>\n<h3>В адмінці</h3><ul><li><a href="/ua/admin/action-log/">Журнал дій</a></li></ul>',
+       '<p>Разделы админки собраны на <a href="/admin/">одной странице</a>; вход — по ссылке «Вход» вверху страницы.</p>\n<p>Кроме редакторов содержимого есть журнал действий, редактор сайтов и доменов.</p>\n<h3>В админке</h3><ul><li><a href="/admin/action-log/">Журнал действий</a></li><li><a href="/admin/structure/sites/">Сайты и домены</a></li></ul>')
+ WHERE s.`smap_segment` = 'admin' AND s.`smap_content` = 'textblock.content.xml' AND tb.`tb_num` = '1';
+UPDATE `share_textblocks_translation` tt
+  JOIN `share_textblocks` tb ON tb.`tb_id` = tt.`tb_id`
+  JOIN `share_sitemap` s ON s.`smap_id` = tb.`smap_id`
+  JOIN `share_languages` l ON l.`lang_id` = tt.`lang_id`
+   SET tt.`tb_content` = IF(l.`lang_abbr` = 'ua',
+       '<h1>Вітаємо!</h1>\n<p>Це демонстраційний сайт Energine Simple — системи керування для сайтів-візиток: сторінки, новини, галерея, зворотний зв’язок і кабінет відвідувача.</p>\n<ul>\n<li>Кілька мов: перекладаються і сторінки, і підписи інтерфейсу.</li>\n<li>Права: у кожної групи користувачів свої права на кожен розділ.</li>\n<li>Тексти редагуються просто на сторінці, у візуальному редакторі.</li>\n<li>Файли зберігаються в репозиторії сайту й використовуються в текстах, новинах і галереї.</li>\n<li>Структура сайту — дерево розділів, яке змінюється в адмінці.</li>\n</ul>',
+       '<h1>Добро пожаловать!</h1>\n<p>Это демонстрационный сайт Energine Simple — системы управления для сайтов-визиток: страницы, новости, галерея, обратная связь и кабинет посетителя.</p>\n<ul>\n<li>Несколько языков: переводятся и страницы, и подписи интерфейса.</li>\n<li>Права: у каждой группы пользователей свои права на каждый раздел.</li>\n<li>Тексты правятся прямо на странице, в визуальном редакторе.</li>\n<li>Файлы хранятся в репозитории сайта и используются в текстах, новостях и галерее.</li>\n<li>Структура сайта — дерево разделов, которое меняется в админке.</li>\n</ul>')
+ WHERE s.`smap_pid` IS NULL AND s.`smap_content` = 'main.content.xml' AND tb.`tb_num` = '1';
