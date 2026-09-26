@@ -26,6 +26,8 @@ return array(
     'database' => array(
         'host' => 'DB HOST NAME',
         'port' => '3306',
+        // сокет сервера базы (unix_socket): если задан, хост и порт не используются
+        'socket' => '',
         'db' => 'DB NAME',
         'username' => 'DB LOGIN',
         'password' => 'DB PASSWORD'

@@ -283,12 +283,16 @@ namespace Energine\share\gears {
          */
         public function getDB() {
             if (!isset($this->entities['QAL'])) {
+                // сокет сервера базы (database.socket) — если задан, иначе хост и порт
+                $socket = $this->getConfigValue('database.socket');
                 $this->entities['QAL'] = new QAL(
-                    sprintf('mysql:host=%s;port=%s;dbname=%s',
-                        $this->getConfigValue('database.host'),
-                        $this->getConfigValue('database.port'),
-                        $this->getConfigValue('database.db')
-                    ),
+                    $socket
+                        ? sprintf('mysql:unix_socket=%s;dbname=%s', $socket, $this->getConfigValue('database.db'))
+                        : sprintf('mysql:host=%s;port=%s;dbname=%s',
+                            $this->getConfigValue('database.host'),
+                            $this->getConfigValue('database.port'),
+                            $this->getConfigValue('database.db')
+                        ),
                     $this->getConfigValue('database.username'),
                     $this->getConfigValue('database.password'),
                     [

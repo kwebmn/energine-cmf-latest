@@ -7,6 +7,7 @@ require_once('bootstrap.php');
 
 $acceptableActions = array(
     'install',
+    'demo',
     'linker',
     'clearCache',
     'syncUploads',
@@ -51,6 +52,8 @@ if (!empty($args)) {
 }
 
 
+// код выхода: 0 — сделано, 1 — ошибка (сценарии установки проверяют его)
+$failed = false;
 try {
     require_once('Setup.php');
     $setup = new Setup($isConsole);
@@ -67,12 +70,13 @@ try {
 
 }
 catch (\Exception $e) {
-    if(ob_get_length()) ob_end_clean();
-    echo 'При установке все пошло не так.', PHP_EOL, 'А точнее :', PHP_EOL, $e->getMessage();
+    $failed = true;
+    // что успело выполниться, остаётся в выводе: по нему видно, на каком шаге остановились
+    echo PHP_EOL, 'Ошибка: ', $e->getMessage();
 }
 
 $data = ob_get_contents();
 if(ob_get_length())ob_end_clean();
 
 echo PHP_EOL, $data, PHP_EOL, PHP_EOL;
-exit;
+exit($failed ? 1 : 0);

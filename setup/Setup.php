@@ -81,7 +81,6 @@ final class Setup {
         header('Content-Type: text/plain; charset=' . CHARSET);
         $this->title('Средство настройки CMF Energine');
         $this->isFromConsole = $consoleRun;
-        $this->checkEnvironment();
     }
 
     /**
@@ -187,46 +186,6 @@ final class Setup {
     }
 
     /**
-     * Update site host and root in table @c share_sites.
-     *
-     * @throws Exception 'Удивительно.... Не с чем работать. А проверьте все ли хорошо с базой? не пустая ли? похоже некоторых нужных таблиц в ней нет.'
-     */
-    private function updateSitesTable() {
-        $this->text('Обновляем таблицу share_sites...');
-
-        // получаем все домены из таблицы доменов
-        $res = $this->dbConnect->query(
-            'SELECT * FROM share_domains'
-        );
-
-        if (!$res) {
-            throw new \Exception('Удивительно.... Не с чем работать. А проверьте все ли хорошо с базой? не пустая ли? похоже некоторых нужных таблиц в ней нет.');
-
-        }
-        $domains = $res->fetchAll();
-        $res->closeCursor();
-
-        // обновляем таблицу доменов, если:
-        // 1. одна запись в таблице
-        // 2. больше одной записи, и поле пустое
-        // 3. Доменов вообще нет
-        if (
-            empty($domains)
-            ||
-            ($domains and (count($domains) == 1 or (count($domains) >= 1 and $domains[0]['domain_host'] == '')))
-        ) {
-            $this->dbConnect->query(
-                ((empty($domains)) ? 'INSERT INTO' : 'UPDATE') . " share_domains SET domain_host = '" . $this->config['site']['domain'] . "',"
-                . "domain_root = '" . $this->config['site']['root'] . "'"
-            );
-            if (empty($domains)) {
-                $domainID = $this->dbConnect->lastInsertId();
-                $this->dbConnect->query('INSERT INTO share_domain2site SET site_id=1, domain_id=' . $domainID);
-            }
-        }
-    }
-
-    /**
      * Check connection to database.
      *
      * @throws Exception 'В конфиге нет информации о подключении к базе данных'
@@ -256,13 +215,16 @@ final class Setup {
 
             set_error_handler(function () { return true; });
             $connect = new PDO(
-                sprintf(
-                    'mysql:host=%s;port=%s;dbname=%s',
+                // сокет (database.socket) — если задан, иначе хост и порт
+                !empty($dbInfo['socket'])
+                    ? sprintf('mysql:unix_socket=%s;dbname=%s', $dbInfo['socket'], $dbInfo['db'])
+                    : sprintf(
+                        'mysql:host=%s;port=%s;dbname=%s',
 
-                    $dbInfo['host'],
-                    (isset($dbInfo['port']) && !empty($dbInfo['port'])) ? $dbInfo['port'] : 3306,
-                    $dbInfo['db']
-                ),
+                        $dbInfo['host'],
+                        (isset($dbInfo['port']) && !empty($dbInfo['port'])) ? $dbInfo['port'] : 3306,
+                        $dbInfo['db']
+                    ),
                 $dbInfo['username'],
                 $dbInfo['password'],
                 array(
@@ -294,7 +256,11 @@ final class Setup {
         if (!method_exists($this, $methodName = $action . 'Action')) {
             throw new \Exception('Подозрительно все это... Либо программисты че то не учли, либо.... произошло непоправимое.');
         }
-        call_user_func_array(array($this, $methodName), $arguments);
+        // установка и демо берут конфиг сами: при установке его ещё нет
+        if (!in_array($action, ['install', 'demo'], true)) {
+            $this->checkEnvironment();
+        }
+        call_user_func_array(array($this, $methodName), array_values($arguments));
         //$this->{$methodName}();
     }
 
@@ -308,18 +274,367 @@ final class Setup {
     }
 
     /**
-     * Run full system installation.
-     * It:
-     * - checks connection to database
-     * - updates table @c share_sites
-     * - generate symlinks
-     * - generate file dependency to JavaScript classes
+     * Установка в пустую базу (docs/INSTALL.md):
+     * @code
+     * php web/index.php setup install --admin-email=E-MAIL [--admin-name=ИМЯ] [--domain=ДОМЕН | --url=АДРЕС]
+     *     [--db-host=ХОСТ] [--db-port=ПОРТ] [--db-socket=СОКЕТ] [--db-name=БАЗА] [--db-user=ЛОГИН]
+     *     [--config=ФАЙЛ] [--no-static]
+     * @endcode
+     * Конфиг площадки: если его нет — пишется из шаблона (параметры --db-*, --domain или --url; режим 600;
+     * по умолчанию configs/system.config.ДОМЕН.php и ссылка web/system.config.php), если есть — берётся он.
+     * Пароли в аргументах не принимаются (их видно в списке процессов и в истории): пароль базы —
+     * ENERGINE_DB_PASSWORD, администратора — ENERGINE_ADMIN_PASSWORD; без переменной — запрос с терминала
+     * без эха. Всё проверяется до первого изменения базы: расширения, параметры, пароли, соединение,
+     * пустота базы. Затем — схема и базовые данные (sql/structure.sql, sql/data.sql), администратор
+     * в группе с полным доступом к корню, адрес сайта в share_domains, статика (без --no-static).
      */
-    private function installAction() {
-        $this->checkDBConnection();
-        $this->updateSitesTable();
-        $this->linkerAction();
-        $this->scriptMapAction();
+    private function installAction(...$args) {
+        $o = $this->options($args, ['config', 'domain', 'url', 'db-host', 'db-port', 'db-socket', 'db-name', 'db-user',
+            'admin-email', 'admin-name'], ['no-static']);
+        $this->title('Установка');
+        $this->checkExtensions();
+
+        $configFile = $o['config'] ?? implode(DIRECTORY_SEPARATOR, [HTDOCS_DIR, 'system.config.php']);
+        $config = null;
+        if (file_exists($configFile)) {
+            $config = include $configFile;
+            if (!is_array($config) || empty($config['database']) || !is_array($config['database'])) {
+                throw new \Exception('В конфиге ' . $configFile . ' нет раздела database');
+            }
+            $database = $config['database'];
+            $this->text('Конфиг площадки: ', $configFile);
+        } else {
+            foreach (['db-name', 'db-user'] as $key) {
+                if (empty($o[$key])) {
+                    throw new \Exception('Конфига площадки нет (' . $configFile . '): нужен параметр --' . $key);
+                }
+            }
+            if (empty($o['domain']) && empty($o['url'])) {
+                throw new \Exception('Конфига площадки нет (' . $configFile . '): нужен параметр --domain или --url');
+            }
+            $database = [
+                'host' => $o['db-host'] ?? 'localhost',
+                'port' => $o['db-port'] ?? '3306',
+                'socket' => $o['db-socket'] ?? '',
+                'db' => $o['db-name'],
+                'username' => $o['db-user'],
+                'password' => $this->secret('ENERGINE_DB_PASSWORD', 'пароль базы'),
+            ];
+        }
+        $urls = $this->siteUrls($o, $config['site'] ?? []);
+        // новый конфиг: указанный файл или configs/system.config.ДОМЕН.php и ссылка на него из web/
+        $configTarget = null;
+        if (!$config) {
+            $configTarget = isset($o['config']) ? $configFile
+                : implode(DIRECTORY_SEPARATOR, [ROOT_DIR, 'configs', 'system.config.' . $urls[0]['host'] . '.php']);
+            if (file_exists($configTarget) || !is_writable(dirname($configTarget))) {
+                throw new \Exception('Конфиг не записать: ' . $configTarget . ' уже есть или каталог закрыт для записи');
+            }
+        }
+        $email = trim((string)($o['admin-email'] ?? ''));
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            throw new \Exception('Нужен корректный e-mail администратора: --admin-email=…');
+        }
+        $name = trim((string)($o['admin-name'] ?? '')) ?: 'Admin';
+        $password = $this->secret('ENERGINE_ADMIN_PASSWORD', 'пароль администратора');
+
+        $pdo = $this->connect($database);
+        $tables = (int)$pdo->query('SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE()')->fetchColumn();
+        $routines = (int)$pdo->query('SELECT COUNT(*) FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA = DATABASE()')->fetchColumn();
+        if ($tables || $routines) {
+            throw new \Exception(sprintf('База «%s» не пуста (таблиц: %d, процедур: %d): установка ставится только в пустую базу. '
+                . 'Для новой установки очистите базу или укажите другую.', $database['db'], $tables, $routines));
+        }
+        $this->text('База «', $database['db'], '» пуста');
+
+        if ($configTarget) {
+            $this->writeConfig($configTarget, $database, $urls[0]);
+            if ($configTarget !== $configFile) {
+                symlink($configTarget, $configFile);
+            }
+            $this->text('Конфиг записан: ', $configTarget);
+        }
+        try {
+            $this->text('Схема: ', $this->runSqlFile($pdo, ROOT_DIR . '/sql/structure.sql'), ' запросов');
+            $this->text('Базовые данные: ', $this->runSqlFile($pdo, ROOT_DIR . '/sql/data.sql'), ' запросов');
+            $this->createAdmin($pdo, $email, $name, $password);
+            $this->text('Администратор: ', $email);
+            $this->writeDomains($pdo, $urls);
+        } catch (\Exception $e) {
+            throw new \Exception('установка прервалась: ' . $e->getMessage() . PHP_EOL
+                . 'База заполнена частично: очистите её (все таблицы и процедуры) и запустите установку снова.');
+        }
+        if (empty($o['no-static'])) {
+            $this->config = include $configFile;
+            $this->linkerAction();
+            $this->scriptMapAction();
+        }
+        $this->text('Готово: ', $urls[0]['protocol'], '://', $urls[0]['host'],
+            in_array($urls[0]['port'], [80, 443]) ? '' : ':' . $urls[0]['port'], $urls[0]['root']);
+    }
+
+    /**
+     * Демо-контент simple.energine.org поверх свежей установки: sql/demo.sql и файлы sql/demo/uploads в web/uploads.
+     * @code
+     * php web/index.php setup demo [--config=ФАЙЛ] [--no-static]
+     * @endcode
+     */
+    private function demoAction(...$args) {
+        $o = $this->options($args, ['config'], ['no-static']);
+        $this->title('Демо-контент');
+        $configFile = $o['config'] ?? implode(DIRECTORY_SEPARATOR, [HTDOCS_DIR, 'system.config.php']);
+        $config = file_exists($configFile) ? include $configFile : null;
+        if (!is_array($config) || empty($config['database'])) {
+            throw new \Exception('Нет конфига площадки (' . $configFile . '): сначала setup install');
+        }
+        $pdo = $this->connect($config['database']);
+        try {
+            $filled = (int)$pdo->query('SELECT (SELECT COUNT(*) FROM apps_news) + (SELECT COUNT(*) FROM share_textblocks)')->fetchColumn();
+        } catch (\PDOException $e) {
+            throw new \Exception('База не установлена: сначала setup install');
+        }
+        if ($filled) {
+            throw new \Exception('В базе уже есть новости или тексты: демо ставится только на свежую установку');
+        }
+        $this->text('Демо: ', $this->runSqlFile($pdo, ROOT_DIR . '/sql/demo.sql'), ' запросов');
+        if (empty($o['no-static'])) {
+            $source = ROOT_DIR . '/sql/demo/uploads';
+            $files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($source, \FilesystemIterator::SKIP_DOTS));
+            $n = 0;
+            foreach ($files as $file) {
+                $target = HTDOCS_DIR . '/uploads/' . substr($file->getPathname(), strlen($source) + 1);
+                if (!is_dir(dirname($target))) {
+                    mkdir(dirname($target), 0755, true);
+                }
+                copy($file->getPathname(), $target);
+                $n++;
+            }
+            $this->text('Файлы демо: ', $n, ' в ', HTDOCS_DIR, '/uploads');
+        }
+    }
+
+    /**
+     * Параметры вида --имя=значение и флаги --имя. Незнакомый параметр — ошибка (значение не печатается:
+     * в нём мог оказаться пароль).
+     *
+     * @param string[] $args
+     * @param string[] $valued
+     * @param string[] $flags
+     * @return array
+     */
+    private function options(array $args, array $valued, array $flags) {
+        $result = [];
+        foreach ($args as $arg) {
+            if (preg_match('/^--([a-z-]+)=(.*)$/s', (string)$arg, $m) && in_array($m[1], $valued, true)) {
+                $result[$m[1]] = $m[2];
+            } elseif (preg_match('/^--([a-z-]+)$/', (string)$arg, $m) && in_array($m[1], $flags, true)) {
+                $result[$m[1]] = true;
+            } elseif (preg_match('/^--[a-z-]*pass/i', (string)$arg)) {
+                throw new \Exception('Пароли в аргументах не принимаются: ENERGINE_DB_PASSWORD, ENERGINE_ADMIN_PASSWORD');
+            } else {
+                throw new \Exception('Неизвестный параметр: ' . strtok((string)$arg, '='));
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Расширения PHP, без которых сайт не работает.
+     */
+    private function checkExtensions() {
+        $missing = array_filter(['pdo_mysql', 'dom', 'xsl', 'simplexml', 'mbstring', 'gd', 'openssl', 'fileinfo'],
+            fn($extension) => !extension_loaded($extension));
+        if ($missing) {
+            throw new \Exception('Нет расширений PHP: ' . implode(', ', $missing));
+        }
+        $this->text('Расширения PHP на месте');
+    }
+
+    /**
+     * Пароль: из переменной окружения, иначе — с терминала без эха. Не печатается.
+     *
+     * @param string $variable
+     * @param string $what
+     * @return string
+     */
+    private function secret($variable, $what) {
+        $value = getenv($variable);
+        if (is_string($value) && $value !== '') {
+            return $value;
+        }
+        if (function_exists('posix_isatty') && posix_isatty(STDIN)) {
+            fwrite(STDERR, 'Введите ' . $what . ': ');
+            shell_exec('stty -echo');
+            $value = rtrim((string)fgets(STDIN), "\r\n");
+            shell_exec('stty echo');
+            fwrite(STDERR, PHP_EOL);
+            if ($value !== '') {
+                return $value;
+            }
+        }
+        throw new \Exception('Не задан ' . $what . ': переменная окружения ' . $variable . ' или ввод с терминала');
+    }
+
+    /**
+     * Соединение для установки: сокет (database.socket) или хост и порт.
+     *
+     * @param array $db
+     * @return \PDO
+     */
+    private function connect(array $db) {
+        $dsn = !empty($db['socket']) ? 'mysql:unix_socket=' . $db['socket']
+            : 'mysql:host=' . ($db['host'] ?? 'localhost') . ';port=' . (($db['port'] ?? '') ?: 3306);
+        try {
+            return new \PDO($dsn . ';dbname=' . $db['db'] . ';charset=utf8mb4', (string)$db['username'], (string)$db['password'],
+                [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]);
+        } catch (\PDOException $e) {
+            throw new \Exception('Нет соединения с базой «' . $db['db'] . '»: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Выполнить файл SQL, как это делает клиент mariadb: запросы до разделителя, DELIMITER меняет разделитель
+     * (тела процедур), строки комментариев между запросами пропускаются. Строковые значения в файлах установки
+     * однострочные (mariadb-dump экранирует переводы строк), так что разделитель в конце строки — конец запроса.
+     *
+     * @param \PDO $pdo
+     * @param string $file
+     * @return int сколько запросов выполнено
+     */
+    private function runSqlFile(\PDO $pdo, $file) {
+        if (!is_readable($file)) {
+            throw new \Exception('Нет файла ' . $file);
+        }
+        $delimiter = ';';
+        $statement = '';
+        $count = 0;
+        foreach (file($file) as $number => $line) {
+            $trimmed = trim($line);
+            if ($statement === '') {
+                if ($trimmed === '' || str_starts_with($trimmed, '--')) {
+                    continue;
+                }
+                if (preg_match('/^DELIMITER\s+(\S+)$/i', $trimmed, $m)) {
+                    $delimiter = $m[1];
+                    continue;
+                }
+            }
+            $statement .= $line;
+            if (str_ends_with(rtrim($line), $delimiter)) {
+                $sql = substr(rtrim($statement), 0, -strlen($delimiter));
+                $statement = '';
+                if (trim($sql) === '') {
+                    continue;
+                }
+                try {
+                    $pdo->exec($sql);
+                } catch (\PDOException $e) {
+                    throw new \Exception(basename($file) . ', строка ' . ($number + 1) . ': ' . $e->getMessage());
+                }
+                $count++;
+            }
+        }
+        if (trim($statement) !== '') {
+            throw new \Exception(basename($file) . ': незаконченный запрос в конце файла');
+        }
+
+        return $count;
+    }
+
+    /**
+     * Конфиг площадки из шаблона: база и домен; режим 600.
+     *
+     * @param string $file
+     * @param array $db
+     * @param array $url
+     */
+    private function writeConfig($file, array $db, array $url) {
+        $text = (string)file_get_contents(implode(DIRECTORY_SEPARATOR, [ROOT_DIR, 'configs', 'system.config.default.php']));
+        $values = [
+            "'host' => 'DB HOST NAME'" => "'host' => " . var_export((string)$db['host'], true),
+            "'port' => '3306'" => "'port' => " . var_export((string)$db['port'], true),
+            "'socket' => ''" => "'socket' => " . var_export((string)$db['socket'], true),
+            "'db' => 'DB NAME'" => "'db' => " . var_export((string)$db['db'], true),
+            "'username' => 'DB LOGIN'" => "'username' => " . var_export((string)$db['username'], true),
+            "'password' => 'DB PASSWORD'" => "'password' => " . var_export((string)$db['password'], true),
+            "'domain' => 'PROJECT DOMAIN NAME'" => "'domain' => " . var_export($url['host'], true),
+        ];
+        foreach ($values as $from => $to) {
+            if (substr_count($text, $from) !== 1) {
+                throw new \Exception('В шаблоне конфига нет строки ' . $from);
+            }
+            $text = str_replace($from, $to, $text);
+        }
+        $umask = umask(0077);
+        $written = file_put_contents($file, $text);
+        umask($umask);
+        if ($written === false || !chmod($file, 0600)) {
+            throw new \Exception('Конфиг не записан: ' . $file);
+        }
+    }
+
+    /**
+     * Адреса сайта для share_domains: --url — ровно он; --domain — http и https на стандартных портах;
+     * без них — домен и корень из конфига площадки.
+     *
+     * @param array $o
+     * @param array $site раздел site конфига
+     * @return array[] protocol, host, port, root
+     */
+    private function siteUrls(array $o, array $site) {
+        if (!empty($o['url'])) {
+            $u = parse_url($o['url']);
+            if (empty($u['host']) || !in_array($u['scheme'] ?? '', ['http', 'https'], true)) {
+                throw new \Exception('Неверный --url: нужен http(s)://хост[:порт]/путь/');
+            }
+            $root = '/' . trim($u['path'] ?? '', '/');
+            return [['protocol' => $u['scheme'], 'host' => $u['host'], 'port' => (int)($u['port'] ?? ($u['scheme'] === 'https' ? 443 : 80)),
+                'root' => rtrim($root, '/') . '/']];
+        }
+        $host = (string)($o['domain'] ?? ($site['domain'] ?? ''));
+        if (!preg_match('/^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$/i', $host)) {
+            throw new \Exception('Неверный домен сайта: «' . $host . '» (--domain=…)');
+        }
+        $root = rtrim('/' . trim((string)($site['root'] ?? '/'), '/'), '/') . '/';
+
+        return [['protocol' => 'http', 'host' => $host, 'port' => 80, 'root' => $root],
+            ['protocol' => 'https', 'host' => $host, 'port' => 443, 'root' => $root]];
+    }
+
+    /**
+     * Администратор — в группе с полным доступом к корню сайта.
+     *
+     * @param \PDO $pdo
+     * @param string $email
+     * @param string $name
+     * @param string $password
+     */
+    private function createAdmin(\PDO $pdo, $email, $name, $password) {
+        $group = $pdo->query('SELECT group_id FROM share_access_level WHERE right_id = 3
+            AND smap_id = (SELECT smap_id FROM share_sitemap WHERE smap_pid IS NULL) ORDER BY group_id LIMIT 1')->fetchColumn();
+        if (!$group) {
+            throw new \Exception('в базовых данных нет группы с полным доступом к корню сайта');
+        }
+        $pdo->prepare('INSERT INTO user_users (u_name, u_password, u_fullname, u_is_active) VALUES (?, ?, ?, 1)')
+            ->execute([$email, password_hash($password, PASSWORD_DEFAULT), $name]);
+        $pdo->prepare('INSERT INTO user_user_groups (u_id, group_id) VALUES (?, ?)')->execute([$pdo->lastInsertId(), $group]);
+    }
+
+    /**
+     * Адреса сайта — единственного сайта базовых данных.
+     *
+     * @param \PDO $pdo
+     * @param array[] $urls
+     */
+    private function writeDomains(\PDO $pdo, array $urls) {
+        $site = $pdo->query('SELECT site_id FROM share_sites ORDER BY site_id LIMIT 1')->fetchColumn();
+        foreach ($urls as $u) {
+            $pdo->prepare('INSERT INTO share_domains (domain_protocol, domain_port, domain_host, domain_root) VALUES (?, ?, ?, ?)')
+                ->execute([$u['protocol'], $u['port'], $u['host'], $u['root']]);
+            $pdo->prepare('INSERT INTO share_domain2site (domain_id, site_id) VALUES (?, ?)')->execute([$pdo->lastInsertId(), $site]);
+            $this->text('Адрес сайта: ', $u['protocol'], '://', $u['host'], ':', $u['port'], $u['root']);
+        }
     }
 
     /**

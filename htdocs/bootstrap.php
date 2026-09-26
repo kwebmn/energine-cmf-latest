@@ -22,8 +22,13 @@ if (!file_exists($autoloader = ROOT_DIR.'/vendor/autoload.php')) {
 require_once($autoloader);
 
 // Подключаем конфиг, чтобы достать из него местоположение ядер и имя текущего ядра
+// setup из консоли работает и без конфига площадки: установка (setup install) его ещё только напишет
+$isSetup = (PHP_SAPI == 'cli') && isset($argv[1]) && ($argv[1] == 'setup');
 if (!file_exists($configName = HTDOCS_DIR . '/system.config.php')) {
-	throw new \LogicException('Configuration file '.$configName.' not found.');
+	if (!$isSetup) {
+		throw new \LogicException('Configuration file '.$configName.' not found.');
+	}
+	$configName = ROOT_DIR . '/configs/system.config.default.php';
 }
 
 // загружаем конфиг в $config
@@ -56,7 +61,7 @@ set_include_path(implode(PATH_SEPARATOR, array(HTDOCS_DIR, get_include_path())))
 
 // точка входа для setup (удалён из ядра в 0e0f4bd0, восстановлен в ROOT_DIR/setup)
 // только из консоли: php7.0 web/index.php setup [install|linker|scriptMap|...]
-if ((PHP_SAPI == 'cli') && isset($argv[1]) && ($argv[1] == 'setup')) {
+if ($isSetup) {
 	include_once($config['setup_dir'] . DIRECTORY_SEPARATOR . 'index.php');
 	exit;
 }

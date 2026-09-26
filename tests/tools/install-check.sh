@@ -9,9 +9,11 @@
 #  3. пустой сайт отвечает — встроенный сервер PHP на 127.0.0.1 от имени владельца площадки: главная,
 #     вход, регистрация, восстановление пароля, карта сайта; администратор входит и видит админку;
 #     неизвестный адрес — 404; ссылок на демо-разделы нет;
-#  4. setup demo поверх — отпечаток (fingerprint.php) совпадает с базой площадки.
+#  4. вторая установка — с доменом площадки (--domain: http и https) — и setup demo поверх: отпечаток
+#     (fingerprint.php) совпадает с базой площадки; повторное демо — отказ.
 #   bash tests/tools/install-check.sh
 # Каталог экземпляра — в INSTALL_TMP (по умолчанию tmp площадки: владельцу площадки нужен проход к сокету).
+# INSTALL_DEBUG=каталог — сохранить туда страницы 404 и админки, cookies и журнал встроенного сервера.
 # Выход: 0 — всё прошло, 1 — провалы (печатаются), 2 — проверка не выполнена.
 set -u
 R="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -37,7 +39,8 @@ FP() { FP_SOCKET="$SOCK" FP_DB=site FP_USER=root php8.5 "$R/tests/tools/fingerpr
 S="$T/site"
 mkdir -p "$S/web/uploads" "$S/private" && ln -s "$R" "$S/private/energine" \
   && cp "$R/htdocs/index.php" "$R/htdocs/bootstrap.php" "$R/htdocs/auth.php" "$S/web/" || exit 2
-for d in images scripts stylesheets templates resizer; do ln -s "$WEB/$d" "$S/web/$d" || exit 2; done
+# статика и карта скриптов — площадки (--no-static их не раскладывает, раскладка — дело setup linker и scriptMap)
+for d in images scripts stylesheets templates resizer system.jsmap.php; do ln -s "$WEB/$d" "$S/web/$d" || exit 2; done
 cat > "$S/web/router.php" <<'PHP'
 <?php
 // встроенный сервер PHP: файлы (статика, auth.php) — как есть, остальное — index.php, как у nginx площадки
@@ -104,7 +107,8 @@ out=$(setup "${INSTALL[@]}"); rc=$?
 grep -q "пуст" <<< "$out" && ok "отказ объясняет: нужна пустая база" || bad "текст отказа" "$(tail -3 <<< "$out")"
 
 echo "-- пустой сайт отвечает ($URL)"
-runuser -u "$SITE_USER" -- php8.5 -S "127.0.0.1:$PORT" -t "$S/web" "$S/web/router.php" > "$T/server.log" 2>&1 &
+# текущий каталог — web, как у PHP-FPM: ядро читает шаблоны по относительному пути templates/
+(cd "$S/web" && exec runuser -u "$SITE_USER" -- php8.5 -S "127.0.0.1:$PORT" -t "$S/web" "$S/web/router.php") > "$T/server.log" 2>&1 &
 SRV=$!
 for _ in $(seq 50); do curl -s -o /dev/null "$URL" && break; sleep 0.2; done
 jar="$T/cookies"
@@ -121,6 +125,7 @@ page "" > /dev/null
 demo=$(grep -oE 'href="[^"]*/(news|media|features|info|contacts)/' "$T/page.html" | head -3 | tr '\n' ' ')
 [ -z "$demo" ] && ok "на главной нет ссылок на демо-разделы" || bad "ссылки на демо-разделы" "$demo"
 is "неизвестный адрес — 404" "$(page claude-no-such-page/)" 404
+[ -n "${INSTALL_DEBUG:-}" ] && cp "$T/page.html" "$INSTALL_DEBUG/404.html"
 page login/ > /dev/null
 token=$(grep -o '<meta name="csrf-token" content="[^"]*"' "$T/page.html" | sed 's/.*content="//;s/"$//')
 # пароль — через stdin (@-), не аргументом
@@ -128,16 +133,27 @@ printf '%s' "$ENERGINE_ADMIN_PASSWORD" | curl -s -o /dev/null -b "$jar" -c "$jar
   --data-urlencode "user[login]=1" --data-urlencode "user[username]=$ADMIN_LOGIN" \
   --data-urlencode "user[password]@-" "${URL}auth.php"
 code=$(page admin/)
+[ -n "${INSTALL_DEBUG:-}" ] && cp "$T/page.html" "$INSTALL_DEBUG/admin.html" && cp "$jar" "$INSTALL_DEBUG/cookies.txt"
 [ "$code" = 200 ] && grep -q 'admin' "$T/page.html" && grep -qi 'users\|пользовател' "$T/page.html" \
   && ok "администратор входит, /admin/ — 200" || bad "вход администратора и /admin/" "код $code"
 grep -qE 'PHP (Fatal|Warning|Notice|Deprecated)' "$T/server.log" && bad "журнал встроенного сервера" "$(grep -m3 -E 'PHP ' "$T/server.log")"
+[ -n "${INSTALL_DEBUG:-}" ] && cp "$T/server.log" "$INSTALL_DEBUG/server.log"
 kill "$SRV" 2>/dev/null; SRV=
 
-echo "-- демо поверх установки"
-out=$(setup demo --config="$S/web/system.config.php" --no-static); rc=$?
+echo "-- установка с доменом площадки и демо поверх"
+# вторая база: адрес сайта — как у площадки (--domain: http и https), затем демо; сверка с базой площадки
+tempdb_create site2 && TM <<< "GRANT ALL PRIVILEGES ON \`site2\`.* TO 'energine'@'localhost';" || { bad "вторая база"; exit 1; }
+out=$(setup install --config="$S/web/system2.config.php" --no-static --domain="$HOST" --db-socket="$SOCK" --db-name=site2 \
+  --db-user=energine --admin-email="$ADMIN_LOGIN" --admin-name=Admin); rc=$?
+is "setup install --domain — код 0" "$rc" 0
+[ $rc -eq 0 ] || echo "$out" | tail -5 | sed 's/^/     /'
+out=$(setup demo --config="$S/web/system2.config.php" --no-static); rc=$?
 is "setup demo — код 0" "$rc" 0
 [ $rc -eq 0 ] || echo "$out" | tail -5 | sed 's/^/     /'
-(cd "$R" && php8.5 tests/tools/fingerprint.php) > "$T/live.txt" && FP > "$T/fresh.txt" || { bad "отпечатки"; exit 1; }
+out=$(setup demo --config="$S/web/system2.config.php" --no-static); rc=$?
+[ $rc -ne 0 ] && grep -q "свежую установку" <<< "$out" && ok "повторное демо — отказ" || bad "повторное демо" "код $rc: $(tail -2 <<< "$out")"
+(cd "$R" && php8.5 tests/tools/fingerprint.php) > "$T/live.txt" \
+  && FP_SOCKET="$SOCK" FP_DB=site2 FP_USER=root php8.5 "$R/tests/tools/fingerprint.php" > "$T/fresh.txt" || { bad "отпечатки"; exit 1; }
 if diff -q "$T/live.txt" "$T/fresh.txt" > /dev/null; then ok "установка и демо == база площадки: таблиц $(wc -l < "$T/live.txt")"
 else bad "установка и демо != база площадки" "$(diff "$T/live.txt" "$T/fresh.txt" | grep '^[<>]' | awk '{print $2}' | sort -u | tr '\n' ' ')"; fi
 
