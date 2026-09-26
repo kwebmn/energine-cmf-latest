@@ -4,9 +4,16 @@
 // (SHOW CREATE TABLE без счётчика AUTO_INCREMENT): колонки, индексы и внешние ключи тоже сверяются.
 // Сравнение установки с нуля и переведённой базы:
 //   php8.5 tests/tools/fingerprint.php > before.txt; … ; php8.5 tests/tools/fingerprint.php > after.txt; diff before.txt after.txt
-$E = require dirname(__DIR__) . '/env.php';
-$p = new PDO("mysql:host={$E['DB_HOST']};dbname={$E['DB_NAME']};charset=utf8", $E['DB_USER'], $E['MYSQL_PWD'],
-    [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+// Установка с нуля против базы площадки — tests/tools/fresh-check.sh.
+// FP_SOCKET, FP_DB, FP_USER — другая база через сокет (временный экземпляр fresh-check.sh), иначе база площадки
+if ($socket = getenv('FP_SOCKET')) {
+    $p = new PDO('mysql:unix_socket=' . $socket . ';dbname=' . getenv('FP_DB') . ';charset=utf8', getenv('FP_USER') ?: 'root', '',
+        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+} else {
+    $E = require dirname(__DIR__) . '/env.php';
+    $p = new PDO("mysql:host={$E['DB_HOST']};dbname={$E['DB_NAME']};charset=utf8", $E['DB_USER'], $E['MYSQL_PWD'],
+        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+}
 // журнал и сессии живут своей жизнью
 $skipTables = ['share_session', 'share_action_log'];
 // даты демо-контента считаются от момента импорта; пароль администратора случайный;
@@ -21,6 +28,11 @@ foreach ($tables as $t) {
     $rows = $p->query('SELECT ' . implode(', ', array_map(fn($c) => "`$c`", $use)) . " FROM `$t`")->fetchAll(PDO::FETCH_NUM);
     $lines = array_map(fn($r) => json_encode($r, JSON_UNESCAPED_UNICODE), $rows);
     sort($lines);
+    // FP_ROWS=таблица,таблица — для разбора различий вывести сами строки этих таблиц
+    if (in_array($t, explode(',', (string)getenv('FP_ROWS')), true)) {
+        foreach ($lines as $l) echo "$t\t$l\n";
+        continue;
+    }
     $schema = preg_replace('/ AUTO_INCREMENT=\d+/', '', $p->query("SHOW CREATE TABLE `$t`")->fetch(PDO::FETCH_NUM)[1]);
     printf("%s %d %s %s\n", $t, count($lines), md5(implode("\n", $lines)), md5($schema));
 }
