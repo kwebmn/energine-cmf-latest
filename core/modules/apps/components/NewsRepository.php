@@ -39,10 +39,6 @@ class NewsRepository extends NewsEditor {
         parent::__construct($name, $params);
         $this->enable();
         $this->setProperty('exttype', 'grid');
-        // новости видны, если сайт есть среди сайтов групп пользователя (getSites), иначе — ни одной
-        if (!in_array(E()->getSiteManager()->getCurrentSite()->id, $this->getSites())) {
-            $this->addFilterCondition([$this->getTableName() . '.smap_id' => [0]]);
-        }
         $this->setSaver(new NewsEditorSaver());
     }
 
@@ -54,27 +50,9 @@ class NewsRepository extends NewsEditor {
         return array_merge(
             parent::defineParams(),
             [
-                'bind' => false,
-                'site' => false
+                'bind' => false
             ]
         );
-    }
-    protected function getSites() {
-        $result = [];
-        if ($siteID = $this->getParam('site')) {
-            $result = [$siteID];
-        } elseif ($this->document->getRights() < ACCESS_FULL) {
-            $result = $this->document->getUser()->getSites();
-            if (empty($result)) {
-                $result = [0];
-            }
-        } else {
-            foreach (E()->getSiteManager() as $site) {
-                $result[] = $site->id;
-            }
-        }
-
-        return $result;
     }
 
     /**

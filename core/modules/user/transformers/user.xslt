@@ -114,7 +114,7 @@
             </xsl:if>
             <xsl:if test="$LEVEL=0">
                 <tr class="section_name">
-                    <td><xsl:value-of select="field[@name='Site']"/></td>
+                    <td><xsl:value-of select="$TRANSLATION[@const='TXT_ALL_DIVISIONS']"/></td>
                     <xsl:for-each select="field[@name='RightsId']/options/option">
                         <td class="col_{position()}"><input type="radio" style="width:auto; border:0;" class="groupRadio" name=""></input></td>
                     </xsl:for-each>

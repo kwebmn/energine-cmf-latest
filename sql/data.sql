@@ -7,7 +7,6 @@ INSERT INTO `share_languages` (`lang_id`, `lang_locale`, `lang_abbr`, `lang_name
 INSERT INTO `share_sites` (`site_id`, `site_is_active`, `site_is_default`, `site_folder`, `site_order_num`, `site_meta_robots`) VALUES (1,1,1,'main',2,NULL);
 INSERT INTO `share_sites_translation` (`site_id`, `lang_id`, `site_name`, `site_meta_keywords`, `site_meta_description`) VALUES (1,1,'Energine Platform',NULL,NULL);
 INSERT INTO `share_sites_translation` (`site_id`, `lang_id`, `site_name`, `site_meta_keywords`, `site_meta_description`) VALUES (1,2,'Energine Platform',NULL,NULL);
-INSERT INTO `share_groups2sites` (`group_id`, `site_id`) VALUES (1,1);
 INSERT INTO `user_groups` (`group_id`, `group_name`, `group_default`, `group_user_default`) VALUES (1,'Администратор',0,0);
 INSERT INTO `user_groups` (`group_id`, `group_name`, `group_default`, `group_user_default`) VALUES (3,'Гость',1,0);
 INSERT INTO `user_groups` (`group_id`, `group_name`, `group_default`, `group_user_default`) VALUES (4,'Пользователь',0,1);
@@ -469,7 +468,6 @@ INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (1031,'TXT_POST_ON
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (1032,'TXT_POST_ON_LIVEJOURNAL');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (1034,'FIELD_PG_TOTAL_PHOTOS');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (1037,'TXT_BAN');
-INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (1049,'FIELD_SITE');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (1053,'FIELD_ORDER');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (1057,'FIELD_TITLE');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (1061,'FIELD_RECORDSPERTAB');
@@ -1011,6 +1009,7 @@ INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2798,'CONTENT_SIT
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2799,'TAB_SITE_PROPERTIES');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2800,'ERR_BAD_PROPERTY_NAME');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2805,'ERR_SEGMENT_EXISTS');
+INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2811,'TXT_ALL_DIVISIONS');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (14,1,'Значение');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (14,2,'Значення');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (15,1,'Выйти');
@@ -1925,8 +1924,6 @@ INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (1034,2,'фото');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (1037,1,'Бан');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (1037,2,'Бан');
-INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (1049,1,'Данные с сайта');
-INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (1049,2,'Дані з сайту');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (1053,1,'Порядок сортировки');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (1053,2,'Порядок сортування');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (1057,1,'Заголовок блока');
@@ -3007,6 +3004,8 @@ INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2800,2,'Ім’я параметра — латинські літери, цифри, крапка та підкреслення');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2805,1,'У этого раздела уже есть подраздел с таким сегментом адреса. Укажите другой сегмент.');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2805,2,'У цього розділу вже є підрозділ з таким сегментом адреси. Вкажіть інший сегмент.');
+INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2811,1,'Все разделы');
+INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2811,2,'Усі розділи');
 INSERT INTO `mail_templates` (`template_id`, `template_sysname`, `template_is_active`, `template_hints`) VALUES (1,'user_registration',1,'[user_name] - имя пользователя, [user_login] - логин (e-mail), [user_password] - пароль, [site_name] - название сайта (константа TXT_SITE_NAME), [site_url] - адрес сайта');
 INSERT INTO `mail_templates` (`template_id`, `template_sysname`, `template_is_active`, `template_hints`) VALUES (2,'user_restore_password',1,'[sex_suffix_hello] - окончание обращения по полу пользователя (константы TXT_EMAIL_SUFFIX_SEX_M/F/UNKNOWN), [user_name] - имя, [user_login] - логин (e-mail), [restore_link] - ссылка для смены пароля (действует час), [site_name] - название сайта, [site_url] - адрес сайта');
 INSERT INTO `mail_templates` (`template_id`, `template_sysname`, `template_is_active`, `template_hints`) VALUES (3,'feedback_form',1,'Письмо посетителю, указавшему e-mail. Доступны поля формы: [feed_author] - имя, [feed_email] - e-mail, [feed_theme] - тема, [feed_text] - сообщение. Значения не экранируются.');

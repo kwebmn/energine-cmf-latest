@@ -68,7 +68,7 @@ cd "$R/sql" || exit 2
   echo "-- переводы, почтовые шаблоны, корень файлового репозитория. Администратора создаёт установщик, адрес сайта — в конфиге."
   echo "SET NAMES utf8mb4;"
   echo "SET FOREIGN_KEY_CHECKS = 0;"
-  for t in share_languages share_sites share_sites_translation share_sites_properties share_groups2sites \
+  for t in share_languages share_sites share_sites_translation share_sites_properties \
            user_groups user_group_rights share_lang_tags share_lang_tags_translation mail_templates mail_templates_translation; do
     rows "$t"
   done

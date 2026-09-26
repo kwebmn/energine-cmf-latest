@@ -1,4 +1,4 @@
--- Energine Simple: схема базы — 31 таблица и хранимые процедуры. Ставится в пустую базу установщиком:
+-- Energine Simple: схема базы — 30 таблиц и хранимые процедуры. Ставится в пустую базу установщиком:
 -- php web/index.php setup install (docs/INSTALL.md). Получена из установки полной системы и sql/cut/stage1–6.sql.
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
@@ -170,17 +170,6 @@ CREATE TABLE `share_domains` (
   `domain_root` varchar(255) NOT NULL DEFAULT '/',
   PRIMARY KEY (`domain_id`),
   UNIQUE KEY `domain_protocol` (`domain_protocol`,`domain_host`,`domain_port`,`domain_root`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `share_groups2sites` (
-  `group_id` int(10) unsigned NOT NULL,
-  `site_id` int(10) unsigned NOT NULL,
-  PRIMARY KEY (`group_id`,`site_id`),
-  KEY `site_id` (`site_id`),
-  CONSTRAINT `share_groups2sites_ibfk_1` FOREIGN KEY (`group_id`) REFERENCES `user_groups` (`group_id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `share_groups2sites_ibfk_2` FOREIGN KEY (`site_id`) REFERENCES `share_sites` (`site_id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;

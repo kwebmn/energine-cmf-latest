@@ -105,19 +105,6 @@ class User extends Primitive {
      * @param bool $asArray
      * @return array
      */
-    public function getSites($asArray = true) {
-        $result = [];
-        $r = array_filter(array_map(function ($groupID) use ($asArray) {
-            return $this->userGroup->getSites($groupID, $asArray);
-        }, array_filter($this->getGroups(), function ($groupID) {
-            return $groupID != $this->userGroup->getDefaultGuestGroup();
-        })));
-        array_walk($r, function ($values) use (&$result) {
-            $result = array_merge($result, $values);
-        });
-        return $result;
-    }
-
     /**
      * Get the field value.
      *

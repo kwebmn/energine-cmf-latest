@@ -121,7 +121,6 @@ class RoleEditor extends Grid {
 
         foreach ($data as $smapID => $smapInfo) {
             $data[$smapID]['RightsId'] = E()->getMap()->getDocumentRights($smapID, $id);
-            $data[$smapID]['Site'] = E()->getSiteManager()->getCurrentSite()->name;
         }
 
         $dataObject = new Data();
@@ -140,10 +139,6 @@ class RoleEditor extends Grid {
         $dataDescriptionObject->addFieldDescription($f);
 
         $f = new FieldDescription('Name');
-        $f->setType(FieldDescription::FIELD_TYPE_STRING);
-        $dataDescriptionObject->addFieldDescription($f);
-
-        $f = new FieldDescription('Site');
         $f->setType(FieldDescription::FIELD_TYPE_STRING);
         $dataDescriptionObject->addFieldDescription($f);
 
@@ -175,6 +170,8 @@ class RoleEditor extends Grid {
     protected function createData() {
         $result = parent::createData();
         if ($this->getType() != self::COMPONENT_TYPE_LIST) {
+            // заголовок таблицы прав: радиокнопки колонки ставят право на все разделы
+            $this->addTranslation('TXT_ALL_DIVISIONS');
             $f = new Field('group_div_rights');
             $f->setData($this->buildDivRightsData());
             $result->addField($f);

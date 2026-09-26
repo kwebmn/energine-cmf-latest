@@ -64,3 +64,13 @@ INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_va
            'У этого раздела уже есть подраздел с таким сегментом адреса. Укажите другой сегмент.')
       FROM `share_lang_tags` t JOIN `share_languages` l
      WHERE t.`ltag_name` = 'ERR_SEGMENT_EXISTS';
+
+-- 4. Права без сайтов: привязки групп к сайтам нет (её читал только фильтр новостей), права на разделы — как
+--    были. Заголовок таблицы прав в форме группы — «Все разделы» вместо названия сайта.
+DROP TABLE IF EXISTS `share_groups2sites`;
+INSERT IGNORE INTO `share_lang_tags` (`ltag_name`) VALUES ('TXT_ALL_DIVISIONS');
+INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`)
+    SELECT t.`ltag_id`, l.`lang_id`, IF(l.`lang_abbr` = 'ua', 'Усі розділи', 'Все разделы')
+      FROM `share_lang_tags` t JOIN `share_languages` l
+     WHERE t.`ltag_name` = 'TXT_ALL_DIVISIONS';
+DELETE FROM `share_lang_tags` WHERE `ltag_name` IN ('FIELD_SITE');
