@@ -1,6 +1,18 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <configuration>
         <state name="main">
+            <!-- подписи шапки сайта (site/modules/main/transformers/energine.xslt) -->
+            <translations>
+                <translation const="TXT_SKIP_TO_CONTENT"/>
+                <translation const="TXT_MAIN_MENU"/>
+                <translation const="TXT_MENU"/>
+                <translation const="TXT_HOME"/>
+                <translation const="TXT_BREADCRUMBS"/>
+                <translation const="TXT_LOGIN_FORM"/>
+                <translation const="TXT_REGISTRATION"/>
+                <translation const="TXT_PROFILE"/>
+                <translation const="BTN_LOGOUT"/>
+            </translations>
             <fields>
                 <field name="Id" type="integer" key="1"/>
                 <field name="Pid" type="integer"/>

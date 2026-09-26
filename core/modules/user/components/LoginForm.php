@@ -58,6 +58,8 @@ class LoginForm extends DataSet implements SampleLoginForm {
 			parent::defineParams(),
 			[
 				'successAction' => false,
+				// компактный вход в шапке сайта: только ссылки, сообщение о неудачном входе оставляется форме
+				'compact' => false,
 			]
 		);
 	}
@@ -67,7 +69,7 @@ class LoginForm extends DataSet implements SampleLoginForm {
 	 */
 	public function showLoginForm() {
 		$this->prepare();
-		if ( isset( $_COOKIE[ UserSession::FAILED_LOGIN_COOKIE_NAME ] ) ) {
+		if ( ! $this->getParam( 'compact' ) && isset( $_COOKIE[ UserSession::FAILED_LOGIN_COOKIE_NAME ] ) ) {
 			$messageField = new FieldDescription( 'message' );
 			$messageField->setType( FieldDescription::FIELD_TYPE_STRING );
 			$this->getDataDescription()->addFieldDescription( $messageField );

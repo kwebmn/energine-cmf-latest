@@ -77,16 +77,8 @@
     </xsl:template>
 
     <xsl:template match="/" mode="stylesheets">
-        <!-- файлы стилей для текущего варианта дизайна -->
-        <link href="{$STATIC_URL}stylesheets/{$FOLDER}/main.css" rel="stylesheet" type="text/css"
-              media="Screen, projection"/>
-        <!-- отдельный файл стилей для IE подключается через условные комментарии -->
-        <xsl:text disable-output-escaping="yes">&lt;!--[if IE]&gt;</xsl:text>
-        <link href="{$STATIC_URL}stylesheets/{$FOLDER}/ie.css" rel="stylesheet" type="text/css"
-              media="Screen, projection"/>
-        <xsl:text disable-output-escaping="yes">&lt;![endif]--&gt;</xsl:text>
-        <link href="{$STATIC_URL}stylesheets/{$FOLDER}/print.css" rel="stylesheet" type="text/css" media="print"/>
-        <link href="{$STATIC_URL}stylesheets/{$FOLDER}/handheld.css" rel="stylesheet" type="text/css" media="handheld"/>
+        <!-- стили темы: один файл, печать — в нём же (@media print) -->
+        <link href="{$STATIC_URL}stylesheets/{$FOLDER}/main.css" rel="stylesheet" type="text/css"/>
     </xsl:template>
 
     <xsl:template match="/" mode="scripts">
@@ -112,7 +104,10 @@
         <base href="{$BASE}"/>
         <xsl:apply-templates select="." mode="favicon"/>
 
-        <link rel="stylesheet" type="text/css" href="{$STATIC_URL}stylesheets/energine.css"/>
+        <!-- стили админки: панель администратора, режим правки, окна; гостю не нужны -->
+        <xsl:if test="$COMPONENTS[@componentAction='showPageToolbar'] or $DOC_PROPS[@name='single']">
+            <link rel="stylesheet" type="text/css" href="{$STATIC_URL}stylesheets/energine.css"/>
+        </xsl:if>
         <xsl:choose>
             <xsl:when test="not($DOC_PROPS[@name='single'])">
                 <xsl:apply-templates select="." mode="stylesheets"/>

@@ -3,20 +3,27 @@
     version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 
-    <!--Собственно отсюда и пляшем-->
-    <!--Здесь можно сколько угодно дописывать, главное вызвать обработчки рута в моде head?в котором сосредоточены все команды необходимые для корректного формирования страницы-->
-    <xsl:template match="/">
-        <html>
-            <head>
-                <!--
-                Внутри происходят вызовы
-                <xsl:apply-templates select="." mode="favicon"/>
-                <xsl:apply-templates select="." mode="title"/>
-                <xsl:apply-templates select="." mode="stylesheets"/>
-                <xsl:apply-templates select="." mode="scripts"/>
-                -->
-                <xsl:apply-templates select="." mode="head"/>
+    <!--
+        Тема сайта (этап 5в): шапка (название, меню, язык, вход), содержимое, боковая колонка, подвал.
+        Меню и вход — компоненты раскладки (default.layout.xml), шаблоны содержимого несут только своё.
+        Меню на телефоне свёрнуто в <details>, на широком экране раскрыто стилями (::details-content) —
+        без JS. Содержимое в исходном порядке раньше боковой колонки (container name="aside").
+    -->
 
+    <xsl:variable name="SITE_NAME" select="$COMPONENTS[@name='breadCrumbs']/@site"/>
+    <!-- код языка для lang: у украинского в Energine аббревиатура ua, стандартный код — uk -->
+    <xsl:variable name="HTML_LANG">
+        <xsl:choose>
+            <xsl:when test="$DOC_PROPS[@name='lang']/@real_abbr = 'ua'">uk</xsl:when>
+            <xsl:otherwise><xsl:value-of select="$DOC_PROPS[@name='lang']/@real_abbr"/></xsl:otherwise>
+        </xsl:choose>
+    </xsl:variable>
+
+    <xsl:template match="/">
+        <html lang="{$HTML_LANG}">
+            <head>
+                <!-- title, base, стили, скрипты, meta — document.xslt -->
+                <xsl:apply-templates select="." mode="head"/>
             </head>
             <body>
                 <xsl:apply-templates select="document"/>
@@ -24,57 +31,185 @@
         </html>
     </xsl:template>
 
-    <!-- page body -->
+    <!-- страница -->
     <xsl:template match="document">
         <xsl:if test="$COMPONENTS[@class='CrossDomainAuth']">
             <img src="{$COMPONENTS[@class='CrossDomainAuth']/@authURL}?return={$COMPONENTS[@class='CrossDomainAuth']/@returnURL}" width="1" height="1" style="display:none;" alt="" onload="document.location = document.location.href;"/>
         </xsl:if>
-        <div class="base">
-            <div class="header">
-                <h1 class="logo">
-                    <a>
-                        <xsl:if test="$DOC_PROPS[@name='main']!=1">
-                            <xsl:attribute name="href"><xsl:value-of select="$BASE"/><xsl:value-of select="$LANG_ABBR"/></xsl:attribute>
-                        </xsl:if>
-                        <img src="images/{$FOLDER}/energine_logo.png" width="246" height="64" alt="Energine"/>
-                    </a>
-                </h1>
-                <xsl:apply-templates select="$COMPONENTS[@class='LangSwitcher']"/>
+        <a class="skip-link" href="#content"><xsl:value-of select="$TRANSLATION[@const='TXT_SKIP_TO_CONTENT']"/></a>
+        <header class="site-header">
+            <div class="wrap site-header__inner">
+                <a class="site-name">
+                    <xsl:if test="$DOC_PROPS[@name='default'] != 1">
+                        <xsl:attribute name="href"><xsl:value-of select="$BASE"/><xsl:value-of select="$LANG_ABBR"/></xsl:attribute>
+                    </xsl:if>
+                    <xsl:value-of select="$SITE_NAME"/>
+                </a>
+                <xsl:apply-templates select="$COMPONENTS[@name='mainMenu']"/>
+                <div class="site-tools">
+                    <xsl:apply-templates select="$COMPONENTS[@class='LangSwitcher']"/>
+                    <xsl:apply-templates select="$COMPONENTS[@name='userMenu']"/>
+                </div>
             </div>
-            <div class="main">
+        </header>
+        <div class="wrap site-body">
+            <xsl:if test="content/container[@name='aside']">
+                <xsl:attribute name="class">wrap site-body site-body--aside</xsl:attribute>
+            </xsl:if>
+            <main id="content" class="site-main" tabindex="-1">
                 <xsl:apply-templates select="$COMPONENTS[@name='breadCrumbs']"/>
                 <!-- страница ошибки: компонент добавляется в корень документа, а не в content -->
                 <xsl:apply-templates select="$COMPONENTS[@class='ErrorComponent']"/>
-                <xsl:apply-templates select="content"/>
-            </div>
-            <div class="footer">
+                <xsl:apply-templates select="content/node()[not(self::container[@name='aside'])]"/>
+            </main>
+            <xsl:if test="content/container[@name='aside']">
+                <aside class="site-aside">
+                    <xsl:apply-templates select="content/container[@name='aside']/node()"/>
+                </aside>
+            </xsl:if>
+        </div>
+        <footer class="site-footer">
+            <div class="wrap">
                 <xsl:apply-templates select="$COMPONENTS[@name='footerTextBlock']"/>
             </div>
+        </footer>
+    </xsl:template>
+
+    <!-- главное меню: на телефоне сворачивается -->
+    <xsl:template match="component[@name='mainMenu']" priority="1">
+        <nav class="site-nav" aria-label="{$TRANSLATION[@const='TXT_MAIN_MENU']}">
+            <details class="site-menu">
+                <summary><xsl:value-of select="$TRANSLATION[@const='TXT_MENU']"/></summary>
+                <xsl:apply-templates select="recordset"/>
+            </details>
+        </nav>
+    </xsl:template>
+
+    <xsl:template match="recordset[ancestor::component[@name='mainMenu']]" priority="1">
+        <xsl:if test="not(@empty) and record">
+            <ul class="main_menu">
+                <xsl:if test="parent::record">
+                    <xsl:attribute name="class">main_menu main_menu--sub</xsl:attribute>
+                </xsl:if>
+                <xsl:apply-templates select="record"/>
+            </ul>
+        </xsl:if>
+    </xsl:template>
+
+    <xsl:template match="record[ancestor::component[@name='mainMenu']]" priority="1">
+        <li>
+            <xsl:attribute name="class">main_menu_item<xsl:if test="field[@name='Id'] = $ID"> active</xsl:if></xsl:attribute>
+            <a>
+                <xsl:attribute name="href"><xsl:choose>
+                    <xsl:when test="field[@name='Redirect'] = ''"><xsl:value-of select="$LANG_ABBR"/><xsl:value-of select="field[@name='Segment']"/></xsl:when>
+                    <xsl:otherwise><xsl:value-of select="field[@name='Redirect']"/></xsl:otherwise>
+                </xsl:choose></xsl:attribute>
+                <xsl:if test="field[@name='Id'] = $ID">
+                    <xsl:attribute name="aria-current">page</xsl:attribute>
+                </xsl:if>
+                <xsl:value-of select="field[@name='Name']"/>
+            </a>
+            <xsl:apply-templates select="recordset"/>
+        </li>
+    </xsl:template>
+
+    <!-- вход в шапке: ссылка для гостя, имя и выход (POST с токеном) для вошедшего -->
+    <xsl:template match="component[@name='userMenu']" priority="1">
+        <div class="user-menu">
+            <xsl:choose>
+                <xsl:when test="@componentAction = 'showLogoutForm'">
+                    <span class="user-menu__name"><xsl:value-of select="recordset/record/field[@name='u_fullname']"/></span>
+                    <form method="post" action="{@action}" class="user-menu__logout">
+                        <input type="hidden" name="csrf_token" value="{$CSRF}"/>
+                        <button type="submit" name="user[logout]" value="1"><xsl:value-of select="$TRANSLATION[@const='BTN_LOGOUT']"/></button>
+                    </form>
+                </xsl:when>
+                <xsl:otherwise>
+                    <a href="{$BASE}{$LANG_ABBR}login/"><xsl:value-of select="$TRANSLATION[@const='TXT_LOGIN_FORM']"/></a>
+                </xsl:otherwise>
+            </xsl:choose>
         </div>
     </xsl:template>
-    <!-- /page body -->
 
-    <!-- PageList -->
-    <xsl:template match="component[@class='PageList']">
+    <!-- LangSwitcher -->
+    <xsl:template match="component[@class='LangSwitcher']" priority="1">
         <xsl:apply-templates/>
     </xsl:template>
-    
-    <xsl:template match="recordset[ancestor::component[@class='PageList']]">
-        <xsl:if test="not(@empty)">
-            <ul class="menu clearfix">
+
+    <xsl:template match="recordset[parent::component[@class='LangSwitcher']]" priority="1">
+        <xsl:if test="count(record) &gt; 1">
+            <ul class="lang_switcher">
                 <xsl:apply-templates/>
             </ul>
         </xsl:if>
-    </xsl:template>    
+    </xsl:template>
+
+    <xsl:template match="record[ancestor::component[@class='LangSwitcher']]" priority="1">
+        <li class="lang_switcher_item">
+            <a>
+                <xsl:choose>
+                    <xsl:when test="$LANG_ID != field[@name='lang_id']">
+                        <xsl:attribute name="href"><xsl:value-of select="field[@name='lang_url']"/></xsl:attribute>
+                    </xsl:when>
+                    <xsl:otherwise>
+                        <xsl:attribute name="aria-current">true</xsl:attribute>
+                    </xsl:otherwise>
+                </xsl:choose>
+                <xsl:value-of select="field[@name='lang_name']"/>
+            </a>
+        </li>
+    </xsl:template>
+    <!-- /LangSwitcher -->
+
+    <!-- BreadCrumbs -->
+    <xsl:template match="component[@name='breadCrumbs']" priority="1">
+        <xsl:if test="count(recordset/record) &gt; 1">
+            <nav class="breadcrumbs" aria-label="{$TRANSLATION[@const='TXT_BREADCRUMBS']}">
+                <ol>
+                    <xsl:apply-templates select="recordset/record"/>
+                </ol>
+            </nav>
+        </xsl:if>
+    </xsl:template>
+
+    <xsl:template match="record[ancestor::component[@name='breadCrumbs']]" priority="1">
+        <li>
+            <xsl:choose>
+                <xsl:when test="position() = last()">
+                    <span aria-current="page"><xsl:value-of select="field[@name='Name']"/></span>
+                </xsl:when>
+                <xsl:when test="position() = 1">
+                    <a href="{$BASE}{$LANG_ABBR}"><xsl:value-of select="field[@name='Name']"/></a>
+                </xsl:when>
+                <xsl:when test="field[@name='Id'] != ''">
+                    <a href="{$BASE}{$LANG_ABBR}{field[@name='Segment']}"><xsl:value-of select="field[@name='Name']"/></a>
+                </xsl:when>
+            </xsl:choose>
+        </li>
+    </xsl:template>
+    <!-- /BreadCrumbs -->
+
+    <!-- PageList: подразделы -->
+    <xsl:template match="component[@class='PageList']">
+        <xsl:apply-templates/>
+    </xsl:template>
+
+    <xsl:template match="recordset[ancestor::component[@class='PageList']]">
+        <xsl:if test="not(@empty)">
+            <ul class="menu">
+                <xsl:apply-templates/>
+            </ul>
+        </xsl:if>
+    </xsl:template>
 
     <xsl:template match="record[ancestor::component[@class='PageList']]">
         <li class="menu_item">
             <div class="menu_name">
                 <a>
-                    <xsl:if test="$DOC_PROPS[@name='ID']!=field[@name='Id']">
+                    <xsl:if test="$DOC_PROPS[@name='ID'] != field[@name='Id']">
                         <xsl:attribute name="href">
                             <xsl:choose>
-                                <xsl:when test="field[@name='Redirect']=''"><xsl:value-of select="$LANG_ABBR"/><xsl:value-of select="field[@name='Segment']"/></xsl:when>
+                                <xsl:when test="field[@name='Redirect'] = ''"><xsl:value-of select="$LANG_ABBR"/><xsl:value-of select="field[@name='Segment']"/></xsl:when>
                                 <xsl:otherwise><xsl:value-of select="field[@name='Redirect']"/></xsl:otherwise>
                             </xsl:choose>
                         </xsl:attribute>
@@ -85,7 +220,7 @@
             <xsl:if test="field[@name='attachments']/recordset">
                 <div class="menu_image">
                     <a>
-                        <xsl:if test="$DOC_PROPS[@name='ID']!=field[@name='Id']">
+                        <xsl:if test="$DOC_PROPS[@name='ID'] != field[@name='Id']">
                             <xsl:attribute name="href">
                                 <xsl:value-of select="$LANG_ABBR"/><xsl:value-of select="field[@name='Segment']"/>
                             </xsl:attribute>
@@ -107,129 +242,27 @@
             </xsl:if>
         </li>
     </xsl:template>
-
     <!-- /PageList -->
 
-    <!-- MainMenu -->
-    <xsl:template match="component[@name='mainMenu']">
-    	<xsl:apply-templates/>
-    </xsl:template>
-
-    <xsl:template match="recordset[ancestor::component[@name='mainMenu']]">
-        <xsl:if test="not(@empty)">
-            <ul class="main_menu clearfix">
-                <xsl:apply-templates/>
-            </ul>
-        </xsl:if>
-    </xsl:template>
-
-    <xsl:template match="recordset[parent::component[@name='mainMenu']]">
-        <xsl:if test="not(@empty)">
-            <ul class="main_menu clearfix">
-                <xsl:if test="$DOC_PROPS[@name='main'] != 1">
-                    <li class="home">
-                        <a href="{$BASE}">
-                            <xsl:value-of select="$TRANSLATION[@const='TXT_HOME']" disable-output-escaping="yes"/>
-                        </a>
-                    </li>
-                </xsl:if>
-                <xsl:apply-templates/>
-            </ul>
-        </xsl:if>        
-    </xsl:template>
-
-    <xsl:template match="record[ancestor::component[@name='mainMenu']]">
-        <li>
-            <xsl:attribute name="class">main_menu_item<xsl:if test="field[@name='Id']=$ID"> active</xsl:if></xsl:attribute>
-            <a>                                
-                <xsl:attribute name="href"><xsl:choose>
-                    <xsl:when test="field[@name='Redirect']=''"><xsl:value-of select="$LANG_ABBR"/><xsl:value-of select="field[@name='Segment']"/></xsl:when>
-                    <xsl:otherwise><xsl:value-of select="field[@name='Redirect']"/></xsl:otherwise>
-                </xsl:choose></xsl:attribute>
-                <xsl:value-of select="field[@name='Name']"/></a>
-                <xsl:if test="recordset">
-                    <xsl:apply-templates select="recordset"/>
-                </xsl:if>
-        </li>
-    </xsl:template>
-    <!-- /MainMenu -->
-
-    <!-- LangSwitcher -->
-    <xsl:template match="component[@class='LangSwitcher']">
-        <xsl:apply-templates/>
-    </xsl:template>
-
-    <xsl:template match="recordset[parent::component[@class='LangSwitcher']]">
-        <xsl:if test="count(record)&gt;1">
-            <ul class="inline lang_switcher">
-                <xsl:apply-templates/>
-            </ul>
-        </xsl:if>
-    </xsl:template>
-
-    <xsl:template match="record[ancestor::component[@class='LangSwitcher']]">
-        <li class="lang_switcher_item">
-            <a>
-                <xsl:if test="$LANG_ID != field[@name='lang_id']">
-                    <xsl:attribute name="href"><xsl:value-of select="field[@name='lang_url']"/></xsl:attribute>
-                </xsl:if>
-                <xsl:value-of select="field[@name='lang_name']"/>
-            </a>    
-        </li>
-    </xsl:template>
-    <!-- /LangSwitcher -->
-
-    <!-- BreadCrumbs -->
-    <xsl:template match="component[@name='breadCrumbs']">
-        <xsl:if test="count(recordset/record) &gt; 1">
-            <xsl:apply-templates/>
-        </xsl:if>
-    </xsl:template>
-    
-    <xsl:template match="recordset[parent::component[@name='breadCrumbs']]">
-        <div class="breadcrumbs">
-            <xsl:apply-templates/>
-        </div>
-    </xsl:template>
-    
-    <xsl:template match="record[ancestor::component[@name='breadCrumbs']]">
-        <xsl:choose>
-            <xsl:when test="position() = 1">
-                <a href="{$BASE}{$LANG_ABBR}" class="breadcrumbs_home"><xsl:value-of select="field[@name='Name']"/></a> /
-            </xsl:when>
-            <xsl:when test="position() = last()">
-                <xsl:value-of select="field[@name='Name']"/>
-            </xsl:when>
-            <xsl:otherwise>
-                <xsl:if test="field[@name='Id'] != ''">
-                    <a href="{$BASE}{$LANG_ABBR}{field[@name='Segment']}"><xsl:value-of select="field[@name='Name']"/></a> /
-                </xsl:if>
-            </xsl:otherwise>
-        </xsl:choose>
-    </xsl:template>
-    
-    <!--<xsl:template match="record[position() = last()][ancestor::component[@class='BreadCrumbs']]">-->
-        <!--<xsl:if test="field[@name='Id'] != ''">-->
-            <!--<xsl:value-of select="field[@name='Name']"/>-->
-        <!--</xsl:if>-->
-    <!--</xsl:template>-->
-    <!-- /BreadCrumbs -->
-
-    <!-- SitemapTree -->
+    <!-- SitemapTree: карта сайта — вложенные списки -->
     <xsl:template match="component[@class='SitemapTree']">
         <xsl:apply-templates/>
     </xsl:template>
 
     <xsl:template match="recordset[ancestor::component[@class='SitemapTree']]">
-        <ul class="main_menu clearfix">
+        <ul class="sitemap_tree">
             <xsl:apply-templates/>
         </ul>
     </xsl:template>
 
     <xsl:template match="record[ancestor::component[@class='SitemapTree']]">
         <li>
-            <xsl:attribute name="class">main_menu_item<xsl:if test="field[@name='Id'] = $DOC_PROPS[@name='ID']"> active</xsl:if></xsl:attribute>            
-            <a href="{$BASE}{$LANG_ABBR}{field[@name='Segment']}"><xsl:value-of select="field[@name='Name']"/></a>
+            <a href="{$BASE}{$LANG_ABBR}{field[@name='Segment']}">
+                <xsl:if test="field[@name='Id'] = $DOC_PROPS[@name='ID']">
+                    <xsl:attribute name="aria-current">page</xsl:attribute>
+                </xsl:if>
+                <xsl:value-of select="field[@name='Name']"/>
+            </a>
             <xsl:apply-templates/>
         </li>
     </xsl:template>
@@ -250,6 +283,7 @@
     </xsl:template>
     <!-- /PageMedia -->
 
+    <!-- новости на главной -->
     <xsl:template match="component[@name='topNews']">
         <div class="feed short_feed news short_news">
             <xsl:apply-templates/>
@@ -276,7 +310,7 @@
             </xsl:if>
             <div class="feed_image">
                 <xsl:choose>
-                    <xsl:when test="field[@name='news_text_rtf']=1">
+                    <xsl:when test="field[@name='news_text_rtf'] = 1">
                         <a href="{$BASE}{$LANG_ABBR}{field[@name='category']/@url}{field[@name='news_id']}--{field[@name='news_segment']}/">
                             <xsl:apply-templates select="field[@name='attachments']" mode="preview">
                                 <xsl:with-param name="PREVIEW_WIDTH">90</xsl:with-param>
@@ -295,22 +329,20 @@
             <div class="feed_date">
                 <xsl:value-of select="field[@name='news_date']"/>
             </div>
-            <h4 class="feed_name">
+            <h3 class="feed_name">
                 <xsl:choose>
-                    <xsl:when test="field[@name='news_text_rtf']=1">
+                    <xsl:when test="field[@name='news_text_rtf'] = 1">
                         <a href="{$BASE}{$LANG_ABBR}{field[@name='category']/@url}{field[@name='news_id']}--{field[@name='news_segment']}/">
-                            <xsl:value-of select="field[@name='news_title']" disable-output-escaping="yes"/>
+                            <xsl:value-of select="field[@name='news_title']"/>
                         </a>
                     </xsl:when>
                     <xsl:otherwise>
-                        <xsl:value-of select="field[@name='news_title']" disable-output-escaping="yes"/>
+                        <xsl:value-of select="field[@name='news_title']"/>
                     </xsl:otherwise>
                 </xsl:choose>
-            </h4>
+            </h3>
         </li>
     </xsl:template>
-    <!-- /фид новостей -->
+    <!-- /новости на главной -->
 
-
-    
 </xsl:stylesheet>

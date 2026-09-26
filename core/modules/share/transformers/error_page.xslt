@@ -24,12 +24,7 @@
                 <title>Errors</title>
         		<base href="{$BASE}"/>
                 <link href="{$STATIC_URL}images/energine.ico" rel="shortcut icon" type="image/x-icon"/>
-                <link href="{$STATIC_URL}stylesheets/{$FOLDER}/main.css" rel="stylesheet" type="text/css" media="Screen, projection"/>
-				<xsl:text disable-output-escaping="yes">&lt;!--[if IE]&gt;</xsl:text>
-                    <link href="{$STATIC_URL}stylesheets/{$FOLDER}/ie.css" rel="stylesheet" type="text/css" media="Screen, projection"/>
-                <xsl:text disable-output-escaping="yes">&lt;![endif]--&gt;</xsl:text>
-                <link href="{$STATIC_URL}stylesheets/{$FOLDER}/print.css" rel="stylesheet" type="text/css" media="print"/>
-                <link href="{$STATIC_URL}stylesheets/{$FOLDER}/handheld.css" rel="stylesheet" type="text/css" media="handheld"/>
+                <link href="{$STATIC_URL}stylesheets/{$FOLDER}/main.css" rel="stylesheet" type="text/css"/>
         	</head>
         	<body class="error_page">
 

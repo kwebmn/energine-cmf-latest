@@ -41,10 +41,10 @@ check "404" "$B/no-such-page/" 404
 for u in news/foo/ ua/news/foo/ news/2026/13/ news/2026/1/32/; do check "404" "$B/$u" 404; done
 check "archive" "$B/news/$(date +%Y)/" 200
 check "robots" "$B/robots.txt/" 200
-# карта сайта (центральная колонка, не меню слева) перечисляет разделы, а не одну главную
+# карта сайта (её список, не меню в шапке) перечисляет разделы, а не одну главную
 check "sitemap" "$B/sitemap/" 200
 miss=$(php8.5 -r '$d = new DOMDocument(); @$d->loadHTML(file_get_contents($argv[1])); $x = new DOMXPath($d); $h = [];
-  foreach ($x->query("//div[contains(concat(\" \", normalize-space(@class), \" \"), \" col2 \")]//a/@href") as $a) $h[] = trim(preg_replace("~^https?://[^/]+/~", "", $a->value), "/");
+  foreach ($x->query("//ul[contains(concat(\" \", normalize-space(@class), \" \"), \" sitemap_tree \")]//a/@href") as $a) $h[] = trim(preg_replace("~^https?://[^/]+/~", "", $a->value), "/");
   echo implode(" ", array_diff(["news", "contacts", "features"], $h)), "|", implode(" ", array_intersect(["login", "restore-password", "robots.txt", "google-sitemap"], $h));' $T)
 [ "${miss%%|*}" = "" ] || { echo "FAIL [sitemap] в карте сайта нет: ${miss%%|*}"; fail=$((fail+1)); }
 # служебные страницы (закрыты от индексации) в карте для людей не показываются

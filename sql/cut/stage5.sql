@@ -98,3 +98,19 @@ INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_va
            'Форма отправлена слишком быстро или автоматически. Проверьте данные и отправьте ещё раз.')
       FROM `share_lang_tags` t JOIN `share_languages` l
      WHERE t.`ltag_name` = 'ERR_FORM_SPAM';
+
+-- 6. Тема (этап 5в): подписи шапки — ссылка «к содержимому», меню, крошки.
+INSERT IGNORE INTO `share_lang_tags` (`ltag_name`) VALUES ('TXT_SKIP_TO_CONTENT'), ('TXT_MAIN_MENU'), ('TXT_MENU'), ('TXT_BREADCRUMBS');
+INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`)
+    SELECT t.`ltag_id`, l.`lang_id`,
+           CASE t.`ltag_name`
+               WHEN 'TXT_SKIP_TO_CONTENT' THEN IF(l.`lang_abbr` = 'ua', 'До змісту', 'К содержимому')
+               WHEN 'TXT_MAIN_MENU' THEN IF(l.`lang_abbr` = 'ua', 'Головне меню', 'Главное меню')
+               WHEN 'TXT_MENU' THEN IF(l.`lang_abbr` = 'ua', 'Меню', 'Меню')
+               ELSE IF(l.`lang_abbr` = 'ua', 'Ви тут', 'Вы здесь')
+           END
+      FROM `share_lang_tags` t JOIN `share_languages` l
+     WHERE t.`ltag_name` IN ('TXT_SKIP_TO_CONTENT', 'TXT_MAIN_MENU', 'TXT_MENU', 'TXT_BREADCRUMBS');
+-- Своё XML содержимого со старой раскладкой (меню и вход в колонке — теперь они в шапке) заменяется
+-- шаблоном страницы: так у демо-главной; как у админки, пустая строка — «брать шаблон».
+UPDATE `share_sitemap` SET `smap_content_xml` = '' WHERE `smap_content_xml` LIKE '%mainMenuContainer%';

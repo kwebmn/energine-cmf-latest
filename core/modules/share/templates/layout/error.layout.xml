@@ -1,5 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <page>
+	<!-- шапка: меню, язык, вход (компактно — ссылки; полная форма — на странице входа) -->
+	<component name="mainMenu" class="Energine\share\components\PageList">
+		<params>
+			<param name="menu">1</param>
+			<param name="recursive">1</param>
+			<param name="config">core/modules/share/config/MainMenu.component.xml</param>
+		</params>
+	</component>
+	<component name="userMenu" class="Energine\user\components\LoginForm">
+		<params>
+			<param name="compact">1</param>
+		</params>
+	</component>
 	<component name="langSwitcher" class="Energine\share\components\LangSwitcher"/>
     <content/>
 	<component name="footerTextBlock" class="Energine\share\components\TextBlock">
