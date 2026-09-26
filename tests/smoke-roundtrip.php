@@ -60,7 +60,6 @@ $editors = [
     'widget'              => '/admin/widgets/single/widgetsRepository/1/edit/',
     'poll'                => '/admin/polls/single/voteEditor/1/edit/',
     'feedback recipient'  => '/admin/feedback-editor/recipients/single/feedbackRecipientsEditor/5/edit/',
-    'form (builder)'      => '/admin/form-builder/single/formEditor/5/edit/',
     'page (division)'     => '/admin/structure/single/divEditor/3594/edit/',
     'user'                => '/admin/users/single/userEditor/22/edit/',
     'translation'         => '/admin/translations/single/transEditor/14/edit/',

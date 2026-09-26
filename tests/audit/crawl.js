@@ -11,11 +11,11 @@ const [, , guestFile, adminFile, singlesFile, outFile] = process.argv;
 const lines = (f) => fs.readFileSync(f, 'utf8').split('\n').map((s) => s.trim()).filter(Boolean);
 // known and documented: missing icon sprite, placeholder images of an external service
 const IGNORE = [/images\/main\/icons\.png/, /images\/webworks\/icons\.png/, /placehold\.it/];
-// гриды без состояния add: журнал действий, обратная связь и комментарии только читают,
+// гриды без состояния add: журнал действий и обратная связь только читают,
 // а разделы новостей создаёт редактор структуры
-const NO_ADD = [/actionsList\/$/, /feedbackList\/$/, /commentsEdit\/$/, /newsCategoriesEditor\/$/];
-// гриды без обычной формы правки: у комментариев она открывается с номером вкладки
-const NO_EDIT = [/actionsList\/$/, /feedbackList\/$/, /commentsEdit\/$/];
+const NO_ADD = [/actionsList\/$/, /feedbackList\/$/, /newsCategoriesEditor\/$/];
+// гриды без обычной формы правки
+const NO_EDIT = [/actionsList\/$/, /feedbackList\/$/];
 
 (async () => {
     const browser = await chromium.launch({ executablePath: '/usr/bin/google-chrome', headless: true, args: ['--no-sandbox'] });
