@@ -4,7 +4,4 @@
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
     
     <xsl:include href="feed.xslt"/>
-    <xsl:include href="tagcloud.xslt"/>
-    <xsl:include href="branding.xslt"/>
-    <xsl:include href="totp.xslt"/>
 </xsl:stylesheet>

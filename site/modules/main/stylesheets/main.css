@@ -401,12 +401,6 @@ input.radio, input.checkbox {
 /* -------------------- /COMMON -------------------- */
 
 /* -------------------- LAYOUT -------------------- */
-/* ----- base ----- */
-.top_adblock {
-    padding: 10px 0;
-    text-align: center;
-}
-/* ----- /base ----- */
 
 /* ----- header ----- */
 .header .logo {
@@ -777,58 +771,6 @@ ul.inline.wo-separator li + li {
     width: 70%;
 }
 /* ----- /div editor ----- */
-
-/* ----- vote ----- */
-.vote_date {
-    padding: 6px 12px;
-    color: #969696;
-}
-.vote_text {
-    padding: 0 0 10px 12px;
-    font-weight: bold;
-}
-.vote_options {
-    padding-bottom: 5px;
-}
-.vote_option {
-    padding-bottom: 5px;
-}
-.vote_option a,
-.vote_option .result {
-    display: block;
-    background: #f3f3f3 url(../../images/vote_option_bg.gif) 0 0 repeat-x;
-    padding: 8px 12px;
-    text-decoration: none;
-    color: #555;
-}
-.vote_option a {
-    cursor: pointer;
-}
-.vote_option a:hover,
-.vote_option a:active {
-    text-decoration: none;
-    color: #f3f3f3;
-    background: #428bca;
-}
-.vote_option .name {
-    float: left;
-    width: 67%;
-}
-.vote_option .figure {
-    float: right;
-    width: 32%;
-    text-align: right;
-    line-height: 14px;
-    font-size: 18px;
-}
-.vote_count {
-    padding: 0 0 10px 12px;
-    font-size: 11px;
-}
-.vote .go_ahead {
-    text-align: right;
-}
-/* ----- /vote ----- */
 
 /* ----- error page ----- */
 .error_item {

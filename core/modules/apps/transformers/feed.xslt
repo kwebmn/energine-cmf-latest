@@ -117,14 +117,10 @@
         </div>
     </xsl:template>
 
-    <!-- ссылка на ленту RSS: без неё состояние rss ниоткуда не достижимо -->
     <xsl:template match="recordset[parent::component[@class='NewsFeed'][@type='list']]">
         <ul id="{generate-id(.)}" class="feed_list">
             <xsl:apply-templates/>
         </ul>
-        <div class="feed_rss">
-            <a href="{$BASE}{$LANG_ABBR}{$TEMPLATE}rss/" type="application/rss+xml">RSS</a>
-        </div>
     </xsl:template>
 
     <xsl:template match="record[ancestor::component[@class='NewsFeed'][@type='list']]">
@@ -172,48 +168,6 @@
             <div class="feed_announce">
                 <xsl:value-of select="field[@name='news_announce_rtf']" disable-output-escaping="yes"/>
             </div>
-        </li>
-    </xsl:template>
-
-    <!-- похожие новости: ComponentProxyBuilder отдаёт записи ленты, а обёртка остаётся SimilarNews,
-         поэтому шаблоны NewsFeed выше сюда не подходят -->
-    <xsl:template match="component[@class='SimilarNews'][@type='list']">
-        <xsl:if test="recordset/record">
-            <div class="feed similar_news">
-                <h3 class="similar_news_title">
-                    <xsl:choose>
-                        <xsl:when test="@title"><xsl:value-of select="@title"/></xsl:when>
-                        <xsl:otherwise><xsl:value-of select="$TRANSLATION[@const='TXT_SIMILAR_NEWS']"/></xsl:otherwise>
-                    </xsl:choose>
-                </h3>
-                <ul id="{generate-id(recordset)}" class="feed_list">
-                    <xsl:apply-templates select="recordset/record"/>
-                </ul>
-            </div>
-        </xsl:if>
-    </xsl:template>
-
-    <xsl:template match="record[ancestor::component[@class='SimilarNews'][@type='list']]">
-        <xsl:variable name="URL" select="concat($BASE, $LANG_ABBR, field[@name='category']/@url, field[@name='news_id'], '--', field[@name='news_segment'], '/')"/>
-        <li class="feed_item">
-            <xsl:if test="field[@name='attachments']/recordset">
-                <div class="feed_image">
-                    <a href="{$URL}">
-                        <xsl:apply-templates select="field[@name='attachments']" mode="preview">
-                            <xsl:with-param name="PREVIEW_WIDTH">90</xsl:with-param>
-                            <xsl:with-param name="PREVIEW_HEIGHT">68</xsl:with-param>
-                        </xsl:apply-templates>
-                    </a>
-                </div>
-            </xsl:if>
-            <div class="feed_date">
-                <xsl:value-of select="field[@name='news_date']"/>
-            </div>
-            <h4 class="feed_name">
-                <a href="{$URL}">
-                    <xsl:value-of select="field[@name='news_title']" disable-output-escaping="yes"/>
-                </a>
-            </h4>
         </li>
     </xsl:template>
 
