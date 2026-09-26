@@ -17,6 +17,7 @@ echo "### smoke-editing"; php8.5 smoke-editing.php
 echo "### smoke-upload"; php8.5 smoke-upload.php
 echo "### smoke-profile"; php8.5 smoke-profile.php
 echo "### session-id"; php8.5 session-id.php
+echo "### menu"; php8.5 menu.php
 
 echo "### mail (recipients -> local mailbox)"
 RCP_ORIG=$(M "SELECT rcp_recipients FROM apps_feedback_recipient WHERE rcp_id=5")

@@ -3,6 +3,7 @@
 #   bash tests/no-traces.sh [code|db|all] [категория...]
 # Этап 1 — модули: mail-core mail calendar comments forms ads blog shop
 # Этап 2 — части apps: pageads branding tops vote feed tagcloud similar rss sockets htmlcap
+# Этап 3 — share: tags widgets storages watermark video flash lookup columns placehold
 # i18n — в справочнике переводов нет ни одной константы из списков удаления в sql/cut/*.sql.
 # mail-core — отправка писем живёт в ядре: класс Energine\share\gears\Mail есть,
 # а оставшийся код не ссылается на Energine\mail\gears\Mail*.
@@ -12,11 +13,17 @@ R="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 scope=${1:-all}; shift
 mods=("$@")
 [ ${#mods[@]} -eq 0 ] && mods=(mail-core mail calendar comments forms ads blog shop
-                                pageads branding tops vote feed tagcloud similar rss sockets htmlcap i18n)
+                                pageads branding tops vote feed tagcloud similar rss sockets htmlcap
+                                tags widgets storages watermark video flash lookup columns placehold i18n)
 
 # код: весь репозиторий, кроме истории (docs), переходного SQL (sql) и инструментов чистки
 CODE_DIRS=(core site htdocs configs cli setup tests)
-EXCLUDE=(--exclude=no-traces.sh --exclude-dir=tools)
+# сторонние библиотеки: их слова (createElement('video'), строки lang) — не следы Energine; удаляемые
+# каталоги ловит проверка FILES. Артефакты прогонов тестов (вне git) тоже не код.
+EXCLUDE=(--exclude=no-traces.sh --exclude-dir=tools
+         --exclude-dir=ckeditor --exclude-dir=codemirror --exclude-dir=FileAPI --exclude-dir=select2
+         --exclude-dir=jwplayer --exclude-dir=resizer
+         --exclude='*.out' --exclude='*cookies.txt' --exclude=smoke-write.json)
 KEPT_DIRS=(core/modules/share core/modules/user core/modules/apps core/modules/seo site htdocs configs tests)
 
 # CODE — выражение для кода; FILES — файлы, которых быть не должно
@@ -42,6 +49,24 @@ CODE[htmlcap]='HTMLCap'
 FILES[sockets]='core/modules/apps/scripts/swfobject.js core/modules/apps/scripts/MooSocket.js core/modules/apps/scripts/web_socket.js core/modules/apps/scripts/WebSocketMain.swf'
 FILES[vote]='core/modules/apps/scripts/Vote.js'
 FILES[tops]='core/modules/apps/scripts/TOTP.js'
+# этап 3. Кавычки внутри выражений — точкой (.tags.): так их не нужно экранировать в bash.
+# Сторонние библиотеки (CKEditor и т. п.) выражения не задевают: они ищут код Energine.
+CODE[tags]='TagManager|TagEditor|TextboxList|DropBoxList|tag_acpl|\bTags\.js|new Tags\(|BooleanTag|tagEditor|tags\.css|\bshare_tags|share_(sitemap|sites|uploads)_tags|apps_news_tags|getTagsTablename|getPagesByTag|name="tags"|@name ?= ?.tags.|[^-a-z_]tags. ?=>|registerState\(.tags.|state name="tag"|function tag\(|/tag/\[tagID\]|TXT_NEWS_BY_TAG|hasTags|\btag_(code|name|id)\b'
+CODE[widgets]='WidgetsRepository|share_widgets|widget_xml|widget_icon_img|LayoutManager|WidgetGridManager|ComponentParamsForm|NewTemplateForm|layout_manager\.css|editBlocks|EDIT_BLOCKS|showWidgetEditor|widgetEditor|e-widget|widget="(widget|static)"|column="column"|@widget|@column|widgets_repository|buildWidget|build-widget|revertTemplate|revert-template|saveTemplate|save-template|saveNewTemplate|new-template|NewTemplateForm|getTemplateInfo|get-template-info|TXT_SAVE_TO_CURRENT_CONTENT'
+CODE[storages]='FileRepositoryFTP|FileRepositoryRO|FTPRO|\bFTP\b|.ftp. ?=>|repo/ftp|repo/ro\b'
+CODE[watermark]='[Ww]atermark'
+CODE[video]="VideoUploader|jwplayer|\bPlayer\.js|Playlist\.js|new Player\(|embedPlayer|embed_player|putVideo|put-video|getPlayerParams|energinevideo|EnergineVideo|META_TYPE_VIDEO|setVideo|upl_is_mp4|upl_is_webm|upl_is_flv|upl_duration|upl_is_ready|\bis_(mp4|webm|flv)\b|VIDEO_PLAYER|player_box|playerBox|INSERT_VIDEO|media\.xslt|media_type=[\"']video[\"']|case [\"']video[\"']|== *[\"']video[\"']|[\"']video[\"'] *\)|_video[\"']"
+CODE[flash]='Swiff\.Uploader|expressInstall|swfobject|.Flash. *,|Flash video|\*\.flv'
+CODE[lookup]='\bLookup\b|LookupConfig|UserLookup|Lookup\.js|lookupEditor|FIELD_TYPE_LOOKUP|[Ss]elect2|\bacpl\b|/lookup/|registerState\(.lookup.|function lookup\('
+CODE[columns]='\b(u_fbid|u_vkid|u_company|u_position|news_show_image|upl_views)\b'
+CODE[placehold]='placehold\.it'
+FILES[tags]='core/modules/share/gears/TagManager.php core/modules/share/components/TagEditor.php core/modules/share/scripts/Tags.js core/modules/share/scripts/TagEditor.js core/modules/share/transformers/tagEditor.xslt core/modules/share/config/TagEditorModal.component.xml core/modules/share/stylesheets/tags.css core/modules/share/scripts/TextboxList.js core/modules/share/scripts/DropBoxList.js'
+FILES[widgets]='core/modules/share/components/WidgetsRepository.php core/modules/share/config/WidgetsRepository.component.xml core/modules/share/config/ModalWidgetsRepository.component.xml core/modules/share/scripts/LayoutManager.js core/modules/share/scripts/WidgetGridManager.js core/modules/share/scripts/ComponentParamsForm.js core/modules/share/scripts/NewTemplateForm.js core/modules/share/stylesheets/layout_manager.css site/modules/main/templates/content/widgets_repository.content.xml'
+FILES[storages]='core/modules/share/gears/FileRepositoryFTP.php core/modules/share/gears/FileRepositoryFTPRO.php core/modules/share/gears/FileRepositoryRO.php core/modules/share/gears/FTP.php'
+FILES[watermark]='core/modules/share/gears/WatermarkDefault.php core/modules/share/gears/FileRepositoryWatermark.php core/modules/share/gears/IWatermark.php'
+FILES[video]='core/modules/share/gears/VideoUploader.php core/modules/share/scripts/jwplayer core/modules/share/scripts/Player.js core/modules/share/scripts/Playlist.js core/modules/share/transformers/media.xslt core/modules/share/transformers/embed_player.xslt core/modules/share/scripts/ckeditor/plugins/energinevideo'
+FILES[flash]='core/modules/share/scripts/Swiff.Uploader.js core/modules/share/scripts/Swiff.Uploader.swf core/modules/share/scripts/expressInstall.swf core/modules/share/scripts/swfobject.js'
+FILES[lookup]='core/modules/share/components/Lookup.php core/modules/share/gears/LookupConfig.php core/modules/user/components/UserLookup.php core/modules/share/config/Lookup.component.xml core/modules/share/scripts/Lookup.js core/modules/share/scripts/select2 core/modules/share/stylesheets/select2 core/modules/share/stylesheets/acpl.css'
 
 # база: TABLES — имена таблиц (REGEXP), PAGES — шаблоны содержимого страниц,
 # XMLCLASS — класс компонента в XML страниц и виджетов
@@ -74,6 +99,9 @@ XMLCLASS[vote]='Energine\apps\components\Vote"'
 XMLCLASS[tagcloud]='Energine\apps\components\TagCloud"'
 XMLCLASS[similar]='Energine\apps\components\SimilarNews"'
 XMLCLASS[feed]='Energine\apps\components\ExtendedFeed"'
+TABLES[tags]='^(share_tags|share_tags_translation|share_sitemap_tags|share_sites_tags|share_uploads_tags|apps_news_tags)$'
+TABLES[widgets]='^share_widgets$'
+PAGES[widgets]='main/widgets_repository'
 
 # содержимое сайта: ссылки на удалённые разделы, слова вырезанных функций в текстовых блоках,
 # демо-новости о вырезанном
@@ -104,6 +132,13 @@ NEWS[blog]="'blogi-otlozhennye'"
 NEWS[mail]="'rassylki-bez-spama'"
 NEWS[ads]="'bannery-adresno'"
 NEWS[tops]="'podborki-na-glavnoj'"
+LINKS[widgets]='admin/widgets'
+WORDS[tags]='(^|[^а-яёіїє])тег'
+WORDS[widgets]='виджет|віджет|перетаск|перетяг'
+WORDS[storages]='ftp|read-only'
+WORDS[watermark]='водян'
+WORDS[video]='видео|відео|ffmpeg'
+WORDS[flash]='flash|флеш'
 
 # ошибка доступа к базе печатается строкой с меткой __DBERROR__: пустой ответ не должен
 # засчитываться как «следов нет»
@@ -115,7 +150,10 @@ M() { ( envsh=$(php8.5 "$R/tests/env.php" --shell 2>&1) || { echo "__DBERROR__ $
 
 # поиск по коду: код 2 у grep (ошибка в выражении, нечитаемый файл) печатается строкой с меткой
 # __GREPERROR__ — как и с базой, пустой ответ не должен засчитываться как «следов нет»
-G() { local out; out=$(cd "$R" && grep -rnIE "${EXCLUDE[@]}" "$@" 2>&1); [ $? -gt 1 ] && echo "__GREPERROR__ $out" || echo "$out"; }
+# Строки конфигов площадок (configs/system.config.<домен>.php, в них пароли) печатаются без
+# содержимого — только файл и номер строки; шаблон system.config.default.php — как есть.
+G() { local out; out=$(cd "$R" && grep -rnIE "${EXCLUDE[@]}" "$@" 2>&1); [ $? -gt 1 ] && { echo "__GREPERROR__ $out"; return; }
+      sed -E '/^configs\/system\.config\.default\.php:/! s#^(configs/[^:]+:[0-9]+):.*#\1: (строка конфига площадки не печатается)#' <<<"$out"; }
 
 fail=0
 dberror=0
@@ -181,6 +219,20 @@ for m in "${mods[@]}"; do
       shop)     found+=$(M "SELECT CONCAT('column ', TABLE_NAME, '.', COLUMN_NAME) FROM information_schema.COLUMNS
                     WHERE TABLE_SCHEMA = DATABASE() AND ((TABLE_NAME = 'share_sites' AND COLUMN_NAME IN ('currency_id', 'country_id'))
                        OR (TABLE_NAME = 'share_sitemap' AND COLUMN_NAME = 'smap_features_multi'))")$'\n' ;;
+      tags)     found+=$(M "SELECT CONCAT('page-xml tags ', smap_id) FROM share_sitemap
+                    WHERE LOCATE('<param name=\"tags\">', CONCAT_WS(' ', smap_content_xml, smap_layout_xml)) > 0")$'\n' ;;
+      widgets)  found+=$(M "SELECT CONCAT('page-xml widget ', smap_id) FROM share_sitemap
+                    WHERE CONCAT_WS(' ', smap_content_xml, smap_layout_xml) REGEXP ' (widget|column)=\"'")$'\n' ;;
+      storages) found+=$(M "SELECT CONCAT('repository ', upl_id, ' ', upl_mime_type) FROM share_uploads
+                    WHERE upl_mime_type IN ('repo/ftp', 'repo/ftpro', 'repo/ro')")$'\n' ;;
+      video)    found+=$(M "SELECT CONCAT('column share_uploads.', COLUMN_NAME) FROM information_schema.COLUMNS
+                    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'share_uploads'
+                      AND COLUMN_NAME IN ('upl_is_mp4', 'upl_is_webm', 'upl_is_flv', 'upl_duration', 'upl_is_ready')
+                    UNION SELECT CONCAT('upload ', upl_id, ' video') FROM share_uploads WHERE upl_internal_type = 'video'")$'\n' ;;
+      columns)  found+=$(M "SELECT CONCAT('column ', TABLE_NAME, '.', COLUMN_NAME) FROM information_schema.COLUMNS
+                    WHERE TABLE_SCHEMA = DATABASE() AND ((TABLE_NAME = 'user_users' AND COLUMN_NAME IN ('u_fbid', 'u_vkid', 'u_company', 'u_position'))
+                       OR (TABLE_NAME = 'apps_news' AND COLUMN_NAME = 'news_show_image')
+                       OR (TABLE_NAME = 'share_uploads' AND COLUMN_NAME = 'upl_views'))")$'\n' ;;
       branding) found+=$(M "SELECT CONCAT('column ', TABLE_NAME, '.', COLUMN_NAME) FROM information_schema.COLUMNS
                     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'share_sitemap' AND COLUMN_NAME = 'brand_id'")$'\n' ;;
     esac
