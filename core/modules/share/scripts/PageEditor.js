@@ -6,7 +6,7 @@
  * </ul>
  *
  * @requires Energine
- * @requires ckeditor/ckeditor
+ * @requires EnergineEditor
  * @requires ModalBox
  * @requires Overlay
  *
@@ -17,190 +17,122 @@
  * @version 1.0.0
  */
 
-ScriptLoader.load('ckeditor/ckeditor', 'ModalBox', 'Overlay');
+ScriptLoader.load('EnergineEditor', 'ModalBox', 'Overlay');
 
 /**
- * @class PageEditor
- * @classdesc Page editor.
+ * Правка текстовых блоков (и новостей ленты) прямо на странице: каждый элемент .nrgnEditor —
+ * встроенный (inline) редактор Jodit. Блок сохраняется, когда из него уходят; несохранённое при
+ * уходе со страницы отправляется маяком — синхронный запрос при закрытии страницы браузеры не шлют.
+ *
+ * @constructor
  */
 var PageEditor = new Class(/** @lends PageEditor# */{
-    // todo: Make it sense to store this two members in the object? They used only by initialize.
     /**
-     * Editor class name.
+     * Class name of the editable elements.
      * @type {string}
      */
     editorClassName: 'nrgnEditor',
 
     /**
-     * Array of block editors.
+     * Block editors.
      * @type {PageEditor.BlockEditor[]}
      */
     editors: [],
 
+    // constructor
     initialize: function () {
-        CKEDITOR.disableAutoInline = true;
-        CKEDITOR.config.extraPlugins = 'sourcedialog,energineimage,energinefile';
-        CKEDITOR.config.removePlugins = 'sourcearea';
-        CKEDITOR.config.allowedContent = true;
-        CKEDITOR.config.toolbar = [
-            { name: 'document', groups: [ 'mode' ], items: [ 'Sourcedialog' ] },
-            { name: 'clipboard', groups: [ 'clipboard', 'undo' ], items: [ 'Cut', 'Copy', 'Paste', 'PasteText', 'PasteFromWord', '-', 'Undo', 'Redo' ] },
-            { name: 'editing', groups: [ 'find', 'selection' ], items: [ 'Find', 'Replace', '-', 'SelectAll' ] },
-            { name: 'links', items: [ 'Link', 'Unlink', 'Anchor' ] },
-            { name: 'insert', items: [ 'Image', 'Table', 'EnergineImage', 'EnergineFile' ] },
-            { name: 'tools', items: [ 'ShowBlocks' ] },
-            '/',
-            { name: 'basicstyles', groups: [ 'basicstyles', 'cleanup' ], items: [ 'Bold', 'Italic', 'Underline', 'Strike', 'Subscript', 'Superscript', '-', 'RemoveFormat' ] },
-            { name: 'paragraph', groups: [ 'list', 'indent', 'align' ], items: [ 'NumberedList', 'BulletedList', '-', 'Outdent', 'Indent', '-', 'JustifyLeft', 'JustifyCenter', 'JustifyRight', 'JustifyBlock' ] },
-            { name: 'styles', items: [ 'Styles', 'Format', 'Font', 'FontSize' ] },
-            { name: 'colors', items: [ 'TextColor', 'BGColor' ] }
-        ];
-        var styles = [];
-        if (window['wysiwyg_styles']) {
-            Object.each(window['wysiwyg_styles'], function (style) {
-                styles.push({
-                    name: style['caption'],
-                    element: style['element'],
-                    attributes: { 'class': style['class'] }
-                });
-            });
-        }
-        CKEDITOR.stylesSet.add('energine', styles);
-        CKEDITOR.config.stylesSet = 'energine';
-		// allow empty <i></i>
-		CKEDITOR.dtd.$removeEmpty['i'] = false;
-		CKEDITOR.dtd.$removeEmpty['em'] = false;
-
         $(document.body).getElements('.' + this.editorClassName).each(function (element) {
             this.editors.push(new PageEditor.BlockEditor(element));
         }, this);
 
-        window.addEvent(((Browser.opera) ? 'unload' : 'beforeunload'), function () {
-            if (this.editors.length) {
-                this.editors.each(function (editor) {
-                    editor.save.call(editor, false);
-                }, this);
-            }
-            if (Browser.opera) {
-                // Dirty Opera hack
-                window.location.href = window.location.href;
-                return '';
-            }
+        window.addEventListener('pagehide', function () {
+            this.editors.each(function (editor) {
+                editor.beacon();
+            });
         }.bind(this));
     }
 });
 
 /**
- * Block editor.
+ * Редактор одного блока.
  *
  * @constructor
- * @param pageEditor
- * @param area
+ * @param {Element} area Элемент .nrgnEditor с атрибутами single_template, eID, num.
  */
 PageEditor.BlockEditor = new Class(/** @lends PageEditor.BlockEditor# */{
     // constructor
     initialize: function (area) {
-        /**
-         * Area element.
-         * @type {Element}
-         */
         this.area = area;
-        this.area.setProperty('contenteditable', true);
-
-        /**
-         * Defines whether the editor is active.
-         * @type {boolean}
-         */
-        this.isActive = false;
-
-        /**
-         * Single path.
-         * @type {string}
-         */
         this.singlePath = this.area.getProperty('single_template');
-
-        /**
-         * Block editor ID.
-         * @type {string}
-         */
-        this.ID = this.area.getProperty('eID') ? this.area.getProperty('eID') : '';
-
-        /**
-         * Text block ID.
-         * @type {string}
-         */
+        this.ID = this.area.getProperty('eID') || '';
         this.num = this.area.getProperty('num') || '';
 
-        /**
-         * Editor.
-         * @type {CKEDITOR}
-         */
-        this.editor = CKEDITOR.inline(this.area.get('id'), {
-            language: Energine.lang
+        this.editor = EnergineEditor.make(this.area, {
+            singlePath: this.singlePath,
+            jodit: {inline: true, toolbarInline: true, toolbarInlineForSelection: false, showPlaceholder: false}
         });
-        this.editor.singleTemplate = this.area.getProperty('single_template');
-        this.editor.editorId = this.area.get('id');
-        this.editor.on('focus', function () {
-                this.editor.setReadOnly(false);
-        }.bind(this));
         /**
-         * Overlay.
-         * @type {Overlay}
+         * Текст, который уже на сервере.
+         * @type {string}
          */
-        this.overlay = new Overlay();
-        /*this.editor.on('blur', function () {
-            console.log(this.area)
-            this.area.removeClass('activeEditor');
-            this.save();
-        }.bind(this));
-        this.editor.on('focus', function () {
-            console.log(this.area)
-            this.area.addClass('activeEditor');
-        }.bind(this));*/
+        this.saved = this.editor.value;
+        this.editor.events.on('blur', this.save.bind(this));
     },
 
     /**
-     * Save.
-     *
-     * @function
-     * @public
-     * @param {boolean} [async = true] Defines whether the request be asynchronous or not.
-     * @param {function} [onSuccess = undefined] User defined function that is called after sucess saving
+     * Есть ли несохранённые изменения.
+     * @returns {boolean}
      */
-    save: function (async, onSuccess) {
-        if (this.editor.checkDirty()) {
-            if (async == undefined) {
-                async = true;
-            }
-            if (!async) {
-                this.overlay.show();
-            }
+    isDirty: function () {
+        return this.editor.value !== this.saved;
+    },
 
-            var data = 'data=' + encodeURIComponent(this.editor.getData());
-            if (this.ID) {
-                data += '&ID=' + this.ID;
-            }
-            if (this.num) {
-                data += '&num=' + this.num;
-            }
-
-            new Request({
-                url: this.singlePath + 'save-text',
-                async: async,
-                method: 'post',
-                data: data,
-                onSuccess: function (response) {
-                    // Временно убрано, т.к. сбрасывает курсор в начала редактируемой области
-                    // и из за этого неправильно работают некоторые ф-ции эдитора.
-                    //this.editor.setData(response);
-                    if (onSuccess)onSuccess.call(this);
-                    this.editor.resetDirty();
-                    if (!async) {
-                        this.overlay.hide();
-                    }
-                }.bind(this)
-            }).send();
+    /**
+     * Тело запроса save-text.
+     * @returns {URLSearchParams}
+     */
+    body: function (value) {
+        var data = new URLSearchParams();
+        data.append('data', value);
+        if (this.ID) {
+            data.append('ID', this.ID);
         }
+        if (this.num) {
+            data.append('num', this.num);
+        }
+        return data;
+    },
 
+    /**
+     * Сохранить блок, если он изменился.
+     */
+    save: function () {
+        if (!this.isDirty()) {
+            return;
+        }
+        var value = this.editor.value;
+        fetch(this.singlePath + 'save-text', {method: 'POST', body: this.body(value), credentials: 'same-origin'})
+            .then(function (response) {
+                if (response.ok) {
+                    this.saved = value;
+                } else {
+                    console.warn('save-text: HTTP ' + response.status);
+                }
+            }.bind(this))
+            .catch(function (e) {
+                console.warn(e);
+            });
+    },
+
+    /**
+     * При уходе со страницы: несохранённое отправляется маяком.
+     */
+    beacon: function () {
+        if (this.isDirty()) {
+            var value = this.editor.value;
+            if (navigator.sendBeacon(this.singlePath + 'save-text', this.body(value))) {
+                this.saved = value;
+            }
+        }
     }
 });
