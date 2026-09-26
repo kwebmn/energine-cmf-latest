@@ -1,7 +1,7 @@
 {
-  "name": "energine-cmf/energine",
+  "name": "energine/cmf",
   "description": "Energine is an XML/XSLT content management framework.",
-  "type": "library",
+  "type": "project",
   "license": "MIT",
   "keywords": [
     "xml",
@@ -11,7 +11,7 @@
   ],
   "homepage": "http://energine.net/",
   "require": {
-    "php": ">=5.5.0",
+    "php": ">=8.4",
     "ext-dom": "*",
     "ext-gd": "*",
     "ext-json": "*",
@@ -21,8 +21,29 @@
     "ext-pdo_mysql": "*",
     "ext-SimpleXML": "*",
     "ext-session": "*",
-    "ext-tidy": "*",
-    "ext-xsl": "*"
+    "ext-xsl": "*",
+    "symfony/console": "^7.4"
+  },
+  "suggest": {
+    "ext-tidy": "Cleans up HTML of text blocks when site.aggressive_cleanup is on (skipped without the extension)"
+  },
+  "require-dev": {
+    "psr/log": "^3.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "Energine\\": "core/modules",
+      "EnergineSite\\": "site/modules"
+    }
+  },
+  "config": {
+    "platform": {
+      "php": "8.5.0"
+    }
+  },
+  "scripts": {
+    "nrgn-setup": "php8.5 ../../web/index.php setup",
+    "nrgn-linker": "php8.5 ../../web/index.php setup linker"
   },
   "authors": [
     {

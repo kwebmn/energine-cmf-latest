@@ -1,0 +1,7 @@
+#!/bin/sh
+# Не даёт закоммитить пароль базы или администратора из локальных конфигов.
+root=$(git rev-parse --show-toplevel)
+if ! php8.5 "$root/.githooks/secret-scan.php" --staged; then
+    echo "pre-commit: в индексе пароль из локального конфига, коммит отменён" >&2
+    exit 1
+fi

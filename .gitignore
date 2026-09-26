@@ -1,3 +1,24 @@
 .idea/
 *~
 ~*
+
+# зависимости и кеши
+/vendor/
+/image-cache/*
+!/image-cache/readme.txt
+
+# загрузки площадки живут в web/uploads, в репозитории только каркас
+/htdocs/uploads/public/*
+/htdocs/uploads/temp/*
+/htdocs/uploads/tmp/*
+!/htdocs/uploads/*/readme.txt
+
+# конфиги площадок с паролями; в git только шаблон
+/configs/system.config.*.php
+!/configs/system.config.default.php
+
+# тесты: учётные данные площадки и артефакты прогонов
+/tests/local.php
+/tests/**/*-cookies.txt
+/tests/**/*.out
+/tests/audit/crawl-*.json
