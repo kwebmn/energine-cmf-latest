@@ -233,11 +233,13 @@ final class UserSession implements \SessionHandlerInterface {
     }
 
     /**
-     * Creating session identifier
+     * Creating session identifier: 160 random bits as 40 hex characters.
+     * It used to be sha1(time() + rand(0, 10000)) - some ten thousand values for any
+     * few hours, so identifiers repeated and could be guessed from the login time.
      * @return string
      */
     public static function createIdentifier() {
-        return sha1(time() + rand(0, 10000));
+        return bin2hex(random_bytes(20));
     }
 
     /**
