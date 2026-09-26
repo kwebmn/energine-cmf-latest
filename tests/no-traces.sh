@@ -4,6 +4,7 @@
 # Этап 1 — модули: mail-core mail calendar comments forms ads blog shop
 # Этап 2 — части apps: pageads branding tops vote feed tagcloud similar rss sockets htmlcap
 # Этап 3 — share: tags widgets storages watermark video flash lookup columns placehold
+# Этап 4 — редактор и загрузка: ckeditor fileapi jsonp
 # i18n — в справочнике переводов нет ни одной константы из списков удаления в sql/cut/*.sql.
 # mail-core — отправка писем живёт в ядре: класс Energine\share\gears\Mail есть,
 # а оставшийся код не ссылается на Energine\mail\gears\Mail*.
@@ -14,7 +15,8 @@ scope=${1:-all}; shift
 mods=("$@")
 [ ${#mods[@]} -eq 0 ] && mods=(mail-core mail calendar comments forms ads blog shop
                                 pageads branding tops vote feed tagcloud similar rss sockets htmlcap
-                                tags widgets storages watermark video flash lookup columns placehold i18n)
+                                tags widgets storages watermark video flash lookup columns placehold
+                                ckeditor fileapi jsonp i18n)
 
 # код: весь репозиторий, кроме истории (docs), переходного SQL (sql) и инструментов чистки
 CODE_DIRS=(core site htdocs configs cli setup tests)
@@ -58,6 +60,12 @@ CODE[watermark]='[Ww]atermark'
 CODE[video]="VideoUploader|UPL_IS_READY|UPL_NOT_READY|TXT_NOT_READY|NOT_VIDEO_FILE|seo_sitemap_videos|videomap|maxVideos|ogp\.me/ns/video|jwplayer|\bPlayer\.js|Playlist\.js|new Player\(|embedPlayer|embed_player|putVideo|put-video|getPlayerParams|energinevideo|EnergineVideo|META_TYPE_VIDEO|setVideo|upl_is_mp4|upl_is_webm|upl_is_flv|upl_duration|upl_is_ready|\bis_(mp4|webm|flv)\b|VIDEO_PLAYER|player_box|playerBox|INSERT_VIDEO|media\.xslt|media_type=[\"']video[\"']|case [\"']video[\"']|== *[\"']video[\"']|[\"']video[\"'] *\)|_video[\"']"
 CODE[flash]='EXT_FLASH|Swiff\.Uploader|expressInstall|swfobject|.Flash. *,|Flash video|\*\.flv'
 CODE[lookup]='\bLookup\b|LookupConfig|UserLookup|Lookup\.js|lookupEditor|FIELD_TYPE_LOOKUP|[Ss]elect2|\bacpl\b|/lookup/|registerState\(.lookup.|function lookup\('
+# этап 4: CKEditor и FileAPI (сами каталоги ловит FILES), JSONP-ответ загрузки для iframe-запасного пути
+CODE[ckeditor]='CKEDITOR|ckeditor|energineimage|energinefile|sourcedialog|\bcke_|addWYSIWYGTranslations|wysiwyg_styles|wysiwyg\.styles|wysiwyg_toolbar'
+CODE[fileapi]='FileAPI|fileapi'
+CODE[jsonp]='ctx\[jsonp\]|\$jsonp'
+FILES[ckeditor]='core/modules/share/scripts/ckeditor'
+FILES[fileapi]='core/modules/share/scripts/FileAPI'
 # имена типов полей в кавычках (case 'lookup':, type == 'lookup', @type='lookup', 'textbox')
 CODE[tags]+="|[\"']textbox[\"']"
 CODE[lookup]+="|[\"']lookup[\"']|@type=.lookup."
