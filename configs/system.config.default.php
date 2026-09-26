@@ -112,6 +112,20 @@ return array(
     'mail' => array(
         // адрес отправителя почтовой корреспонденции
         'from' => 'noreply@energine.org',
+        // отправка через SMTP-сервер; без host (или без блока) письма уходят через mail()
+        /*
+        'smtp' => array(
+            'host' => 'smtp.example.org',
+            'port' => 587,
+            // tls — STARTTLS (порт 587 или 25), ssl — TLS сразу (порт 465), '' — без шифрования
+            'encryption' => 'tls',
+            'username' => 'noreply@example.org',
+            'password' => 'SMTP PASSWORD',
+            // свой центр сертификации, если сертификат сервера выпущен не общедоступным
+            // 'cafile' => '/path/to/ca.pem',
+            'timeout' => 15,
+        ),
+        */
     ),
 
     // настройки файловых репозитариев

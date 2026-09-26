@@ -30,6 +30,12 @@ final class Mail extends Primitive {
     private $sender;
 
     /**
+     * Адрес отправителя без имени — для конверта SMTP и проверки.
+     * @var string
+     */
+    private $senderAddress;
+
+    /**
      * Set of recipients.
      * @var array $to
      */
@@ -66,7 +72,7 @@ final class Mail extends Primitive {
     private $attachments = array();
 
     public function __construct() {
-        $this->sender = $this->getConfigValue('mail.from');
+        $this->sender = $this->senderAddress = (string)$this->getConfigValue('mail.from');
     }
 
     /**
@@ -78,6 +84,7 @@ final class Mail extends Primitive {
      */
 
     public function setFrom($email, $name = false) {
+        $this->senderAddress = (string)$email;
         $this->sender = ($name)?'=?UTF-8?B?'.base64_encode($name).'?= <'.$email.'>':$email;
         return $this;
     }
@@ -242,12 +249,35 @@ final class Mail extends Primitive {
         }
 
         $message .= "--".$MIMEBoundary1."--";
-        $headers = implode(self::EOL, $this->headers);
 
-        if(!empty($this->to)) {
-            $result = mail(implode(',', $this->to), $this->subject, $message, $headers);
+        if (empty($this->to)) {
+            return false;
         }
-        else {
+        try {
+            // перевод строки в адресе дописал бы свой заголовок (или команду SMTP): такое письмо не уходит
+            foreach (array_merge([$this->senderAddress], array_keys($this->to), array_keys($this->replyTo)) as $address) {
+                if (preg_match('/[\r\n]/', $address)) {
+                    throw new \InvalidArgumentException('line break in an address');
+                }
+            }
+            $smtp = $this->getConfigValue('mail.smtp');
+            if (is_array($smtp) && !empty($smtp['host'])) {
+                // через SMTP письмо целиком: заголовки, которые mail() и почтовый сервер добавили бы сами
+                $domain = (string)$this->getConfigValue('site.domain') ?: (gethostname() ?: 'localhost');
+                $headers = array_map('rtrim', $this->headers);
+                $headers[] = 'To: ' . implode(', ', $this->to);
+                $headers[] = 'Subject: ' . $this->subject;
+                $headers[] = 'Date: ' . date('r');
+                $headers[] = 'Message-ID: <' . bin2hex(random_bytes(16)) . '@' . $domain . '>';
+                (new SmtpTransport($smtp + ['helo' => $domain]))
+                    ->send($this->senderAddress, array_keys($this->to), implode("\r\n", $headers) . "\r\n\r\n" . $message);
+                $result = true;
+            } else {
+                $result = mail(implode(',', $this->to), $this->subject, $message, implode(self::EOL, $this->headers));
+            }
+        } catch (\Exception $e) {
+            // как у mail(): письмо не ушло — false; причина — в журнал ошибок PHP
+            error_log('Mail: ' . $e->getMessage());
             $result = false;
         }
 
