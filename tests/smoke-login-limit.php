@@ -20,10 +20,13 @@ q('INSERT INTO user_users (u_name, u_password, u_fullname, u_is_active) VALUES (
 function attempt($login, $password, $page = '/login/') {
     @unlink($GLOBALS['jar']);
     http($page);
-    http('/auth.php', ['user' => ['login' => 1, 'username' => $login, 'password' => $password]], [], BASE . $page);
+    [$authCode] = http('/auth.php', ['user' => ['login' => 1, 'username' => $login, 'password' => $password]], [], BASE . $page);
     $in = (bool)cookie('NRGNSID');
-    [, $html] = http($page);
+    // для разбора редкого сбоя (не вошёл, сообщения нет): ответ auth.php и cookie причины в банке
+    $diag = "auth.php HTTP $authCode, failed_login: " . var_export(cookie('failed_login'), true);
+    [$pageCode, $html] = http($page);
     $message = preg_match('~<div class="error_message">(.*?)</div>~s', $html, $m) ? trim(strip_tags($m[1])) : '';
+    if (!$in && $message === '') $message = "(нет сообщения; $diag, страница HTTP $pageCode)";
     if ($in) logout();
     return [$in, $message];
 }
@@ -42,8 +45,9 @@ check('шестая попытка с верным паролем отклоне
 check('сообщение на украинском', !$in && $message === (string)translation('ERR_TOO_MANY_ATTEMPTS', 2), $message);
 
 q('UPDATE user_login_attempts SET la_date = la_date - 16 * 60 WHERE la_login = ?', [$login]);
-[$in] = attempt($login, $password);
-check('через 15 минут вход открыт', $in);
+[$in, $message] = attempt($login, $password);
+check('через 15 минут вход открыт', $in, $message . '; неудач логина за окно: '
+    . scalar('SELECT COUNT(*) FROM user_login_attempts WHERE la_login = ? AND la_date > ?', [$login, time() - 900]));
 check('удачный вход очистил неудачи логина', (int)scalar('SELECT COUNT(*) FROM user_login_attempts WHERE la_login = ?', [$login]) === 0);
 
 echo "-- неудачи с другого IP\n";

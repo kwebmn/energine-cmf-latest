@@ -66,12 +66,14 @@ check("чужой Origin с верным токеном — 422 (HTTP $c)", $c =
 check("свой Origin — принят (HTTP $c)", $c == 200, $body);
 
 echo "-- вход\n";
-http('/auth.php', ['user' => ['login' => 1, 'username' => $GLOBALS['E']['ADMIN_EMAIL'], 'password' => $GLOBALS['E']['ADMIN_PASSWORD']]],
+[$authCode] = http('/auth.php', ['user' => ['login' => 1, 'username' => $GLOBALS['E']['ADMIN_EMAIL'], 'password' => $GLOBALS['E']['ADMIN_PASSWORD']]],
     NOTOKEN, BASE . '/login/');
 check('вход без токена не выполнен', !cookie('NRGNSID'));
+// для разбора редкого сбоя (сообщения нет): ответ auth.php и cookie причины в банке до открытия страницы
+$authDiag = "auth.php HTTP $authCode, failed_login в банке: " . var_export(cookie('failed_login'), true);
 [$c, $html] = http('/login/');
 check('страница входа объясняет причину текстом ERR_CSRF', $errCsrf !== '' && str_contains($html, $errCsrf),
-    preg_match('~<div class="error_message">(.*?)</div>~s', $html, $m) ? $m[1] : '(нет сообщения)');
+    (preg_match('~<div class="error_message">(.*?)</div>~s', $html, $m) ? $m[1] : '(нет сообщения)') . "; $authDiag, страница HTTP $c");
 
 login();
 check('вход с токеном выполнен', (bool)cookie('NRGNSID'));
