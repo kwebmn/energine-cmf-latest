@@ -23,6 +23,7 @@ use Energine\share\components\DBDataSet,
     Energine\share\gears\FieldDescription,
     Energine\share\gears\Field,
     Energine\share\gears\MailTemplate,
+    Energine\share\gears\FormGuard,
     Energine\share\gears\Mail;
 /**
  * Form for feedback.
@@ -32,6 +33,8 @@ class FeedbackForm;
 @endcode
  */
 class FeedbackForm extends DBDataSet {
+    use FormGuard;
+
     /**
      * @copydoc DBDataSet::__construct
      */
@@ -131,6 +134,8 @@ class FeedbackForm extends DBDataSet {
         }
         try {
             $data[$this->getTableName()] = $_POST[$this->getTableName()];
+            // ловушка и время заполнения: боты дальше не проходят
+            $this->checkForm();
             
             if ($result = $this->saveData($data)) {
                 $data = $data[$this->getTableName()];
@@ -189,6 +194,14 @@ class FeedbackForm extends DBDataSet {
         catch (\Exception $e) {
             $this->failure($e->getMessage(), $data[$this->getTableName()]);
         }
+    }
+
+    /**
+     * Форма отмечается временем показа (FormGuard).
+     */
+    protected function prepare() {
+        parent::prepare();
+        $this->guardForm();
     }
 
     //todo VZ: input argument is not used.

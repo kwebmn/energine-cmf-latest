@@ -29,6 +29,7 @@ restore() {
 trap restore EXIT
 M "UPDATE apps_feedback_recipient SET rcp_recipients='$MAILBOX' WHERE rcp_id=5;"
 php8.5 smoke-mail.php
+echo "### antispam"; php8.5 smoke-antispam.php
 echo "--- mailbox recipients:"; grep -h "^To: " "$MAILBOX_FILE" 2>/dev/null | sort | uniq -c
 echo "--- cleanup-mail"; php8.5 cleanup-mail.php mailbox
 restore; trap - EXIT

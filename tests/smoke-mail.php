@@ -82,6 +82,7 @@ $off = mboxSize();
 [$c, $html] = http('/register/');
 check('register page without captcha', $c == 200 && clean($html) && stripos($html, 'captcha') === false, $html);
 $registration = ['user_users[u_name]' => TEST_EMAIL, 'user_users[u_fullname]' => USER_NAME];
+sleep(3);   // как человек: форма, отправленная сразу после показа, отклоняется (FormGuard)
 [$c, $body] = http('/register/save-new-user/', formIn($html, 'register/save-new-user', $registration));
 $uid = scalar('SELECT u_id FROM user_users WHERE u_name = ?', [TEST_EMAIL]);
 $formError = preg_match('~<div class="alert[^"]*"[^>]*>(.*?)</div>~s', $body, $mm) ? strip_tags($mm[1]) : '';
@@ -180,6 +181,7 @@ $off = mboxSize();
 check('feedback form without captcha', $c == 200 && clean($html) && stripos($html, 'captcha') === false, $html);
 $feedback = ['apps_feedback[feed_author]' => 'Claude <b>Test</b>', 'apps_feedback[feed_email]' => TEST_EMAIL,
     'apps_feedback[feed_theme]' => 'claude-test feedback', 'apps_feedback[feed_text]' => "Проверка <script>alert(1)</script> & \"кавычки\"\nвторая строка [feed_email]"];
+sleep(3);   // как человек: форма, отправленная сразу после показа, отклоняется (FormGuard)
 [$c, $body] = http('/contacts/send/', formIn($html, 'contacts/send', $feedback));
 $feed = q("SELECT feed_id, feed_date FROM apps_feedback WHERE feed_theme = 'claude-test feedback'")->fetch();
 check("feedback saved (HTTP $c, " . json_encode($feed) . ')', $feed && $c == 302 && abs(strtotime($feed['feed_date']) - time()) < 120, $body);

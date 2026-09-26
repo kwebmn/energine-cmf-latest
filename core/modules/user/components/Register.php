@@ -24,6 +24,7 @@ use Energine\share\components\DBDataSet,
     Energine\share\gears\DataDescription,
     Energine\share\gears\Field,
     Energine\share\gears\MailTemplate,
+    Energine\share\gears\FormGuard,
     Energine\share\gears\Mail;
 
 /**
@@ -34,6 +35,8 @@ class Register;
  * @endcode
  */
 class Register extends DBDataSet {
+    use FormGuard;
+
     /**
      * Exemplar of User class.
      * @var User $user
@@ -101,6 +104,8 @@ class Register extends DBDataSet {
     protected function save() {
         //inspect($_SESSION);
         try {
+            // ловушка и время заполнения: боты дальше не проходят
+            $this->checkForm();
             $this->saveData();
 
             $this->response->redirectToCurrentSection('success/');
@@ -182,6 +187,8 @@ class Register extends DBDataSet {
         if ($this->getDataDescription()->getFieldDescriptionByName('u_name')) {
             $this->getDataDescription()->getFieldDescriptionByName('u_name')->setType(FieldDescription::FIELD_TYPE_EMAIL);
         }
+        // форма отмечается временем показа (FormGuard)
+        $this->guardForm();
     }
 
     /**

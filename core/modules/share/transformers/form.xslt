@@ -23,6 +23,13 @@
 			</xsl:choose>
             <input type="hidden" name="componentAction" value="{@componentAction}" id="componentAction"/>
             <input type="hidden" name="csrf_token" value="{$CSRF}"/>
+            <xsl:if test="@antispam">
+                <!-- защита от ботов (FormGuard): поле, которое человек не видит и не заполняет, и время показа формы -->
+                <div style="position:absolute;left:-10000px;top:auto;width:1px;height:1px;overflow:hidden" aria-hidden="true">
+                    <input type="text" name="hp_url" value="" tabindex="-1" autocomplete="off"/>
+                </div>
+                <input type="hidden" name="form_ts" value="{@antispam}"/>
+            </xsl:if>
     		<xsl:apply-templates/>
         </form>
     </xsl:template>

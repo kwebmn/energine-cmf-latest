@@ -89,3 +89,12 @@ INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_va
      WHERE t.`ltag_name` IN ('MSG_RESTORE_LINK_SENT', 'ERR_RESTORE_LINK', 'MSG_PASSWORD_CHANGED', 'TXT_NEW_PASSWORD');
 -- прежние сообщения (новый пароль в письме, «неправильное имя пользователя» — выдавало, есть ли адрес)
 DELETE FROM `share_lang_tags` WHERE `ltag_name` IN ('MSG_PASSWORD_SENT', 'ERR_NO_U_NAME');
+
+-- 5. Ловушка для ботов и минимальное время заполнения (FormGuard) в регистрации и обратной связи.
+INSERT IGNORE INTO `share_lang_tags` (`ltag_name`) VALUES ('ERR_FORM_SPAM');
+INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`)
+    SELECT t.`ltag_id`, l.`lang_id`, IF(l.`lang_abbr` = 'ua',
+           'Форму надіслано надто швидко або автоматично. Перевірте дані та надішліть ще раз.',
+           'Форма отправлена слишком быстро или автоматически. Проверьте данные и отправьте ещё раз.')
+      FROM `share_lang_tags` t JOIN `share_languages` l
+     WHERE t.`ltag_name` = 'ERR_FORM_SPAM';
