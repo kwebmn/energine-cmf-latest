@@ -98,3 +98,19 @@ DELETE u FROM `share_uploads` u
    AND NOT EXISTS (SELECT 1 FROM `apps_news_uploads` x WHERE x.`upl_id` = u.`upl_id`)
    AND NOT EXISTS (SELECT 1 FROM `user_users` x WHERE x.`u_avatar_img` = u.`upl_path`)
    AND NOT EXISTS (SELECT 1 FROM `share_widgets` x WHERE x.`widget_icon_img` = u.`upl_path`);
+
+-- 8. Переводы вырезанных частей apps: подписи их кода, названия шаблонов и компонентов,
+--    поля их таблиц. Список собран tests/tools/cut-constants.php; оставшийся код эти имена
+--    не использует и динамически не собирает. Переводы удаляются каскадом.
+DELETE FROM `share_lang_tags` WHERE `ltag_name` IN (
+    'BTN_ADD_ARTICLE', 'BTN_DELETE_ARTICLE', 'BTN_EDIT_ARTICLE', 'CONTENT_BRANDING_EDITOR',
+    'CONTENT_EXTFEED', 'CONTENT_VOTE_REPOSITORY', 'FIELD_BRAND_BGCOLOR', 'FIELD_BRAND_CSS_RULE',
+    'FIELD_BRAND_ID', 'FIELD_BRAND_LAYOUT_CCLASS', 'FIELD_BRAND_MAIN_IMG', 'FIELD_BRAND_MIN_HEIGHT',
+    'FIELD_BRAND_NAME', 'FIELD_TF_ANNOTATION_RTF', 'FIELD_TF_DATE', 'FIELD_TF_NAME',
+    'FIELD_TF_TEXT_RTF', 'FIELD_TG_ID', 'FIELD_TG_NAME', 'FIELD_TOP_ID', 'FIELD_TOP_IS_ACTIVE',
+    'FIELD_TOP_LINK', 'FIELD_TOP_NAME', 'FIELD_TOP_TEXT_RTF', 'FIELD_VOTE_DATE', 'FIELD_VOTE_ID',
+    'FIELD_VOTE_IS_ACTIVE', 'FIELD_VOTE_NAME', 'FIELD_VOTE_QUESTION_COUNTER',
+    'FIELD_VOTE_QUESTION_ID', 'FIELD_VOTE_QUESTION_TITLE', 'TAB_ANSWERS', 'TAB_VOTE_QUESTIONS',
+    'TXT_BEDITOR', 'TXT_READ_ALL_NEWS', 'TXT_RSS_NEWS_TITLE', 'TXT_SIMILAR_NEWS', 'TXT_VOTE',
+    'TXT_VOTE_COUNT'
+);
