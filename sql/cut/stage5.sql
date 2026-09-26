@@ -19,3 +19,23 @@ INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_va
     SELECT t.`ltag_id`, l.`lang_id`, IF(l.`lang_abbr` = 'ua', 'Невірний e-mail або пароль.', 'Неверный e-mail или пароль.')
       FROM `share_lang_tags` t JOIN `share_languages` l
      WHERE t.`ltag_name` = 'ERR_BAD_AUTH';
+
+-- 3. Лимит попыток входа (AuthUser): неудачные попытки по логину и IP за окно 15 минут; записи старше
+--    окна удаляются при каждой новой. utf8mb4: логин в попытке — любой текст, в том числе 4-байтовые символы.
+CREATE TABLE IF NOT EXISTS `user_login_attempts` (
+  `la_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `la_ip` varchar(45) NOT NULL,
+  `la_login` varchar(250) NOT NULL,
+  `la_date` int(10) unsigned NOT NULL,
+  PRIMARY KEY (`la_id`),
+  KEY `idx_login_date` (`la_login`, `la_date`),
+  KEY `idx_ip_date` (`la_ip`, `la_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+INSERT IGNORE INTO `share_lang_tags` (`ltag_name`) VALUES ('ERR_TOO_MANY_ATTEMPTS');
+INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`)
+    SELECT t.`ltag_id`, l.`lang_id`, IF(l.`lang_abbr` = 'ua',
+           'Забагато невдалих спроб входу. Спробуйте через 15 хвилин.',
+           'Слишком много неудачных попыток входа. Попробуйте через 15 минут.')
+      FROM `share_lang_tags` t JOIN `share_languages` l
+     WHERE t.`ltag_name` = 'ERR_TOO_MANY_ATTEMPTS';
+

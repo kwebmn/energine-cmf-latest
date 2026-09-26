@@ -33,6 +33,9 @@ echo "--- mailbox recipients:"; grep -h "^To: " "$MAILBOX_FILE" 2>/dev/null | so
 echo "--- cleanup-mail"; php8.5 cleanup-mail.php mailbox
 restore; trap - EXIT
 
+# последним: набор запирает IP этой машины (и убирает за собой) — прочим наборам он не мешает
+echo "### login-limit"; php8.5 smoke-login-limit.php
+
 sleep 1
 echo "### PHP log since line $start"; bash smoke-log.sh $start
 echo "### page order restored"

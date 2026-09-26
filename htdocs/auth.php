@@ -1,4 +1,5 @@
 <?php
+use Energine\share\gears\AuthUser;
 use Energine\share\gears\Csrf;
 use Energine\share\gears\UserSession;
 
@@ -22,13 +23,16 @@ if (!Csrf::verify()) {
     isset($_POST['user']['username']) &&
     isset($_POST['user']['password'])
 ) {
-    if ($UID = Energine\share\gears\AuthUser::authenticate(
-        $_POST['user']['username'],
-        $_POST['user']['password']
-    )
-    ) {
+    // лимит попыток: IP — адрес соединения (X-Forwarded-For подделывается)
+    $login = (string)$_POST['user']['username'];
+    $ip = (string)($_SERVER['REMOTE_ADDR'] ?? '');
+    if (AuthUser::isThrottled($login, $ip)) {
+        $response->addCookie(UserSession::FAILED_LOGIN_COOKIE_NAME, 'ERR_TOO_MANY_ATTEMPTS', time() + 60, false, '/', true);
+    } elseif ($UID = AuthUser::authenticate($login, (string)$_POST['user']['password'])) {
+        AuthUser::clearFailures($login);
         E()->UserSession->start($UID);
     } else {
+        AuthUser::registerFailure($login, $ip);
         $response->addCookie(UserSession::FAILED_LOGIN_COOKIE_NAME, 'ERR_BAD_AUTH', time() + 60, false, '/', true);
     }
     // о неудаче LoginForm узнаёт из cookie: там имя константы, текст переводится на языке страницы
