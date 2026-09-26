@@ -4,7 +4,7 @@
         <container name="mainMenuContainer" block="beta" widget="widget">
             <component name="mainMenu" class="Energine\share\components\PageList">
                <params>
-                   <param name="tags">menu</param>
+                   <param name="menu">1</param>
                    <param name="recursive">1</param>
                    <param name="config">core/modules/share/config/MainMenu.component.xml</param>
                </params>

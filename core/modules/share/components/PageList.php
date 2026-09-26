@@ -76,6 +76,7 @@ class PageList extends DataSet {
      */
     /*
      * Добавлены параметр tags - теги
+     * menu - только страницы с флагом «Показывать в меню» (smap_in_menu)
      * id - идентификатор страницы или CURRENT_PAGE | PARENT_PAGE | ALL_PAGES
      * site - идентфиикатор сайта
      * recursive - рекурсивно
@@ -84,6 +85,7 @@ class PageList extends DataSet {
         $result = array_merge(parent::defineParams(),
             [
                 'tags' => '',
+                'menu' => false,
                 'id' => false,
                 'site' => false,
                 'recursive' => false,
@@ -197,6 +199,10 @@ class PageList extends DataSet {
             if ($this->getParam('tags'))
                 $filteredIDs =
                     TagManager::getFilter($this->getParam('tags'), 'share_sitemap');
+            if ($this->getParam('menu')) {
+                $inMenu = $this->dbh->getColumn('share_sitemap', 'smap_id', ['smap_in_menu' => 1]);
+                $filteredIDs = is_array($filteredIDs) ? array_intersect($filteredIDs, $inMenu) : $inMenu;
+            }
 
             reset($data);
             foreach ($data as $key => $value) {

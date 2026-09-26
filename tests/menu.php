@@ -4,7 +4,8 @@
 //     вход, восстановление пароля, robots.txt и google-sitemap в меню не попадают;
 //  2. снятый флаг убирает страницу из меню, возвращённый — возвращает (исходное значение
 //     восстанавливается и при падении теста);
-//  3. форма новой страницы в админке включает флаг по умолчанию;
+//  3. форма новой страницы в админке включает флаг по умолчанию, а снятый в форме правки флажок
+//     сохраняется и убирает страницу из меню;
 //  4. администратор видит в меню подразделы админки с флагом.
 require __DIR__ . '/testlib.php';
 
@@ -74,6 +75,15 @@ libxml_clear_errors();
 $box = (new DOMXPath($doc))->query("//input[@type='checkbox'][@name='share_sitemap[smap_in_menu]']")->item(0);
 check('в форме новой страницы флаг «в меню» включён', $code == 200 && $box && $box->hasAttribute('checked'),
     $box ? 'флаг выключен' : "HTTP $code, флага в форме нет");
+[$code, $html] = http("/admin/structure/single/divEditor/$contacts/edit/");
+[, $j] = json('/admin/structure/single/divEditor/save', formData($html, ['share_sitemap[smap_in_menu]' => '0']));
+check('флажок, снятый в форме правки, сохраняется', !empty($j['result'])
+    && (int)scalar('SELECT smap_in_menu FROM share_sitemap WHERE smap_id = ?', [$contacts]) === 0, json_encode($j, JSON_UNESCAPED_UNICODE));
+logout();
+[, $html] = http('/');
+check('страница со снятым в форме флажком не в меню гостя', !in_array('contacts', menu($html)), implode(' ', menu($html)));
+q('UPDATE share_sitemap SET smap_in_menu = ? WHERE smap_id = ?', [$orig, $contacts]);
+login();
 
 // 4. подменю админки у администратора
 [, $html] = http('/');

@@ -10,7 +10,8 @@ ADMIN_ID=$(q "SELECT u_id FROM user_users WHERE u_name='$ADMIN_EMAIL'")
 fail=0
 ok()  { echo "OK   $1"; }
 bad() { echo "FAIL $1: $(head -c 300 $R | tr '\n' ' ')"; fail=$((fail+1)); }
-post() { curl -sS -c $J -b $J -X POST -H 'X-Request: JSON' -o $R "$@"; }
+# ответ прошлого запроса стирается: запрос, который не дошёл, не должен засчитываться по нему
+post() { : > $R; curl -sS -c $J -b $J -X POST -H 'X-Request: JSON' -o $R "$@"; }
 isok() { php8.5 -r '$d=json_decode(file_get_contents($argv[1]),true); exit(is_array($d) && !empty($d["result"]) ? 0 : 1);' $R; }
 
 rm -f $J
@@ -25,6 +26,7 @@ pagefields() {
   echo --data-urlencode "share_sitemap[smap_pid]=80" --data-urlencode "share_sitemap[site_id]=1" \
     --data-urlencode "share_sitemap[smap_layout]=default.layout.xml" --data-urlencode "share_sitemap[smap_content]=textblock.content.xml" \
     --data-urlencode "share_sitemap[smap_segment]=claude-test" --data-urlencode "share_sitemap[smap_redirect_url]=" \
+    --data-urlencode "share_sitemap[smap_in_menu]=1" \
     --data-urlencode "right_id[1]=3" --data-urlencode "right_id[3]=1" --data-urlencode "right_id[4]=1" --data-urlencode "tags="
 }
 tr_fields() { for l in 1 2; do for f in smap_title smap_html_title smap_meta_keywords smap_meta_description smap_description_rtf; do
@@ -47,13 +49,16 @@ fi
 
 # --- news: add, view, delete
 N=$A/news-editor/single/newsRepo/
+# новости, оставшиеся от прерванных прогонов, мешают найти свою
+stale=$(q "SELECT COUNT(*) FROM apps_news WHERE news_segment='claude-test-news'")
+[ "$stale" != 0 ] && { q "DELETE FROM apps_news WHERE news_segment='claude-test-news'"; echo "note removed stale claude-test-news: $stale"; }
 post "${N}save" --data-urlencode "componentAction=add" --data-urlencode "apps_news[news_id]=" --data-urlencode "apps_news[smap_id]=3594" \
   --data-urlencode "apps_news[news_date]=2026-09-13 17:00:00" --data-urlencode "apps_news[news_segment]=claude-test-news" \
   --data-urlencode "apps_news[news_is_active]=1" --data-urlencode "apps_news[news_is_top]=0" --data-urlencode "apps_news[news_show_image]=0" \
   --data-urlencode "apps_news_translation[1][news_title]=Тестовая новость" --data-urlencode "apps_news_translation[1][news_announce_rtf]=<p>анонс</p>" \
   --data-urlencode "apps_news_translation[1][news_text_rtf]=<p>текст</p>" --data-urlencode "apps_news_translation[2][news_title]=Тест" \
   --data-urlencode "apps_news_translation[2][news_announce_rtf]=" --data-urlencode "apps_news_translation[2][news_text_rtf]=" --data-urlencode "tags="
-NID=$(q "SELECT news_id FROM apps_news WHERE news_segment='claude-test-news'")
+NID=$(php8.5 -r '$d=json_decode(file_get_contents($argv[1]),true); echo is_array($d) && ($d["mode"] ?? "") === "insert" ? (int)$d["data"] : "";' $R)
 isok && [ -n "$NID" ] && ok "news add ($NID)" || bad "news add"
 if [ -n "$NID" ]; then
   [ "$(curl -sS -o /dev/null -w '%{http_code}' $B/news/${NID}--claude-test-news/)" = 200 ] && ok "news view" || bad "news view"

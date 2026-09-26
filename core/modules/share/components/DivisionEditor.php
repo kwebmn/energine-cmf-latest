@@ -438,6 +438,10 @@ class DivisionEditor extends Grid implements SampleDivisionEditor {
         $sitemap = E()->getMap($site->id);
 
         $this->getData()->getFieldByName('site_id')->setData($site->id, true);
+        // новая страница по умолчанию в меню
+        if ($f = $this->getData()->getFieldByName('smap_in_menu')) {
+            $f->setData(1, true);
+        }
 
         $field = $this->getData()->getFieldByName('smap_pid');
         $smapSegment = $sitemap->getURLByID($actionParams['pid']);
