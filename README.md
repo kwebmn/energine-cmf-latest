@@ -1,3 +1,20 @@
+# Energine Simple
+
+Форк [Energine](https://github.com/energine-cmf/energine) для сайтов-визиток. В нём есть
+текстовые страницы, права, многоязычность, регистрация и личный кабинет, обратная связь,
+галерея вложений и новости, и больше ничего.
+
+Сейчас идёт **этап 0**: из этого репозитория собирается полная система, как на
+new.energine.org. Вырезание начинается с этапа 1.
+
+- Спецификация: `docs/superpowers/specs/2026-09-26-energine-simple-design.md`
+- Установка: `docs/INSTALL.md`
+- Тесты: `tests/README.md`
+
+---
+
+Исходный README Energine:
+
 energine - mod
 ========
 
