@@ -42,10 +42,13 @@ H=/var/www/clients/client1/web97
 R=$H/private/energine
 ```
 
-1. **Репозиторий** и хук, который не пускает пароли в коммиты:
+1. **Репозиторий** и хук, который не пускает пароли в коммиты. Git работает от root,
+   а после `chown` репозиторий принадлежит владельцу площадки, поэтому root должен ему
+   доверять:
    ```sh
    git clone <адрес репозитория> $R
    git -C $R config core.hooksPath .githooks
+   git config --global --add safe.directory $R
    ```
 2. **Точка входа:**
    ```sh
@@ -77,12 +80,34 @@ R=$H/private/energine
    Получается 120 таблиц и 83 страницы.
    Изображения демо-контента в SQL не входят: их архив лежит на new.energine.org,
    `private/project/backup/uploads-demo-*.tar.gz`, распаковывается в `web/`.
-6. **`setup install`** проверяет базу, записывает домен из конфига в `share_domains`
+6. **Администратор — до того, как сайт откроется.** Демо-данные создают
+   `demo@energine.org` с паролем `demo`, а этот пароль опубликован на new.energine.org.
+   В демо-данных полная система: конструктор форм, репозиторий виджетов, который пишет
+   файлы шаблонов. Поэтому пароль меняется сразу после загрузки базы, до `setup install`.
+   Команда ставит случайный пароль, пишет его в `tests/local.php` (режим 600, вне git),
+   а в базу — только хэш. Сам пароль не печатается, для входа в админку он берётся из
+   этого файла:
+   ```sh
+   cd $R
+   php8.5 -r '
+   define("ROOT_DIR", getcwd());
+   $d = (include ROOT_DIR . "/configs/system.config.simple.energine.org.php")["database"];
+   $pw = rtrim(strtr(base64_encode(random_bytes(18)), "+/", "-_"), "=");
+   $pdo = new PDO("mysql:host={$d["host"]};dbname={$d["db"]};charset=utf8", $d["username"], $d["password"]);
+   $st = $pdo->prepare("UPDATE user_users SET u_password = ? WHERE u_name = ?");
+   $st->execute([password_hash($pw, PASSWORD_DEFAULT), "demo@energine.org"]);
+   umask(0077);
+   file_put_contents("tests/local.php", "<?php\nreturn [\n    \"admin_email\" => \"demo@energine.org\",\n    \"admin_password\" => " . var_export($pw, true) . ",\n    \"mailbox\" => \"web97@loki.kweb.biz\",\n];\n");
+   echo $st->rowCount(), "\n";'
+   chown web97:client1 tests/local.php
+   ```
+   Ожидается `1`. `mailbox` — локальный ящик владельца площадки: туда тесты шлют письма.
+7. **`setup install`** проверяет базу, записывает домен из конфига в `share_domains`
    (`http:80`) и раскладывает статику модулей:
    ```sh
    cd $H/web && runuser -u web97 -- php8.5 index.php setup install
    ```
-7. **HTTPS-домен.** Сайт определяется по связке протокол + хост + порт, нужна и запись
+8. **HTTPS-домен.** Сайт определяется по связке протокол + хост + порт, нужна и запись
    `https:443`:
    ```sql
    INSERT IGNORE INTO share_domains (domain_protocol, domain_port, domain_host, domain_root)
@@ -90,9 +115,6 @@ R=$H/private/energine
    INSERT IGNORE INTO share_domain2site (domain_id, site_id)
      SELECT domain_id, 1 FROM share_domains WHERE domain_host = 'simple.energine.org';
    ```
-8. **Администратор.** Демо-данные создают `demo@energine.org` с паролем `demo`, а этот
-   пароль опубликован на new.energine.org. Его нужно сразу сменить. Новый пароль тестов
-   хранится в `tests/local.php` (образец — `tests/local.php.example`, режим 600).
 
 ## Проверка
 
@@ -110,6 +132,9 @@ bash $R/tests/regression.sh        # все сценарные наборы и �
 - Оба файла вне git. Хук `.githooks/pre-commit` отклоняет коммит, в котором оказался любой
   из этих паролей: он проверяет индекс через `.githooks/secret-scan.php`.
 - Хук подключается на каждом клоне отдельно: `git config core.hooksPath .githooks`.
+- `git clean -fdx` и `git stash --all` в рабочем дереве площадки удалят или спрячут конфиг
+  площадки и `tests/local.php`: они лежат внутри репозитория, но вне git. Не запускайте их
+  в `$R`.
 
 ## Отличия simple.energine.org от new.energine.org
 
@@ -118,4 +143,4 @@ bash $R/tests/regression.sh        # все сценарные наборы и �
   `web/error/`. Например, вместо страницы 404 сайта показывается `ERROR 404 - Not Found!`.
   У new.energine.org эта настройка выключена. Выключается в ISPConfig в настройках сайта,
   пункт «Own Error-Documents».
-- **Администратор.** Пароль администратора не `demo` (см. шаг 8).
+- **Администратор.** Пароль администратора не `demo` (см. шаг 6).
