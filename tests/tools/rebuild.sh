@@ -11,7 +11,7 @@ R="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 DEMO_UPLOADS=${DEMO_UPLOADS:-/var/www/clients/client1/web93/private/project/backup/uploads-demo-20260914-164112.tar.gz}
 envsh=$(php8.5 "$R/tests/env.php" --shell); eval "$envsh"
 HOST=${BASE#https://}
-M() { mysql -N -h "$DB_HOST" -u "$DB_USER" "$DB_NAME" -e "$1"; }
+M() { mysql -N --default-character-set=utf8mb4 -h "$DB_HOST" -u "$DB_USER" "$DB_NAME" -e "$1"; }
 
 echo "== снимаем всё в $DB_NAME"
 drops=$(M "SET SESSION group_concat_max_len = 65535; SELECT GROUP_CONCAT(CONCAT('DROP ', IF(TABLE_TYPE = 'VIEW', 'VIEW', 'TABLE'), ' IF EXISTS \`', TABLE_NAME, '\`') SEPARATOR '; ') FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE()")

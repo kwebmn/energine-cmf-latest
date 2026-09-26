@@ -2,7 +2,7 @@
 # Full regression of the site from env.php: every smoke test, cleanups, PHP log summary.
 S="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 envsh=$(php8.5 "$S/env.php" --shell) || exit 1; eval "$envsh"
-M() { mysql -N -h "$DB_HOST" -u "$DB_USER" "$DB_NAME" -e "$1"; }
+M() { mysql -N --default-character-set=utf8mb4 -h "$DB_HOST" -u "$DB_USER" "$DB_NAME" -e "$1"; }
 start=$(wc -l < $LOG)
 echo "log start line: $start"
 # Добавление страницы через админку сдвигает smap_order_num всему сайту (так устроено ядро),
@@ -34,6 +34,6 @@ restore; trap - EXIT
 sleep 1
 echo "### PHP log since line $start"; bash smoke-log.sh $start
 echo "### page order restored"
-mysql -h "$DB_HOST" -u "$DB_USER" "$DB_NAME" < "$ORDER" && rm -f "$ORDER"
+mysql --default-character-set=utf8mb4 -h "$DB_HOST" -u "$DB_USER" "$DB_NAME" < "$ORDER" && rm -f "$ORDER"
 
 echo "### done"

@@ -108,7 +108,9 @@ NEWS[tops]="'podborki-na-glavnoj'"
 # засчитываться как «следов нет»
 M() { ( envsh=$(php8.5 "$R/tests/env.php" --shell 2>&1) || { echo "__DBERROR__ $envsh"; exit 0; }
         eval "$envsh"
-        mysql -N -h "$DB_HOST" -u "$DB_USER" "$DB_NAME" -e "$1" 2>&1 || echo "__DBERROR__ mysql" ); }
+        # кодировка соединения явно: без неё клиент берёт её из локали (LC_ALL=C — latin1),
+        # и кириллица в запросах молча не совпадает
+        mysql -N --default-character-set=utf8mb4 -h "$DB_HOST" -u "$DB_USER" "$DB_NAME" -e "$1" 2>&1 || echo "__DBERROR__ mysql" ); }
 
 fail=0
 dberror=0
