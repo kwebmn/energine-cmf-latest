@@ -10,6 +10,9 @@ set -e
 R="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 DEMO_UPLOADS=${DEMO_UPLOADS:-/var/www/clients/client1/web93/private/project/backup/uploads-demo-20260914-164112.tar.gz}
 envsh=$(php8.5 "$R/tests/env.php" --shell); eval "$envsh"
+# входные данные проверяются до того, как что-то снято: без архива площадка осталась бы без загрузок
+[ -r "$DEMO_UPLOADS" ] && tar tzf "$DEMO_UPLOADS" > /dev/null 2>&1 \
+  || { echo "нет архива загрузок или он не читается: $DEMO_UPLOADS — база и файлы не тронуты" >&2; exit 2; }
 HOST=${BASE#https://}
 M() { mysql -N --default-character-set=utf8mb4 -h "$DB_HOST" -u "$DB_USER" "$DB_NAME" -e "$1"; }
 
