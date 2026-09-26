@@ -58,7 +58,7 @@ CODE[watermark]='[Ww]atermark'
 CODE[video]="VideoUploader|seo_sitemap_videos|videomap|maxVideos|ogp\.me/ns/video|jwplayer|\bPlayer\.js|Playlist\.js|new Player\(|embedPlayer|embed_player|putVideo|put-video|getPlayerParams|energinevideo|EnergineVideo|META_TYPE_VIDEO|setVideo|upl_is_mp4|upl_is_webm|upl_is_flv|upl_duration|upl_is_ready|\bis_(mp4|webm|flv)\b|VIDEO_PLAYER|player_box|playerBox|INSERT_VIDEO|media\.xslt|media_type=[\"']video[\"']|case [\"']video[\"']|== *[\"']video[\"']|[\"']video[\"'] *\)|_video[\"']"
 CODE[flash]='Swiff\.Uploader|expressInstall|swfobject|.Flash. *,|Flash video|\*\.flv'
 CODE[lookup]='\bLookup\b|LookupConfig|UserLookup|Lookup\.js|lookupEditor|FIELD_TYPE_LOOKUP|[Ss]elect2|\bacpl\b|/lookup/|registerState\(.lookup.|function lookup\('
-CODE[columns]='\b(u_fbid|u_vkid|u_company|u_position|news_show_image|upl_views)\b'
+CODE[columns]='\b(u_fbid|u_vkid|u_company|u_position|news_show_image|news_is_top|upl_views)\b'
 CODE[placehold]='placehold\.it'
 FILES[tags]='core/modules/share/gears/TagManager.php core/modules/share/components/TagEditor.php core/modules/share/scripts/Tags.js core/modules/share/scripts/TagEditor.js core/modules/share/transformers/tagEditor.xslt core/modules/share/config/TagEditorModal.component.xml core/modules/share/stylesheets/tags.css core/modules/share/scripts/TextboxList.js core/modules/share/scripts/DropBoxList.js core/modules/share/stylesheets/acpl.css'
 FILES[widgets]='core/modules/share/components/WidgetsRepository.php core/modules/share/config/WidgetsRepository.component.xml core/modules/share/config/ModalWidgetsRepository.component.xml core/modules/share/scripts/LayoutManager.js core/modules/share/scripts/WidgetGridManager.js core/modules/share/scripts/ComponentParamsForm.js core/modules/share/scripts/NewTemplateForm.js core/modules/share/stylesheets/layout_manager.css site/modules/main/templates/content/widgets_repository.content.xml'
@@ -240,7 +240,7 @@ for m in "${mods[@]}"; do
                     UNION SELECT CONCAT('upload ', upl_id, ' video') FROM share_uploads WHERE upl_internal_type = 'video'")$'\n' ;;
       columns)  found+=$(M "SELECT CONCAT('column ', TABLE_NAME, '.', COLUMN_NAME) FROM information_schema.COLUMNS
                     WHERE TABLE_SCHEMA = DATABASE() AND ((TABLE_NAME = 'user_users' AND COLUMN_NAME IN ('u_fbid', 'u_vkid', 'u_company', 'u_position'))
-                       OR (TABLE_NAME = 'apps_news' AND COLUMN_NAME = 'news_show_image')
+                       OR (TABLE_NAME = 'apps_news' AND COLUMN_NAME IN ('news_show_image', 'news_is_top'))
                        OR (TABLE_NAME = 'share_uploads' AND COLUMN_NAME = 'upl_views'))")$'\n' ;;
       branding) found+=$(M "SELECT CONCAT('column ', TABLE_NAME, '.', COLUMN_NAME) FROM information_schema.COLUMNS
                     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'share_sitemap' AND COLUMN_NAME = 'brand_id'")$'\n' ;;

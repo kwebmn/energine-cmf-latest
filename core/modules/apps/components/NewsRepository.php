@@ -101,7 +101,7 @@ class NewsRepository extends NewsEditor {
     }
 
     /**
-     * @copydoc NewsEditor::createDataDescription
+     * @copydoc LinkingEditor::createDataDescription
      * @return DataDescription
      */
     // Переписываем чтобы вернуть smap_id
@@ -109,11 +109,6 @@ class NewsRepository extends NewsEditor {
         $dd = LinkingEditor::createDataDescription();
         if (in_array($this->getState(), ['add', 'edit'])) {
             $dd->getFieldDescriptionByName('smap_id')->setType(FieldDescription::FIELD_TYPE_SMAP_SELECTOR);
-
-            $fd = new FieldDescription('news_is_top');
-            $fd->setType(FieldDescription::FIELD_TYPE_BOOL);
-            $dd->addFieldDescription($fd, DataDescription::FIELD_POSITION_AFTER, $this->getPK());
-
         }
         return $dd;
     }

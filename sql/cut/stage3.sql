@@ -109,3 +109,12 @@ ALTER TABLE `share_uploads`
 UPDATE `share_textblocks_translation` SET `tb_content` = REPLACE(`tb_content`,
        '<p>Перекодировка видео требует ffmpeg, на этом хосте он не установлен.</p>', '')
  WHERE `tb_id` = 69 AND `lang_id` = 1;
+
+-- 8. Колонки, на которые код не ссылается: вход через соцсети удалён раньше (u_fbid, u_vkid),
+--    компания и должность пользователя нигде не выводятся, news_show_image ничего не
+--    переключает, флажок news_is_top только ставил тег top, который никто не читал (главная
+--    выводит последние новости). Индексы этих колонок удаляются вместе с ними.
+ALTER TABLE `user_users`
+    DROP COLUMN IF EXISTS `u_fbid`, DROP COLUMN IF EXISTS `u_vkid`,
+    DROP COLUMN IF EXISTS `u_company`, DROP COLUMN IF EXISTS `u_position`;
+ALTER TABLE `apps_news` DROP COLUMN IF EXISTS `news_show_image`, DROP COLUMN IF EXISTS `news_is_top`;

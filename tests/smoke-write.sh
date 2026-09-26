@@ -59,7 +59,7 @@ stale=$(q "SELECT COUNT(*) FROM apps_news WHERE news_segment='claude-test-news'"
 [ "$stale" != 0 ] && { q "DELETE FROM apps_news WHERE news_segment='claude-test-news'"; echo "note removed stale claude-test-news: $stale"; }
 post "${N}save" --data-urlencode "componentAction=add" --data-urlencode "apps_news[news_id]=" --data-urlencode "apps_news[smap_id]=3594" \
   --data-urlencode "apps_news[news_date]=2026-09-13 17:00:00" --data-urlencode "apps_news[news_segment]=claude-test-news" \
-  --data-urlencode "apps_news[news_is_active]=1" --data-urlencode "apps_news[news_is_top]=0" --data-urlencode "apps_news[news_show_image]=0" \
+  --data-urlencode "apps_news[news_is_active]=1" \
   --data-urlencode "apps_news_translation[1][news_title]=Тестовая новость" --data-urlencode "apps_news_translation[1][news_announce_rtf]=<p>анонс</p>" \
   --data-urlencode "apps_news_translation[1][news_text_rtf]=<p>текст</p>" --data-urlencode "apps_news_translation[2][news_title]=Тест" \
   --data-urlencode "apps_news_translation[2][news_announce_rtf]=" --data-urlencode "apps_news_translation[2][news_text_rtf]="
@@ -83,7 +83,7 @@ U=$A/users/single/userEditor/save
 usave() { post "$U" --data-urlencode "componentAction=edit" --data-urlencode "user_users[u_id]=$ADMIN_ID" --data-urlencode "user_users[u_is_active]=1" \
   --data-urlencode "user_users[u_name]=$ADMIN_EMAIL" --data-urlencode "user_users[u_password]=" --data-urlencode "user_users[u_fullname]=Admin" \
   --data-urlencode "user_users[u_phone]=123-45-67" --data-urlencode "user_users[u_country]=" --data-urlencode "user_users[u_city]=" \
-  --data-urlencode "user_users[u_fbid]=" --data-urlencode "user_users[u_vkid]=" --data-urlencode "group_id[]=1" "$@"; }
+  --data-urlencode "group_id[]=1" "$@"; }
 usave --data-urlencode "user_users[u_person_name]=Тест" --data-urlencode "user_users[u_bdate]=1990-05-01" --data-urlencode "user_users[u_sex]=M" \
   --data-urlencode "user_users[u_address]=ул. Тестовая, 1" --data-urlencode "user_users[u_gooid]=" --data-urlencode "user_users[u_avatar_img]="
 isok && [ "$(q "SELECT CONCAT_WS('|', u_person_name, u_bdate, u_sex) FROM user_users WHERE u_id=$ADMIN_ID")" = "Тест|1990-05-01|M" ] && ok "user save filled" || bad "user save filled"

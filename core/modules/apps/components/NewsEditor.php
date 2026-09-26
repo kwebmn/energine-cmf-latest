@@ -15,7 +15,6 @@ class NewsEditor;
  */
 namespace Energine\apps\components;
 
-use Energine\share\gears\DataDescription;
 use Energine\share\gears\Field, Energine\share\gears\FieldDescription, Energine\share\gears\QAL, Energine\apps\gears\NewsEditorSaver;
 
 /**
@@ -45,16 +44,5 @@ class NewsEditor extends ExtendedFeedEditor {
         $f = new Field('news_is_active');
         $f->setData(true, true);
         $this->getData()->addField($f);
-    }
-
-
-    protected function createDataDescription() {
-        $result = parent::createDataDescription();
-        if (in_array($this->getState(), ['add', 'edit'])) {
-            $fd = new FieldDescription('news_is_top');
-            $fd->setType(FieldDescription::FIELD_TYPE_BOOL);
-            $result->addFieldDescription($fd, DataDescription::FIELD_POSITION_AFTER, $this->getPK());
-        }
-        return $result;
     }
 }
