@@ -117,7 +117,8 @@ return array(
         'smtp' => array(
             'host' => 'smtp.example.org',
             'port' => 587,
-            // tls — STARTTLS (порт 587 или 25), ssl — TLS сразу (порт 465), '' — без шифрования
+            // tls (или starttls) — STARTTLS (порт 587 или 25), ssl — TLS сразу (порт 465), '' — без шифрования;
+            // другое значение — письмо не уходит; без шифрования пароль AUTH идёт открытым текстом
             'encryption' => 'tls',
             'username' => 'noreply@example.org',
             'password' => 'SMTP PASSWORD',
