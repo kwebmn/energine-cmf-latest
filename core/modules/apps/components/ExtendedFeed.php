@@ -81,7 +81,7 @@ class ExtendedFeed extends Feed {
         // templates link items as {$BASE}{$LANG_ABBR}{category/@url}{id}--{segment}/
         if (!$res->isEmpty() && ($f = $res->getFieldByName('smap_id'))) {
             foreach ($f as $i => $smapID) {
-                $map = E()->getMap(E()->getSiteManager()->getSiteByPage($smapID)->id);
+                $map = E()->getMap();
                 $catInfo = $map->getDocumentInfo($smapID);
                 $categoryField->setRowData($i, isset($catInfo['Name']) ? $catInfo['Name'] : '');
                 $categoryField->setRowProperty($i, 'url', $map->getURLByID($smapID));
@@ -116,9 +116,8 @@ class ExtendedFeed extends Feed {
         $am->createField();
         if ($f = $this->getData()->getFieldByName('smap_id')) {
             foreach ($f as $key => $value) {
-                $site = E()->getSiteManager()->getSiteByPage($value);
-                $f->setRowProperty($key, 'url', E()->getMap($site->id)->getURLByID($value));
-                $f->setRowProperty($key, 'base', $site->base);
+                $f->setRowProperty($key, 'url', E()->getMap()->getURLByID($value));
+                $f->setRowProperty($key, 'base', E()->getSiteManager()->getCurrentSite()->base);
             }
         }
     }

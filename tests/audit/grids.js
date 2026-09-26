@@ -129,6 +129,22 @@ const inspect = (page) => page.evaluate(() => {
         check('дерево страниц: без ошибок JS и 404', !errors.list().length, errors.list().join(' | '));
         await p.close();
 
+        // одно дерево разделов: без выбора сайта, узлы загружаются (редактор структуры и выбор раздела новости)
+        for (const [label, url] of [['структура', 'admin/structure/'],
+            ['выбор раздела новости', 'admin/news-editor/single/newsRepo/3594/selector/']]) {
+            const tp = await ctx.newPage();
+            const tErrors = watch(tp);
+            await tp.goto(BASE + url, { waitUntil: 'networkidle' });
+            await tp.waitForSelector('.treeview li a', { timeout: 10000 }).catch(() => null);
+            const r = await tp.evaluate(() => ({
+                selector: !!document.getElementById('site_selector'),
+                nodes: document.querySelectorAll('.treeview li a').length,
+            }));
+            check(`${label}: дерево без выбора сайта, узлы загружены`, !r.selector && r.nodes > 1, JSON.stringify(r));
+            check(`${label}: без ошибок JS и 404`, !tErrors.list().length, tErrors.list().join(' | '));
+            await tp.close();
+        }
+
         // «Настройки сайта» с панели страницы: окно с гридом единственной записи сайта
         const sp = await ctx.newPage();
         const spErrors = watch(sp);

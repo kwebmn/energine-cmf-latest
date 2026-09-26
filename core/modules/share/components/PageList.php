@@ -48,11 +48,6 @@ class PageList extends DataSet {
         parent::__construct($name, $params);
         $this->setType(self::COMPONENT_TYPE_LIST);
         $this->addTranslation('TXT_HOME');
-        if ($this->getParam('site') == 'default') {
-            $this->setParam('site', E()->getSiteManager()->getDefaultSite()->id);
-        } elseif ($this->getParam('site') == 'current') {
-            $this->setParam('site', E()->getSiteManager()->getCurrentSite()->id);
-        }
         if($this->getParam('id') == self::ALL_PAGES){
             $this->setParam('recursive', false);
         }
@@ -77,7 +72,6 @@ class PageList extends DataSet {
     /*
      * menu - только страницы с флагом «Показывать в меню» (smap_in_menu)
      * id - идентификатор страницы или CURRENT_PAGE | PARENT_PAGE | ALL_PAGES
-     * site - идентфиикатор сайта
      * recursive - рекурсивно
      */
     protected function defineParams() {
@@ -85,7 +79,6 @@ class PageList extends DataSet {
             [
                 'menu' => false,
                 'id' => false,
-                'site' => false,
                 'recursive' => false,
                 'allAttachments' => false
             ]);
@@ -110,7 +103,7 @@ class PageList extends DataSet {
             );
         }
         if (!$this->getData()->isEmpty()) {
-            foreach (['Site', 'Redirect'] as $fieldName) {
+            foreach (['Redirect'] as $fieldName) {
                 $FD = new FieldDescription($fieldName);
                 $FD->setType(FieldDescription::FIELD_TYPE_STRING);
                 $this->getDataDescription()->addFieldDescription($FD);
@@ -142,7 +135,6 @@ class PageList extends DataSet {
 
         if (is_numeric($this->getParam('id'))) {
             $param = (int)$this->getParam('id');
-            $sitemap = E()->getMap(E()->getSiteManager()->getSiteByPage($param)->id);
         } //Выводим siblin
         elseif ($this->getParam('id') == self::PARENT_PAGE) {
             $param = $sitemap->getParent($this->document->getID());
@@ -153,20 +145,10 @@ class PageList extends DataSet {
         elseif ($this->getParam('id') == self::ALL_PAGES) {
             $methodName = 'getInfo';
             $param = NULL;
-            if (!($siteId = $this->getParam('site'))) {
-                $siteId = E()->getSiteManager()->getCurrentSite()->id;
-            }
-            $sitemap = E()->getMap($siteId);
         } elseif (!$this->getParam('id')) {
-            if ($this->getParam('site')) {
-                $sitemap = E()->getMap($this->getParam('site'));
-            }
             $param = $sitemap->getDefault();
         } //id - is number
         else {
-            if ($this->getParam('site')) {
-                $sitemap = E()->getMap($this->getParam('site'));
-            }
             $param = (int)$this->getParam('id');
         }
 
@@ -195,11 +177,9 @@ class PageList extends DataSet {
                         unset($data[$key]);
                 } else {
                     $data[$key]['Id'] = $key;
-                    $data[$key]['Segment'] = E()->getMap($data[$key]['Site'])->getURLByID($key);
+                    $data[$key]['Segment'] = $sitemap->getURLByID($key);
                     $data[$key]['Name'] = $value['Name'];
                     $data[$key]['Redirect'] = Response::prepareRedirectURL($value['RedirectUrl']);
-                    $data[$key]['Site'] =
-                        E()->getSiteManager()->getSiteByID($data[$key]['Site'])->base;
                     if ($hasDescriptionRtf) $data[$key]['DescriptionRtf'] =
                         $value['DescriptionRtf'];
                 }

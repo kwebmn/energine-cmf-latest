@@ -3,7 +3,6 @@
     <state name="main">
         <uri_patterns>
             <pattern>/show/</pattern>
-            <pattern>/show/[site_id]/</pattern>
         </uri_patterns>
         <javascript>
             <behavior name="DivSelector"/>
@@ -13,7 +12,6 @@
             <field name="smap_pid"/>
             <field name="lang_id"/>
             <field name="smap_name"/>
-            <field name="site"/>
         </fields>
         <toolbar>
             <control id="select" title="BTN_SELECT" type="button" onclick="select"/>
@@ -22,8 +20,8 @@
     </state>
     <state name="getRawData">
         <uri_patterns>
-            <pattern>/[site_id]/get-data/</pattern>
-            <pattern>/[site_id]/get-data/[string]/</pattern>
+            <pattern>/get-data/</pattern>
+            <pattern>/get-data/[string]/</pattern>
         </uri_patterns>
     </state>
     <state name="getProperties">

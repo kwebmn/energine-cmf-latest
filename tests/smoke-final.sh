@@ -67,7 +67,7 @@ L=$SCR/audit/crawl-singles.txt
 [ -s "$L" ] || { echo "FAIL [grid] нет списка ${L#$SCR/}"; fail=$((fail+1)); }
 while read s; do
   [ -z "$s" ] && continue
-  case "$s" in *[dD]ivEditor*) checkjson "grid" "$B/${s}1/get-data/";; *) checkjson "grid" "$B/${s}get-data/page-1";; esac
+  case "$s" in *[dD]ivEditor*) checkjson "grid" "$B/${s}get-data/";; *) checkjson "grid" "$B/${s}get-data/page-1";; esac
 done < "$L"
 checkjson "filelib" "$B/admin/users/single/adminPanel/file-library/1/get-data/"
 # forms

@@ -83,20 +83,13 @@ final class Sitemap extends Primitive {
     private $cacheAccessLevels = [];
 
     /**
-     * Current site ID.
-     * @var int $siteID
-     */
-    private $siteID;
-
-    /**
-     * @param int $siteID Site ID.
+     * Дерево разделов сайта — одно: корень — единственная страница без родителя.
      *
      * @throws SystemException 'ERR_NO_TRANSLATION'
      * @throws SystemException 'ERR_404'
      */
-    public function __construct($siteID) {
+    public function __construct() {
         parent::__construct();
-        $this->siteID = $siteID;
         $this->langID = E()->getLanguage()->getCurrent();
         $userGroups = array_keys(E()->UserGroup->asArray());
 
@@ -105,25 +98,14 @@ final class Sitemap extends Primitive {
         $res = $this->dbh->select(
             'SELECT s.smap_id, s.smap_pid FROM share_sitemap s ' .
             'LEFT JOIN share_sitemap_translation st ON st.smap_id = s.smap_id ' .
-            'WHERE st.smap_is_disabled = 0 AND s.site_id = %s AND st.lang_id = %s ' .
+            'WHERE st.smap_is_disabled = 0 AND st.lang_id = %s ' .
             'AND s.smap_id IN( ' .
             ' SELECT smap_id ' .
             ' FROM share_access_level ' .
             ' WHERE group_id IN (' . implode(',', E()->getUser()->getGroups()) . ')) ' .
             'ORDER BY smap_order_num',
-            $this->siteID,
             $this->langID
         );
-        //@todo Нужно бы накладывать ограничение в подзапросе на сайт, не факт правда что это увеличит быстродействие
-
-        /*
-        SELECT s.smap_id, s.smap_pid FROM share_sitemap s LEFT JOIN share_sitemap_translation st ON st.smap_id = s.smap_id WHERE st.smap_is_disabled = 0 AND s.site_id = '6' AND st.lang_id = '1' AND s.smap_id IN(
-        SELECT a.smap_id
-        FROM share_access_level  a
-        LEFT JOIN share_sitemap s USING(smap_id)
-        WHERE group_id IN (1) AND s.site_id=6
-        ) ORDER BY smap_order_num
-        */
 
         if (empty($res)) {
             return;
@@ -149,29 +131,14 @@ final class Sitemap extends Primitive {
 
         //Загружаем перечень идентификаторов в объект дерева
         $this->tree = TreeConverter::convert($res, 'smap_id', 'smap_pid');
-        $site = E()->getSiteManager()->getSiteByID($this->siteID);
-        $res = $this->dbh->select('
-		  SELECT s.smap_id FROM share_sitemap s
-            WHERE s.site_id = %s AND s.smap_pid IS NULL
-		', $this->siteID);
-        list($res) = $res;
-        $this->defaultID = $res['smap_id'];
+        $site = E()->getSiteManager()->getCurrentSite();
+        $this->defaultID = $this->dbh->getScalar('SELECT smap_id FROM share_sitemap WHERE smap_pid IS NULL');
 
         $this->defaultMetaKeywords = $site->metaKeywords;
         $this->defaultMetaDescription = $site->metaDescription;
         $this->defaultMetaRobots = $site->metaRobots;
 
         $this->getSitemapData(array_keys($this->tree->asList()));
-    }
-
-    /**
-     * Get site ID by page ID.
-     *
-     * @param int $pageID Page ID.
-     * @return mixed
-     */
-    public static function getSiteID($pageID) {
-        return E()->getDB()->getScalar('share_sitemap', 'site_id', ['smap_id' => (int)$pageID]);
     }
 
     /**
@@ -192,10 +159,9 @@ final class Sitemap extends Primitive {
                     'SELECT s.*, st.*
 	                    FROM share_sitemap s
 	                    LEFT JOIN share_sitemap_translation st ON s.smap_id = st.smap_id
-	                    WHERE st.lang_id = %s AND s.site_id = %s AND s.smap_id IN (' .
+	                    WHERE st.lang_id = %s AND s.smap_id IN (' .
                     $ids . ')',
-                    $this->langID,
-                    $this->siteID
+                    $this->langID
                 ),
                 'smap_id', true);
 
@@ -229,8 +195,7 @@ final class Sitemap extends Primitive {
         //здесь что то лишнее
         //@todo А нужно ли вообще обрабатывать все разделы?
         $result = convertFieldNames($current, 'smap');
-        $result['Site'] = $result['siteId'];
-        unset($result['siteId'], $result['OrderNum'], $result['langId'], $result['IsDisabled']);
+        unset($result['OrderNum'], $result['langId'], $result['IsDisabled']);
         if(!empty($result['MetaRobots'])){
             $result['MetaRobots'] = explode(',', $result['MetaRobots']);
         }

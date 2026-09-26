@@ -73,21 +73,6 @@ class DivisionEditor extends Grid implements SampleDivisionEditor {
         $this->setTableName('share_sitemap');
         $this->setTitle($this->translate('TXT_DIVISION_EDITOR'));
         $this->setParam('recordsPerPage', false);
-        $sp = $this->getStateParams(true);
-
-        if($this->getParam('site') && is_numeric($this->getParam('site')) && !isset($sp['site_id'])){
-            $this->setStateParam('site_id', (int)$this->getParam('site'));
-        }
-    }
-
-    protected function defineParams() {
-        return array_merge(
-            parent::defineParams(),
-            [
-                'site' => false,
-             //   'smap_id' => false
-            ]
-        );
     }
 
     /**
@@ -276,7 +261,7 @@ class DivisionEditor extends Grid implements SampleDivisionEditor {
                     $row['data-layout'] = $attr;
                 }
                 if ($d->documentElement->hasAttribute('unique')) {
-                    if($this->dbh->getScalar('share_sitemap', 'count(*)', ['smap_content' => $shortPath, 'site_id' => E()->getSiteManager()->getCurrentSite()->id])>0){
+                    if($this->dbh->getScalar('share_sitemap', 'count(*)', ['smap_content' => $shortPath])>0){
                         $row['disabled'] = 'disabled';
                         $row['unique'] = 'unique';
                     }
@@ -312,14 +297,9 @@ class DivisionEditor extends Grid implements SampleDivisionEditor {
         $result = parent::loadData();
 
         if ($result && $this->getState() == 'getRawData') {
-            $params = $this->getStateParams(true);
-
             $result = array_map(
-                function ($val) use ($params) {
-                    $val["smap_segment"] = E()->getMap($params['site_id'])->getURLByID($val["smap_id"]);
-                    if ($this->getDataDescription()->getFieldDescriptionByName('site')) {
-                        $val["site"] = E()->getSiteManager()->getSiteByID($params['site_id'])->base;
-                    }
+                function ($val) {
+                    $val["smap_segment"] = E()->getMap()->getURLByID($val["smap_id"]);
                     return $val;
                 }, $result);
         }
@@ -330,9 +310,6 @@ class DivisionEditor extends Grid implements SampleDivisionEditor {
      * @copydoc Grid::getRawData
      */
     protected function getRawData() {
-        $params = $this->getStateParams(true);
-        $this->setFilter(['site_id' => $params['site_id']]);
-
         $this->setParam('onlyCurrentLang', true);
         $this->getConfig()->setCurrentState(self::DEFAULT_STATE_NAME);
         $this->setBuilder(new JSONDivBuilder());
@@ -360,11 +337,8 @@ class DivisionEditor extends Grid implements SampleDivisionEditor {
         parent::prepare();
         if (in_array($this->getState(), ['add', 'edit'])) {
             $this->addTranslation('ERR_NO_DIV_NAME');
-            list($pageID) = $this->getStateParams();
-            // у несуществующего раздела сайта нет: раньше это было фатальной ошибкой
-            if ($site = E()->getSiteManager()->getSiteByPage($pageID)) {
-                $this->getDataDescription()->getFieldDescriptionByName('smap_pid')->setProperty('base', $site->base);
-            }
+            $this->getDataDescription()->getFieldDescriptionByName('smap_pid')
+                ->setProperty('base', E()->getSiteManager()->getCurrentSite()->base);
         }
     }
 
@@ -390,16 +364,13 @@ class DivisionEditor extends Grid implements SampleDivisionEditor {
                 $this->getSaver()->getData()->getFieldByName('smap_pid')->getRowData(0);
             $url = $_POST[$this->getTableName()]['smap_segment'] . '/';
             if ($smapPID) {
-                $url = E()->getMap(
-                        E()->getSiteManager()->getSiteByPage($smapPID)->id
-                    )->getURLByID($smapPID) . $url;
+                $url = E()->getMap()->getURLByID($smapPID) . $url;
             }
         } else {
             $mode = 'update';
             $id = $this->getFilter();
             $id = $id['smap_id'];
-            $url =
-                E()->getMap(E()->getSiteManager()->getSiteByPage($id)->id)->getURLByID($id);
+            $url = E()->getMap()->getURLByID($id);
         }
 
         $transactionStarted = !($this->dbh->commit());
@@ -420,18 +391,16 @@ class DivisionEditor extends Grid implements SampleDivisionEditor {
 
         //@todo Тут пришлось пойти на извращение
         $actionParams = $this->getStateParams(true);
-        // раздел-родитель должен существовать: без него дальше идёт обращение
-        // к свойствам несуществующего сайта, то есть фатальная ошибка
-        if (!E()->getSiteManager()->getSiteByPage($actionParams['pid'])) {
+        // раздел-родитель должен существовать
+        if (!$this->dbh->getScalar('share_sitemap', 'smap_id', ['smap_id' => $actionParams['pid']])) {
             throw new SystemException('ERR_404', SystemException::ERR_404, $actionParams['pid']);
         }
         $this->buildRightsTab($actionParams['pid']);
 
         $this->getDataDescription()->getFieldDescriptionByName('smap_segment')->removeProperty('nullable');
-        $site = E()->getSiteManager()->getSiteByPage($actionParams['pid']);
-        $sitemap = E()->getMap($site->id);
+        $site = E()->getSiteManager()->getCurrentSite();
+        $sitemap = E()->getMap();
 
-        $this->getData()->getFieldByName('site_id')->setData($site->id, true);
         // новая страница по умолчанию в меню
         if ($f = $this->getData()->getFieldByName('smap_in_menu')) {
             $f->setData(1, true);
@@ -477,8 +446,7 @@ class DivisionEditor extends Grid implements SampleDivisionEditor {
 
         //Выводим УРЛ в поле сегмента
         $field = $this->getData()->getFieldByName('smap_pid');
-        $site =
-            E()->getSiteManager()->getSiteByID($this->getData()->getFieldByName('site_id')->getRowData(0));
+        $site = E()->getSiteManager()->getCurrentSite();
 
         foreach ([Document::TMPL_CONTENT, Document::TMPL_LAYOUT] as $type)
             if ($f = $this->getDataDescription()->getFieldDescriptionByName(
@@ -523,8 +491,7 @@ class DivisionEditor extends Grid implements SampleDivisionEditor {
         }
         $smapSegment = '';
         if ($field->getRowData(0) !== null) {
-            $smapSegment =
-                E()->getMap($site->id)->getURLByID($field->getRowData(0));
+            $smapSegment = E()->getMap()->getURLByID($field->getRowData(0));
 
             $this->getDataDescription()->getFieldDescriptionByName('smap_segment')->removeProperty('nullable');
         } else {
@@ -565,16 +532,6 @@ class DivisionEditor extends Grid implements SampleDivisionEditor {
     // Добавлен перевод для корня дерева разделов
     protected function main() {
         parent::main();
-        $params = $this->getStateParams(true);
-
-        if ($params) {
-            $siteID = $params['site_id'];
-        } else {
-            $siteID = E()->getSiteManager()->getCurrentSite()->id;
-        }
-
-        $this->setProperty('site', $siteID);
-        $this->setFilter(['site_id' => $siteID]);
         $this->addTranslation('TXT_DIVISIONS');
     }
 
@@ -673,19 +630,6 @@ class DivisionEditor extends Grid implements SampleDivisionEditor {
 
         if ($this->document->isEditable())
             $this->getToolbar('main_toolbar')->getControlByID('editMode')->setState(1);
-
-        foreach($this->getToolbar('main_toolbar')->getControls() as $control){
-            if($control->getAttribute('onclick') == 'jumpSite'){
-                foreach (E()->getSiteManager() as $site) {
-                    $params = [];
-                    if($site == E()->getSiteManager()->getCurrentSite()){
-                        $params['selected'] = 'selected';
-                    }
-                    $control->addItem($site->base, $site->name, $params);
-                }
-                break;
-            }
-        }
     }
 
     /**
@@ -694,17 +638,6 @@ class DivisionEditor extends Grid implements SampleDivisionEditor {
     protected function selector() {
         $this->addTranslation('TXT_DIVISIONS');
         $this->prepare();
-
-        $params = $this->getStateParams(true);
-
-        if ($params) {
-            $siteID = $params['site_id'];
-        } else {
-            $siteID = E()->getSiteManager()->getCurrentSite()->id;
-        }
-
-        $this->setProperty('site', $siteID);
-        $this->setFilter(['site_id' => $siteID]);
     }
 
 

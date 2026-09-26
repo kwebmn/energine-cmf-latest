@@ -144,9 +144,8 @@ class NewsFeed extends ExtendedFeed {
 
             if ($f = $this->getData()->getFieldByName('smap_id')) {
                 foreach ($f as $key => $value) {
-                    $site = E()->getSiteManager()->getSiteByPage($value);
-                    $f->setRowProperty($key, 'url', E()->getMap($site->id)->getURLByID($value));
-                    $f->setRowProperty($key, 'base', $site->base);
+                    $f->setRowProperty($key, 'url', E()->getMap()->getURLByID($value));
+                    $f->setRowProperty($key, 'base', E()->getSiteManager()->getCurrentSite()->base);
                 }
             }
 

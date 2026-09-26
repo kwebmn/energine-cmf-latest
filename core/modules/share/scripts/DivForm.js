@@ -33,7 +33,7 @@ var DivForm = new Class(/** @lends DivForm# */{
     // constructor
     initialize: function (element) {
         this.parent(element);
-        this.prepareLabel($('site_id').get('value') + '/list/');
+        this.prepareLabel('list/');
 
         var contentSelector = this.element.getElementById('smap_content'),
             layoutSelector = this.element.getElementById('smap_layout'),

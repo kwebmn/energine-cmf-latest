@@ -241,7 +241,6 @@ CREATE TABLE `share_session` (
 CREATE TABLE `share_sitemap` (
   `smap_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `smap_last_mod` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  `site_id` int(10) unsigned NOT NULL,
   `smap_layout` char(200) NOT NULL,
   `smap_layout_xml` text DEFAULT NULL,
   `smap_content` char(200) NOT NULL,
@@ -253,11 +252,9 @@ CREATE TABLE `share_sitemap` (
   `smap_redirect_url` char(250) DEFAULT NULL,
   `smap_meta_robots` set('NOINDEX','NOFOLLOW','NOARCHIVE','NOSNIPPET','NOODP') DEFAULT NULL,
   PRIMARY KEY (`smap_id`),
-  UNIQUE KEY `smap_pid` (`smap_pid`,`site_id`,`smap_segment`),
-  KEY `site_id` (`site_id`),
+  UNIQUE KEY `smap_pid_segment` (`smap_pid`,`smap_segment`),
   KEY `smap_order_num` (`smap_order_num`),
-  CONSTRAINT `share_sitemap_ibfk_8` FOREIGN KEY (`smap_pid`) REFERENCES `share_sitemap` (`smap_id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `share_sitemap_ibfk_9` FOREIGN KEY (`site_id`) REFERENCES `share_sites` (`site_id`) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT `share_sitemap_ibfk_8` FOREIGN KEY (`smap_pid`) REFERENCES `share_sitemap` (`smap_id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;

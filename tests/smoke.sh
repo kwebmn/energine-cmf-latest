@@ -47,7 +47,7 @@ grep -q NRGNSID $J || { echo "FAIL [login] no session cookie"; fail=$((fail+1));
 while read p; do check "admin" "$B/$p" 200; done < $SCR/paths.txt
 # grids
 while read s; do
-  case "$s" in *divEditor*) checkjson "grid" "${s}1/get-data/";; *) checkjson "grid" "${s}get-data/page-1";; esac
+  case "$s" in *divEditor*) checkjson "grid" "${s}get-data/";; *) checkjson "grid" "${s}get-data/page-1";; esac
 done < $SCR/singles.txt
 checkjson "filelib" "$B/admin/users/single/adminPanel/file-library/1/get-data/"
 # forms

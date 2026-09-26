@@ -15,7 +15,7 @@
     <!-- вывод дерева разделов -->
     <xsl:template match="recordset[parent::component[javascript/behavior/@name='DivManager' or javascript/behavior/@name='DivSelector'or javascript/behavior/@name='DivTree'][@sample='DivisionEditor'][@type='list']]">
         <xsl:variable name="TAB_ID" select="generate-id(record[1])"/>
-        <div id="{generate-id(.)}" class="e-pane e-pane-has-t-toolbar1" template="{$BASE}{$LANG_ABBR}{$TEMPLATE}" lang_id="{$LANG_ID}" single_template="{$BASE}{$LANG_ABBR}{../@single_template}" site="{../@site}">
+        <div id="{generate-id(.)}" class="e-pane e-pane-has-t-toolbar1" template="{$BASE}{$LANG_ABBR}{$TEMPLATE}" lang_id="{$LANG_ID}" single_template="{$BASE}{$LANG_ABBR}{../@single_template}">
             <xsl:if test="../toolbar">
                 <xsl:attribute name="class">e-pane e-pane-has-t-toolbar1 e-pane-has-b-toolbar1</xsl:attribute>
             </xsl:if>
@@ -29,9 +29,7 @@
             </div>
             <div class="e-pane-content">
                 <div id="{$TAB_ID}">                    
-                    <div id="treeContainer" class="e-divtree-select">
-                        <xsl:apply-templates select="$COMPONENTS[@class='SiteList']" mode="insideEditor"/>
-                    </div>
+                    <div id="treeContainer" class="e-divtree-select"></div>
                 </div>
             </div>
             <xsl:if test="../toolbar">
@@ -42,7 +40,7 @@
         
     <!-- вывод дерева разделов в боковом тулбаре -->
     <xsl:template match="recordset[parent::component[javascript/behavior/@name='DivSidebar'][@sample='DivisionEditor'][@componentAction='main'][@type='list']]">
-        <div id="{generate-id(.)}" class="e-divtree-wrapper" template="{$BASE}{$LANG_ABBR}{$TEMPLATE}"  lang_id="{$LANG_ID}" single_template="{$BASE}{$LANG_ABBR}{../@single_template}" site="{../@site}">
+        <div id="{generate-id(.)}" class="e-divtree-wrapper" template="{$BASE}{$LANG_ABBR}{$TEMPLATE}"  lang_id="{$LANG_ID}" single_template="{$BASE}{$LANG_ABBR}{../@single_template}">
             <div id="treeContainer" class="e-divtree-main"></div>
         </div>
     </xsl:template>
@@ -203,41 +201,4 @@
     <xsl:template match="record[parent::recordset[parent::component[@sample='DivisionEditor'][@type='list']]]"/>
     <!-- /компонент DivisionEditor -->
 
-    <!--Обычный список сайтов-->
-    <xsl:template match="component[@class='SiteList']">
-        <xsl:if test="not(recordset[@empty])">
-            <div class="site_list_box">
-                <xsl:apply-templates/>
-            </div>
-        </xsl:if>
-    </xsl:template>
-    
-    <xsl:template match="recordset[parent::component[@class='SiteList']]">
-        <ul class="site_list">
-            <xsl:apply-templates/>
-        </ul>
-    </xsl:template>
-    
-    <xsl:template match="record[ancestor::component[@class='SiteList']]">
-        <li>
-            <xsl:if test="field[@name='site_id'] = $COMPONENTS[@sample='DivisionEditor']/@site">
-                <xsl:attribute name="class">active</xsl:attribute>
-            </xsl:if>
-            <a href="{$BASE}{$LANG_ABBR}{ancestor::component/@single_template}show/{field[@name='site_id']}/"><xsl:value-of select="field[@name='site_name']"/></a>
-        </li>
-    </xsl:template>
-
-    <xsl:template match="component[@class='SiteList' and (following::component[@sample='DivisionEditor'] or preceding::component[@sample='DivisionEditor'])]" />
-
-    <xsl:template match="component[@class='SiteList' and (following::component[@sample='DivisionEditor'] or preceding::component[@sample='DivisionEditor'])]"  mode="insideEditor">
-        <select onchange="document.location = '{$BASE}{$LANG_ABBR}{@single_template}show/' + this.options[this.selectedIndex].value + '/';" id="site_selector">
-            <xsl:for-each select="recordset/record">
-                <option value="{field[@name='site_id']}">
-                    <xsl:if test="field[@name='site_id'] = $COMPONENTS[@sample='DivisionEditor']/@site">
-                        <xsl:attribute name="selected">selected</xsl:attribute>
-                    </xsl:if>
-                    <xsl:value-of select="field[@name='site_name']"/></option>
-            </xsl:for-each>
-        </select>
-    </xsl:template>
 </xsl:stylesheet>

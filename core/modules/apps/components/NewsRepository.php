@@ -39,8 +39,10 @@ class NewsRepository extends NewsEditor {
         parent::__construct($name, $params);
         $this->enable();
         $this->setProperty('exttype', 'grid');
-        $this->addFilterCondition([$this->getTableName().'.smap_id' => $this->dbh->getColumn('share_sitemap', 'smap_id', ['site_id' => $this->getSites()])]);
-        //inspect($this->getFilter());
+        // новости видны, если сайт есть среди сайтов групп пользователя (getSites), иначе — ни одной
+        if (!in_array(E()->getSiteManager()->getCurrentSite()->id, $this->getSites())) {
+            $this->addFilterCondition([$this->getTableName() . '.smap_id' => [0]]);
+        }
         $this->setSaver(new NewsEditorSaver());
     }
 
@@ -83,13 +85,8 @@ class NewsRepository extends NewsEditor {
         $params = [];
         $sp = $this->getStateParams(true);
 
-        if(isset($sp['smap_id'])){
+        if (isset($sp['smap_id'])) {
             $n++;
-            $siteID = E()->getSiteManager()->getSiteByPage($sp['smap_id'])->id;
-            if($siteID){
-                //$params['smap_id'] = $sp['smap_id'];
-                $params['site'] = $siteID;
-            }
         }
 
         $this->request->shiftPath($n);
@@ -122,7 +119,7 @@ class NewsRepository extends NewsEditor {
         $smapField = $this->getData()->getFieldByName('smap_id');
         for ($i = 0; $i < sizeof(E()->getLanguage()->getLanguages()); $i++) {
             $smapField->setRowProperty($i, 'smap_name', $this->dbh->getScalar(
-                'SELECT CONCAT(site_name, ":", smap_name) as smap_name FROM share_sitemap sm LEFT JOIN share_sitemap_translation smt USING(smap_id) LEFT JOIN share_sites_translation s ON (s.site_id = sm.site_id) AND (s.lang_id = %s) WHERE sm.smap_id = %s AND smt.lang_id= %1$s', $this->document->getLang(), $smapField->getRowData(0)
+                'share_sitemap_translation', 'smap_name', ['smap_id' => $smapField->getRowData(0), 'lang_id' => $this->document->getLang()]
             ));
         }
     }

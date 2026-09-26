@@ -31,7 +31,7 @@ TOK=$(tok $B/)
 # --- page: add, edit with SET column, delete
 S=$A/structure/single/divEditor/
 pagefields() {
-  echo --data-urlencode "share_sitemap[smap_pid]=80" --data-urlencode "share_sitemap[site_id]=1" \
+  echo --data-urlencode "share_sitemap[smap_pid]=${1:-80}" \
     --data-urlencode "share_sitemap[smap_layout]=default.layout.xml" --data-urlencode "share_sitemap[smap_content]=textblock.content.xml" \
     --data-urlencode "share_sitemap[smap_segment]=claude-test" --data-urlencode "share_sitemap[smap_redirect_url]=" \
     --data-urlencode "share_sitemap[smap_in_menu]=1" \
@@ -45,12 +45,28 @@ post "${S}save" --data-urlencode "componentAction=add" --data-urlencode "share_s
 ID=$(q "SELECT smap_id FROM share_sitemap WHERE smap_segment='claude-test'")
 isok && [ -n "$ID" ] && ok "page add ($ID)" || bad "page add"
 [ "$(curl -sS -o /dev/null -w '%{http_code}' $B/claude-test/)" = 200 ] && ok "page view" || bad "page view"
+# отказ сохранения — JSON с сообщением для человека, без текста ошибки SQL (не 500 и не «Duplicate entry»)
+refused() { php8.5 -r '$d = json_decode(file_get_contents($argv[1]), true);
+  $m = is_array($d) ? json_encode($d["errors"] ?? $d["message"] ?? null, JSON_UNESCAPED_UNICODE) : "null";
+  exit(is_array($d) && empty($d["result"]) && !in_array($m, ["null", "\"\"", "[]"], true) && !preg_match("/duplicate|sqlstate|\bsql\b/i", $m) ? 0 : 1);' $R; }
 if [ -n "$ID" ]; then
+  # второй раздел с тем же сегментом у того же родителя: отказ с понятным сообщением, раздел один
+  post "${S}save" --data-urlencode "componentAction=add" --data-urlencode "share_sitemap[smap_id]=" $(pagefields) "${TR[@]}" \
+    --data-urlencode "share_sitemap_translation[1][smap_name]=Дубль" --data-urlencode "share_sitemap_translation[2][smap_name]=Дубль"
+  refused && [ "$(q "SELECT COUNT(*) FROM share_sitemap WHERE smap_segment='claude-test'")" = 1 ] \
+    && ok "page duplicate segment refused" || bad "page duplicate segment"
+  q "DELETE FROM share_sitemap WHERE smap_segment='claude-test' AND smap_id <> $ID"
   post "${S}save" --data-urlencode "componentAction=edit" --data-urlencode "share_sitemap[smap_id]=$ID" $(pagefields) "${TR[@]}" \
     --data-urlencode "share_sitemap[smap_meta_robots][]=NOINDEX" --data-urlencode "share_sitemap[smap_meta_robots][]=NOFOLLOW" \
     --data-urlencode "share_sitemap_translation[1][smap_name]=Тест установки (ред.)" --data-urlencode "share_sitemap_translation[2][smap_name]=Тест"
   isok && [ "$(q "SELECT smap_meta_robots FROM share_sitemap WHERE smap_id=$ID")" = "NOINDEX,NOFOLLOW" ] && ok "page edit" || bad "page edit"
   curl -sS $B/claude-test/ | grep -q '<meta name="robots" content="NOINDEX,NOFOLLOW">' && ok "page meta robots" || bad "page meta robots"
+  # перенос к другому родителю (демо-раздел info): адрес страницы меняется
+  INFO=$(q "SELECT s.smap_id FROM share_sitemap s JOIN share_sitemap r ON s.smap_pid = r.smap_id WHERE r.smap_pid IS NULL AND s.smap_segment='info'")
+  post "${S}save" --data-urlencode "componentAction=edit" --data-urlencode "share_sitemap[smap_id]=$ID" $(pagefields "$INFO") "${TR[@]}" \
+    --data-urlencode "share_sitemap_translation[1][smap_name]=Тест установки (ред.)" --data-urlencode "share_sitemap_translation[2][smap_name]=Тест"
+  isok && [ "$(curl -sS -o /dev/null -w '%{http_code}' $B/info/claude-test/)" = 200 ] \
+    && [ "$(curl -sS -o /dev/null -w '%{http_code}' $B/claude-test/)" = 404 ] && ok "page move" || bad "page move"
   post "${S}${ID}/delete/"
   isok && [ "$(q "SELECT COUNT(*) FROM share_sitemap WHERE smap_id=$ID")" = 0 ] && ok "page delete" || bad "page delete"
 fi

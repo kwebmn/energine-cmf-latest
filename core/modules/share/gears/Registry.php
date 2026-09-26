@@ -107,11 +107,11 @@ namespace Energine\share\gears {
          * @param string $className Class name.
          * @return FileRepoInfo|ComponentManager|mixed
          *
-         * @throws \Exception 'Use Registry::getMap($siteID) instead.'
+         * @throws \Exception 'Use Registry::getMap() instead.'
          */
         public function __get($className) {
             if ($className == 'Sitemap') {
-                throw new \Exception('Use Registry::getMap($siteID) instead.');
+                throw new \Exception('Use Registry::getMap() instead.');
             }
 
             return $this->offsetGet($className);
@@ -224,19 +224,15 @@ namespace Energine\share\gears {
         }
 
         /**
-         * Get Sitemap object.
+         * Дерево разделов сайта (одно на сайт).
          *
-         * @param bool|int $siteID Site ID.
          * @return Sitemap
-         *
-         * @note In fact, several objects of these class exist.
          */
-        public function getMap($siteID = false) {
-            if (!$siteID) $siteID = E()->getSiteManager()->getCurrentSite()->id;
-            if (!isset($this->entities['Sitemap'][$siteID])) {
-                $this->entities['Sitemap'][$siteID] = new Sitemap($siteID);
+        public function getMap() {
+            if (!isset($this->entities['Sitemap'])) {
+                $this->entities['Sitemap'] = new Sitemap();
             }
-            return $this->entities['Sitemap'][$siteID];
+            return $this->entities['Sitemap'];
         }
 
         /**

@@ -105,22 +105,12 @@ class Robots extends DataSet {
         $smap_ids = $this->getSitemapSegmentIds();
         if ($smap_ids) return;
 
-        // вставка нового сегмента в sitemap на основании конфига
+        // страница карты сайта для поисковиков — под корнем (вызывается, только когда сайт индексируется)
         $this->dbh->modify(
-            'INSERT IGNORE INTO share_sitemap
-            (site_id,smap_layout,smap_content,smap_segment,smap_pid) '
-            . 'SELECT sso.site_id, %s, %s, %s, '
-            . '(SELECT smap_id FROM share_sitemap ss2 WHERE ss2.site_id = sso.site_id AND smap_pid IS NULL LIMIT 0,1) '
-            . 'FROM share_sites sso '
-            // site_meta_robots обычно NULL, а FIND_IN_SET по NULL возвращает NULL:
-            // условие не выполнялось никогда и страница карты не создавалась
-            . 'WHERE NOT FIND_IN_SET(\'NOINDEX\', COALESCE(site_meta_robots, \'\')) AND site_is_active '
-            . 'AND (SELECT COUNT(ssi.site_id) FROM share_sites ssi '
-            . 'INNER JOIN share_sitemap ssm ON ssi.site_id = ssm.site_id '
-            . 'WHERE ssm.smap_segment = %s AND ssi.site_id = sso.site_id) = 0',
+            'INSERT IGNORE INTO share_sitemap (smap_layout, smap_content, smap_segment, smap_pid) '
+            . 'SELECT %s, %s, %s, smap_id FROM share_sitemap WHERE smap_pid IS NULL',
             E()->getConfigValue('seo.sitemapTemplate') . '.layout.xml',
             E()->getConfigValue('seo.sitemapTemplate') . '.content.xml',
-            E()->getConfigValue('seo.sitemapSegment'),
             E()->getConfigValue('seo.sitemapSegment')
         );
 

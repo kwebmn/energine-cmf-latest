@@ -45,8 +45,6 @@ var DivSidebar = new Class(/** @lends DivSidebar# */{
 
         this.singlePath = this.element.getProperty('single_template');
 
-        this.site = this.element.getProperty('site');
-
         $$('html')[0].addClass('e-divtree-panel');
 
         this.loadTree();

@@ -97,18 +97,6 @@ final class SiteManager extends Primitive implements \Iterator {
     }
 
     /**
-     * Get exemplar of Site object by his page ID.
-     *
-     * @param int $pageID Page ID.
-     * @return Site
-     */
-    public function getSiteByPage($pageID) {
-        if(!($id = $this->dbh->getScalar('share_sitemap', 'site_id', ['smap_id' => $pageID]))) return null;
-
-        return $this->getSiteByID($id);
-    }
-
-    /**
      * Returns current site.
      *
      * @return Site

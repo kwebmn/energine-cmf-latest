@@ -83,12 +83,6 @@ var DivManager = new Class(/** @lends DivManager# */{
          */
         this.singlePath = this.element.getProperty('single_template');
 
-        /**
-         * Site ID.
-         * @type {string}
-         */
-        this.site = this.element.getProperty('site');
-
         this.loadTree();
 
         /* вешаем пересчет размеров формы на ресайз окна */
@@ -133,7 +127,7 @@ var DivManager = new Class(/** @lends DivManager# */{
      */
     loadTree: function () {
         Energine.request(
-            this.singlePath + this.site + '/get-data/',
+            this.singlePath + 'get-data/',
             'languageID=' + this.langId,
             function (response) {
                 this.buildTree(response.data, (response.current) ? response.current : null);
@@ -354,11 +348,6 @@ var DivManager = new Class(/** @lends DivManager# */{
     select: function () {
         var nodeData = this.tree.getSelectedNode().getData();
 
-        if ($('site_selector') && nodeData) {
-            nodeData.site_name = $('site_selector').getSelected()[0].get('text');
-            nodeData.site_id = $('site_selector').getSelected()[0].get('value');
-        }
-
         ModalBox.setReturnValue(nodeData);
         ModalBox.close();
     },
@@ -381,8 +370,7 @@ var DivManager = new Class(/** @lends DivManager# */{
         var nodeData = this.tree.getSelectedNode().getData();
 
         if (nodeData.smap_segment || !nodeData.smap_pid) {
-            window.top.document.location = ((nodeData.site) ? nodeData.site : Energine.base)
-            + nodeData.smap_segment;
+            window.top.document.location = Energine.base + nodeData.smap_segment;
         }
     },
     // End actions

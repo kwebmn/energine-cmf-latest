@@ -600,12 +600,7 @@ Form.SmapSelector = new Class(/** @lends Form.SmapSelector# */{
      */
     setName: function (result) {
         if (result) {
-            var name = '';
-            if (result.site_name) {
-                name += result.site_name + ' : ';
-            }
-            name += result.smap_name;
-            this.smap.name.set('value', name);
+            this.smap.name.set('value', result.smap_name);
             this.smap.id.set('value', result.smap_id);
         }
 

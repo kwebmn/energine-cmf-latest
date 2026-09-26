@@ -48,3 +48,19 @@ DELETE FROM `share_lang_tags` WHERE `ltag_name` IN ('BTN_SITE_EDITOR', 'CONTENT_
     'FIELD_SITE_PROTOCOL', 'FIELD_SITE_HOST', 'FIELD_SITE_ROOT', 'FIELD_SITE_PORT', 'FIELD_COPY_SITE_STRUCTURE', 'TXT_SITELIST',
     'FIELD_SITE_LOGO', 'FIELD_SITE_GA_CODE', 'BTN_RESET_TEMPLATES', 'MSG_CONFIRM_TEMPLATES_RESET', 'MSG_TEMPLATES_RESET',
     'BTN_PROPERTIES');
+
+-- 3. Одно дерево разделов: у страниц нет сайта. Сегмент адреса уникален среди разделов одного родителя;
+--    повтор отклоняется до записи понятным сообщением (DivisionSaver, ERR_SEGMENT_EXISTS).
+ALTER TABLE `share_sitemap` DROP FOREIGN KEY IF EXISTS `share_sitemap_ibfk_9`;
+ALTER TABLE `share_sitemap`
+    DROP INDEX IF EXISTS `smap_pid`,
+    ADD UNIQUE KEY IF NOT EXISTS `smap_pid_segment` (`smap_pid`, `smap_segment`),
+    DROP INDEX IF EXISTS `site_id`,
+    DROP COLUMN IF EXISTS `site_id`;
+INSERT IGNORE INTO `share_lang_tags` (`ltag_name`) VALUES ('ERR_SEGMENT_EXISTS');
+INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`)
+    SELECT t.`ltag_id`, l.`lang_id`, IF(l.`lang_abbr` = 'ua',
+           'У цього розділу вже є підрозділ з таким сегментом адреси. Вкажіть інший сегмент.',
+           'У этого раздела уже есть подраздел с таким сегментом адреса. Укажите другой сегмент.')
+      FROM `share_lang_tags` t JOIN `share_languages` l
+     WHERE t.`ltag_name` = 'ERR_SEGMENT_EXISTS';
