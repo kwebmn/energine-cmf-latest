@@ -550,15 +550,7 @@ var Grid = (function () {
                     cell.setStyles({'text-align': 'center', 'vertical-align': 'middle'});
                     break;
                 case 'value':
-                case 'lookup':
                     cell.set('html', record[fieldName]['value']);
-                    break;
-                case 'textbox':
-                    if (record[fieldName] && Object.getLength(record[fieldName])) {
-                        cell.set('html', Object.values(record[fieldName]).join(', '));
-                    } else {
-                        cell.set('html', '&nbsp;');
-                    }
                     break;
                 case 'file':
                     if (record[fieldName]) {
@@ -789,9 +781,6 @@ var Grid = (function () {
 		 return false;
 	      }
 	      var id = this.getSelectedRecord()[this.keyFieldName];
-	      if (this.metadata[this.keyFieldName].type == 'lookup') {
-                id = this.getSelectedRecord()[this.keyFieldName]['id'];
-	      }
 	      return id;
 	  } else {
 	    if (this.selectedItem.length<2) {
@@ -799,20 +788,13 @@ var Grid = (function () {
 		 return false;
 	      }
 	      var id = this.getSelectedRecord()[this.keyFieldName];
-	      if (this.metadata[this.keyFieldName].type == 'lookup') {
-                id = this.getSelectedRecord()[this.keyFieldName]['id'];
-	      }
 	      return id;
 	    } else {
 	      var ida=[];
 		if (!this.keyFieldName || !this.getSelectedRecords()) return false;
 		 var sr=this.getSelectedRecords();
 		  for (var l=0;l<sr.length;l++) {
-		    if (this.metadata[this.keyFieldName].type == 'lookup') {		      
-		      ida.push(sr[l].record[this.keyFieldName]['id']);
-		    } else {		      
 		      ida.push(sr[l].record[this.keyFieldName]);
-		    }
 		  }
 	      return ida.join(",");	      
 	    }

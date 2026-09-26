@@ -96,11 +96,6 @@
         </div>
     </xsl:template>
 
-    <xsl:template match="field[@type='lookup'][ancestor::component[@exttype='grid']]" mode="field_content">
-        <div class="control type_{@type}" id="control_{@language}_{@name}" data-url="{@url}" data-value-field="{@value_field}" data-value-table="{@value_table}" data-key-field="{@key_field}">
-            <xsl:apply-templates select="." mode="field_input"/>
-        </div>
-    </xsl:template>
     <!--
         Секция 2. Инпуты.
         В этой секции собраны правила вывода полей формы, которые создают сам html-элемент (input, select, etc.).
@@ -497,16 +492,6 @@
         </div>
     </xsl:template>
 
-    <!-- read-only lookup -->
-    <xsl:template match="field[@mode='1'  and @type='lookup' and ancestor::component[@type='form'  and (@exttype='feed' or @exttype='grid') ]]" mode="field_input_readonly">
-        <div class="control">
-            <input type="text" id="{@name}_read" disabled="disabled" value="{.}"/>
-            <input>
-                <xsl:call-template name="FORM_ELEMENT_ATTRIBUTES_READONLY"/>
-                <xsl:attribute name="value"><xsl:value-of select="value/@id"/></xsl:attribute>
-            </input>
-        </div>
-    </xsl:template>
     <!-- read-only поле логического типа -->
     <xsl:template match="field[@type='boolean'][@mode=1][ancestor::component[@type='form']]">
         <div class="field">

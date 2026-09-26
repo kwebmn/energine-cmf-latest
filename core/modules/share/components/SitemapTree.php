@@ -41,8 +41,15 @@ class SitemapTree extends DataSet
         $sitemap = E()->getMap();
         $res = $sitemap->getInfo();
         // все доступные страницы: до параметра tags (2015) карта так и работала, а с ним по
-        // умолчанию фильтр был пустым, и в карте оставалась одна главная
+        // умолчанию фильтр был пустым, и в карте оставалась одна главная. Кроме страниц, самих
+        // закрытых от индексации (NOINDEX в их meta robots, не унаследованный от сайта): это
+        // служебные адреса — вход, восстановление пароля, robots.txt, sitemap.xml.
+        $hidden = $this->dbh->getColumn('SELECT smap_id FROM share_sitemap WHERE FIND_IN_SET(%s, smap_meta_robots)', 'NOINDEX') ?: [];
+        $result = [];
         foreach ($res as $id => $info) {
+            if (in_array($id, $hidden)) {
+                continue;
+            }
             $result [] = array(
                 'Id' => $id,
                 'Pid' => $info['Pid'],

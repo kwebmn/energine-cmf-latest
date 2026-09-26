@@ -122,8 +122,11 @@ ALTER TABLE `apps_news` DROP COLUMN IF EXISTS `news_show_image`, DROP COLUMN IF 
 -- 9. Переводы вырезанного на этапе 3: подписи его кода, названия шаблонов и компонентов, поля
 --    вырезанных таблиц и колонок (список tests/tools/cut-constants.php — удалённые файлы и
 --    удалённые строки изменённых), а также строки тегов, видео и Flash, которых не было ни в
---    каком коде этой системы (поиск по именам в справочнике). Переводы удаляются каскадом.
+--    каком коде этой системы (поиск по именам в справочнике), и строки, которые стояли только в
+--    удалённом коде, но инструмент их прячет: они собираются из обычного слова (TXT_CONTENT,
+--    TXT_LAYOUT, TAB_PARAMS — редактор блоков). Переводы удаляются каскадом.
 DELETE FROM `share_lang_tags` WHERE `ltag_name` IN (
+    'TAB_PARAMS', 'TXT_CONTENT', 'TXT_LAYOUT',
     'BTN_APPLY', 'BTN_EDIT_BLOCKS', 'BTN_EXT_FLASH', 'BTN_INSERT_VIDEO', 'BTN_INSERT_WIDGET',
     'CONTENT_TAG_EDITOR', 'CONTENT_VIDEO', 'CONTENT_VIDEO_LIBRARY', 'CONTENT_WIDGETS_REPOSITORY',
     'ERR_BAD_DATA', 'ERR_BAD_PREPARE_FUNCTION', 'ERR_BAD_XML', 'ERR_BAD_XML_DESCR',
@@ -139,3 +142,12 @@ DELETE FROM `share_lang_tags` WHERE `ltag_name` IN (
     'TXT_SAVE_TO_NEW_CONTENT', 'TXT_TOP_VIDEO', 'TXT_VIDEO', 'TXT_VIDEOS', 'TXT_VIDEO_LIBRARY',
     'TXT_VIEW_VIDEO', 'TXT_WATCH_ALL_VIDEO', 'TXT_WIDGETEDITOR', 'TXT_WIDGETSREPOSITORY'
 );
+
+-- 10. Служебные страницы закрыты от индексации (NOINDEX в meta robots): вход, восстановление
+--     пароля, robots.txt и sitemap.xml. По этому признаку их не показывают ни карта сайта для
+--     людей (SitemapTree), ни sitemap.xml (GoogleSitemap). Страницы находятся по шаблону.
+UPDATE `share_sitemap`
+   SET `smap_meta_robots` = CONCAT_WS(',', NULLIF(`smap_meta_robots`, ''), 'NOINDEX')
+ WHERE `smap_content` IN ('login.content.xml', 'restore_password.content.xml', 'robots_txt.content.xml',
+                          'google_sitemap.content.xml')
+   AND NOT FIND_IN_SET('NOINDEX', IFNULL(`smap_meta_robots`, ''));

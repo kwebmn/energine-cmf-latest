@@ -43,8 +43,10 @@ check "robots" "$B/robots.txt/" 200
 check "sitemap" "$B/sitemap/" 200
 miss=$(php8.5 -r '$d = new DOMDocument(); @$d->loadHTML(file_get_contents($argv[1])); $x = new DOMXPath($d); $h = [];
   foreach ($x->query("//div[contains(concat(\" \", normalize-space(@class), \" \"), \" col2 \")]//a/@href") as $a) $h[] = trim(preg_replace("~^https?://[^/]+/~", "", $a->value), "/");
-  echo implode(" ", array_diff(["news", "contacts", "features"], $h));' $T)
-[ -z "$miss" ] || { echo "FAIL [sitemap] в карте сайта нет: $miss"; fail=$((fail+1)); }
+  echo implode(" ", array_diff(["news", "contacts", "features"], $h)), "|", implode(" ", array_intersect(["login", "restore-password", "robots.txt", "google-sitemap"], $h));' $T)
+[ "${miss%%|*}" = "" ] || { echo "FAIL [sitemap] в карте сайта нет: ${miss%%|*}"; fail=$((fail+1)); }
+# служебные страницы (закрыты от индексации) в карте для людей не показываются
+[ "${miss#*|}" = "" ] || { echo "FAIL [sitemap] в карте сайта служебные страницы: ${miss#*|}"; fail=$((fail+1)); }
 check "resizer" "$B/resizer/w90-h68/uploads/public/13662314846.png" 200
 check "static" "$B/scripts/Energine.js" 200
 
