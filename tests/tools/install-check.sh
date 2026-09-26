@@ -60,6 +60,24 @@ out=$(setup install --config="$S/web/system.config.php" --no-static --url="$URL"
 [ $rc -ne 0 ] && [ "$(Q 'SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = "site"')" = 0 ] \
   && ok "неверный e-mail администратора — отказ, база пуста" || bad "неверный e-mail" "код $rc: $(tail -3 <<< "$out")"
 [ ! -e "$S/web/system.config.php" ] && ok "при отказе конфиг не записан" || { bad "при отказе записан конфиг"; rm -f "$S/web/system.config.php"; }
+# логин (u_name) вмещает 50 символов: длиннее — отказ до изменений, а не сбой на середине
+long="claude-$(printf 'x%.0s' $(seq 40))@example.org"
+out=$(setup install --config="$S/web/system.config.php" --no-static --url="$URL" --db-socket="$SOCK" --db-name=site \
+  --db-user=energine --admin-email="$long" --admin-name=Admin); rc=$?
+[ $rc -ne 0 ] && [ "$(Q 'SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = "site"')" = 0 ] && [ ! -e "$S/web/system.config.php" ] \
+  && ok "e-mail администратора длиннее 50 символов — отказ до изменений" || bad "длинный e-mail администратора" "код $rc: $(tail -2 <<< "$out")"
+[ -e "$S/web/system.config.php" ] && rm -f "$S/web/system.config.php"
+# сбой на середине (у пользователя базы нет права создавать процедуры): код 1, конфиг этого запуска удалён,
+# сказано очистить базу; затем база пересоздаётся для основной установки
+fresh_site() { TM <<< "DROP DATABASE \`site\`; CREATE DATABASE \`site\` CHARACTER SET $CS COLLATE $CO;
+  GRANT ALL PRIVILEGES ON \`site\`.* TO 'energine'@'localhost';"; }
+fresh_site && TM <<< "REVOKE CREATE ROUTINE ON \`site\`.* FROM 'energine'@'localhost';" || { bad "подготовка сбоя"; exit 1; }
+out=$(setup "${INSTALL[@]}"); rc=$?
+[ $rc -ne 0 ] && [ ! -e "$S/web/system.config.php" ] && grep -q "прервалась" <<< "$out" && grep -q "очистите" <<< "$out" \
+  && ok "сбой на середине: код 1, конфиг этого запуска удалён, сказано очистить базу" \
+  || bad "сбой на середине" "код $rc, конфиг $([ -e "$S/web/system.config.php" ] && echo остался || echo удалён): $(tail -3 <<< "$out")"
+rm -f "$S/web/system.config.php"
+fresh_site || { bad "пересоздание базы"; exit 1; }
 
 echo "-- установка в пустую базу"
 out=$(setup "${INSTALL[@]}"); rc=$?
@@ -92,10 +110,18 @@ is "демо-строк нет (новости, тексты, получател
 
 echo "-- повторная установка"
 before=$(FP)
-out=$(setup "${INSTALL[@]}"); rc=$?
+# конфиг уже есть: база и домен берутся из него, так что достаточно e-mail администратора
+out=$(setup install --config="$S/web/system.config.php" --no-static --admin-email="$ADMIN_LOGIN" --admin-name=Admin); rc=$?
 [ $rc -ne 0 ] && [ "$(FP)" = "$before" ] && ok "непустая база — отказ без изменений" \
   || bad "повторная установка" "код $rc: $(tail -3 <<< "$out")"
 grep -q "пуст" <<< "$out" && ok "отказ объясняет: нужна пустая база" || bad "текст отказа" "$(tail -3 <<< "$out")"
+# конфиг уже есть: параметры базы и другой домен не принимаются молча — отказ называет конфиг
+out=$(setup install --config="$S/web/system.config.php" --no-static --db-name=site-other --admin-email="$ADMIN_LOGIN"); rc=$?
+[ $rc -ne 0 ] && grep -q "Конфиг площадки уже есть" <<< "$out" && ok "конфиг уже есть — параметры базы (--db-*) отклонены" \
+  || bad "конфиг уже есть и --db-*" "код $rc: $(tail -2 <<< "$out")"
+out=$(setup install --config="$S/web/system.config.php" --no-static --domain=other.example --admin-email="$ADMIN_LOGIN"); rc=$?
+[ $rc -ne 0 ] && grep -q "Конфиг площадки уже есть" <<< "$out" && ok "конфиг уже есть — другой домен отклонён" \
+  || bad "конфиг уже есть и другой домен" "код $rc: $(tail -2 <<< "$out")"
 
 echo "-- пустой сайт отвечает ($URL)"
 # текущий каталог — web, как у PHP-FPM: ядро читает шаблоны по относительному пути templates/

@@ -302,6 +302,12 @@ final class Setup {
                 throw new \Exception('В конфиге ' . $configFile . ' нет раздела database');
             }
             $database = $config['database'];
+            // база берётся из конфига: параметры базы не применились бы молча (например, при повторе после сбоя)
+            $given = array_values(array_intersect(['db-host', 'db-port', 'db-socket', 'db-name', 'db-user'], array_keys($o)));
+            if ($given) {
+                throw new \Exception('Конфиг площадки уже есть (' . $configFile . '): база берётся из него, параметры --'
+                    . implode(', --', $given) . ' не применяются. Уберите их или удалите этот конфиг.');
+            }
             $this->text('Конфиг площадки: ', $configFile);
         } else {
             foreach (['db-name', 'db-user'] as $key) {
@@ -322,6 +328,11 @@ final class Setup {
             ];
         }
         $urls = $this->siteUrls($o, $config['site'] ?? []);
+        // другой домен при готовом конфиге разошёлся бы с ним: cookie сессии привязаны к домену из конфига
+        if ($config && (!empty($o['domain']) || !empty($o['url'])) && strcasecmp($urls[0]['host'], (string)($config['site']['domain'] ?? '')) !== 0) {
+            throw new \Exception('Конфиг площадки уже есть (' . $configFile . '): домен сайта в нём — «' . ($config['site']['domain'] ?? '')
+                . '», другой (--domain, --url) не применяется. Уберите параметр или удалите этот конфиг.');
+        }
         // новый конфиг: указанный файл или configs/system.config.ДОМЕН.php и ссылка на него из web/
         $configTarget = null;
         if (!$config) {
@@ -336,6 +347,14 @@ final class Setup {
             throw new \Exception('Нужен корректный e-mail администратора: --admin-email=…');
         }
         $name = trim((string)($o['admin-name'] ?? '')) ?: 'Admin';
+        // столько вмещают колонки user_users (u_name varchar(50), u_fullname varchar(250)): длиннее — отказ сейчас,
+        // а не сбой после создания всех таблиц
+        if (mb_strlen($email) > 50) {
+            throw new \Exception('E-mail администратора длиннее 50 символов — столько вмещает логин');
+        }
+        if (mb_strlen($name) > 250) {
+            throw new \Exception('Имя администратора длиннее 250 символов');
+        }
         $password = $this->secret('ENERGINE_ADMIN_PASSWORD', 'пароль администратора');
 
         $pdo = $this->connect($database);
@@ -347,10 +366,17 @@ final class Setup {
         }
         $this->text('База «', $database['db'], '» пуста');
 
+        // файлы, записанные этим запуском: при сбое они удаляются — повтор начнётся с тех же параметров
+        $written = [];
         if ($configTarget) {
             $this->writeConfig($configTarget, $database, $urls[0]);
+            $written[] = $configTarget;
             if ($configTarget !== $configFile) {
-                symlink($configTarget, $configFile);
+                if (!@symlink($configTarget, $configFile)) {
+                    unlink($configTarget);
+                    throw new \Exception('Не создать ссылку ' . $configFile . ' на конфиг ' . $configTarget . ' (есть ли уже такой файл или ссылка?)');
+                }
+                $written[] = $configFile;
             }
             $this->text('Конфиг записан: ', $configTarget);
         }
@@ -361,7 +387,11 @@ final class Setup {
             $this->text('Администратор: ', $email);
             $this->writeDomains($pdo, $urls);
         } catch (\Exception $e) {
+            foreach (array_reverse($written) as $file) {
+                @unlink($file);
+            }
             throw new \Exception('установка прервалась: ' . $e->getMessage() . PHP_EOL
+                . ($written ? 'Конфиг, записанный этим запуском, удалён. ' : '')
                 . 'База заполнена частично: очистите её (все таблицы и процедуры) и запустите установку снова.');
         }
         if (empty($o['no-static'])) {
