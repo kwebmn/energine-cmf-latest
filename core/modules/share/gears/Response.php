@@ -266,18 +266,7 @@ final class Response extends Primitive {
         } else {
             //throw new SystemException('ERR_HEADERS_SENT', SystemException::ERR_CRITICAL);
         }
-        $contents = $this->body;
-
-        if ((bool)Primitive::getConfigValue('site.compress')
-            && isset($_SERVER['HTTP_ACCEPT_ENCODING'])
-            && (strpos($_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip') !== false)
-            && !(bool)Primitive::getConfigValue('site.debug')
-        ) {
-            header("Vary: Accept-Encoding");
-            header("Content-Encoding: gzip");
-            $contents = gzencode($contents, 6);
-        }
-        echo $contents;
+        echo $this->body;
         session_write_close();
         exit;
     }

@@ -604,24 +604,6 @@ abstract class DataSet extends Component
     }
 
     /**
-     * Download file.
-     *
-     * @param string $data File data.
-     * @param string $MIMEType File type.
-     * @param string $fileName Filename.
-     *
-     * @final
-     */
-    final protected function downloadFile($data, $MIMEType, $fileName)
-    {
-        $this->response->setHeader('Content-Type', $MIMEType);
-        $this->response->setHeader('Content-Disposition',
-            ': attachment; filename="' . $fileName . '"');
-        $this->response->write($data);
-        $this->response->commit();
-    }
-
-    /**
      * Clean up.
      */
     protected function cleanup()

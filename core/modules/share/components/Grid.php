@@ -324,7 +324,7 @@ class Grid extends DBDataSet {
      */
     protected function createDataDescription() {
         //Если поле OrderColumn присутствует в списке, убираем его
-        if (in_array($this->getState(), ['printData' /*, 'exportCSV'*/])) {
+        if (in_array($this->getState(), ['printData'])) {
             $previousAction = $this->getState();
             $this->getConfig()->setCurrentState(self::DEFAULT_STATE_NAME);
             $result = parent::createDataDescription();
@@ -557,136 +557,6 @@ class Grid extends DBDataSet {
     }
 
     /**
-     * Export the list into CSV file.
-     * @throws SystemException 'ERR_CANT_EXPORT'
-     * @todo не подхватывает фильтр, а должен
-     */
-    protected function exportCSV() {
-        $sp = $this->getStateParams(true);
-        if (isset($sp['encoding'])) {
-            $encoding = $sp['encoding'];
-        } else {
-            $encoding = 'utf-8';
-        }
-
-        //Если у нас есть таблица с переводами то експортить не получится
-        if ($this->getTranslationTableName()) {
-            throw new SystemException('ERR_CANT_EXPORT', SystemException::ERR_DEVELOPER);
-        }
-
-        $this->setDataDescription($dd = $this->createDataDescription());
-
-        $selectFields = $multiFields = [];
-        //собираем перечень всех селект полей
-        if ($sf = $dd->getFieldDescriptionsByType(FieldDescription::FIELD_TYPE_SELECT)) {
-            foreach ($sf as $name => $fd) {
-                $selectFields[$name] = $fd->getAvailableValues();
-            }
-        }
-        //Собираем перечень всех мультиполей
-        if ($mf = $dd->getFieldDescriptionsByType(FieldDescription::FIELD_TYPE_MULTI)) {
-            foreach ($mf as $name => $fd) {
-                //значения мультиполей
-                $multiFieldsData[$name] = $fd;
-                //Для замены имени поля в списке полей
-                $multiFields[$name] = 'GROUP_CONCAT(' . $name . '.fk_id) as ' . $name;
-            }
-        }
-
-        $data = '';
-        $titles = [];
-        //первая строка(заголовки полей)
-        foreach ($dd as $fieldInfo) {
-            $titles[] = $fieldInfo->getPropertyValue('title');
-        }
-        $data .= $this->prepareCSVString($titles);
-
-        if ($fields = $dd->getFieldDescriptionList()) {
-            //Хитросделанная конструкция чтобы получить список полей с замещенными названиями для мультиполей
-            $fields = array_values(
-                array_merge(
-                    array_combine(
-                        $fields, $fields
-                    ),
-                    $multiFields
-                )
-            );
-
-            $request = 'SELECT ' . implode(',', $fields) . ' FROM ' . $this->getTableName() . '';
-            //Для мультиполей добавляем JOIN и группировку по первичному ключу, для того чтобы можно было использовать GROUP_CONCAT
-            if (!empty($multiFields)) {
-                foreach (array_values($multiFieldsData) as $fieldProps) {
-                    $mTableName = $fieldProps->getPropertyValue('key');
-                    $mTableName = $mTableName['tableName'];
-                    $request .= ' LEFT JOIN ' . $mTableName . ' USING(' . $this->getPK() . ')';
-                }
-
-                $request .= ' GROUP BY ' . $this->getPK();
-            }
-            //в $data накапливаем строки
-            $res = $this->dbh->query($request);
-
-            if ($res && $res->rowCount()) {
-                while ($row = $res->fetch(\PDO::FETCH_LAZY)) {
-                    $tmpRow = [];
-                    foreach ($row as $fieldName => $fieldValue) {
-                        if ($fd = $dd->getFieldDescriptionByName($fieldName)) {
-                            switch ($fd->getType()) {
-                                case FieldDescription::FIELD_TYPE_DATE:
-                                case FieldDescription::FIELD_TYPE_TIME:
-                                case FieldDescription::FIELD_TYPE_DATETIME:
-                                    if ($format = $fieldInfo->getPropertyValue('outputFormat')) {
-                                        $fieldValue = E()->Utils->formatDate($fieldValue, $format,
-                                            $fd->getType());
-                                    }
-                                    break;
-                                case FieldDescription::FIELD_TYPE_SELECT:
-                                    if (isset($selectFields[$fieldName][$fieldValue])) {
-                                        $fieldValue = $selectFields[$fieldName][$fieldValue]['value'];
-                                    }
-                                    break;
-
-                                case FieldDescription::FIELD_TYPE_BOOL:
-                                    $fieldValue = ($fieldValue) ? $this->translate('TXT_YES') : $this->translate('TXT_NO');
-                                    break;
-                                case FieldDescription::FIELD_TYPE_MULTI:
-
-                                    if ($fieldValue && isset($multiFieldsData[$fieldName])) {
-                                        $value = explode(',', $fieldValue);
-                                        $fieldValue = [];
-                                        $multiFieldValues = $multiFieldsData[$fieldName]->getAvailableValues();
-                                        foreach ($value as $v) {
-                                            if (isset($multiFieldValues[$v])) {
-                                                array_push($fieldValue, $multiFieldValues[$v]['value']);
-                                            }
-                                        }
-                                        $fieldValue = implode(', ', $fieldValue);
-                                    }
-                                    break;
-                            }
-
-                            $tmpRow[] = $fieldValue;
-                        }
-
-                    }
-                    if ($tmpRow) {
-                        $data .= $this->prepareCSVString($tmpRow);
-                    }
-                }
-            }
-
-        }
-
-        $filename = $this->getTitle() . '.csv';
-        $MIMEType = 'application/csv';
-
-        if ($encoding != 'utf-8') {
-            $data = iconv('utf-8', $encoding . '//IGNORE', $data);
-        }
-        $this->downloadFile($data, $MIMEType, $filename);
-    }
-
-    /**
      * Prepare the list for printing.
      */
     protected function printData() {
@@ -698,29 +568,6 @@ class Grid extends DBDataSet {
         }
         $this->prepare();
     }
-
-    /**
-     * Prepare CSV string.
-     * @param array $nextValue Next value.
-     * @return string
-     */
-    protected function prepareCSVString(Array $nextValue) {
-        $separator = '"';
-        $delimiter = ';';
-        $rowDelimiter = "\r\n";
-        $row = '';
-        foreach ($nextValue as $fieldValue) {
-            $row .= $separator .
-                //mb_convert_encoding(str_replace(array($separator, $delimiter), array("''", ','), $fieldValue), 'Windows-1251', 'UTF-8') .
-                str_replace([$separator, $delimiter], ["''", ','], $fieldValue) .
-                $separator . $delimiter;
-        }
-        $row = substr($row, 0, -1);
-
-        return $row . $rowDelimiter;
-    }
-
-
 
     /**
      * Set column name for user sorting.
@@ -914,89 +761,6 @@ class Grid extends DBDataSet {
 			  $this->dbh->commit();
 			}
 		    break;
-            }
-        }
-
-        $b = new JSONCustomBuilder();
-        $b->setProperty('result', true);
-        $this->setBuilder($b);
-    }
-
-    /**
-     * Move the record.
-     * Allowed movement:
-     * - above
-     * - below
-     * - top
-     * - bottom
-     * @todo: Пофиксить перемещение в начало списка, т.к. сейчас порядковый номер может выйти меньше 0. Аналогичная ситуация с move above.
-     * @throws SystemException 'ERR_NO_ORDER_COLUMN'
-     */
-    protected function moveTo_old() { 
-        if (!$this->getOrderColumn()) {
-            //Если не задана колонка для пользовательской сортировки то на выход
-            throw new SystemException('ERR_NO_ORDER_COLUMN', SystemException::ERR_DEVELOPER);
-        }
-
-        $params = $this->getStateParams();
-        list($firstItem, $direction) = $params;
-
-        $allowed_directions = ['first', 'last', 'above', 'below'];
-        if (in_array($direction, $allowed_directions) && $firstItem == intval($firstItem)) {
-            switch ($direction) {
-                // двигаем элемент с id=$firstItem на самый верх
-                case 'first':
-                    $oldFirstItem = (int)$this->dbh->getScalar('SELECT MIN(' . $this->getOrderColumn() . ') FROM ' . $this->getTableName() . ' LIMIT 1');
-                    if ($oldFirstItem != $firstItem) {
-                        $this->dbh->modify(
-                            QAL::UPDATE,
-                            $this->getTableName(),
-                            [$this->getOrderColumn() => $oldFirstItem - 1],
-                            [$this->getPK() => $firstItem]
-                        );
-                    }
-                    break;
-                // двигаем элемент с id=$firstItem в самый низ
-                case 'last':
-                    $oldLastItem = (int)$this->dbh->getScalar('SELECT MAX(' . $this->getOrderColumn() . ') FROM ' . $this->getTableName() . ' LIMIT 1');
-                    if ($oldLastItem != $firstItem) {
-                        $this->dbh->modify(
-                            QAL::UPDATE,
-                            $this->getTableName(),
-                            [$this->getOrderColumn() => $oldLastItem + 1],
-                            [$this->getPK() => $firstItem]
-                        );
-                    }
-                    break;
-                // двигаем элемент выше или ниже id=$secondItem
-                case 'above':
-                case 'below':
-                    $secondItem = (!empty($params[2])) ? $params[2] : NULL;
-                    if ($secondItem == intval($secondItem) && $firstItem != $secondItem) {
-                        $secondItemOrderNum = $this->dbh->getScalar(
-                            'SELECT ' . $this->getOrderColumn() . ' as secondItemOrderNum ' .
-                            'FROM ' . $this->getTableName() . ' ' .
-                            'WHERE ' . $this->getPK() . ' = ' . $secondItem
-                        );
-                        $this->dbh->beginTransaction();
-                        // сдвигаем все элементы выше или ниже второго id
-                        $this->dbh->modify(
-                            'UPDATE ' . $this->getTableName() . ' ' .
-                            'SET ' . $this->getOrderColumn() . ' = ' .
-                            $this->getOrderColumn() . (($direction == 'below') ? ' +2 ' : ' -2 ') .
-                            'WHERE ' . $this->getOrderColumn() . (($direction == 'below') ? ' > ' : ' < ') .
-                            intval($secondItemOrderNum)
-                        );
-                        // устанавливаем новый порядок для первого id
-                        $this->dbh->modify(
-                            QAL::UPDATE,
-                            $this->getTableName(),
-                            [$this->getOrderColumn() => (($direction == 'below') ? $secondItemOrderNum + 1 : $secondItemOrderNum - 1)],
-                            [$this->getPK() => $firstItem]
-                        );
-                        $this->dbh->commit();
-                    }
-                    break;
             }
         }
 

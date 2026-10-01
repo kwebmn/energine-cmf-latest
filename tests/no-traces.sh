@@ -143,7 +143,7 @@ PAGES[gallery]='media_textblock'
 XMLCLASS[gallery]='Energine\share\components\PageMedia"'
 
 # этап 7: мёртвый код ядра (спецификация этапа 7, §3.3)
-CODE[dead]='JSqueeze|MODE_COPY|ComponentProxyBuilder|\bEventHandler\b|\bFieldRow\b|\bFormBuilder\b|JSONPCustomBuilder|JSONUploadBuilder|\bPageInfo\b|\bRemover\b|components\\SiteProperties\b|TextBlockSource|GridManagerModal|GridModal|mootools\.ext|\bScrollbar\b|\bbase\.xslt|new\.layout\.xml|default\.content\.xml'
+CODE[dead]='JSqueeze|MODE_COPY|ComponentProxyBuilder|\bEventHandler\b|\bFieldRow\b|\bFormBuilder\b|JSONPCustomBuilder|JSONUploadBuilder|\bPageInfo\b|\bRemover\b|components\\SiteProperties\b|TextBlockSource|GridManagerModal|GridModal|mootools\.ext|\bScrollbar\b|\bbase\.xslt|new\.layout\.xml|default\.content\.xml|moveTo_old|exportCSV|prepareCSVString|downloadFile|array_push_after|dumpLog|dump_log|ddumpLog|simpleLog|simple_log|splitDate|funcExists|procExists|getLastError|site\.compress|xslcache|copy_site_structure'
 FILES[dead]='core/modules/share/scripts/mootools.js core/modules/share/scripts/Scrollbar.js core/modules/share/scripts/mootools.ext.js core/modules/share/scripts/Menu.js core/modules/share/scripts/GridManagerModal.js core/modules/share/stylesheets/errors.css core/modules/share/stylesheets/mootools-colorpicker.css setup/JSqueeze.php cli jambalaya image-cache tests/smoke.sh'
 # содержимое сайта: ссылки на удалённые разделы и слова вырезанных функций в текстовых блоках
 # (новости, где они тоже проверялись, удалены с модулем apps на этапе 7)

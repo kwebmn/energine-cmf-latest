@@ -1,7 +1,7 @@
 <?php
 /**
  * @file
- * Contains Class Utils and functions inspect(), splitDate(), stop(), simple_log(), dump_log(), ddump_log(), simplifyDBResult(), inverseDBResult(), convertDBResult(), convertFieldNames(), arrayPush(), array_push_before(), array_push_after().
+ * Contains Class Utils and functions inspect(), stop(), simplifyDBResult(), transpose(), convertDBResult(), convertFieldNames(), arrayPush(), array_push_before(), str_replace_opt(), simplifyClassName(), translate(), dateToString().
  * It contain the set of service utilities of the system.
  * @author pavka
  * @copyright Energine 2015
@@ -56,99 +56,6 @@ namespace Energine\share\gears {
             E()->getResponse()->write(ob_get_contents());
             ob_end_clean();
         }
-
-        /**
-         * @brief Split date.
-         * It splits the date into the year, month, month day and time (hours, minutes, seconds).
-         * @param string $date Date.
-         * @return array
-         */
-        function splitDate($date) {
-            $timeInfo =
-            $dateInfo = ['', '', ''];
-            $dateArray = explode(' ', $date);
-            if (is_array($dateArray)) {
-                $dateInfo = explode('-', $dateArray[0]);
-                if (isset($dateArray[1])) {
-                    $timeInfo = explode(':', $dateArray[1]);
-                }
-            }
-
-            return [
-                'year'  => $dateInfo[0],
-                'month' => $dateInfo[1],
-                'day'   => $dateInfo[2],
-                'time'  => [
-                    'h' => $timeInfo[0],
-                    'm' => $timeInfo[1],
-                    's' => $timeInfo[2]
-                ]
-            ];
-        }
-
-        /**
-         * @brief Simple log function.
-         * @param string $var Variable.
-         */
-        function simpleLog($var) {
-            static $simpleLog;
-            if (!isset($simpleLog)) {
-                $simpleLog = 'logs/simple.log';
-                file_put_contents($simpleLog, '');
-            }
-
-            if (file_exists($simpleLog)) {
-                $flag = FILE_APPEND;
-            }
-            $flag = (file_exists($simpleLog)) ? FILE_APPEND : null;
-            file_put_contents(
-                $simpleLog,
-                str_replace("\n", ' ', $var) . "\n",
-                $flag
-            );
-        }
-
-        /**
-         * @brief Write the variable information into log file.
-         * @param mixed $var Variable
-         * @param boolean $append Append the log into the file? If @c false the file will be overwritten.
-         */
-        function dumpLog($var, $append = false) {
-            $t = microtime(true);
-            $micro = sprintf("%06d", ($t - floor($t)) * 1000000);
-            $d = new \DateTime(date('Y-m-d H:i:s.' . $micro, (int)$t));
-
-            $flags = ($append ? FILE_APPEND : null);
-            ob_start();
-            var_dump($var);
-            $data = ob_get_contents();
-            ob_end_clean();
-            file_put_contents(
-                'logs/debug.log',
-                "\ndate: " . $d->format('l dS of F Y h:i:s:u') . "\n\n" . $data . "\n",
-                $flags
-            );
-            @chmod('logs/debug.log', 0666);
-        }
-
-        /**
-         * @brief Write the variable information into log file and terminate program.
-         * Log-file will be overwritten.
-         */
-        function ddumpLog() {
-            $result = [];
-            $args = func_get_args();
-            foreach ($args as $arg) {
-                $result[] = var_export($arg, true);
-            }
-            file_put_contents(
-                'logs/debug.log',
-                "\ndate: " . date("l dS of F Y h:i:s") . "\n\n" . implode("\n", $result) . "\n"
-            );
-            chmod('logs/debug.log', 0666);
-            E()->getResponse()->commit();
-        }
-
 
         /**
          * @brief Simplify data base result.
@@ -543,17 +450,6 @@ namespace {
     }
 
     /**
-     * @fn splitDate($date)
-     * @brief Split date.
-     * It splits the date into the year, month, month day and time (hours, minutes, seconds).
-     * @param string $date Date.
-     * @return array
-     */
-    function splitDate($date) {
-        return E()->Utils->splitDate($date);
-    }
-
-    /**
      * @fn stop()
      * @brief Terminate program.
      * This is an analogue of inspect() with program termination.
@@ -563,35 +459,6 @@ namespace {
         call_user_func_array('inspect', $args);
         die();
     }
-
-    /**
-     * @fn simple_log($var)
-     * @brief Simple log function.
-     * @param string $var Variable.
-     */
-    function simple_log($var) {
-        E()->Utils->simpleLog($var);
-    }
-
-    /**
-     * @fn dump_log($var, $append = false)
-     * @brief Write the variable information into log file.
-     * @param mixed $var Variable
-     * @param boolean $append Append the log into the file? If @c false the file will be overwritten.
-     */
-    function dump_log($var, $append = false) {
-        E()->Utils->dumpLog($var, $append);
-    }
-
-    /**
-     * @fn ddump_log()
-     * @brief Write the variable information into log file and terminate program.
-     * Log-file will be overwritten.
-     */
-    function ddump_log() {
-        call_user_func_array([E()->Utils, 'ddumpLog'], func_get_args());
-    }
-
 
     /**
      * @fn simplifyDBResult($dbResult, $fieldName, $singleRow = false)
@@ -687,19 +554,6 @@ namespace {
      */
     function array_push_before(array $array, $var, $pos) {
         return E()->Utils->arrayPushBefore($array, $var, $pos);
-    }
-
-    /**
-     * @fn array_push_after($src,$in,$pos)
-     * @brief Push the new array element after specific position.
-     * @param array $src Array.
-     * @param mixed $in New array element.
-     * @param int|string $pos Position.
-     * @return array
-     * @deprecated
-     */
-    function array_push_after($src, $in, $pos) {
-        return E()->Utils->arrayPushAfter($src, $in, $pos);
     }
 
     /**

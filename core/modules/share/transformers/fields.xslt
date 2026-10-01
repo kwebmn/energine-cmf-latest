@@ -605,16 +605,6 @@
         </div>
     </xsl:template>
 
-    <!-- read-only поле типа image -->
-    <xsl:template match="field[@type='image'][@mode='1'][ancestor::component[@type='form']]" mode="field_input_readonly">
-        <div class="image">
-            <img src="{.}"/>
-            <input>
-                <xsl:call-template name="FORM_ELEMENT_ATTRIBUTES_READONLY"/>
-            </input>
-        </div>
-    </xsl:template>
-
     <!-- read-only поле типа date и datetime -->
 <!--    <xsl:template match="field[@type='date' or @type='datetime'][@mode='1'][ancestor::component[@type='form']]" mode="field_input_readonly">
 
@@ -701,16 +691,6 @@
             </div>
         </div>
     </xsl:template>
-
-    <!-- поле копирования структуры в редакторе сайтов -->
-    <xsl:template match="field[@name='copy_site_structure']" mode="field_input">
-        <input type="checkbox" onchange="document.getElementById('{@name}').disabled = !this.checked;" class="checkbox"/>
-        <select id="{@name}" disabled="disabled">
-            <xsl:attribute name="name"><xsl:value-of select="@name"/></xsl:attribute>
-            <xsl:apply-templates mode="field_input"/>
-        </select>
-    </xsl:template>
-
 
     <xsl:template match="field[@type='tab'][ancestor::component[@type='form']]"/>
 

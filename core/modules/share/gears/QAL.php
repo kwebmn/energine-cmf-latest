@@ -429,15 +429,6 @@ final class QAL extends Primitive {
     }
 
     /**
-     * Get last error message.
-     *
-     * @return string
-     */
-    public function getLastError() {
-        return $this->pdo->errorInfo();
-    }
-
-    /**
      * Begin an transaction.
      *
      * @return boolean
@@ -464,18 +455,6 @@ final class QAL extends Primitive {
      */
     public function rollback() {
         return $this->pdo->inTransaction() ? $this->pdo->rollBack() : false;
-    }
-
-    /**
-     * return table list
-     * this is draft method - I do not understand its necessity
-     *
-     * @todo use db cache if need be
-     * @todo add pattern param - if need be
-     * @return array
-     */
-    public function getTables() {
-        return $this->getPDO()->query('SHOW TABLES')->fetchAll(\PDO::FETCH_COLUMN, 0);
     }
 
     /**
@@ -528,44 +507,6 @@ final class QAL extends Primitive {
      */
     public function tableExists($tableName) {
         return ($this->dbCache->tableExists($tableName)) ? $tableName : false;
-    }
-
-    /**
-     * Check whether some procedure exist.
-     *
-     * @param string $procName Procedure name.
-     * @return boolean
-     */
-    public function procExists($procName) {
-        return ($this->getScalar(
-            'SELECT ROUTINE_NAME
-                FROM information_schema.ROUTINES
-                WHERE
-                ROUTINE_TYPE="PROCEDURE"
-                AND ROUTINE_SCHEMA=%s
-                AND ROUTINE_NAME=%s',
-            E()->getConfigValue('database.db'),
-            $procName
-        )) ? true : false;
-    }
-
-    /**
-     * Check whether some function exist.
-     *
-     * @param string $funcName Function name.
-     * @return boolean
-     */
-    public function funcExists($funcName) {
-        return ($this->getScalar(
-            'SELECT ROUTINE_NAME
-                FROM information_schema.ROUTINES
-                WHERE
-                ROUTINE_TYPE="FUNCTION"
-                AND ROUTINE_SCHEMA=%s
-                AND ROUTINE_NAME=%s',
-            E()->getConfigValue('database.db'),
-            $funcName
-        )) ? true : false;
     }
 
     /**

@@ -64,33 +64,20 @@ class XSLTTransformer extends Primitive implements ITransformer {
         $this->document = $document;
     }
 
-    //todo VZ: Where is xsltCache?
     /**
      * @copydoc ITransformer::transform
      *
      * @throws SystemException 'ERR_DEV_NOT_WELL_FORMED_XSLT'
      */
     public function transform() {
-        //При наличии модуля xslcache http://code.nytimes.com/projects/xslcache
-        //используем его
-        if (extension_loaded('xslcache') &&
-                ($this->getConfigValue('document.xslcache') == 1)) {
-            $xsltProc = new xsltCache;
-            //есть одна проблема с ним
-            //при неправильном xslt - сваливается в корку с 500 ошибкой
-            $xsltProc->importStyleSheet($this->fileName);
-            $result = $xsltProc->transformToXML($this->document);
+        $xsltProc = new \XSLTProcessor;
+        $xsltDoc = new \DOMDocument('1.0', 'UTF-8');
+        if (!@$xsltDoc->load($this->fileName)) {
+            throw new SystemException('ERR_DEV_NOT_WELL_FORMED_XSLT', SystemException::ERR_DEVELOPER, [$this->fileName, libxml_get_last_error()]);
         }
-        else {
-            $xsltProc = new \XSLTProcessor;
-            $xsltDoc = new \DOMDocument('1.0', 'UTF-8');
-            if (!@$xsltDoc->load($this->fileName)) {
-                throw new SystemException('ERR_DEV_NOT_WELL_FORMED_XSLT', SystemException::ERR_DEVELOPER, [$this->fileName, libxml_get_last_error()]);
-            }
-            $xsltDoc->documentURI = $this->fileName;
-            $xsltProc->importStylesheet($xsltDoc);
-            $result = $xsltProc->transformToXml($this->document);
-        }
+        $xsltDoc->documentURI = $this->fileName;
+        $xsltProc->importStylesheet($xsltDoc);
+        $result = $xsltProc->transformToXml($this->document);
         E()->getResponse()->setHeader('Content-Type', 'text/html; charset=UTF-8', false);
         return $result;
     }
