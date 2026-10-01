@@ -4,8 +4,6 @@
 
 # зависимости и кеши
 /vendor/
-/image-cache/*
-!/image-cache/readme.txt
 
 # загрузки площадки живут в web/uploads, в репозитории только каркас
 /htdocs/uploads/public/*

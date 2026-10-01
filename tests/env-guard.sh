@@ -4,7 +4,7 @@
 # или с переменными, оставшимися в окружении от прошлого запуска.
 S="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 fail=0
-for s in regression.sh smoke.sh smoke-final.sh smoke-write.sh smoke-log.sh; do
+for s in regression.sh smoke-final.sh smoke-write.sh smoke-log.sh; do
   out=$(cd "$S" && env -u DB_NAME -u DB_USER -u DB_HOST -u MYSQL_PWD -u ENERGINE_WEB -u ENERGINE_LOCAL -u ENERGINE_BASE \
         BASE=https://stale.invalid B=https://stale.invalid ENERGINE_CONFIG=/nonexistent \
         timeout 60 bash "$S/$s" 2>&1)

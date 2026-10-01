@@ -5,58 +5,19 @@ define('CHARSET', 'UTF-8');
 
 require_once('bootstrap.php');
 
-$acceptableActions = array(
-    'install',
-    'demo',
-    'linker',
-    'clearCache',
-    'syncUploads',
-    'scriptMap',
-    'loadTransFile',
-    'exportTrans',
-    'untranslated',
-    'minify',
-);
-
-//вариант запуска приложения
-$isConsole = false;
-
-//действие по умолчанию
-$action = 'install';
-
-//Смотрим а как запущен сетап(консоль/веб)
-//Ориентируемся на наличие $argv - как показатель
-if (isset($argv)) {
-    $args = $argv;
-    //консоль
-    $isConsole = true;
-    array_shift($args); // имя скрипта (index.php)
-    array_shift($args); // ключевое слово setup
-}
-else {
-    //веб
-    $args = array_keys($_GET);
-}
-
-$additionalArgs  = array();
-//если нам в параметрах пришло что то очень похожее на допустимое действие
-//то считаем, что это оно и есть
-if (!empty($args)) {
-    list($action) = $args;
-
-
-    if(sizeof($args)>1){
-        $additionalArgs = $args;
-        unset($additionalArgs[0]);
-    }
-}
+// установщик запускается только из CLI (bootstrap.php подключает его при PHP_SAPI === 'cli'):
+// php index.php setup ДЕЙСТВИЕ [АРГУМЕНТЫ…]; без действия — install
+$args = array_slice($argv, 2);
+$action = $args ? array_shift($args) : 'install';
+// аргументы действия нумеруются с 1, как их ждёт Setup::execute()
+$additionalArgs = $args ? array_combine(range(1, count($args)), $args) : array();
 
 
 // код выхода: 0 — сделано, 1 — ошибка (сценарии установки проверяют его)
 $failed = false;
 try {
     require_once('Setup.php');
-    $setup = new Setup($isConsole);
+    $setup = new Setup();
     $setup->execute($action, $additionalArgs);
 
 

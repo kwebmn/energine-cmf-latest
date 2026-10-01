@@ -24,7 +24,7 @@
         <xsl:if test="@title and @type!='boolean'">
             <div class="name">
                 <label for="{@name}"><xsl:value-of select="@title" disable-output-escaping="yes"/></label>
-                <xsl:if test="not(@nullable) and not(ancestor::component/@exttype='grid') and not(ancestor::component[@class='TextBlockSource'])"><span class="mark">*</span></xsl:if>
+                <xsl:if test="not(@nullable) and not(ancestor::component/@exttype='grid')"><span class="mark">*</span></xsl:if>
             </div>
         </xsl:if>
     </xsl:template>

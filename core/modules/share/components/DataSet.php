@@ -44,11 +44,6 @@ abstract class DataSet extends Component
      * @var ImageManager $imageManager
      */
     protected $imageManager;
-    /**
-     * Source.
-     * @var TextBlockSource $source
-     */
-    private $source;
 
     /**
      * Component type: list.
@@ -392,8 +387,6 @@ abstract class DataSet extends Component
             $result = $this->fileLibrary->build();
         } elseif ($this->getState() == 'imageManager') {
             $result = $this->imageManager->build();
-        } elseif ($this->getState() == 'source') {
-            $result = $this->source->build();
         } else {
             if (!$this->getBuilder()) {
                 throw new SystemException(
@@ -650,15 +643,6 @@ abstract class DataSet extends Component
         $this->fileLibrary = $this->document->componentManager->createComponent('filelibrary', 'Energine\share\components\FileRepository', ['config' => 'core/modules/share/config/FileRepositorySelect.component.xml']);
 
         $this->fileLibrary->run();
-    }
-
-    /**
-     * Run source.
-     */
-    protected function source()
-    {
-        $this->source = $this->document->componentManager->createComponent('textblocksource', 'Energine\share\components\TextBlockSource', NULL);
-        $this->source->run();
     }
 
     /**

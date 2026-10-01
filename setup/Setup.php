@@ -13,21 +13,10 @@ final class Setup;
  * @version 1.0.0
  */
 
-require_once('JSqueeze.php');
-
 /**
  * Main system setup.
  */
 final class Setup {
-    /**
-     * Symlink mode  - for development
-     */
-    const MODE_SYMLINK = 'symlink';
-    /**
-     * Copy minified mode - for production
-     */
-    const MODE_COPY = 'copy';
-
     /**
      * Path to the directory for uploads.
      */
@@ -37,17 +26,6 @@ final class Setup {
      * Table name, where customer uploads are sotred.
      */
     const UPLOADS_TABLE = 'share_uploads';
-
-    /**
-     * Flag, that indicates that the installer was executed from console.
-     *
-     * States:
-     * - @c true - executed from console
-     * - @c false - executed from browser.
-     *
-     * @var bool $isFromConsole
-     */
-    private $isFromConsole;
 
     /**
      * System configurations.
@@ -74,13 +52,9 @@ final class Setup {
      */
     private $dbConnect;
 
-    /**
-     * @param bool $consoleRun Is setup from console called?
-     */
-    public function __construct($consoleRun) {
+    public function __construct() {
         header('Content-Type: text/plain; charset=' . CHARSET);
         $this->title('Средство настройки CMF Energine');
-        $this->isFromConsole = $consoleRun;
     }
 
     /**
@@ -94,7 +68,6 @@ final class Setup {
      * @throws Exception 'Не найден конфигурационный файл system.config.php. По хорошему, он должен лежать в корне проекта.'
      * @throws Exception 'Странный какой то конфиг. Пользуясь ним я не могу ничего сконфигурить. Или возьмите нормальный конфиг, или - извините.'
      * @throws Exception 'В конфиге ничего не сказано о режиме отладки. Это плохо. Так я работать не буду.'
-     * @throws Exception 'Нет. С отключенным режимом отладки я работать не буду, и не просите. Запускайте меня после того как исправите в конфиге ["site"]["debug"] с 0 на 1.'
      * @throws Exception 'Странно. Отсутствует перечень модулей. Я могу конечно и сам посмотреть, что находится в папке core/modules, но как то это не кузяво будет. '
      */
     public function checkEnvironment() {
@@ -118,10 +91,6 @@ final class Setup {
         }
         $this->text('Конфигурационный файл подключен и проверен');
 
-        //Если режим отладки отключен - то и говорить дальше не о чем
-        if (!$this->isFromConsole && !$this->config['site']['debug']) {
-            throw new \Exception('Нет. С отключенным режимом отладки я работать не буду, и не просите. Запускайте меня после того как исправите в конфиге ["site"]["debug"] с 0 на 1.');
-        }
         if ($this->config['site']['debug']) {
             $this->text('Режим отладки включен');
         } else {
@@ -1054,14 +1023,12 @@ final class Setup {
             //сначала проходимся по модулям ядра
             foreach (array_reverse($this->config['modules']) as $module => $module_path) {
                 $this->linkCore(
-                    self::MODE_SYMLINK,
                     implode(DIRECTORY_SEPARATOR, array(CORE_DIR, MODULES, $module, $dir, '*')),
                     implode(DIRECTORY_SEPARATOR, array(HTDOCS_DIR, $dir)),
                     sizeof(explode(DIRECTORY_SEPARATOR, $dir)));
 
             }
             $this->linkSite(
-                self::MODE_SYMLINK,
                 implode(DIRECTORY_SEPARATOR, array(SITE_DIR, MODULES, '*', $dir, '*')),
                 implode(DIRECTORY_SEPARATOR, array(HTDOCS_DIR, $dir))
             );
@@ -1222,15 +1189,13 @@ final class Setup {
     /**
      * Create symlinks for core modules.
      *
-     * @param string $mode Mode.
      * @param string $globPattern File selection pattern.
      * @param string $module Path to the core module.
      * @param int $level Depth level for relative paths.
      *
      * @throws Exception 'Не удалось создать символическую ссылку'
      */
-    private function linkCore($mode, $globPattern, $module, $level = 1) {
-        $JSMIn = new JSqueeze();
+    private function linkCore($globPattern, $module, $level = 1) {
         $fileList = glob($globPattern);
 
         if (!empty($fileList)) {
@@ -1241,55 +1206,16 @@ final class Setup {
                         mkdir($dir);
                         $this->text('Создаем директорию ', $dir);
                     }
-                    $this->linkCore($mode, $fo . DIRECTORY_SEPARATOR . '*', $dir, $level + 1);
+                    $this->linkCore($fo . DIRECTORY_SEPARATOR . '*', $dir, $level + 1);
                 } else {
                     //Если одним из низших по приоритету модулей был уже создан симлинк
                     //то затираем его нафиг
                     if (file_exists($dest = $module . DIRECTORY_SEPARATOR . basename($fo))) {
                         unlink($dest);
                     }
-
-                    switch ($mode) {
-                        case self::MODE_SYMLINK:
-                            $this->text('Создаем симлинк ', $fo, ' --> ', $dest);
-                            if (!@symlink($fo, $dest)) {
-                                throw new \Exception('Не удалось создать символическую ссылку с ' . $fo . ' на ' . $dest);
-                            }
-                            break;
-                        case self::MODE_COPY:
-                            $pi = pathinfo($fo);
-
-                            if (isset($pi['extension']) && ($pi['extension'] == 'js')) {
-
-                                if (
-                                    (strpos($pi['filename'], 'mootools') === false)
-                                    &&
-                                    (strpos($pi['filename'], 'mootools-more') === false)
-                                    &&
-                                    (strpos($pi['filename'], 'mootools-ext') === false)
-                                    &&
-                                    (strpos($pi['dirname'], 'jodit') === false)
-                                    &&
-                                    (strpos($pi['dirname'], 'codemirror') === false)
-
-                                ) {
-                                    $this->text('Минифицируем и копируем ', $fo, ' --> ', $dest);
-                                    file_put_contents($dest, $JSMIn->squeeze(file_get_contents($fo), true, false, false));
-                                } else {
-                                    $this->text('Создаем символическую ссылку ', $fo, ' --> ', $dest);
-                                    if (!@symlink($fo, $dest)) {
-                                        throw new \Exception('Не удалось создать символическую ссылку с ' . $fo . ' на ' . $dest);
-                                    }
-                                }
-
-                            } else {
-                                $this->text('Создаем символическую ссылку ', $fo, ' --> ', $dest);
-                                if (!@symlink($fo, $dest)) {
-                                    throw new \Exception('Не удалось создать символическую ссылку с ' . $fo . ' на ' . $dest);
-
-                                }
-                            }
-                            break;
+                    $this->text('Создаем симлинк ', $fo, ' --> ', $dest);
+                    if (!@symlink($fo, $dest)) {
+                        throw new \Exception('Не удалось создать символическую ссылку с ' . $fo . ' на ' . $dest);
                     }
                 }
             }
@@ -1299,15 +1225,12 @@ final class Setup {
     /**
      * Create symlinks for site modules.
      *
-     * @param string $mode Mode.
      * @param string $globPattern File selection pattern.
      * @param string $dir Directory where symlinks will be created.
      *
      * @throws Exception 'Не удалось создать символическую ссылку'
      */
-    private function linkSite($mode, $globPattern, $dir) {
-        $JSMin = new JSqueeze();
-
+    private function linkSite($globPattern, $dir) {
         $fileList = glob($globPattern);
         if (!empty($fileList)) {
             foreach ($fileList as $fo) {
@@ -1320,30 +1243,10 @@ final class Setup {
                     mkdir($new_dir);
                 }
 
-                $srcFile = $fo;
                 $linkPath = implode(DIRECTORY_SEPARATOR, array($dir, $module, basename($fo_stripped)));
-
-                switch ($mode) {
-                    case self::MODE_SYMLINK:
-                        $this->text('Создаем симлинк ', $srcFile, ' --> ', $linkPath);
-                        if (!@symlink($srcFile, $linkPath)) {
-                            throw new \Exception('Не удалось создать символическую ссылку с ' . $srcFile . ' на ' . $linkPath);
-                        }
-                        break;
-                    case self::MODE_COPY:
-                        $pi = pathinfo($srcFile);
-
-                        if (isset($pi['extension']) && ($pi['extension'] == 'js')) {
-                            $this->text('Минифицируем и копируем ', $srcFile, ' --> ', $linkPath);
-                            file_put_contents($linkPath, $JSMin->squeeze(file_get_contents($srcFile), true, false, false));
-                        } else {
-                            $this->text('Создаем символическую ссылку ', $srcFile, ' --> ', $linkPath);
-                            if (!@symlink($srcFile, $linkPath)) {
-                                throw new \Exception('Не удалось создать символическую ссылку с ' . $srcFile . ' на ' . $linkPath);
-
-                            }
-                        }
-                        break;
+                $this->text('Создаем симлинк ', $fo, ' --> ', $linkPath);
+                if (!@symlink($fo, $linkPath)) {
+                    throw new \Exception('Не удалось создать символическую ссылку с ' . $fo . ' на ' . $linkPath);
                 }
             }
         }

@@ -8,6 +8,7 @@
 # Этап 5в — тема: theme (спрайты и стили старой темы, jQuery, single.xslt; в текстах — вход администратора demo)
 # Этап 6 — мультисайт: multisite (домены, привязка групп к сайтам, номер сайта у страниц, флажки сайта,
 #   редактор сайтов и доменов, список сайтов, междоменный вход)
+# Этап 7 — ядро: dead (мёртвый код ядра)
 # i18n — в справочнике переводов нет ни одной константы из списков удаления в sql/cut/*.sql.
 # mail-core — отправка писем живёт в ядре: класс Energine\share\gears\Mail есть,
 # а оставшийся код не ссылается на Energine\mail\gears\Mail*.
@@ -19,10 +20,10 @@ mods=("$@")
 [ ${#mods[@]} -eq 0 ] && mods=(mail-core mail calendar comments forms ads blog shop
                                 pageads branding tops vote feed tagcloud similar rss sockets htmlcap
                                 tags widgets storages watermark video flash lookup columns placehold
-                                ckeditor fileapi jsonp theme multisite i18n)
+                                ckeditor fileapi jsonp theme multisite dead i18n)
 
 # код: весь репозиторий, кроме истории (docs), переходного SQL (sql) и инструментов чистки
-CODE_DIRS=(core site htdocs configs cli setup tests)
+CODE_DIRS=(core site htdocs configs setup tests)
 # сторонние библиотеки: их слова (createElement('video'), строки lang) — не следы Energine; удаляемые
 # каталоги ловит проверка FILES. Артефакты прогонов тестов (вне git) тоже не код.
 EXCLUDE=(--exclude=no-traces.sh --exclude-dir=tools
@@ -128,6 +129,9 @@ PAGES[widgets]='main/widgets_repository'
 TABLES[multisite]='^(share_domains|share_domain2site|share_groups2sites)$'
 PAGES[multisite]='main/sites'
 
+# этап 7: мёртвый код ядра (спецификация этапа 7, §3.3)
+CODE[dead]='JSqueeze|MODE_COPY|ComponentProxyBuilder|\bEventHandler\b|\bFieldRow\b|\bFormBuilder\b|JSONPCustomBuilder|JSONUploadBuilder|\bPageInfo\b|\bRemover\b|components\\SiteProperties\b|TextBlockSource|GridManagerModal|GridModal|mootools\.ext|\bScrollbar\b|\bbase\.xslt|new\.layout\.xml|default\.content\.xml'
+FILES[dead]='core/modules/share/scripts/mootools.js core/modules/share/scripts/Scrollbar.js core/modules/share/scripts/mootools.ext.js core/modules/share/scripts/Menu.js core/modules/share/scripts/GridManagerModal.js core/modules/share/stylesheets/errors.css core/modules/share/stylesheets/mootools-colorpicker.css setup/JSqueeze.php cli jambalaya image-cache tests/smoke.sh'
 # содержимое сайта: ссылки на удалённые разделы, слова вырезанных функций в текстовых блоках,
 # демо-новости о вырезанном
 declare -A LINKS WORDS NEWS

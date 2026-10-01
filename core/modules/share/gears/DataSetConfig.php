@@ -27,7 +27,6 @@ class DataSetConfig extends ComponentConfig {
      */
     public function __construct($config, $className, $moduleName){
         parent::__construct($config, $className, $moduleName);
-        $this->registerState('source', array('/source/'));
         $this->registerState('imageManager', array('/imagemanager/'));
         $this->registerState('fileLibrary', array('/file-library/', '/file-library/[any]/'));
     }

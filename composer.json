@@ -21,14 +21,10 @@
     "ext-pdo_mysql": "*",
     "ext-SimpleXML": "*",
     "ext-session": "*",
-    "ext-xsl": "*",
-    "symfony/console": "^7.4"
+    "ext-xsl": "*"
   },
   "suggest": {
     "ext-tidy": "Cleans up HTML of text blocks when site.aggressive_cleanup is on (skipped without the extension)"
-  },
-  "require-dev": {
-    "psr/log": "^3.0"
   },
   "autoload": {
     "psr-4": {

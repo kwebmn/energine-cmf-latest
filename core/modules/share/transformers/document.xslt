@@ -255,6 +255,5 @@
         </script>
     </xsl:template>
 
-    <xsl:template match="component[@class='SiteProperties']"/>
 
 </xsl:stylesheet>
