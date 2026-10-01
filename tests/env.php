@@ -4,9 +4,10 @@
 // php8.5 env.php --shell печатает то же самое как export-строки для bash.
 $root = dirname(__DIR__);
 if (!defined('ROOT_DIR')) define('ROOT_DIR', $root);
-$web = dirname($root, 2) . '/web';
+// стенд (tests/tools/stand.sh) подменяет каталог web, конфиг, учётные данные и адрес; без переменных — площадка
+$web = getenv('ENERGINE_WEB') ?: dirname($root, 2) . '/web';
 $configFile = getenv('ENERGINE_CONFIG') ?: $web . '/system.config.php';
-$localFile = __DIR__ . '/local.php';
+$localFile = getenv('ENERGINE_LOCAL') ?: __DIR__ . '/local.php';
 foreach ([$configFile => 'конфиг площадки', $localFile => 'tests/local.php (образец — local.php.example)'] as $f => $what) {
     if (!is_file($f)) {
         fwrite(STDERR, "env.php: нет файла $f — $what\n");
@@ -18,7 +19,7 @@ $local = include $localFile;
 $db = $config['database'];
 $mailbox = $local['mailbox'];
 $env = [
-    'BASE' => 'https://' . $config['site']['domain'],
+    'BASE' => getenv('ENERGINE_BASE') ?: 'https://' . $config['site']['domain'],
     'ROOT' => $root,
     'WEB' => $web,
     'LOG' => $local['log'] ?? '/var/log/ispconfig/httpd/' . $config['site']['domain'] . '/error.log',

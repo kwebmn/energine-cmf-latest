@@ -23,6 +23,23 @@
 если в нём оказался пароль из конфига площадки или из `local.php`. Подключается один
 раз на клон: `git config core.hooksPath .githooks`.
 
+## Стенд
+
+`tests/tools/stand.sh` поднимает сайт из этого репозитория без площадки: временная MariaDB (сокет, без сети),
+установка с демо, встроенный сервер PHP на 127.0.0.1 — с каркасом загрузок, адресами ресайзера и пределами PHP-FPM,
+как у площадки. Конфиг, база и файлы площадки не читаются.
+
+```sh
+STAND_MAILBOX=<локальный ящик> bash tests/tools/stand.sh start
+bash tests/tools/stand.sh run bash tests/regression.sh
+bash tests/tools/stand.sh stop
+```
+
+`run` задаёт для `env.php` адрес, конфиг, учётные данные и каталог `web` стенда (`ENERGINE_BASE`,
+`ENERGINE_CONFIG`, `ENERGINE_LOCAL`, `ENERGINE_WEB`), а PDO и клиенту `mariadb` — сокет базы стенда.
+Клон репозитория для работы со стендом кладут на уровень глубже `private/` (например, `private/stage7/energine`):
+без переменных стенда `env.php` такого клона не находит конфиг площадки и останавливается.
+
 ## Полный прогон
 
 ```sh
