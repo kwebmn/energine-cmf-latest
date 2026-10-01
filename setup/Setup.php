@@ -963,12 +963,21 @@ final class Setup {
     /**
      * Generate symlinks.
      *
-     * @throws Exception 'Не существует: ' . $module_path
+     * @throws Exception 'Не существует: ' . $module_path — до любых изменений
      * @throws Exception 'Нет доступа на запись: ' . $modules_dir
      */
     private function linkerAction() {
 
         $this->title('Связывание данных модулей ');
+
+        // каталог каждого модуля из конфига проверяется до того, как каталоги статики очищены: модуль, убранный из
+        // ядра, но оставшийся в конфиге площадки (apps после этапа 7), иначе оставил бы сайт без стилей и скриптов
+        foreach ($this->config['modules'] as $module => $module_path) {
+            if (!is_dir($module_path)) {
+                throw new \Exception('Не существует: ' . $module_path . ' — модуль ' . $module . ' есть в конфиге площадки,'
+                    . ' но его нет в ядре: уберите его из modules конфига и запустите снова. Статика не тронута.');
+            }
+        }
 
         foreach ($this->htdocsDirs as $dir) {
             $dir = HTDOCS_DIR . DIRECTORY_SEPARATOR . $dir;
@@ -999,10 +1008,6 @@ final class Setup {
 
             if (file_exists($symlinked_dir) || is_link($symlinked_dir)) {
                 unlink($symlinked_dir);
-            }
-
-            if (!file_exists($module_path)) {
-                throw new \Exception('Не существует: ' . $module_path);
             }
 
             $modules_dir = implode(DIRECTORY_SEPARATOR, array(CORE_DIR, MODULES));

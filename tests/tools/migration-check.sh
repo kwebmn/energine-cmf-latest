@@ -12,13 +12,15 @@
 #  - повторный прогон stage6.sql ничего не меняет;
 #  - база с двумя сайтами или двумя корнями — отказ до любых изменений, в выводе сказано, что сделать.
 # Переход на этап 7 (sql/cut/stage7.sql, ядро): база до этапа — файлы установки коммита PRE7 (спецификация этапа 7)
-# с демо, разделами со своим XML (компонент модуля apps, галерея PageMedia), разделом со своей раскладкой (компонент
-# apps) и разделом на удалённых шаблонах default.content.xml и new.layout.xml:
+# с демо, разделами со своим XML (компонент модуля apps, галерея PageMedia, PageInfo), разделами со своей раскладкой
+# (компонент apps, TextBlockSource), разделом с живым компонентом, чьё имя начинается с удалённого (SitePropertiesEditor),
+# разделом на шаблоне редактора новостей из ядра и разделом на удалённых шаблонах default.content.xml и new.layout.xml:
 #  - после stage7.sql таблиц apps_* и share_sitemap_uploads нет, разделов админки новостей и обратной связи нет, писем
 #    обратной связи нет;
-#  - разделы на шаблонах новостей, обратной связи и галереи и разделы со своим XML — текстовые страницы, их номера в выводе;
-#    раздел галереи со вторым текстовым блоком (у текстовой страницы его нет) назван отдельно;
-#    своя раскладка с компонентом apps сброшена на шаблон, раздел назван; тексты сайта те же;
+#  - разделы на шаблонах новостей, обратной связи и галереи и разделы со своим XML с удалёнными компонентами — текстовые
+#    страницы, их номера в выводе; раздел галереи со вторым текстовым блоком (у текстовой страницы его нет) назван
+#    отдельно; раздел на шаблоне редактора новостей удалён; раздел с живым компонентом не тронут;
+#    своя раскладка с удалённым компонентом сброшена на шаблон, раздел назван; тексты сайта те же;
 #  - раздел на удалённых шаблонах — на main.content.xml и default.layout.xml;
 #  - повторный прогон stage7.sql ничего не меняет.
 #   bash tests/tools/migration-check.sh
@@ -136,6 +138,19 @@ INSERT INTO share_sitemap (smap_pid, smap_segment, smap_layout, smap_layout_xml,
 INSERT INTO share_sitemap (smap_pid, smap_segment, smap_layout, smap_content)
   SELECT smap_id, 'claude-old-templates', 'new.layout.xml', 'default.content.xml' FROM share_sitemap WHERE smap_pid IS NULL;
 INSERT INTO share_textblocks (smap_id, tb_num) SELECT smap_id, '2' FROM share_sitemap WHERE smap_content = 'media_textblock.content.xml';
+INSERT INTO share_sitemap (smap_pid, smap_segment, smap_layout, smap_content, smap_content_xml)
+  SELECT smap_id, 'claude-own-pageinfo', 'default.layout.xml', 'textblock.content.xml',
+    '<content><component name="info" class="Energine\\share\\components\\PageInfo"/></content>' FROM share_sitemap WHERE smap_pid IS NULL;
+INSERT INTO share_sitemap (smap_pid, smap_segment, smap_layout, smap_layout_xml, smap_content)
+  SELECT smap_id, 'claude-own-tbsource', 'default.layout.xml',
+    '<layout><component name="source" class="Energine\\share\\components\\TextBlockSource"/></layout>', 'textblock.content.xml'
+  FROM share_sitemap WHERE smap_pid IS NULL;
+INSERT INTO share_sitemap (smap_pid, smap_segment, smap_layout, smap_content, smap_content_xml)
+  SELECT smap_id, 'claude-keep-xml', 'default.layout.xml', 'textblock.content.xml',
+    '<content><component name="props" class="Energine\\share\\components\\SitePropertiesEditor"/></content>'
+  FROM share_sitemap WHERE smap_pid IS NULL;
+INSERT INTO share_sitemap (smap_pid, smap_segment, smap_layout, smap_content)
+  SELECT smap_id, 'claude-news-repo', 'default.layout.xml', 'news_repository.content.xml' FROM share_sitemap WHERE smap_pid IS NULL;
 SQL
 q7() { TM -N --default-character-set=utf8mb4 m7 -e "$1"; }
 texts7() { q7 "SELECT CONCAT_WS(' # ',
@@ -144,8 +159,9 @@ texts7() { q7 "SELECT CONCAT_WS(' # ',
      FROM share_textblocks_translation))"; }
 moved=$(q7 "SELECT GROUP_CONCAT(smap_id ORDER BY smap_id) FROM share_sitemap
   WHERE smap_content IN ('news.content.xml', 'feedback_form.content.xml', 'media_textblock.content.xml')
-     OR smap_segment IN ('claude-own-xml', 'claude-own-media')")
-layout=$(q7 "SELECT smap_id FROM share_sitemap WHERE smap_segment = 'claude-own-layout'")
+     OR smap_segment IN ('claude-own-xml', 'claude-own-media', 'claude-own-pageinfo')")
+layout=$(q7 "SELECT GROUP_CONCAT(smap_id ORDER BY smap_id) FROM share_sitemap WHERE smap_segment IN ('claude-own-layout', 'claude-own-tbsource')")
+keep=$(q7 "SELECT smap_id FROM share_sitemap WHERE smap_segment = 'claude-keep-xml'")
 before7=$(texts7)
 out=$(TM --default-character-set=utf8mb4 m7 < "$R/sql/cut/stage7.sql" 2>&1) || bad "stage7.sql" "$(tail -3 <<< "$out")"
 is "stage7.sql: таблиц apps_* и share_sitemap_uploads нет" "$(q7 "SELECT COUNT(*) FROM information_schema.TABLES
@@ -157,11 +173,17 @@ want=$(for i in ${moved//,/ }; do printf '%s:textblock.content.xml:-,' "$i"; don
 is "stage7.sql: разделы новостей, обратной связи, галереи и со своим XML ($moved) — текстовые страницы" \
   "$(q7 "SELECT GROUP_CONCAT(CONCAT(smap_id, ':', smap_content, ':', IFNULL(smap_content_xml, '-')) ORDER BY smap_id)
     FROM share_sitemap WHERE smap_id IN (${moved:-0})")" "${want%,}"
-unnamed=$(for i in ${moved//,/ } $layout; do grep -q "раздел[а]* $i (" <<< "$out" || printf ' %s' "$i"; done)
+unnamed=$(for i in ${moved//,/ } ${layout//,/ }; do grep -q "раздел[а]* $i (" <<< "$out" || printf ' %s' "$i"; done)
 [ -n "$moved" ] && [ -n "$layout" ] && [ -z "$unnamed" ] && ok "stage7.sql называет переведённые разделы" \
   || bad "stage7.sql не называет разделы:${unnamed:- нет разделов}" "$(head -5 <<< "$out")"
-is "stage7.sql: своя раскладка с компонентом apps сброшена на шаблон" \
-  "$(q7 "SELECT CONCAT(smap_layout, ':', IFNULL(smap_layout_xml, '-')) FROM share_sitemap WHERE smap_id = ${layout:-0}")" "default.layout.xml:-"
+is "stage7.sql: своя раскладка с удалённым компонентом (apps, TextBlockSource) сброшена на шаблон" \
+  "$(q7 "SELECT GROUP_CONCAT(CONCAT(smap_layout, ':', IFNULL(smap_layout_xml, '-')) ORDER BY smap_id) FROM share_sitemap
+    WHERE smap_id IN (${layout:-0})")" "default.layout.xml:-,default.layout.xml:-"
+is "stage7.sql: раздел на шаблоне редактора новостей из ядра удалён" \
+  "$(q7 "SELECT COUNT(*) FROM share_sitemap WHERE smap_segment = 'claude-news-repo'")" 0
+is "stage7.sql: раздел с живым компонентом (SitePropertiesEditor) в своём XML не тронут и не назван" \
+  "$(q7 "SELECT CONCAT(smap_content, ':', smap_content_xml LIKE '%SitePropertiesEditor%') FROM share_sitemap
+    WHERE smap_id = ${keep:-0}"):$(grep -c "раздел[а]* ${keep:-0} (" <<< "$out")" "textblock.content.xml:1:0"
 is "stage7.sql: раздел на удалённых шаблонах — на main.content.xml и default.layout.xml" \
   "$(q7 "SELECT CONCAT(smap_content, ':', smap_layout) FROM share_sitemap WHERE smap_segment = 'claude-old-templates'")" \
   "main.content.xml:default.layout.xml"

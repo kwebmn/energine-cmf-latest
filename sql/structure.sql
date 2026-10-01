@@ -1,5 +1,5 @@
 -- Energine Simple: схема базы — 21 таблица и хранимые процедуры. Ставится в пустую базу установщиком:
--- php web/index.php setup install (docs/INSTALL.md). Получена из установки полной системы и sql/cut/stage1–6.sql.
+-- php web/index.php setup install (docs/INSTALL.md). Получена из установки полной системы и sql/cut/stage1–7.sql.
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;

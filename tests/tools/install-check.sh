@@ -11,7 +11,9 @@
 #     вход, регистрация, восстановление пароля, карта сайта; администратор входит и видит админку;
 #     неизвестный адрес — 404; ссылок на демо-разделы нет; <base> — адрес из конфига; другое имя (Host) — 301 на него;
 #     cookie на адресе с портом — без Domain;
-#  4. вторая установка — с доменом площадки (--domain) — и setup demo поверх: отпечаток
+#  4. установка со статикой: ссылки на файлы модулей и карта скриптов; модуль в конфиге без каталога —
+#     setup linker отказывается до очистки статики;
+#  5. вторая установка — с доменом площадки (--domain) — и setup demo поверх: отпечаток
 #     (fingerprint.php) совпадает с базой площадки; повторное демо — отказ.
 #   bash tests/tools/install-check.sh
 # Каталог экземпляра — в INSTALL_TMP (по умолчанию tmp площадки: владельцу площадки нужен проход к сокету).
@@ -202,6 +204,17 @@ js=$(curl -s -o /dev/null -w '%{http_code}' "${URL}scripts/Energine.js")
 [ "$code" = 200 ] && grep -q '<main id="content"' "$T/page2.html" && [ "$js" = 200 ] \
   && ok "сайт со своей статикой отвечает: главная и scripts/Energine.js — 200" || bad "сайт со своей статикой" "главная $code, скрипт $js"
 kill "$SRV" 2>/dev/null; SRV=
+# модуль в конфиге без каталога (так выглядит конфиг площадки после этапа 7: модуль apps убран из ядра) —
+# setup linker отказывается до любых изменений, каталоги статики не очищаются
+C2="$S2/web/system.config.php"
+links=$(find "$S2/web/scripts" -maxdepth 1 -name '*.js' -type l 2>/dev/null | wc -l)
+sed -i "/^ *'seo' *=>/a\\        'apps'      => \$energine_release . '/core/modules/apps'," "$C2" && chown "$SITE_USER" "$C2" && chmod 600 "$C2"
+out=$(runuser -u "$SITE_USER" -- php8.5 "$S2/web/index.php" setup linker < /dev/null 2>&1); rc=$?
+after=$(find "$S2/web/scripts" -maxdepth 1 -name '*.js' -type l 2>/dev/null | wc -l)
+grep -q "core/modules/apps'" "$C2" && [ $rc -ne 0 ] && grep -q "core/modules/apps" <<< "$out" && [ "$links" -gt 0 ] \
+  && [ "$after" = "$links" ] && ok "модуль в конфиге без каталога — setup linker отказывается, статика не тронута" \
+  || bad "модуль в конфиге без каталога" "код $rc, ссылок на скрипты было $links, стало $after: $(tail -2 <<< "$out")"
+sed -i "/^ *'apps' *=> /d" "$C2" && chown "$SITE_USER" "$C2" && chmod 600 "$C2"
 
 echo "-- установка с доменом площадки и демо поверх"
 # вторая база: адрес сайта — как у площадки (--domain), затем демо; сверка с базой площадки
