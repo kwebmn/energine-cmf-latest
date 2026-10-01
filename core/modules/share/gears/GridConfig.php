@@ -30,6 +30,5 @@ class GridConfig extends DataSetConfig {
         $this->registerState('put', array('/put/'));
         $this->registerState('upload', array('/upload/'));
         $this->registerState('cleanup', array('/cleanup/'));
-        $this->registerState('attachments', array('/attachments/[any]/', '/[id]/attachments/[any]/'));
     }
 }

@@ -197,15 +197,6 @@ namespace Energine\share\gears {
         }
 
         /**
-         * Get OGPrimitive.
-         *
-         * @return OGPrimitive
-         */
-        public function getOGObject() {
-            return $this->offsetGet('Energine\\share\\gears\\OGPrimitive');
-        }
-
-        /**
          * Get Language.
          *
          * @return Language

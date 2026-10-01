@@ -57,3 +57,29 @@ DELETE FROM `share_lang_tags` WHERE `ltag_name` IN ('BTN_ADD_NEWS', 'BTN_DELETE_
 
 DROP TABLE IF EXISTS `apps_news_uploads`, `apps_news_translation`, `apps_news`,
   `apps_feedback`, `apps_feedback_recipient_translation`, `apps_feedback_recipient`;
+
+-- 2. Галерея и вложения разделов.
+-- Разделы на шаблоне галереи и разделы со своим XML, где назван компонент галереи PageMedia, — текстовые страницы
+-- (их тексты остаются); своя раскладка с PageMedia сбрасывается на шаблон раздела. Номера разделов — в выводе.
+SELECT CONCAT('этап 7: раздел ', `smap_id`, ' (', `smap_segment`, ') переведён на textblock.content.xml') AS `переход`
+  FROM `share_sitemap`
+  WHERE `smap_content` = 'media_textblock.content.xml' OR `smap_content_xml` LIKE '%PageMedia%';
+SELECT CONCAT('этап 7: у раздела ', `smap_id`, ' (', `smap_segment`, ') своя раскладка сброшена на шаблон ', `smap_layout`) AS `переход`
+  FROM `share_sitemap`
+  WHERE `smap_layout_xml` LIKE '%PageMedia%';
+-- у шаблона галереи был второй текстовый блок (num 2), у текстовой страницы — только первый: такие разделы названы
+SELECT CONCAT('этап 7: у раздела ', s.`smap_id`, ' (', s.`smap_segment`, ') второй текстовый блок больше не показывается — ',
+    'перенесите его текст в первый') AS `переход`
+  FROM `share_sitemap` s JOIN `share_textblocks` t ON t.`smap_id` = s.`smap_id` AND t.`tb_num` = '2'
+  WHERE s.`smap_content` = 'media_textblock.content.xml';
+UPDATE `share_sitemap` SET `smap_content` = 'textblock.content.xml', `smap_content_xml` = NULL
+  WHERE `smap_content` = 'media_textblock.content.xml' OR `smap_content_xml` LIKE '%PageMedia%';
+UPDATE `share_sitemap` SET `smap_layout_xml` = NULL WHERE `smap_layout_xml` LIKE '%PageMedia%';
+
+-- Строки переводов, которые использовали только галерея и вложения (переводы — каскадом).
+DELETE FROM `share_lang_tags` WHERE `ltag_name` IN ('BTN_ADD_GALLERY', 'BTN_MOVE_CANCEL', 'CONTENT_GALLERY',
+  'CONTENT_MEDIA_TEXTBLOCK', 'FIELD_ATTACHEDFILES', 'FIELD_ATTACHMENTS', 'FIELD_IMG_FILENAME_IMG',
+  'MSG_EMPTY_GALLERY', 'MSG_NO_ATTACHED_FILES', 'TAB_ATTACHED_FILES', 'TXT_ATTACHMENTEDITOR', 'TXT_GALLERY');
+
+-- Вложения разделов (файлы остаются в репозитории).
+DROP TABLE IF EXISTS `share_sitemap_uploads`;

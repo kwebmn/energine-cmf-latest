@@ -1,5 +1,5 @@
--- Energine Simple: схема базы — 22 таблицы и хранимые процедуры. Ставится в пустую базу установщиком:
--- php web/index.php setup install (docs/INSTALL.md). Получена из установки полной системы и sql/cut/stage1–7.sql.
+-- Energine Simple: схема базы — 21 таблица и хранимые процедуры. Ставится в пустую базу установщиком:
+-- php web/index.php setup install (docs/INSTALL.md). Получена из установки полной системы и sql/cut/stage1–6.sql.
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -155,23 +155,6 @@ CREATE TABLE `share_sitemap_translation` (
   KEY `sitemaplv_sitemap_FK` (`smap_id`),
   CONSTRAINT `share_sitemap_translation_ibfk_1` FOREIGN KEY (`lang_id`) REFERENCES `share_languages` (`lang_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `share_sitemap_translation_ibfk_2` FOREIGN KEY (`smap_id`) REFERENCES `share_sitemap` (`smap_id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `share_sitemap_uploads` (
-  `ssu_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `smap_id` int(10) unsigned DEFAULT NULL,
-  `upl_id` int(10) unsigned NOT NULL,
-  `ssu_order_num` int(10) unsigned NOT NULL DEFAULT 1,
-  `session_id` varchar(255) DEFAULT NULL,
-  PRIMARY KEY (`ssu_id`),
-  KEY `upl_id` (`upl_id`),
-  KEY `smap_id` (`smap_id`),
-  KEY `session_id` (`session_id`),
-  KEY `ssu_order_num_idx` (`ssu_order_num`),
-  CONSTRAINT `share_sitemap_uploads_ibfk_3` FOREIGN KEY (`smap_id`) REFERENCES `share_sitemap` (`smap_id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `share_sitemap_uploads_ibfk_4` FOREIGN KEY (`upl_id`) REFERENCES `share_uploads` (`upl_id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;

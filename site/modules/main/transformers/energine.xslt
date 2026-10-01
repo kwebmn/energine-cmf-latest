@@ -214,21 +214,6 @@
                     <xsl:value-of select="field[@name='Name']"/>
                 </a>
             </div>
-            <xsl:if test="field[@name='attachments']/recordset">
-                <div class="menu_image">
-                    <a>
-                        <xsl:if test="$DOC_PROPS[@name='ID'] != field[@name='Id']">
-                            <xsl:attribute name="href">
-                                <xsl:value-of select="$LANG_ABBR"/><xsl:value-of select="field[@name='Segment']"/>
-                            </xsl:attribute>
-                        </xsl:if>
-                        <xsl:apply-templates select="field[@name='attachments']" mode="preview">
-                            <xsl:with-param name="PREVIEW_WIDTH">90</xsl:with-param>
-                            <xsl:with-param name="PREVIEW_HEIGHT">68</xsl:with-param>
-                        </xsl:apply-templates>
-                    </a>
-                </div>
-            </xsl:if>
             <xsl:if test="field[@name='DescriptionRtf'] != ''">
                 <div class="menu_announce">
                     <xsl:value-of select="field[@name='DescriptionRtf']" disable-output-escaping="yes"/>
@@ -266,15 +251,5 @@
 
     <xsl:template match="field[ancestor::component[@class='SitemapTree']]"/>
     <!-- /SitemapTree -->
-
-    <!-- PageMedia -->
-    <xsl:template match="component[@class='PageMedia']">
-        <xsl:if test="recordset/record[1]/field[@name='attachments']/recordset">
-            <div class="media_box">
-                <xsl:apply-templates select="recordset/record[1]/field[@name='attachments']" mode="gallery"/>
-            </div>
-        </xsl:if>
-    </xsl:template>
-    <!-- /PageMedia -->
 
 </xsl:stylesheet>

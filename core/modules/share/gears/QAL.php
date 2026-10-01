@@ -520,10 +520,6 @@ final class QAL extends Primitive {
         return $this->tableExists($tableName . '_translation');
     }
 
-    public function getUploadsTablename($tableName) {
-        return $this->tableExists($tableName . '_uploads');
-    }
-
     /**
      * Check whether some table name exist.
      *

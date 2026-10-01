@@ -66,30 +66,4 @@ class ExtendedSaver extends Saver {
     protected function getPK(){
         return $this->pk;
     }
-
-    /**
-     * Save data into the table of uploads.
-     */
-    public function save() {
-        $result = parent::save();
-
-        // обновление записей из _uploads таблицы, в которых PK = NULL по ID сессии
-        if ($result && $this->dbh->tableExists($this->getTableName() . AttachmentManager::ATTACH_TABLE_SUFFIX)) {
-            $id = (is_int($result)) ? $result : (int)$_POST[$this->getTableName()][$this->getPK()];
-            //throw new SystemException($id);
-            $this->dbh->modify(
-                QAL::UPDATE,
-                $this->getTableName() . AttachmentManager::ATTACH_TABLE_SUFFIX,
-                array(
-                    $this->getPK() => $id
-                ),
-                array(
-                    $this->getPK() => null,
-                    'session_id' => session_id()
-                )
-            );
-        }
-
-        return $result;
-    }
 }

@@ -8,7 +8,8 @@
 # Этап 5в — тема: theme (спрайты и стили старой темы, jQuery, single.xslt; в текстах — вход администратора demo)
 # Этап 6 — мультисайт: multisite (домены, привязка групп к сайтам, номер сайта у страниц, флажки сайта,
 #   редактор сайтов и доменов, список сайтов, междоменный вход)
-# Этап 7 — ядро: apps (модуль apps: новости, обратная связь, выбор раздела), dead (мёртвый код ядра)
+# Этап 7 — ядро: apps (модуль apps: новости, обратная связь, выбор раздела), gallery (галерея и вложения разделов,
+#   картинки вложений в OpenGraph), dead (мёртвый код ядра)
 # i18n — в справочнике переводов нет ни одной константы из списков удаления в sql/cut/*.sql.
 # mail-core — отправка писем живёт в ядре: класс Energine\share\gears\Mail есть,
 # а оставшийся код не ссылается на Energine\mail\gears\Mail*.
@@ -20,7 +21,7 @@ mods=("$@")
 [ ${#mods[@]} -eq 0 ] && mods=(mail-core mail calendar comments forms ads blog shop
                                 pageads branding tops vote feed tagcloud similar rss sockets htmlcap
                                 tags widgets storages watermark video flash lookup columns placehold
-                                ckeditor fileapi jsonp theme multisite apps dead i18n)
+                                ckeditor fileapi jsonp theme multisite apps gallery dead i18n)
 
 # код: весь репозиторий, кроме истории (docs), переходного SQL (sql) и инструментов чистки
 CODE_DIRS=(core site htdocs configs setup tests)
@@ -134,6 +135,12 @@ PAGES[multisite]='main/sites'
 CODE[apps]='Energine\\apps\\|modules/apps/|\bapps_(news|feedback)|NewsFeed|NewsRepository|NewsEditor|NewsCategories|FeedbackForm|FeedbackList|FeedbackRecipients|LinkingEditor|DivSelector|SiteDivisionSelector|topNews|news-editor|news-categories|feedback-editor|newsContainer|saveText|SmapSelector|smap_selector|FIELD_TYPE_SMAP_SELECTOR|data-plain'
 FILES[apps]='core/modules/apps core/modules/share/components/LinkingEditor.php core/modules/share/scripts/DivSelector.js core/modules/share/config/SiteDivisionSelector.component.xml'
 TABLES[apps]='^apps_'
+# этап 7: галерея и вложения разделов, OGPrimitive (спецификация этапа 7, §3.2)
+CODE[gallery]='AttachmentManager|AttachmentEditor|AttachmentSelector|attachmentEditor|PageMedia|media_textblock|Carousel|carousel\.css|share_sitemap_uploads|getUploadsTablename|linkExtraManagers|allAttachments|AttachedFiles|OGPrimitive|getOGObject|\.gallery|media_box|menu_image'
+FILES[gallery]='core/modules/share/gears/AttachmentManager.php core/modules/share/components/AttachmentEditor.php core/modules/share/components/PageMedia.php core/modules/share/scripts/Carousel.js core/modules/share/gears/OGPrimitive.php'
+TABLES[gallery]='^share_sitemap_uploads$'
+PAGES[gallery]='media_textblock'
+XMLCLASS[gallery]='Energine\share\components\PageMedia"'
 
 # этап 7: мёртвый код ядра (спецификация этапа 7, §3.3)
 CODE[dead]='JSqueeze|MODE_COPY|ComponentProxyBuilder|\bEventHandler\b|\bFieldRow\b|\bFormBuilder\b|JSONPCustomBuilder|JSONUploadBuilder|\bPageInfo\b|\bRemover\b|components\\SiteProperties\b|TextBlockSource|GridManagerModal|GridModal|mootools\.ext|\bScrollbar\b|\bbase\.xslt|new\.layout\.xml|default\.content\.xml'
@@ -152,7 +159,12 @@ LINKS[tops]='admin/tops|admin/tops-groups'
 LINKS[feed]='test-feed'
 LINKS[rss]='news/rss'
 LINKS[multisite]='admin/structure/sites'
+# этап 7: демо-разделы новостей, контактов и галереи и подстраницы «Возможностей» о них удалены
+LINKS[apps]='news|contacts|features/news'
+LINKS[gallery]='media|features/media'
 WORDS[multisite]='редактор сайтов|доменов|сайты и домены'
+WORDS[apps]='новост|новин|обратн[а-яё]* связ|зворотн'
+WORDS[gallery]='галере'
 WORDS[ads]='баннер|банер'
 WORDS[calendar]='календар'
 WORDS[shop]='товар|заказ|замовлен|кошик|корзин|каталог'

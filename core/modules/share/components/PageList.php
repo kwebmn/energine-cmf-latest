@@ -14,7 +14,7 @@ class PageList;
  */
 namespace Energine\share\components;
 
-use Energine\share\gears\TreeBuilder, Energine\share\gears\SimpleBuilder, Energine\share\gears\FieldDescription, Energine\share\gears\Response, Energine\share\gears\AttachmentManager;
+use Energine\share\gears\TreeBuilder, Energine\share\gears\SimpleBuilder, Energine\share\gears\FieldDescription, Energine\share\gears\Response;
 
 /**
  * Show the list of subsections.
@@ -79,8 +79,7 @@ class PageList extends DataSet {
             [
                 'menu' => false,
                 'id' => false,
-                'recursive' => false,
-                'allAttachments' => false
+                'recursive' => false
             ]);
         return $result;
     }
@@ -88,7 +87,6 @@ class PageList extends DataSet {
     /**
      * @copydoc DataSet::main
      */
-    // Добавляем информацию о присоединенных файлах
     protected function main() {
         parent::main();
         if ($this->getDataDescription()->isEmpty()) {
@@ -108,17 +106,6 @@ class PageList extends DataSet {
                 $FD->setType(FieldDescription::FIELD_TYPE_STRING);
                 $this->getDataDescription()->addFieldDescription($FD);
             }
-        }
-
-        if ($this->getDataDescription()->getFieldDescriptionByName('attachments')) {
-            $am = new AttachmentManager(
-                $this->getDataDescription(),
-                $this->getData(),
-                'share_sitemap'
-            );
-            $am->createFieldDescription();
-            if ($f = $this->getData()->getFieldByName('Id'))
-                $am->createField('smap_id', !$this->getParam('allAttachments'), $f->getData());
         }
     }
 

@@ -12,7 +12,6 @@ class Grid;
  */
 namespace Energine\share\components;
 
-use Energine\share\gears\AttachmentManager;
 use Energine\share\gears\ComponentConfig;
 use Energine\share\gears\Data;
 use Energine\share\gears\DataDescription;
@@ -47,12 +46,6 @@ class Grid extends DBDataSet {
      * @var string DIR_DOWN
      */
     const DIR_DOWN = '>';
-
-    /**
-     * Component: attachment editor manager.
-     * @var AttachmentEditor $attachmentEditor
-     */
-    protected $attachmentEditor;
 
     /**
      * Saver.
@@ -152,7 +145,6 @@ class Grid extends DBDataSet {
     protected function add() {
         $this->setType(self::COMPONENT_TYPE_FORM_ADD);
         $this->prepare();
-        $this->linkExtraManagers($this->getTableName());
         foreach ($this->getDataDescription() as $fdName => $fieldDescription) {
             if (($default = $fieldDescription->getPropertyValue('default')) || ($default === '0')) {
                 if (!($f = $this->getData()->getFieldByName($fdName))) {
@@ -178,7 +170,6 @@ class Grid extends DBDataSet {
         }
         $this->setFilter($id);
         $this->prepare();
-        $this->linkExtraManagers($this->getTableName());
     }
 
     /**
@@ -503,14 +494,6 @@ class Grid extends DBDataSet {
      * @note It includes translations and information about tabs.
      */
     public function build() {
-        switch ($this->getState()) {
-            case 'attachments':		
-                return $this->attachmentEditor->build();
-                break;
-            default:
-                // do nothing
-        }
-
         if ($this->getType() == self::COMPONENT_TYPE_LIST) {
             $this->addTranslation('MSG_CONFIRM_DELETE');
         }
@@ -738,30 +721,6 @@ class Grid extends DBDataSet {
     }
 
 
-
-    /**
-     * Show component: attachments.
-     */
-    protected function attachments() {
-        $sp = $this->getStateParams(true);
-        $attachmentEditorParams = [
-            'origTableName' => $this->getTableName(),
-            'pk' => $this->getPK(),
-            'tableName' => $this->getTableName() . AttachmentManager::ATTACH_TABLE_SUFFIX,            
-        ];
-
-        if (isset($sp['id'])) {
-            $this->request->shiftPath(2);
-            $attachmentEditorParams['linkedID'] = $sp['id'];
-        } else {
-            $this->request->shiftPath(1);
-        }
-
-        $this->attachmentEditor = $this->document->componentManager->createComponent(
-            'attachmentEditor', 'Energine\share\components\AttachmentEditor', $attachmentEditorParams
-        );
-        $this->attachmentEditor->run();
-    }
 
     /**
      * Set column name for user sorting.
@@ -1149,34 +1108,6 @@ class Grid extends DBDataSet {
         ) { 
             //подразумевается что sortDir - тоже существует
             $this->setOrder([$actionParams['sortField'] => $actionParams['sortDir']]);
-        }
-    }
-
-    // Сохранение приаттаченных данных должно происходить в методе saveData на общих основаниях
-    //todo VZ: $data is not used.
-    /**
-     * Build the list of additional files.
-     * @param string $tableName Table name.
-     * @param bool $data Data.
-     * @see DivisionEditor
-     * @see ProductEditor
-     * @note It is used for the cases when additional tab with attached files to the record should be created.
-     */
-    protected function linkExtraManagers($tableName, $data = false) {
-        if ($this->dbh->tableExists($tableName . AttachmentManager::ATTACH_TABLE_SUFFIX) && $this->getState() != 'attachments') {
-
-            $fd = new FieldDescription('attached_files');
-            $fd->setType(FieldDescription::FIELD_TYPE_TAB);
-            $fd->setProperty('title', $this->translate('TAB_ATTACHED_FILES'));
-            $fd->setProperty('tableName', $tableName . AttachmentManager::ATTACH_TABLE_SUFFIX);
-            $this->getDataDescription()->addFieldDescription($fd);
-
-            $field = new Field('attached_files');
-            $state = $this->getState();
-            $tab_url = (($state != 'add') ? $this->getData()->getFieldByName($this->getPK())->getRowData(0) : '') . '/attachments/';
-
-            $field->setData($tab_url, true);
-            $this->getData()->addField($field);
         }
     }
 

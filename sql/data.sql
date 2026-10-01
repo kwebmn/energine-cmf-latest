@@ -77,7 +77,6 @@ INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (146,'MSG_BAD_FLOA
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (154,'MSG_CONFIRM_DELETE');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (156,'TXT_NO_RIGHTS');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (157,'BTN_VIEW');
-INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (158,'FIELD_IMG_FILENAME_IMG');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (159,'FIELD_IMG_DESCRIPTION');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (160,'FIELD_IMG_THUMBNAIL_IMG');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (162,'FIELD_IMG_FILENAME');
@@ -178,9 +177,7 @@ INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (432,'TXT_CONTACTS
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (439,'TXT_REQUIRED_FIELDS');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (441,'TXT_USER_REGISTRED');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (444,'FIELD_UPL_FILE');
-INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (445,'TAB_ATTACHED_FILES');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (446,'BTN_ADD_FILE');
-INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (447,'MSG_NO_ATTACHED_FILES');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (448,'BTN_DEL_FILE');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (467,'FIELD_SMAP_REDIRECT_URL');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (468,'ERR_BAD_URL');
@@ -343,7 +340,6 @@ INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (774,'FIELD_CATEGO
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (775,'FIELD_CATEGORY_ID');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (783,'MSG_FILE_IS_NOT_NULL');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (784,'MSG_LOAD_FILE');
-INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (796,'FIELD_ATTACHMENTS');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (811,'TXT_VACANCIES_BLOCK');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (813,'TXT_CASTING_BLOCK');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (817,'FIELD_PART_IS_DISABLED');
@@ -362,7 +358,6 @@ INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (829,'TXT_WATCH_AL
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (830,'TXT_PHOTO');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (865,'CONTENT_ADMIN_CHILDS');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (867,'FIELD_PG_DATE');
-INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (868,'BTN_ADD_GALLERY');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (873,'TXT_WATCH');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (878,'TXT_PREMIERE');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (879,'TXT_ALL');
@@ -438,7 +433,6 @@ INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (1137,'TXT_LOGIN_F
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (1138,'FIELD_CONFIG');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (1139,'FIELD_RECURSIVE');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (1145,'CONTENT_MAIN');
-INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (1146,'CONTENT_MEDIA_TEXTBLOCK');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (1147,'TXT_FILTER_SIGN_CONTAINS');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (1148,'TXT_FILTER_SIGN_NOT_CONTAINS');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (1149,'TXT_FILTER_SIGN_BETWEEN');
@@ -567,15 +561,12 @@ INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (1425,'BTN_EDIT_PH
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (1426,'BTN_PUBLISH_PHOTO');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (1427,'FIELD_PHOTO_IS_PUBLISHED');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (1428,'FIELD_PG_SHOW_DATE');
-INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (1429,'TXT_GALLERY');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (1430,'BTN_SIDEBAR');
-INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (1431,'MSG_EMPTY_GALLERY');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (1432,'FIELD_RECORDSPERPAGE');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (1433,'FIELD_HASCALENDAR');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (1434,'FIELD_ACTIVE');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (1435,'FIELD_SORT');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (1436,'FIELD_DEPENDS');
-INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (1437,'CONTENT_GALLERY');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (1445,'FIELD_GENRE_NAME');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (1446,'FIELD_CATEGORIES');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (1447,'FIELD_BIND');
@@ -797,7 +788,6 @@ INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2085,'BTN_COPY_FM
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2086,'BTN_MOVE_TO_DIR');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2087,'MSG_WRONG_DATE_FORMAT');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2091,'BTN_CLEAR');
-INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2094,'BTN_MOVE_CANCEL');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2097,'ERR_BAD_PID');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2101,'ERR_CANT_COPY_FILE');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2102,'ERR_CANT_CREATE_DIR');
@@ -819,7 +809,6 @@ INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2121,'FIELD_AL_AC
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2122,'FIELD_AL_CLASSNAME');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2123,'FIELD_AL_DATE');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2124,'FIELD_AL_ID');
-INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2125,'FIELD_ATTACHEDFILES');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2129,'FIELD_DESCRIPTIONRTF');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2133,'FIELD_FILENAME');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2134,'FIELD_HTML');
@@ -884,7 +873,6 @@ INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2271,'TXT_EMAIL_S
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2272,'TXT_EMAIL_SUFFIX_SEX_F');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2273,'TXT_EMAIL_SUFFIX_SEX_UNKNOWN');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2373,'TXT_GOODSEDITOR');
-INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2387,'TXT_ATTACHMENTEDITOR');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2408,'FIELD_FEATURES');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2418,'FIELD_KEYWORD');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2504,'CONTENT_CART');
@@ -1047,8 +1035,6 @@ INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (156,2,'Права відсутні');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (157,1,'Просмотреть');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (157,2,'Продивитись');
-INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (158,1,'Изображение');
-INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (158,2,'Зображення');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (159,1,'Описание изображения');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (159,2,'Опис зображення');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (160,1,'Маленькое изображение');
@@ -1249,12 +1235,8 @@ INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (441,2,'Вітаємо, Ви вдало зареєструвалися. На вказану Вами електронну адресу\nвідправлено лист з Вашим паролем.');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (444,1,'Файл');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (444,2,'Файл');
-INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (445,1,'Дополнительные файлы');
-INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (445,2,'Додаткові файли');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (446,1,'Вставить из репозитория');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (446,2,'Вставити з репозиторію');
-INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (447,1,'Дополнительные файлы отсутствуют');
-INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (447,2,'Додаткові файли відсутні');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (448,1,'Удалить');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (448,2,'Видалити');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (467,1,'Перенаправлять по адресу');
@@ -1581,8 +1563,6 @@ INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (783,2,'Необхідно завантажити файл');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (784,1,'Загрузить файл');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (784,2,'Завантажити файл');
-INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (796,1,'Смотрите:');
-INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (796,2,'Дивіться:');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (811,1,'Вакансии');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (811,2,'Вакансії');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (813,1,'Кастинги');
@@ -1619,8 +1599,6 @@ INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (865,2,'Список дочірніх розділів адмінчастини');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (867,1,'Дата фотогалереи');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (867,2,'Дата фотогалереї');
-INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (868,1,'Добавить галерею');
-INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (868,2,'Додати фотогалерею');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (873,1,'Смотреть');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (873,2,'Дивитись');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (878,1,'Премьеры');
@@ -1773,8 +1751,6 @@ INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (1139,2,'Виводити всі вкладені розділи');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (1145,1,'Главная страница');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (1145,2,'Головна сторінка');
-INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (1146,1,'Текстовая страница с медиа-файлами');
-INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (1146,2,'Текстова сторінка з медіа-файлами');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (1147,1,'содержит');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (1147,2,'містить');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (1148,1,'не содержит');
@@ -2029,12 +2005,8 @@ INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (1427,2,'Публікувати фотогалерею');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (1428,1,'Публиковать фотогалерею начиная с этой даты');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (1428,2,'Публікувати фотогалерею починаючи з цієї дати');
-INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (1429,1,'Фотогалерея');
-INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (1429,2,'Фотогалерея');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (1430,1,'Боковая панель');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (1430,2,'Бічна панель');
-INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (1431,1,'Нет ни одной фотографии.');
-INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (1431,2,'Немає жодної фотографії.');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (1432,1,'Количество записей на странице');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (1432,2,'Кількість записів на сторінці');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (1433,1,'Выводить календарь');
@@ -2045,8 +2017,6 @@ INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (1435,2,'Порядок сортування');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (1436,1,'Вывод зависит от состояния компонента');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (1436,2,'Вивід залежить від стану компоненту');
-INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (1437,1,'Фотогалерея');
-INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (1437,2,'Фотогалерея');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (1445,1,'Название жанра');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (1445,2,'Назва жанру');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (1446,1,'Компонент, содержащий список категорий');
@@ -2489,8 +2459,6 @@ INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2087,2,'Невірний формат дати, потрібен РРРР-ММ-ДД.');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2091,1,'Очистить');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2091,2,'Очистити');
-INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2094,1,'Отменить перемещение');
-INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2094,2,'Скасувати переміщення');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2097,1,'Папка не найдена.');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2097,2,'Теку не знайдено.');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2101,1,'Не удалось скопировать файл.');
@@ -2533,8 +2501,6 @@ INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2123,2,'Дата');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2124,1,'Запись журнала');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2124,2,'Запис журналу');
-INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2125,1,'Вложения');
-INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2125,2,'Вкладення');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2129,1,'Описание');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2129,2,'Опис');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2133,1,'Имя файла');
@@ -2663,8 +2629,6 @@ INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2273,2,'ий(а)');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2373,1,'Товары');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2373,2,'Товари');
-INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2387,1,'Файлы');
-INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2387,2,'Файли');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2408,1,'Характеристики');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2408,2,'Характеристики');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2418,1,'Поиск товаров');

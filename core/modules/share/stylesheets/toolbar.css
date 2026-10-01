@@ -9,9 +9,6 @@ ul.toolbar {
 	color:black;
 }
 /*.colset ul.toolbar,*/
-ul.toolbar.toolbar_attachmentEditor {
-    background: none;
-}
 ul.toolbar_siteEditor .separator {
     display: none;
 }

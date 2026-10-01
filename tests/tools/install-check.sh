@@ -2,7 +2,7 @@
 # Проверка установщика (этап 5г) на временном экземпляре MariaDB (tempdb.sh): база и файлы площадки
 # не трогаются. Установщик запускается от имени владельца площадки из копии точки входа — у неё свой
 # конфиг (--config) и нет статики (--no-static); ядро — сам репозиторий.
-#  1. setup install в пустую базу: 22 таблицы (мультисайта и модуля apps нет) и 3 хранимые процедуры, языки ru и ua, администратор в группе
+#  1. setup install в пустую базу: 21 таблица (мультисайта, модуля apps и вложений разделов нет) и 3 хранимые процедуры, языки ru и ua, администратор в группе
 #     администраторов (пароль сверяется с хэшем), адрес сайта в конфиге (домен с портом, корень; в базе доменов нет),
 #     конфиг с режимом 600, служебные страницы
 #     без демо-строк; паролей нет в выводе;
@@ -86,7 +86,7 @@ out=$(setup "${INSTALL[@]}"); rc=$?
 is "setup install — код 0" "$rc" 0
 [ $rc -eq 0 ] || echo "$out" | tail -8 | sed 's/^/     /'
 secret_free "$out" && ok "паролей нет в выводе установщика" || bad "пароль в выводе установщика"
-is "таблиц" "$(Q 'SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = "site"')" 22
+is "таблиц" "$(Q 'SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = "site"')" 21
 is "хранимых процедур" "$(Q 'SELECT COUNT(*) FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA = "site"')" 3
 is "языки" "$(Q 'SELECT GROUP_CONCAT(lang_abbr ORDER BY lang_id) FROM share_languages')" "ru,ua"
 hash=$(Q "SELECT u_password FROM user_users WHERE u_name = '$ADMIN_LOGIN'")

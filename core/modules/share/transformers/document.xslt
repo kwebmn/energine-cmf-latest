@@ -86,12 +86,6 @@
     </xsl:template>
 
     <xsl:template match="/" mode="og">
-        <xsl:for-each select="document/og/property">
-            <meta property="og:{@name}" content="{.}" />
-        </xsl:for-each>
-        <xsl:if test="document/og/property[@name='image']">
-            <link rel="image_src" href="{document/og/property[@name='image']}" />
-        </xsl:if>
         <meta property="og:url" content="{$DOC_PROPS[@name='url']}" />
     </xsl:template>
 

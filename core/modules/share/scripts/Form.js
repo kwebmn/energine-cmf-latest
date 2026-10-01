@@ -3,7 +3,6 @@
  * <ul>
  *     <li>[Form]{@link Form}</li>
  *     <li>[Form.Sked]{@link Form.Sked}</li>
- *     <li>[Form.AttachmentSelector]{@link Form.AttachmentSelector}</li>
  *     <li>[Form.Label]{@link Form.Label}</li>
  *     <li>[Form.RichEditor]{@link Form.RichEditor}</li>
  * </ul>
@@ -161,10 +160,6 @@ var Form = new Class(/** @lends Form# */{
 
         this.form.getElements('.field .control.toggle').addEvent('click', showHideFunc);
         this.form.getElements('.icon_min_max').addEvent('click', showHideFunc);
-
-        this.form.getElements('.attachment_selector').each(function (el) {
-            new Form.AttachmentSelector(el, this);
-        }, this);
 
         var cps;
         if(cps = this.element.getElements('input.inp_color')){
@@ -518,72 +513,6 @@ var Form = new Class(/** @lends Form# */{
                 }
             }.bind(this)
         });
-    }
-});
-
-/**
- * AttachmentSelector.
- *
- * @constructor
- * @param {string|Element} selector The element id.
- * @param {Form} form The form.
- */
-Form.AttachmentSelector = new Class(/** @lends Form.AttachmentSelector# */{
-    // constructor
-    initialize: function (selector, form) {
-        selector = $(selector);
-        this.form = form;
-        this.field = selector.getProperty('data-field');
-        /**
-         * Upload name.
-         * @type {string}
-         */
-        this.uplName = $(selector.getProperty('data-name'));
-        /**
-         * Upload ID.
-         * @type {string|number}
-         */
-        this.uplId = $(selector.getProperty('data-id'));
-        this.uplPreview = $(selector.getProperty('data-preview'));
-
-        if(this.form.form.getElementById('componentAction').get('value') == 'add'){
-            this.showSelector.apply(this);
-        }
-
-        selector.addEvent('click', function (e) {
-            e.stop();
-            this.showSelector.apply(this);
-        }.bind(this));
-    },
-
-    /**
-     * Show the selector.
-     * @function
-     * @public
-     */
-    showSelector: function () {
-        ModalBox.open({
-            url: this.form.element.getProperty('single_template') + 'file-library/',
-            onClose: this.setName.bind(this)
-        });
-    },
-
-    /**
-     * Set the name and ID of the smap.
-     *
-     * @function
-     * @public
-     * @param {} result
-     */
-    setName: function (result) {
-        if (result) {
-            this.uplName.set('value', result.upl_path);
-            this.uplId.set('value', result.upl_id);
-            if (result.upl_internal_type == 'image') {
-                this.uplPreview.removeClass('hidden');
-                this.uplPreview.getElement('img').setProperty('src', result.upl_path);
-            }
-        }
     }
 });
 

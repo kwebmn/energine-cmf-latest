@@ -280,14 +280,7 @@ final class Document extends Primitive implements IDocument {
             }
             $dom_root->appendChild($dom_documentVars);
         }
-        if ($og = E()->getOGObject()->build()) {
-            $dom_root->appendChild($this->doc->importNode(
-                $og,
-                true
-            ));
-
-        }
-        unset($prop, $og);
+        unset($prop);
         foreach ($this->componentManager as $component) {
             $componentResult = false;
             $dom_errors = false;

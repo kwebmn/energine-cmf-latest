@@ -81,14 +81,14 @@ cd "$R/sql" || exit 2
 
 {
   echo "-- Energine Simple: демо-контент simple.energine.org поверх базовых данных (sql/data.sql): разделы и тексты,"
-  echo "-- галерея, демо-посетители, файлы репозитория (сами файлы — sql/demo/uploads)."
+  echo "-- демо-посетители, файл репозитория (сам файл — sql/demo/uploads)."
   echo "-- Ставится командой php web/index.php setup demo."
   echo "SET NAMES utf8mb4;"
   echo "SET FOREIGN_KEY_CHECKS = 0;"
   rows share_sitemap "smap_id NOT IN ($BASE)"
   rows share_sitemap_translation "smap_id NOT IN ($BASE)"
   rows share_access_level "smap_id NOT IN ($BASE)"
-  for t in share_textblocks share_textblocks_translation share_sitemap_uploads; do
+  for t in share_textblocks share_textblocks_translation; do
     rows "$t"
   done
   rows share_uploads "NOT ($REPO)"
