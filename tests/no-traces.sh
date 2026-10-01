@@ -8,7 +8,7 @@
 # Этап 5в — тема: theme (спрайты и стили старой темы, jQuery, single.xslt; в текстах — вход администратора demo)
 # Этап 6 — мультисайт: multisite (домены, привязка групп к сайтам, номер сайта у страниц, флажки сайта,
 #   редактор сайтов и доменов, список сайтов, междоменный вход)
-# Этап 7 — ядро: dead (мёртвый код ядра)
+# Этап 7 — ядро: apps (модуль apps: новости, обратная связь, выбор раздела), dead (мёртвый код ядра)
 # i18n — в справочнике переводов нет ни одной константы из списков удаления в sql/cut/*.sql.
 # mail-core — отправка писем живёт в ядре: класс Energine\share\gears\Mail есть,
 # а оставшийся код не ссылается на Energine\mail\gears\Mail*.
@@ -20,7 +20,7 @@ mods=("$@")
 [ ${#mods[@]} -eq 0 ] && mods=(mail-core mail calendar comments forms ads blog shop
                                 pageads branding tops vote feed tagcloud similar rss sockets htmlcap
                                 tags widgets storages watermark video flash lookup columns placehold
-                                ckeditor fileapi jsonp theme multisite dead i18n)
+                                ckeditor fileapi jsonp theme multisite apps dead i18n)
 
 # код: весь репозиторий, кроме истории (docs), переходного SQL (sql) и инструментов чистки
 CODE_DIRS=(core site htdocs configs setup tests)
@@ -30,7 +30,7 @@ EXCLUDE=(--exclude=no-traces.sh --exclude-dir=tools
          --exclude-dir=ckeditor --exclude-dir=codemirror --exclude-dir=FileAPI --exclude-dir=select2
          --exclude-dir=jwplayer --exclude-dir=resizer --exclude-dir=jodit
          --exclude='*.out' --exclude='*cookies.txt' --exclude=smoke-write.json)
-KEPT_DIRS=(core/modules/share core/modules/user core/modules/apps core/modules/seo site htdocs configs tests)
+KEPT_DIRS=(core/modules/share core/modules/user core/modules/seo site htdocs configs tests)
 
 # CODE — выражение для кода; FILES — файлы, которых быть не должно
 declare -A CODE FILES
@@ -129,12 +129,18 @@ PAGES[widgets]='main/widgets_repository'
 TABLES[multisite]='^(share_domains|share_domain2site|share_groups2sites)$'
 PAGES[multisite]='main/sites'
 
+# этап 7: модуль apps (спецификация этапа 7, §3.1) — новости, обратная связь, выбор раздела и правка текста
+# записи на странице (saveText); в базе — таблицы apps_*, разделы админки и шаблоны (case apps ниже)
+CODE[apps]='Energine\\apps\\|modules/apps/|\bapps_(news|feedback)|NewsFeed|NewsRepository|NewsEditor|NewsCategories|FeedbackForm|FeedbackList|FeedbackRecipients|LinkingEditor|DivSelector|SiteDivisionSelector|topNews|news-editor|news-categories|feedback-editor|newsContainer|saveText|SmapSelector|smap_selector|FIELD_TYPE_SMAP_SELECTOR|data-plain'
+FILES[apps]='core/modules/apps core/modules/share/components/LinkingEditor.php core/modules/share/scripts/DivSelector.js core/modules/share/config/SiteDivisionSelector.component.xml'
+TABLES[apps]='^apps_'
+
 # этап 7: мёртвый код ядра (спецификация этапа 7, §3.3)
 CODE[dead]='JSqueeze|MODE_COPY|ComponentProxyBuilder|\bEventHandler\b|\bFieldRow\b|\bFormBuilder\b|JSONPCustomBuilder|JSONUploadBuilder|\bPageInfo\b|\bRemover\b|components\\SiteProperties\b|TextBlockSource|GridManagerModal|GridModal|mootools\.ext|\bScrollbar\b|\bbase\.xslt|new\.layout\.xml|default\.content\.xml'
 FILES[dead]='core/modules/share/scripts/mootools.js core/modules/share/scripts/Scrollbar.js core/modules/share/scripts/mootools.ext.js core/modules/share/scripts/Menu.js core/modules/share/scripts/GridManagerModal.js core/modules/share/stylesheets/errors.css core/modules/share/stylesheets/mootools-colorpicker.css setup/JSqueeze.php cli jambalaya image-cache tests/smoke.sh'
-# содержимое сайта: ссылки на удалённые разделы, слова вырезанных функций в текстовых блоках,
-# демо-новости о вырезанном
-declare -A LINKS WORDS NEWS
+# содержимое сайта: ссылки на удалённые разделы и слова вырезанных функций в текстовых блоках
+# (новости, где они тоже проверялись, удалены с модулем apps на этапе 7)
+declare -A LINKS WORDS
 LINKS[shop]='catalog|cart|wishlist|my-orders|search'
 LINKS[blog]='blogs'
 LINKS[mail]='subscribe|subscriptions'
@@ -158,11 +164,6 @@ WORDS[tops]='подборк|добірк'
 WORDS[branding]='бренд|оформлени[ея] раздел|оформлення розділ'
 WORDS[rss]='rss'
 WORDS[tagcloud]='облак|хмар'
-NEWS[shop]="'catalog-filtry', 'sravnenie-tovarov', 'dve-valyuty'"
-NEWS[blog]="'blogi-otlozhennye'"
-NEWS[mail]="'rassylki-bez-spama'"
-NEWS[ads]="'bannery-adresno'"
-NEWS[tops]="'podborki-na-glavnoj'"
 LINKS[widgets]='admin/widgets'
 LINKS[tags]='news/tag'
 WORDS[tags]='(^|[^а-яёіїє])тег'
@@ -224,7 +225,7 @@ for m in "${mods[@]}"; do
     else
       found=$(G "${CODE[$m]}" "${CODE_DIRS[@]}" | cut -c1-160)
       [ "$m" = theme ] && found+=$'\n'$(G "$THEME_SITE_CODE" site core/modules/share/transformers core/modules/user/transformers \
-        core/modules/apps/transformers core/modules/seo/transformers | cut -c1-160)
+        core/modules/seo/transformers | cut -c1-160)
       for f in ${FILES[$m]}; do [ -e "$R/$f" ] && found+=$'\n'"file $f"; done
     fi
     report "$m" code "$(echo "$found" | sed '/^$/d')"
@@ -249,13 +250,10 @@ for m in "${mods[@]}"; do
     fi
     if [ -n "${LINKS[$m]}" ]; then
       re="href=\"(/ua)?/(${LINKS[$m]})[/\"?]"
-      found+=$(M "SELECT CONCAT('link tb ', tb_id, '/', lang_id) FROM share_textblocks_translation WHERE tb_content REGEXP '$re'
-          UNION SELECT CONCAT('link news ', news_id, '/', lang_id) FROM apps_news_translation
-          WHERE CONCAT_WS(' ', news_announce_rtf, news_text_rtf) REGEXP '$re'")$'\n'
+      found+=$(M "SELECT CONCAT('link tb ', tb_id, '/', lang_id) FROM share_textblocks_translation WHERE tb_content REGEXP '$re'")$'\n'
     fi
     [ -n "${WORDS[$m]}" ] && found+=$(M "SELECT CONCAT('text tb ', tb_id, '/', lang_id) FROM share_textblocks_translation
         WHERE LOWER(tb_content) REGEXP '${WORDS[$m]}'")$'\n'
-    [ -n "${NEWS[$m]}" ] && found+=$(M "SELECT CONCAT('news ', news_segment) FROM apps_news WHERE news_segment IN (${NEWS[$m]})")$'\n'
     case $m in
       ads)      found+=$(M "SELECT CONCAT('page-xml leftAdBlock ', smap_id) FROM share_sitemap
                     WHERE CONCAT_WS(' ', smap_content_xml, smap_layout_xml) LIKE '%leftAdBlock%'")$'\n' ;;
@@ -280,6 +278,11 @@ for m in "${mods[@]}"; do
                        OR (TABLE_NAME = 'share_uploads' AND COLUMN_NAME = 'upl_views'))")$'\n' ;;
       branding) found+=$(M "SELECT CONCAT('column ', TABLE_NAME, '.', COLUMN_NAME) FROM information_schema.COLUMNS
                     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'share_sitemap' AND COLUMN_NAME = 'brand_id'")$'\n' ;;
+      apps)     found+=$(M "SELECT CONCAT('page ', smap_id, ' ', smap_segment, ' ', smap_content) FROM share_sitemap
+                    WHERE smap_segment IN ('news-editor', 'news-categories', 'feedback-editor', 'recipients')
+                       OR smap_content REGEXP '^(main/)?(news|feedback)[^/]*[.]content[.]xml\$'
+                    UNION SELECT CONCAT('mail template ', template_sysname) FROM mail_templates
+                    WHERE template_sysname LIKE 'feedback\_form%'")$'\n' ;;
       multisite) found+=$(M "SELECT CONCAT('column ', TABLE_NAME, '.', COLUMN_NAME) FROM information_schema.COLUMNS
                     WHERE TABLE_SCHEMA = DATABASE() AND ((TABLE_NAME IN ('share_sitemap', 'share_sites_properties') AND COLUMN_NAME = 'site_id')
                        OR (TABLE_NAME = 'share_sites' AND COLUMN_NAME IN ('site_is_default', 'site_is_active', 'site_folder', 'site_order_num')))

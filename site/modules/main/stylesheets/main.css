@@ -181,30 +181,12 @@ div.error, .error_message, .result_message.error_message {
 .menu_image { grid-column: 1; }
 .menu .menu { margin: .5rem 0 0 1rem; }
 
-/* ---------- новости ---------- */
-.feed_list { list-style: none; margin: 0; padding: 0; display: grid; gap: 1.25rem; }
-.feed_item { display: grid; grid-template-columns: 90px minmax(0, 1fr); column-gap: 1rem; align-items: start; }
-.feed_image { grid-row: span 3; }
-.feed_image img { border-radius: .35rem; }
-.feed_date { color: var(--muted); font-size: .85rem; }
-.feed_list .feed_name { margin: 0; font-size: 1.05rem; }
-.feed_list .feed_name a { text-decoration: none; }
-.feed_announce { grid-column: 2; color: var(--muted); }
-.read_more { margin-top: 1rem; }
-.short_feed .feed_item { grid-template-columns: 72px minmax(0, 1fr); }
-.short_feed .feed_image img { width: 72px; height: auto; }
-
+/* ---------- листалка списков ---------- */
 .pager { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1.5rem; }
 
 /* ---------- карта сайта ---------- */
 .sitemap_tree { padding-left: 1.2rem; }
 .sitemap_tree .sitemap_tree { margin: .25rem 0; }
-
-/* ---------- новость ---------- */
-.feed_view .feed_name { margin-top: .25rem; }
-.feed_view .feed_image { margin: 0 0 1rem; }
-.feed_view .feed_image img { border-radius: var(--radius); }
-.go_back { margin-top: 1.5rem; }
 
 /* ---------- вложения, галерея: сетка превью ---------- */
 .media_box { margin-bottom: 1.5rem; }

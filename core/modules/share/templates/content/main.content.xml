@@ -8,17 +8,6 @@
         </component>
     </container>
     <container name="aside">
-        <container name="topNewsContainer" block="beta">
-            <component name="topNews" class="Energine\apps\components\NewsFeed">
-                <params>
-                    <param name="title">TXT_TOP_NEWS</param>
-                    <param name="limit" type="hidden">5</param>
-                    <param name="showAll">1</param>
-                    <param name="active" type="hidden">0</param>
-                    <param name="template">news</param>
-                </params>
-            </component>
-        </container>
         <container name="sidebarTextBlockContainer" block="beta">
             <component name="sidebarTextBlock" class="Energine\share\components\TextBlock">
                 <params>

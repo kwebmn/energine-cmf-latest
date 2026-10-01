@@ -340,12 +340,12 @@ final class Setup {
         }
         $pdo = $this->connect($config['database']);
         try {
-            $filled = (int)$pdo->query('SELECT (SELECT COUNT(*) FROM apps_news) + (SELECT COUNT(*) FROM share_textblocks)')->fetchColumn();
+            $filled = (int)$pdo->query('SELECT COUNT(*) FROM share_textblocks')->fetchColumn();
         } catch (\PDOException $e) {
             throw new \Exception('База не установлена: сначала setup install');
         }
         if ($filled) {
-            throw new \Exception('В базе уже есть новости или тексты: демо ставится только на свежую установку');
+            throw new \Exception('В базе уже есть тексты: демо ставится только на свежую установку');
         }
         $this->text('Демо: ', $this->runSqlFile($pdo, ROOT_DIR . '/sql/demo.sql'), ' запросов');
         if (empty($o['no-static'])) {

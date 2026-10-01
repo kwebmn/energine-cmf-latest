@@ -1,5 +1,5 @@
--- Energine Simple: схема базы — 28 таблиц и хранимые процедуры. Ставится в пустую базу установщиком:
--- php web/index.php setup install (docs/INSTALL.md). Получена из установки полной системы и sql/cut/stage1–6.sql.
+-- Energine Simple: схема базы — 22 таблицы и хранимые процедуры. Ставится в пустую базу установщиком:
+-- php web/index.php setup install (docs/INSTALL.md). Получена из установки полной системы и sql/cut/stage1–7.sql.
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -9,90 +9,6 @@
 /*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `apps_feedback` (
-  `feed_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `feed_date` datetime NOT NULL DEFAULT current_timestamp(),
-  `rcp_id` int(10) unsigned NOT NULL,
-  `feed_email` varchar(200) NOT NULL,
-  `feed_phone` varchar(10) DEFAULT NULL,
-  `feed_author` varchar(250) NOT NULL,
-  `feed_theme` varchar(250) NOT NULL,
-  `feed_text` text NOT NULL,
-  PRIMARY KEY (`feed_id`),
-  KEY `rcp_id` (`rcp_id`),
-  CONSTRAINT `apps_feedback_ibfk_1` FOREIGN KEY (`rcp_id`) REFERENCES `apps_feedback_recipient` (`rcp_id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `apps_feedback_recipient` (
-  `rcp_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `rcp_recipients` varchar(300) NOT NULL,
-  `rcp_order_num` int(10) unsigned DEFAULT 1,
-  PRIMARY KEY (`rcp_id`),
-  KEY `rcp_order_num` (`rcp_order_num`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `apps_feedback_recipient_translation` (
-  `rcp_id` int(10) unsigned NOT NULL,
-  `lang_id` int(10) unsigned NOT NULL,
-  `rcp_name` varchar(255) NOT NULL,
-  PRIMARY KEY (`rcp_id`,`lang_id`),
-  KEY `lang_id` (`lang_id`),
-  CONSTRAINT `apps_feedback_recipient_translation_ibfk_1` FOREIGN KEY (`rcp_id`) REFERENCES `apps_feedback_recipient` (`rcp_id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `apps_feedback_recipient_translation_ibfk_2` FOREIGN KEY (`lang_id`) REFERENCES `share_languages` (`lang_id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `apps_news` (
-  `news_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `smap_id` int(10) unsigned NOT NULL,
-  `news_is_active` tinyint(1) NOT NULL DEFAULT 1,
-  `news_date` datetime NOT NULL,
-  `news_segment` varchar(100) DEFAULT NULL,
-  PRIMARY KEY (`news_id`),
-  KEY `smap_id` (`smap_id`),
-  KEY `news_segment` (`news_segment`),
-  KEY `news_is_active` (`news_is_active`),
-  CONSTRAINT `apps_news_ibfk_1` FOREIGN KEY (`smap_id`) REFERENCES `share_sitemap` (`smap_id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `apps_news_translation` (
-  `news_id` int(10) unsigned NOT NULL,
-  `lang_id` int(10) unsigned NOT NULL,
-  `news_title` varchar(200) NOT NULL,
-  `news_announce_rtf` text DEFAULT NULL,
-  `news_text_rtf` mediumtext DEFAULT NULL,
-  PRIMARY KEY (`news_id`,`lang_id`),
-  KEY `lang_id` (`lang_id`),
-  CONSTRAINT `apps_news_translation_ibfk_1` FOREIGN KEY (`news_id`) REFERENCES `apps_news` (`news_id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `apps_news_translation_ibfk_2` FOREIGN KEY (`lang_id`) REFERENCES `share_languages` (`lang_id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `apps_news_uploads` (
-  `anu_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `news_id` int(10) unsigned DEFAULT NULL,
-  `upl_id` int(10) unsigned NOT NULL,
-  `anu_order_num` int(10) unsigned NOT NULL DEFAULT 1,
-  `session_id` varchar(255) DEFAULT NULL,
-  PRIMARY KEY (`anu_id`),
-  KEY `upl_id` (`upl_id`),
-  KEY `news_id` (`news_id`),
-  KEY `session_id` (`session_id`),
-  KEY `anu_order_num_idx` (`anu_order_num`),
-  CONSTRAINT `apps_news_uploads_ibfk_1` FOREIGN KEY (`news_id`) REFERENCES `apps_news` (`news_id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `apps_news_uploads_ibfk_2` FOREIGN KEY (`upl_id`) REFERENCES `share_uploads` (`upl_id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `mail_templates` (

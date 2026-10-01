@@ -1,6 +1,6 @@
 #!/bin/bash
 # Файлы установки из перехода базы: нынешние sql/structure.sql, data.sql и demo.sql ставятся во временный экземпляр
-# MariaDB (tempdb.sh), поверх — sql/cut/stage6.sql (его разделы можно запускать повторно), и три файла выгружаются
+# MariaDB (tempdb.sh), поверх — sql/cut/stage7.sql (его можно запускать повторно), и три файла выгружаются
 # заново в прежнем формате:
 #   sql/structure.sql — схема и хранимые процедуры (без DEFINER и счётчиков AUTO_INCREMENT);
 #   sql/data.sql      — базовые данные пустого сайта: корень, служебные страницы и админка и всё, что под ними;
@@ -21,10 +21,10 @@ for f in structure.sql data.sql demo.sql; do
   TM --default-character-set=utf8mb4 g < "$R/sql/$f" || { echo "импорт $f" >&2; exit 2; }
 done
 last=$(ls "$R"/sql/cut/stage*.sql | sed -E 's/.*stage([0-9]+)\.sql$/\1/' | sort -n | tail -1)
-if [ -z "${REGEN_NO_MIGRATION:-}" ] && [ -f "$R/sql/cut/stage6.sql" ]; then
-  TM --default-character-set=utf8mb4 g < "$R/sql/cut/stage6.sql" > /dev/null || { echo "stage6.sql" >&2; exit 2; }
+if [ -z "${REGEN_NO_MIGRATION:-}" ] && [ -f "$R/sql/cut/stage7.sql" ]; then
+  TM --default-character-set=utf8mb4 g < "$R/sql/cut/stage7.sql" > /dev/null || { echo "stage7.sql" >&2; exit 2; }
 else
-  last=5
+  last=6
 fi
 Q() { TM -N g -e "$1"; }
 # строка «sandbox mode» — команда клиента mariadb, для установщика на PDO это пустой запрос: убирается;
@@ -81,15 +81,14 @@ cd "$R/sql" || exit 2
 
 {
   echo "-- Energine Simple: демо-контент simple.energine.org поверх базовых данных (sql/data.sql): разделы и тексты,"
-  echo "-- новости, галерея, обратная связь, демо-посетители, файлы репозитория (сами файлы — sql/demo/uploads)."
+  echo "-- галерея, демо-посетители, файлы репозитория (сами файлы — sql/demo/uploads)."
   echo "-- Ставится командой php web/index.php setup demo."
   echo "SET NAMES utf8mb4;"
   echo "SET FOREIGN_KEY_CHECKS = 0;"
   rows share_sitemap "smap_id NOT IN ($BASE)"
   rows share_sitemap_translation "smap_id NOT IN ($BASE)"
   rows share_access_level "smap_id NOT IN ($BASE)"
-  for t in share_textblocks share_textblocks_translation share_sitemap_uploads apps_news apps_news_translation apps_news_uploads \
-           apps_feedback apps_feedback_recipient apps_feedback_recipient_translation; do
+  for t in share_textblocks share_textblocks_translation share_sitemap_uploads; do
     rows "$t"
   done
   rows share_uploads "NOT ($REPO)"

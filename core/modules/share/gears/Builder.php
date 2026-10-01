@@ -154,9 +154,6 @@ class Builder extends XMLBuilder {
 
 				}
 			}
-		} elseif ( ( $fieldInfo->getType() == FieldDescription::FIELD_TYPE_SMAP_SELECTOR ) && $fieldValue ) {
-			$result->setAttribute( 'smap_name', $this->dbh->getScalar( 'share_sitemap_translation',
-				'smap_name', [ 'smap_id' => $fieldValue, 'lang_id' => E()->getLanguage()->getCurrent() ] ) );
 		} elseif ( $fieldInfo->getType() == FieldDescription::FIELD_TYPE_PHONE && $fieldValue) {
 			$fieldValue = $this->formatPhone($fieldInfo, $fieldValue);
 		}

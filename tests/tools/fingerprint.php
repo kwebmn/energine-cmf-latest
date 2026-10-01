@@ -18,7 +18,7 @@ if ($socket = getenv('FP_SOCKET')) {
 $skipTables = ['share_session', 'share_action_log'];
 // даты демо-контента считаются от момента импорта; пароль администратора случайный;
 // телефон нормализуется при первом сохранении формы пользователя (smoke-roundtrip)
-$skipCols = ['feed_date', 'news_date', 'vote_date', 'smap_last_mod', 'upl_publication_date', 'u_password', 'u_phone'];
+$skipCols = ['vote_date', 'smap_last_mod', 'upl_publication_date', 'u_password', 'u_phone'];
 // справочник переводов сверяется по имени константы: суррогатный ltag_id зависит от того, сколько переводов
 // успели создать и удалить тесты на этой базе, а кроме переводов на него ничего не ссылается
 $byName = [

@@ -102,8 +102,10 @@ const inspect = (page) => page.evaluate(() => {
         check('дерево страниц: без ошибок JS и 404', !errors.list().length, errors.list().join(' | '));
         await p.close();
 
-        // одно дерево разделов: без выбора сайта, узлы загружаются (редактор структуры)
-        for (const [label, url] of [['структура', 'admin/structure/']]) {
+        // одно дерево разделов: без выбора сайта, узлы загружаются (редактор структуры и окно выбора родителя
+        // в форме раздела — кнопка «…» у поля родителя открывает состояние list/ редактора разделов)
+        for (const [label, url] of [['структура', 'admin/structure/'],
+            ['выбор родителя в форме раздела', 'admin/structure/single/divEditor/list/']]) {
             const tp = await ctx.newPage();
             const tErrors = watch(tp);
             await tp.goto(BASE + url, { waitUntil: 'networkidle' });

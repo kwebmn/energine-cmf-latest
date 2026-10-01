@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <content>
-    <container name="newsContainer" block="alfa">
+    <container name="mainContainer" block="alfa">
         <component name="childDivisions" class="Energine\share\components\PageList">
             <params>
                 <param name="id">current</param>

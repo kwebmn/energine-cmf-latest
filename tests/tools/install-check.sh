@@ -2,7 +2,7 @@
 # Проверка установщика (этап 5г) на временном экземпляре MariaDB (tempdb.sh): база и файлы площадки
 # не трогаются. Установщик запускается от имени владельца площадки из копии точки входа — у неё свой
 # конфиг (--config) и нет статики (--no-static); ядро — сам репозиторий.
-#  1. setup install в пустую базу: 28 таблиц (мультисайта нет) и 3 хранимые процедуры, языки ru и ua, администратор в группе
+#  1. setup install в пустую базу: 22 таблицы (мультисайта и модуля apps нет) и 3 хранимые процедуры, языки ru и ua, администратор в группе
 #     администраторов (пароль сверяется с хэшем), адрес сайта в конфиге (домен с портом, корень; в базе доменов нет),
 #     конфиг с режимом 600, служебные страницы
 #     без демо-строк; паролей нет в выводе;
@@ -86,7 +86,7 @@ out=$(setup "${INSTALL[@]}"); rc=$?
 is "setup install — код 0" "$rc" 0
 [ $rc -eq 0 ] || echo "$out" | tail -8 | sed 's/^/     /'
 secret_free "$out" && ok "паролей нет в выводе установщика" || bad "пароль в выводе установщика"
-is "таблиц" "$(Q 'SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = "site"')" 28
+is "таблиц" "$(Q 'SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = "site"')" 22
 is "хранимых процедур" "$(Q 'SELECT COUNT(*) FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA = "site"')" 3
 is "языки" "$(Q 'SELECT GROUP_CONCAT(lang_abbr ORDER BY lang_id) FROM share_languages')" "ru,ua"
 hash=$(Q "SELECT u_password FROM user_users WHERE u_name = '$ADMIN_LOGIN'")
@@ -113,9 +113,8 @@ php8.5 -r 'define("ROOT_DIR", $argv[2]); $c = include $argv[1]; exit(empty($c["s
 is "служебные страницы" "$(Q "SELECT GROUP_CONCAT(smap_segment ORDER BY smap_segment) FROM share_sitemap WHERE smap_pid IS NULL
   OR smap_pid = (SELECT smap_id FROM share_sitemap WHERE smap_pid IS NULL)")" \
   ",admin,google-sitemap,login,profile,register,restore-password,robots.txt,sitemap"
-is "демо-строк нет (новости, тексты, получатели, файлы кроме корня репозитория)" "$(Q 'SELECT CONCAT_WS(" ",
-  (SELECT COUNT(*) FROM apps_news), (SELECT COUNT(*) FROM share_textblocks), (SELECT COUNT(*) FROM apps_feedback_recipient),
-  (SELECT COUNT(*) FROM share_uploads))')" "0 0 0 1"
+is "демо-строк нет (тексты, файлы кроме корня репозитория)" "$(Q 'SELECT CONCAT_WS(" ",
+  (SELECT COUNT(*) FROM share_textblocks), (SELECT COUNT(*) FROM share_uploads))')" "0 1"
 
 echo "-- повторная установка"
 before=$(FP)
@@ -155,7 +154,7 @@ is "Host: evil.example — 301 на ту же страницу по адресу
   "$(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' -H "Host: evil.example" "${URL}login/?x=1")" "301 ${URL}login/?x=1"
 is "HEAD по другому имени (www) — 301" "$(curl -s -I -o /dev/null -w '%{http_code}' -H "Host: www.127.0.0.1:$PORT" "$URL")" 301
 is "адрес из конфига — без переадресации" "$(curl -s -o /dev/null -w '%{http_code}' "${URL}login/")" 200
-demo=$(grep -oE 'href="[^"]*/(news|media|features|info|contacts)/' "$T/page.html" | head -3 | tr '\n' ' ')
+demo=$(grep -oE 'href="[^"]*/(features|info)/' "$T/page.html" | head -3 | tr '\n' ' ')
 [ -z "$demo" ] && ok "на главной нет ссылок на демо-разделы" || bad "ссылки на демо-разделы" "$demo"
 is "неизвестный адрес — 404" "$(page claude-no-such-page/)" 404
 [ -n "${INSTALL_DEBUG:-}" ] && cp "$T/page.html" "$INSTALL_DEBUG/404.html"

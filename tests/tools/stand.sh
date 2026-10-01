@@ -45,8 +45,8 @@ start() {
     CREATE USER 'energine'@'localhost' IDENTIFIED BY '$dbpw'; GRANT ALL PRIVILEGES ON site.* TO 'energine'@'localhost';" \
     || fail "база стенда не создана"
   # копия точки входа, как в docs/INSTALL.md: ядро — ссылкой на репозиторий, каркас загрузок — копией,
-  # статику раскладывает установка
-  mkdir -p "$D/site/web" "$D/site/private" && ln -s "$R" "$D/site/private/energine" \
+  # статику раскладывает установка; tmp рядом с web — как у площадки (там временные базы install-check.sh)
+  mkdir -p "$D/site/web" "$D/site/private" "$D/site/tmp" && ln -s "$R" "$D/site/private/energine" \
     && cp "$R/htdocs/index.php" "$R/htdocs/bootstrap.php" "$R/htdocs/auth.php" "$D/site/web/" \
     && cp -a "$R/htdocs/resizer" "$R/htdocs/uploads" "$D/site/web/" || fail "копия точки входа не создана"
   cat > "$D/site/web/router.php" <<'PHP'

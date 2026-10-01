@@ -192,13 +192,6 @@ class FieldDescription extends Primitive implements \Iterator {
      * @var string FIELD_TYPE_MEDIA
      */
     const FIELD_TYPE_MEDIA = 'media';
-    /**
-     * Visual field type for section selecting.
-     * Forwarding through /selector/ shall be provided.
-     * @var string FIELD_TYPE_SMAP_SELECTOR
-     * @deprecated
-     */
-    const FIELD_TYPE_SMAP_SELECTOR = 'smap';
 
     // Режимы отображения полей:
     /**

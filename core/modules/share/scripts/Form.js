@@ -3,7 +3,6 @@
  * <ul>
  *     <li>[Form]{@link Form}</li>
  *     <li>[Form.Sked]{@link Form.Sked}</li>
- *     <li>[Form.SmapSelector]{@link Form.SmapSelector}</li>
  *     <li>[Form.AttachmentSelector]{@link Form.AttachmentSelector}</li>
  *     <li>[Form.Label]{@link Form.Label}</li>
  *     <li>[Form.RichEditor]{@link Form.RichEditor}</li>
@@ -162,10 +161,6 @@ var Form = new Class(/** @lends Form# */{
 
         this.form.getElements('.field .control.toggle').addEvent('click', showHideFunc);
         this.form.getElements('.icon_min_max').addEvent('click', showHideFunc);
-
-        this.form.getElements('.smap_selector').each(function (el) {
-            new Form.SmapSelector(el, this);
-        }, this);
 
         this.form.getElements('.attachment_selector').each(function (el) {
             new Form.AttachmentSelector(el, this);
@@ -523,87 +518,6 @@ var Form = new Class(/** @lends Form# */{
                 }
             }.bind(this)
         });
-    }
-});
-
-/**
- * The smap (parent ID selector) selector.
- *
- * @constructor
- * @param {string|Element} selector The element id.
- * @param {Form} form The form.
- */
-Form.SmapSelector = new Class(/** @lends Form.SmapSelector# */{
-    /**
-     * The properties of the smap.
-     * @type {Object}
-     *
-     * @property {string} id The identifier.
-     * @property {string} name The name.
-     */
-    smap: {
-        id: '',
-        name: ''
-    },
-
-    // constructor
-    initialize: function (selector, form) {
-        var selector = $(selector);
-
-        /**
-         * The form.
-         * @type {Form}
-         */
-        this.form = form;
-
-        /**
-         * The value of the property 'field' from the stltctor by initialising.
-         * @type {string}
-         */
-        this.field = selector.getProperty('field');
-
-        selector.addEvent('click', function (e) {
-            e.stop();
-            this.smap.id = $($(e.target).getProperty('smap_id'));
-            this.smap.name = $($(e.target).getProperty('smap_name'));
-            var params = [];
-            if(this.smap.id.get('value')){
-                params.push(this.smap.id.get('value'));
-            }
-            this.showSelector.apply(this, params);
-        }.bind(this));
-    },
-
-    /**
-     * Show the selector.
-     * @function
-     * @public
-     */
-    showSelector: function (id) {
-        var segment = '';
-        if(id){
-            segment = id + '/';
-        }
-
-        ModalBox.open({
-            url: this.form.element.getProperty('single_template') + segment + 'selector/',
-            onClose: this.setName.bind(this)
-        });
-    },
-
-    /**
-     * Set the name and ID of the smap.
-     *
-     * @function
-     * @public
-     * @param {} result
-     */
-    setName: function (result) {
-        if (result) {
-            this.smap.name.set('value', result.smap_name);
-            this.smap.id.set('value', result.smap_id);
-        }
-
     }
 });
 

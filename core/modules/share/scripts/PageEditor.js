@@ -20,7 +20,7 @@
 ScriptLoader.load('EnergineEditor', 'ModalBox', 'Overlay');
 
 /**
- * Правка текстовых блоков (и новостей ленты) прямо на странице: каждый элемент .nrgnEditor —
+ * Правка текстовых блоков прямо на странице: каждый элемент .nrgnEditor —
  * встроенный (inline) редактор Jodit. Блок сохраняется, когда из него уходят; несохранённое при
  * уходе со страницы отправляется маяком — синхронный запрос при закрытии страницы браузеры не шлют.
  *
@@ -67,12 +67,10 @@ PageEditor.BlockEditor = new Class(/** @lends PageEditor.BlockEditor# */{
         this.ID = this.area.getProperty('eID') || '';
         this.num = this.area.getProperty('num') || '';
 
-        this.editor = this.area.getProperty('data-plain')
-            ? PageEditor.BlockEditor.plain(this.area)
-            : EnergineEditor.make(this.area, {
-                singlePath: this.singlePath,
-                jodit: {inline: true, toolbarInline: true, toolbarInlineForSelection: false, showPlaceholder: false}
-            });
+        this.editor = EnergineEditor.make(this.area, {
+            singlePath: this.singlePath,
+            jodit: {inline: true, toolbarInline: true, toolbarInlineForSelection: false, showPlaceholder: false}
+        });
         /**
          * Текст, который уже на сервере.
          * @type {string}
@@ -170,31 +168,3 @@ PageEditor.BlockEditor = new Class(/** @lends PageEditor.BlockEditor# */{
         }
     }
 });
-
-/**
- * Поле простого текста (data-plain, например заголовок новости): правится без визуального редактора,
- * сохраняется текст без разметки, Enter завершает правку. Возвращает то же, что нужно BlockEditor от Jodit:
- * value и events.on.
- *
- * @param {Element} area
- * @returns {{value: string, events: {on: function}}}
- */
-PageEditor.BlockEditor.plain = function (area) {
-    area.setAttribute('contenteditable', 'plaintext-only');
-    area.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            area.blur();
-        }
-    });
-    return {
-        get value() {
-            return area.textContent.trim();
-        },
-        events: {
-            on: function (name, handler) {
-                area.addEventListener(name, handler);
-            }
-        }
-    };
-};

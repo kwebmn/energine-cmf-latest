@@ -18,7 +18,6 @@ return array(
     'modules' => array(
         'share'     => $energine_release . '/core/modules/share',
         'user'      => $energine_release . '/core/modules/user',
-        'apps'      => $energine_release . '/core/modules/apps',
         'seo'       => $energine_release . '/core/modules/seo',
     ),
 
