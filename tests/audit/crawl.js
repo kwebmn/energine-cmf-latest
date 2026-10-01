@@ -11,11 +11,10 @@ const [, , guestFile, adminFile, singlesFile, outFile] = process.argv;
 const lines = (f) => fs.readFileSync(f, 'utf8').split('\n').map((s) => s.trim()).filter(Boolean);
 // главная обходится всегда: в списках путей её нет (пустые строки отбрасываются)
 const withHome = (list) => ['', ...list];
-// гриды без состояния add: журнал действий и обратная связь только читают, разделы новостей создаёт
-// редактор структуры, а «Настройки сайта» правят единственную запись сайта
-const NO_ADD = [/actionsList\/$/, /feedbackList\/$/, /newsCategoriesEditor\/$/, /single\/settings\/$/];
+// гриды без состояния add: журнал действий только читает, а «Настройки сайта» правят единственную запись сайта
+const NO_ADD = [/actionsList\/$/, /single\/settings\/$/];
 // гриды без обычной формы правки
-const NO_EDIT = [/actionsList\/$/, /feedbackList\/$/];
+const NO_EDIT = [/actionsList\/$/];
 
 (async () => {
     const browser = await chromium.launch({ executablePath: '/usr/bin/google-chrome', headless: true, args: ['--no-sandbox'] });

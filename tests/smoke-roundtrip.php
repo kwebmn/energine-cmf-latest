@@ -55,22 +55,25 @@ function serializeForm($html) {
 $csrf = preg_match('~<meta name="csrf-token" content="([^"]*)"~', $loginPage, $m) ? $m[1] : '';
 http("$B/auth.php", http_build_query(['csrf_token' => $csrf, 'user' => ['login' => 1, 'username' => $E['ADMIN_EMAIL'], 'password' => $E['ADMIN_PASSWORD']]]));
 
+// записи форм — из базы, а не номера одной площадки: раздел демо «Информация» и пользователь,
+// который не входит в этот тест администратором
+$pdo = new PDO("mysql:host={$E['DB_HOST']};dbname={$E['DB_NAME']};charset=utf8", $E['DB_USER'], $E['MYSQL_PWD'],
+    [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+$pageId = (int)$pdo->query("SELECT smap_id FROM share_sitemap WHERE smap_segment = 'info'
+    AND smap_pid = (SELECT smap_id FROM share_sitemap WHERE smap_pid IS NULL)")->fetchColumn();
+$userId = (int)$pdo->query('SELECT MIN(u_id) FROM user_users WHERE u_name <> ' . $pdo->quote($E['ADMIN_EMAIL']))->fetchColumn();
 $editors = [
     'site settings'       => '/admin/settings/single/settings/1/edit/',
     'language'            => '/admin/translations/languages/single/langEditor/1/edit/',
     'role'                => '/admin/users/roles/single/roleEditor/1/edit/',
-    'feedback recipient'  => '/admin/feedback-editor/recipients/single/feedbackRecipientsEditor/5/edit/',
-    'page (division)'     => '/admin/structure/single/divEditor/3594/edit/',
-    'user'                => '/admin/users/single/userEditor/22/edit/',
+    'page (division)'     => "/admin/structure/single/divEditor/$pageId/edit/",
+    'user'                => "/admin/users/single/userEditor/$userId/edit/",
     'translation'         => '/admin/translations/single/transEditor/14/edit/',
-    'news'                => '/admin/news-editor/single/newsRepo/1/edit/',
 ];
 // права раздела сохраняются тем же запросом, что и форма; роундтрип не должен их менять
-$pdo = new PDO("mysql:host={$E['DB_HOST']};dbname={$E['DB_NAME']};charset=utf8", $E['DB_USER'], $E['MYSQL_PWD'],
-    [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
 $rights = fn($id) => $pdo->query('SELECT CONCAT(group_id, ":", right_id) FROM share_access_level WHERE smap_id = ' . (int)$id . ' ORDER BY 1')
     ->fetchAll(PDO::FETCH_COLUMN);
-$rightsBefore = $rights(3594);
+$rightsBefore = $rights($pageId);
 foreach ($editors as $label => $path) {
     [$code, $html] = http($B . $path);
     if ($code != 200) { echo "FAIL $label: edit form HTTP $code\n"; $fail++; continue; }
@@ -85,16 +88,16 @@ foreach ($editors as $label => $path) {
         $fail++;
     }
     if ($label === 'page (division)') {
-        $after = $rights(3594);
+        $after = $rights($pageId);
         if ($rightsBefore && $after === $rightsBefore) {
             echo "OK   $label rights kept (", implode(' ', $after), ")\n";
         } else {
             echo "FAIL $label rights: before ", implode(' ', $rightsBefore), ", after ", implode(' ', $after), "\n";
             $fail++;
             // права возвращаются, чтобы провал теста не закрыл раздел
-            $pdo->prepare('DELETE FROM share_access_level WHERE smap_id = 3594')->execute();
-            $ins = $pdo->prepare('INSERT INTO share_access_level (smap_id, group_id, right_id) VALUES (3594, ?, ?)');
-            foreach ($rightsBefore as $gr) $ins->execute(explode(':', $gr));
+            $pdo->prepare('DELETE FROM share_access_level WHERE smap_id = ?')->execute([$pageId]);
+            $ins = $pdo->prepare('INSERT INTO share_access_level (smap_id, group_id, right_id) VALUES (?, ?, ?)');
+            foreach ($rightsBefore as $gr) $ins->execute([$pageId, ...explode(':', $gr)]);
         }
     }
 }

@@ -1,6 +1,6 @@
 <?php
 // Помощник grids.js: записи с разметкой в текстовых полях — так их мог бы прислать посетитель
-// (обратная связь, регистрация) или записать редактор (файл репозитория).
+// (регистрация) или записать редактор (файл репозитория).
 //   php8.5 grids-db.php add        — создать записи, вывести их id (JSON)
 //   php8.5 grids-db.php remove     — убрать все записи теста
 require dirname(__DIR__) . '/testlib.php';
@@ -12,10 +12,6 @@ const FILE = 'uploads/public/claude-grid-file.png';
 [, $cmd] = $argv + [null, null];
 switch ($cmd) {
     case 'add':
-        q('INSERT INTO apps_feedback (feed_date, rcp_id, feed_email, feed_author, feed_theme, feed_text)
-           SELECT NOW(), MIN(rcp_id), ?, ?, ?, ? FROM apps_feedback_recipient',
-            ['claude-grid-feedback@localhost', PAYLOAD, PAYLOAD, PAYLOAD]);
-        $feed = pdo()->lastInsertId();
         q('INSERT INTO user_users (u_name, u_password, u_fullname, u_is_active) VALUES (?, ?, ?, 1)',
             ['claude-grid-' . getmypid() . '@localhost', password_hash(bin2hex(random_bytes(8)), PASSWORD_DEFAULT), PAYLOAD]);
         $user = pdo()->lastInsertId();
@@ -28,10 +24,9 @@ switch ($cmd) {
            VALUES (?, ?, 'claude-grid-file.png', 'claude-grid-file.png', ?, NOW(), 'image', 'image/png', 90, 68, 1)",
             [$root, FILE, PAYLOAD]);
         $upload = pdo()->lastInsertId();
-        echo json_encode(['feed' => (int)$feed, 'user' => (int)$user, 'upload' => (int)$upload, 'root' => (int)$root]);
+        echo json_encode(['user' => (int)$user, 'upload' => (int)$upload, 'root' => (int)$root]);
         break;
     case 'remove':
-        q('DELETE FROM apps_feedback WHERE feed_email = ?', ['claude-grid-feedback@localhost']);
         q('DELETE FROM user_users WHERE u_name LIKE ?', [MARK]);
         q('DELETE FROM share_uploads WHERE upl_filename = ?', ['claude-grid-file.png']);
         @unlink(WEB . '/' . FILE);

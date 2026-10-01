@@ -1,5 +1,5 @@
-// Browser test of the rich editors and the upload (stage 4): Jodit in the news form and in page edit
-// mode, the «image from the repository» button, the file upload in the repository form via fetch.
+// Browser test of the rich editors and the upload (stage 4): Jodit in the page (division) form and in
+// page edit mode, the «image from the repository» button, the file upload in the repository form via fetch.
 // Everything the test changes is restored (texts through editors-db.php, the temporary upload file).
 // Run in a subshell, like crawl.js:
 //   cd tests/audit && ( envsh=$(php8.5 ../env.php --shell) && eval "$envsh" && node editors.js )
@@ -69,32 +69,33 @@ const showTabOf = (page, selector) => page.evaluate((sel) => {
     await Promise.all([lp.waitForNavigation({ waitUntil: 'networkidle' }), lp.click('button[name="user[login]"]')]);
     await lp.close();
 
-    // 1. news form: Jodit on the text field, what is typed (a link too) is saved; the fields nobody
-    //    touched (announce, other language) are saved exactly as they were
-    const newsId = db('news-id').trim();
-    const newsSnap = db('news-snap', newsId);
+    // 1. page (division) form: Jodit on the description field, what is typed (a link too) is saved; the
+    //    fields nobody touched (name, titles, other language) are saved exactly as they were
+    const pageId = db('page-id').trim();
+    const pageSnap = db('page-snap', pageId);
+    const descr = '#smap_description_rtf_1';
     try {
         const p = await ctx.newPage();
         const errors = watch(p);
-        await p.goto(BASE + `admin/news-editor/single/newsRepo/${newsId}/edit/`, { waitUntil: 'networkidle' });
-        if (check('форма новости: у поля текста редактор Jodit', await isJodit(p, '#news_text_rtf_1'))) {
-            await appendHtml(p, '#news_text_rtf_1', ' <a href="https://example.org/claude-test">claude-test-editor</a>');
+        await p.goto(BASE + `admin/structure/single/divEditor/${pageId}/edit/`, { waitUntil: 'networkidle' });
+        if (check('форма раздела: у поля описания редактор Jodit', await isJodit(p, descr))) {
+            await appendHtml(p, descr, ' <a href="https://example.org/claude-test">claude-test-editor</a>');
             const [resp] = await Promise.all([
                 p.waitForResponse((r) => /\/save\/?(\?|$)/.test(r.url()) && r.request().method() === 'POST', { timeout: 15000 }),
                 p.click('li.save_btn'),
             ]);
-            const saved = JSON.parse(db('news-get', newsId));
-            check('новость сохранена с текстом и ссылкой из редактора', resp.ok() && saved.includes('claude-test-editor')
+            const saved = String(JSON.parse(db('page-get', pageId)));
+            check('раздел сохранён с описанием и ссылкой из редактора', resp.ok() && saved.includes('claude-test-editor')
                 && saved.includes('href="https://example.org/claude-test"'), saved.slice(-200));
-            const was = JSON.parse(newsSnap), now = JSON.parse(db('news-snap', newsId));
-            const changed = was.flatMap((r, i) => ['news_title', 'news_announce_rtf', 'news_text_rtf']
-                .filter((f) => !(r.lang_id == 1 && f === 'news_text_rtf') && r[f] !== now[i][f]).map((f) => `lang ${r.lang_id} ${f}`));
+            const was = JSON.parse(pageSnap), now = JSON.parse(db('page-snap', pageId));
+            const changed = was.flatMap((r, i) => Object.keys(r)
+                .filter((f) => !(r.lang_id == 1 && f === 'smap_description_rtf') && r[f] !== now[i][f]).map((f) => `lang ${r.lang_id} ${f}`));
             check('поля, которых не касались, сохранены как были', !changed.length, changed.join(', '));
         }
-        check('форма новости: без ошибок JS и 404', !errors.length, errors.join(' | '));
+        check('форма раздела: без ошибок JS и 404', !errors.length, errors.join(' | '));
         await p.close();
     } finally {
-        db('news-restore', newsId, newsSnap);
+        db('page-restore', pageId, pageSnap);
     }
 
     // 2. page edit mode: the home text block is an inline Jodit, saved on leaving the block and the page
@@ -114,7 +115,7 @@ const showTabOf = (page, selector) => page.evaluate((sel) => {
             ]);
             check('блок сохранён при уходе из него', JSON.parse(db('tb-get', tbId)).includes('claude-test-inline'));
             await appendHtml(p, block, ' claude-test-leave');
-            await p.goto(BASE + 'news/', { waitUntil: 'networkidle' });
+            await p.goto(BASE + 'features/content/', { waitUntil: 'networkidle' });
             await p.waitForTimeout(1500);
             check('несохранённое уходит на сервер при уходе со страницы', JSON.parse(db('tb-get', tbId)).includes('claude-test-leave'));
         }
@@ -127,19 +128,19 @@ const showTabOf = (page, selector) => page.evaluate((sel) => {
     // 3. «image from the repository» opens the file library
     {
         const p = await ctx.newPage();
-        await p.goto(BASE + `admin/news-editor/single/newsRepo/${newsId}/edit/`, { waitUntil: 'networkidle' });
-        // the text editor sits on the language tab: open it first, as a person would, and mark the editor
+        await p.goto(BASE + `admin/structure/single/divEditor/${pageId}/edit/`, { waitUntil: 'networkidle' });
+        // the description editor sits on the language tab: open it first, as a person would, and mark the editor
         const tab = await p.evaluate(() => {
-            const ed = window.Jodit && Object.values(window.Jodit.instances).find((e) => e.element.id === 'news_text_rtf_1');
+            const ed = window.Jodit && Object.values(window.Jodit.instances).find((e) => e.element.id === 'smap_description_rtf_1');
             if (!ed) return null;
-            ed.container.setAttribute('data-test-editor', 'news-text');
+            ed.container.setAttribute('data-test-editor', 'page-description');
             for (let el = ed.container; el; el = el.parentElement) {
                 if (el.id && document.querySelector('a[href="#' + el.id + '"]')) return '#' + el.id;
             }
             return '';
         });
         if (tab) await p.click(`a[href="${tab}"]`);
-        const btn = p.locator('[data-test-editor="news-text"] .jodit-toolbar-button_energineImage button').first();
+        const btn = p.locator('[data-test-editor="page-description"] .jodit-toolbar-button_energineImage button').first();
         if (check('кнопка «Картинка из репозитория» есть', await btn.count() > 0)) {
             await btn.click();
             await p.waitForSelector('.e-modalbox iframe', { timeout: 10000 }).catch(() => null);
@@ -216,7 +217,7 @@ const showTabOf = (page, selector) => page.evaluate((sel) => {
             await p.click(block);
             await p.mouse.click(2, 2);
             await p.waitForTimeout(500);
-            await p.goto(BASE + 'news/', { waitUntil: 'networkidle' });
+            await p.goto(BASE + 'features/content/', { waitUntil: 'networkidle' });
             await p.waitForTimeout(1000);
             check('режим правки: без правки блок не сохраняется', !saves.length, saves.join(' '));
             const now = JSON.parse(db('tb-get', tbId));
@@ -240,73 +241,29 @@ const showTabOf = (page, selector) => page.evaluate((sel) => {
         }
     }
     {
-        const snap = db('news-snap', newsId);
+        const snap = db('page-snap', pageId);
         try {
-            db('news-rtf', newsId, JSON.stringify(FIXTURE));
+            db('page-rtf', pageId, JSON.stringify(FIXTURE));
             const p = await ctx.newPage();
-            await p.goto(BASE + `admin/news-editor/single/newsRepo/${newsId}/edit/`, { waitUntil: 'networkidle' });
+            await p.goto(BASE + `admin/structure/single/divEditor/${pageId}/edit/`, { waitUntil: 'networkidle' });
             await p.waitForTimeout(1500);
-            const title = 'input[name="apps_news_translation[1][news_title]"]';
-            await showTabOf(p, title);
-            await p.fill(title, (await p.inputValue(title)) + ' claude');
+            const name = 'input[name="share_sitemap_translation[1][smap_name]"]';
+            await showTabOf(p, name);
+            await p.fill(name, (await p.inputValue(name)) + ' claude');
             await Promise.all([
                 p.waitForResponse((r) => /\/save\/?(\?|$)/.test(r.url()) && r.request().method() === 'POST', { timeout: 15000 }),
                 p.click('li.save_btn'),
             ]);
-            const now = JSON.parse(db('news-snap', newsId));
-            const changed = now.flatMap((r) => ['news_announce_rtf', 'news_text_rtf'].filter((f) => r[f] !== FIXTURE)
-                .map((f) => `lang ${r.lang_id} ${f}: ${r[f]}`));
-            check('форма: правка заголовка не переписывает разметку текста и анонса', !changed.length, changed.join(' | '));
+            const now = JSON.parse(db('page-snap', pageId));
+            const changed = now.filter((r) => r.smap_description_rtf !== FIXTURE).map((r) => `lang ${r.lang_id}: ${r.smap_description_rtf}`);
+            check('форма: правка названия не переписывает разметку описания', !changed.length, changed.join(' | '));
             await p.close();
         } finally {
-            db('news-restore', newsId, snap);
+            db('page-restore', pageId, snap);
         }
     }
 
-    // 9. the news title on its page is plain text: edited without the rich editor, saved without markup,
-    //    shown as typed (a "<" or "&" in a title is text, not markup)
-    {
-        const p = await ctx.newPage();
-        const errors = watch(p);
-        await p.goto(BASE + 'news/', { waitUntil: 'networkidle' });
-        const href = await p.evaluate(() => {
-            const a = [...document.querySelectorAll('a[href]')].find((x) => /\/\d+--[^/]+\/$/.test(x.getAttribute('href')));
-            return a ? a.href : null;
-        });
-        const id = href && href.match(/\/(\d+)--/)[1];
-        if (check('в ленте есть ссылка на новость', !!id, href)) {
-            const snap = db('news-snap', id);
-            const title = 'h1.feed_name';
-            try {
-                await p.goto(href, { waitUntil: 'networkidle' });
-                await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle' }), p.click('li.editMode_btn')]);
-                const mode = await p.evaluate((sel) => {
-                    const el = document.querySelector(sel);
-                    return el ? el.getAttribute('contenteditable') : null;
-                }, title);
-                check('заголовок новости правится как простой текст', !(await isJodit(p, title)) && mode === 'plaintext-only', mode);
-                const before = await p.evaluate((sel) => document.querySelector(sel).textContent.trim(), title);
-                await p.click(title);
-                await p.keyboard.press('End');
-                await p.keyboard.type(' claude <тест> & co');
-                await Promise.all([
-                    p.waitForResponse((r) => r.url().includes('save-text'), { timeout: 15000 }),
-                    p.mouse.click(2, 2),
-                ]);
-                const saved = JSON.parse(db('news-snap', id)).find((r) => r.lang_id == 1).news_title;
-                check('заголовок сохранён простым текстом', saved === before + ' claude <тест> & co', saved);
-                await p.goto(href, { waitUntil: 'networkidle' });
-                const shown = await p.evaluate((sel) => document.querySelector(sel).textContent.trim(), title);
-                check('заголовок показан как введён', shown === before + ' claude <тест> & co', shown);
-                check('правка заголовка: без ошибок JS и 404', !errors.length, errors.join(' | '));
-            } finally {
-                db('news-restore', id, snap);
-            }
-        }
-        await p.close();
-    }
-
-    // 10. what the repository buttons insert: the dialogs (ModalBox) are replaced by fixed answers, the
+    // 9. what the repository buttons insert: the dialogs (ModalBox) are replaced by fixed answers, the
     //     inserted markup is read from the editor — image with escaped alt and margins, file link with and
     //     without a selection, nothing after a cancelled dialog; in a form and in a page block
     const stubDialogs = (page) => page.evaluate(() => {
@@ -373,10 +330,10 @@ const showTabOf = (page, selector) => page.evaluate((sel) => {
     {
         const p = await ctx.newPage();
         const errors = watch(p);
-        await p.goto(BASE + `admin/news-editor/single/newsRepo/${newsId}/edit/`, { waitUntil: 'networkidle' });
-        await showTabOf(p, '#news_text_rtf_1');
-        await appendHtml(p, '#news_text_rtf_1', ' claude-sel');
-        await insertions(p, '#news_text_rtf_1', 'форма');
+        await p.goto(BASE + `admin/structure/single/divEditor/${pageId}/edit/`, { waitUntil: 'networkidle' });
+        await showTabOf(p, descr);
+        await appendHtml(p, descr, ' claude-sel');
+        await insertions(p, descr, 'форма');
         check('вставка в форме: без ошибок JS и 404', !errors.length, errors.join(' | '));
         await p.close();   // the form is not saved: nothing to restore
     }
@@ -396,7 +353,7 @@ const showTabOf = (page, selector) => page.evaluate((sel) => {
         }
     }
 
-    // 11. a block the server did not save is not taken for saved: the administrator is told, the block is
+    // 10. a block the server did not save is not taken for saved: the administrator is told, the block is
     //     marked and stays unsaved (the beacon brings it when the page is left); a refusal changes nothing
     {
         const snap = db('tb-snap', tbId);
@@ -420,7 +377,7 @@ const showTabOf = (page, selector) => page.evaluate((sel) => {
             check('несохранённый блок помечен', marked);
             check('несохранённое не записано', !JSON.parse(db('tb-get', tbId)).includes('claude-test-unsaved'));
             await p.unroute('**/save-text*');
-            await p.goto(BASE + 'news/', { waitUntil: 'networkidle' });
+            await p.goto(BASE + 'features/content/', { waitUntil: 'networkidle' });
             await p.waitForTimeout(1500);
             check('несохранённое уходит маяком при уходе со страницы', JSON.parse(db('tb-get', tbId)).includes('claude-test-unsaved'));
 
@@ -445,7 +402,7 @@ const showTabOf = (page, selector) => page.evaluate((sel) => {
         }
     }
 
-    // 12. an upload that did not happen is reported as text with its reason, and the form forgets the file:
+    // 11. an upload that did not happen is reported as text with its reason, and the form forgets the file:
     //     a file over the server limit, an answer that is not JSON (a proxy's 413 page), a failure after a success
     {
         const p = await ctx.newPage();

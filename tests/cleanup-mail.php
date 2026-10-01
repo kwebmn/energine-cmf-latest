@@ -7,7 +7,6 @@ $del = function ($label, $sql, $args = []) use (&$report) {
     $report[] = sprintf('%-32s %d', $label, q($sql, $args)->rowCount());
 };
 
-$del('feedback', "DELETE FROM apps_feedback WHERE feed_theme LIKE 'claude-test%'");
 $del('test user', "DELETE FROM user_users WHERE u_name = ?", [MAILBOX]);
 if (($argv[1] ?? '') === 'mailbox' && is_file(MAILBOX_FILE)) {
     $report[] = sprintf('%-32s %d', MAILBOX_FILE, unlink(MAILBOX_FILE));

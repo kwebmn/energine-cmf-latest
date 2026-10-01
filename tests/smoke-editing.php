@@ -54,35 +54,7 @@ try {
 
     [$code, $body] = http("$B/");
     check('page after textblock save', $code == 200 && clean($body) && strpos($body, 'Главная страница') !== false, $body);
-
-    // save-text of the news feed: the field is taken from `num` — only a column of the translation table
-    // (it went into the SQL as a column name: any text there was part of the query)
-    [, $list] = http("$B/news/");
-    preg_match('~href="([^"]*/(\d+)--[^"/]+/)"~', $list, $nm);
-    [$code, $page] = http($nm[1] ?? "$B/news/", ['editMode' => 1, 'csrf_token' => $csrf]);
-    // название открытой новости — заголовок страницы h1 (тема, этап 5в)
-    preg_match('~<h1[^>]*class="nrgnEditor feed_name"[^>]*>~', $page, $h1);
-    preg_match('~single_template="([^"]+)"~', $h1[0] ?? '', $st);
-    $newsId = (int)($nm[2] ?? 0);
-    $title = fn() => $pdo->query("SELECT news_title FROM apps_news_translation WHERE news_id = $newsId AND lang_id = 1")->fetchColumn();
-    $titleOrig = $title();
-    // every field of the news, all languages: a query that got through could change any of them
-    $newsSnap = $pdo->query("SELECT * FROM apps_news_translation WHERE news_id = $newsId")->fetchAll(PDO::FETCH_ASSOC);
-    $saveText = ($st[1] ?? '') . 'save-text?json';
-    check('news page in edit mode has the editable title', $newsId && isset($st[1]), $h3[0] ?? $page);
-    foreach (["news_title = 'claude-sql', news_text_rtf", 'news_id', 'lang_id', 'no_such_column'] as $num) {
-        [$code, $body] = http($saveText, ['data' => 'claude-editing', 'ID' => $newsId, 'num' => $num, 'csrf_token' => $csrf]);
-        $j = json_decode($body, true);
-        check("save-text refuses num=$num", is_array($j) && empty($j['result']) && $title() === $titleOrig, $body);
-    }
-    [$code, $body] = http($saveText, ['data' => 'claude-editing-title', 'ID' => $newsId, 'num' => 'news_title', 'csrf_token' => $csrf]);
-    $j = json_decode($body, true);
-    check('save-text saves num=news_title', is_array($j) && !empty($j['result']) && $title() === 'claude-editing-title', $body);
 } finally {
-    foreach ($newsSnap ?? [] as $r) {
-        $pdo->prepare("UPDATE apps_news_translation SET news_title = ?, news_announce_rtf = ?, news_text_rtf = ? WHERE news_id = ? AND lang_id = ?")
-            ->execute([$r['news_title'], $r['news_announce_rtf'], $r['news_text_rtf'], $r['news_id'], $r['lang_id']]);
-    }
     $st = $pdo->prepare("UPDATE share_textblocks_translation SET tb_content = ? WHERE tb_id = 59 AND lang_id = 1");
     $st->execute([$tbOrig]);
     $st = $pdo->prepare("UPDATE share_sitemap SET smap_content_xml = ? WHERE smap_id = 80");

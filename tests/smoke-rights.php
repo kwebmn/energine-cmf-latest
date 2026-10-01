@@ -1,5 +1,5 @@
 <?php
-// Права без сайтов: группа с правом правки раздела новостей (не администраторы) видит все новости в редакторе;
+// Права без сайтов: группа с правом правки раздела шаблонов писем (не администраторы) видит все шаблоны в редакторе;
 // форма группы — без строки с названием сайта, её сохранение не меняет права группы.
 // Временные группа и пользователь создаются здесь и удаляются в конце, в том числе после провала.
 $E = require __DIR__ . '/env.php';
@@ -31,11 +31,11 @@ function login($jar, $email, $password) {
     http($jar, "$B/auth.php", http_build_query(['csrf_token' => token($page),
         'user' => ['login' => 1, 'username' => $email, 'password' => $password]]));
 }
-// строки новостей первой страницы редактора новостей
-function newsRows($jar) {
+// строки первой страницы редактора шаблонов писем
+function templateRows($jar) {
     global $B;
-    [$code, $page] = http($jar, "$B/admin/news-editor/");
-    [, $body] = http($jar, "$B/admin/news-editor/single/newsRepo/get-data/page-1", '',
+    [$code, $page] = http($jar, "$B/admin/mail-templates/");
+    [, $body] = http($jar, "$B/admin/mail-templates/single/mailTemplateEditor/get-data/page-1", '',
         ['X-Request: JSON', 'X-CSRF-Token: ' . token($page)]);
     $j = json_decode($body, true);
     return [$code, is_array($j) && !empty($j['result']) ? count($j['data'] ?? []) : -1];
@@ -78,16 +78,16 @@ $adminJar = tempnam(sys_get_temp_dir(), 'rights');
 $userJar = tempnam(sys_get_temp_dir(), 'rights');
 $gid = $uid = null;
 try {
-    // страницы: корень, админка, редактор новостей
+    // страницы: корень, админка, редактор шаблонов писем
     $root = (int)$pdo->query('SELECT smap_id FROM share_sitemap WHERE smap_pid IS NULL')->fetchColumn();
     $admin = (int)$pdo->query("SELECT smap_id FROM share_sitemap WHERE smap_pid = $root AND smap_segment = 'admin'")->fetchColumn();
-    $news = (int)$pdo->query("SELECT smap_id FROM share_sitemap WHERE smap_pid = $admin AND smap_segment = 'news-editor'")->fetchColumn();
-    check('страницы админки и редактора новостей найдены', $root && $admin && $news, "$root $admin $news");
+    $templates = (int)$pdo->query("SELECT smap_id FROM share_sitemap WHERE smap_pid = $admin AND smap_segment = 'mail-templates'")->fetchColumn();
+    check('страницы админки и редактора шаблонов писем найдены', $root && $admin && $templates, "$root $admin $templates");
 
-    // временная группа: чтение корня и админки, правка раздела новостей; пользователь в ней
+    // временная группа: чтение корня и админки, правка раздела шаблонов писем; пользователь в ней
     $q('INSERT INTO user_groups (group_name) VALUES (?)', [$mark]);
     $gid = (int)$pdo->lastInsertId();
-    foreach ([$root => 1, $admin => 1, $news => 2] as $smap => $right) {
+    foreach ([$root => 1, $admin => 1, $templates => 2] as $smap => $right) {
         $q('INSERT INTO share_access_level (smap_id, group_id, right_id) VALUES (?, ?, ?)', [$smap, $gid, $right]);
     }
     $q('INSERT INTO user_users (u_name, u_password, u_fullname, u_is_active) VALUES (?, ?, ?, 1)',
@@ -96,11 +96,11 @@ try {
     $q('INSERT INTO user_user_groups (u_id, group_id) VALUES (?, ?)', [$uid, $gid]);
 
     login($adminJar, $E['ADMIN_EMAIL'], $E['ADMIN_PASSWORD']);
-    [, $adminRows] = newsRows($adminJar);
-    check('администратор видит новости', $adminRows > 0, "$adminRows строк");
+    [, $adminRows] = templateRows($adminJar);
+    check('администратор видит шаблоны писем', $adminRows > 0, "$adminRows строк");
     login($userJar, $email, $password);
-    [$code, $userRows] = newsRows($userJar);
-    check('группа с правом правки раздела новостей видит все новости', $code == 200 && $userRows === $adminRows,
+    [$code, $userRows] = templateRows($userJar);
+    check('группа с правом правки раздела шаблонов писем видит все шаблоны', $code == 200 && $userRows === $adminRows,
         "HTTP $code, строк $userRows, у администратора $adminRows");
 
     // форма группы: заголовок таблицы прав — «Все разделы», не название сайта; сохранение не меняет права

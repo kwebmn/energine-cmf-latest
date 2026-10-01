@@ -36,16 +36,12 @@ for lang in "" "ua/"; do
   done < $SCR/paths-guest.txt
 done
 check "404" "$B/no-such-page/" 404
-# мусор вместо даты в архиве новостей — 404, а не пустая лента с кодом 200 (так же отвечает
-# и адрес вырезанной ленты RSS: нечисловой год)
-for u in news/foo/ ua/news/foo/ news/2026/13/ news/2026/1/32/; do check "404" "$B/$u" 404; done
-check "archive" "$B/news/$(date +%Y)/" 200
 check "robots" "$B/robots.txt/" 200
 # карта сайта (её список, не меню в шапке) перечисляет разделы, а не одну главную
 check "sitemap" "$B/sitemap/" 200
 miss=$(php8.5 -r '$d = new DOMDocument(); @$d->loadHTML(file_get_contents($argv[1])); $x = new DOMXPath($d); $h = [];
   foreach ($x->query("//ul[contains(concat(\" \", normalize-space(@class), \" \"), \" sitemap_tree \")]//a/@href") as $a) $h[] = trim(preg_replace("~^https?://[^/]+/~", "", $a->value), "/");
-  echo implode(" ", array_diff(["news", "contacts", "features"], $h)), "|", implode(" ", array_intersect(["login", "restore-password", "robots.txt", "google-sitemap"], $h));' $T)
+  echo implode(" ", array_diff(["info", "features"], $h)), "|", implode(" ", array_intersect(["login", "restore-password", "robots.txt", "google-sitemap"], $h));' $T)
 [ "${miss%%|*}" = "" ] || { echo "FAIL [sitemap] в карте сайта нет: ${miss%%|*}"; fail=$((fail+1)); }
 # служебные страницы (закрыты от индексации) в карте для людей не показываются
 [ "${miss#*|}" = "" ] || { echo "FAIL [sitemap] в карте сайта служебные страницы: ${miss#*|}"; fail=$((fail+1)); }
@@ -70,13 +66,17 @@ while read s; do
   case "$s" in *[dD]ivEditor*) checkjson "grid" "$B/${s}get-data/";; *) checkjson "grid" "$B/${s}get-data/page-1";; esac
 done < "$L"
 checkjson "filelib" "$B/admin/users/single/adminPanel/file-library/1/get-data/"
-# forms
+# forms; записи — из базы, а не номера одной площадки: раздел демо «Информация» и пользователь,
+# который не входит в этот тест администратором
+q() { mysql -N --default-character-set=utf8mb4 -h "$DB_HOST" -u "$DB_USER" "$DB_NAME" -e "$1"; }
+page=$(q "SELECT smap_id FROM share_sitemap WHERE smap_segment = 'info'
+  AND smap_pid = (SELECT smap_id FROM share_sitemap WHERE smap_pid IS NULL)")
+user=$(q "SELECT MIN(u_id) FROM user_users WHERE u_name <> '$ADMIN_EMAIL'")
 A=$B/admin
-for u in structure/single/divEditor/80/edit/ structure/single/divEditor/3594/edit/ structure/single/divEditor/add/80/ \
-  users/single/userEditor/22/edit/ users/single/userEditor/add/ users/roles/single/roleEditor/1/edit/ \
+for u in structure/single/divEditor/80/edit/ structure/single/divEditor/$page/edit/ structure/single/divEditor/add/80/ \
+  users/single/userEditor/$user/edit/ users/single/userEditor/add/ users/roles/single/roleEditor/1/edit/ \
   settings/single/settings/1/edit/ translations/single/transEditor/14/edit/ translations/single/transEditor/add/ \
-  translations/languages/single/langEditor/1/edit/ news-editor/single/newsRepo/1/edit/ news-editor/single/newsRepo/add/ \
-  feedback-editor/recipients/single/feedbackRecipientsEditor/5/edit/ feedback-editor/single/feedbackList/1/ \
+  translations/languages/single/langEditor/1/edit/ \
   users/single/adminPanel/file-library users/single/adminPanel/file-library/1/add/; do
   check "form" "$A/$u" 200
 done

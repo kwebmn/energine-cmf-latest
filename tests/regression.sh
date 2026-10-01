@@ -23,20 +23,12 @@ echo "### site-settings"; php8.5 site-settings.php
 echo "### rights"; php8.5 smoke-rights.php
 echo "### menu"; php8.5 menu.php
 
-echo "### mail (recipients -> local mailbox)"
-RCP_ORIG=$(M "SELECT rcp_recipients FROM apps_feedback_recipient WHERE rcp_id=5")
-restore() {
-  M "UPDATE apps_feedback_recipient SET rcp_recipients='$RCP_ORIG' WHERE rcp_id=5;"
-  echo "recipients restored: $(M "SELECT rcp_recipients FROM apps_feedback_recipient WHERE rcp_id=5")"
-}
-trap restore EXIT
-M "UPDATE apps_feedback_recipient SET rcp_recipients='$MAILBOX' WHERE rcp_id=5;"
+echo "### mail"
 php8.5 smoke-mail.php
 echo "### antispam"; php8.5 smoke-antispam.php
 echo "### smtp"; php8.5 smoke-smtp.php
 echo "--- mailbox recipients:"; grep -h "^To: " "$MAILBOX_FILE" 2>/dev/null | sort | uniq -c
 echo "--- cleanup-mail"; php8.5 cleanup-mail.php mailbox
-restore; trap - EXIT
 
 # последним: набор запирает IP этой машины (и убирает за собой) — прочим наборам он не мешает
 echo "### login-limit"; php8.5 smoke-login-limit.php

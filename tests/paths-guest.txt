@@ -1,13 +1,7 @@
-contacts/
 info/
 info/quick-start/
 login/
-news/
 register/
 restore-password/
 robots.txt/
 sitemap/
-news/1--dobro-pozhalovaty/
-news/5--linuxfmonlajn-radio-veshhajushheje-iskhodnyj-kod-jadra-linux/
-news/2--new-gcc-4-8-0/
-news/4--richard-stollman-protiv-c/

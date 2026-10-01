@@ -53,17 +53,17 @@ foreach (q('SELECT lang_id, lang_abbr, lang_default FROM share_languages ORDER B
     check("служебных страниц в меню гостя $path нет", !array_intersect(SERVICE, $got), implode(' ', array_intersect(SERVICE, $got)));
 }
 
-// 2. флаг у «Контактов»
-$contacts = (int)scalar("SELECT smap_id FROM share_sitemap WHERE smap_pid = ? AND smap_segment = 'contacts'", [$root]);
-$orig = (int)scalar('SELECT smap_in_menu FROM share_sitemap WHERE smap_id = ?', [$contacts]);
-register_shutdown_function(fn() => q('UPDATE share_sitemap SET smap_in_menu = ? WHERE smap_id = ?', [$orig, $contacts]));
-q('UPDATE share_sitemap SET smap_in_menu = 0 WHERE smap_id = ?', [$contacts]);
+// 2. флаг у «Информации»
+$info = (int)scalar("SELECT smap_id FROM share_sitemap WHERE smap_pid = ? AND smap_segment = 'info'", [$root]);
+$orig = (int)scalar('SELECT smap_in_menu FROM share_sitemap WHERE smap_id = ?', [$info]);
+register_shutdown_function(fn() => q('UPDATE share_sitemap SET smap_in_menu = ? WHERE smap_id = ?', [$orig, $info]));
+q('UPDATE share_sitemap SET smap_in_menu = 0 WHERE smap_id = ?', [$info]);
 [, $html] = http('/');
-check('снятый флаг убирает «Контакты» из меню', !in_array('contacts', menu($html)), implode(' ', menu($html)));
-q('UPDATE share_sitemap SET smap_in_menu = 1 WHERE smap_id = ?', [$contacts]);
+check('снятый флаг убирает «Информацию» из меню', !in_array('info', menu($html)), implode(' ', menu($html)));
+q('UPDATE share_sitemap SET smap_in_menu = 1 WHERE smap_id = ?', [$info]);
 [, $html] = http('/');
-check('возвращённый флаг возвращает «Контакты» в меню', in_array('contacts', menu($html)), implode(' ', menu($html)));
-q('UPDATE share_sitemap SET smap_in_menu = ? WHERE smap_id = ?', [$orig, $contacts]);
+check('возвращённый флаг возвращает «Информацию» в меню', in_array('info', menu($html)), implode(' ', menu($html)));
+q('UPDATE share_sitemap SET smap_in_menu = ? WHERE smap_id = ?', [$orig, $info]);
 
 // 3. форма новой страницы
 login();
@@ -75,14 +75,14 @@ libxml_clear_errors();
 $box = (new DOMXPath($doc))->query("//input[@type='checkbox'][@name='share_sitemap[smap_in_menu]']")->item(0);
 check('в форме новой страницы флаг «в меню» включён', $code == 200 && $box && $box->hasAttribute('checked'),
     $box ? 'флаг выключен' : "HTTP $code, флага в форме нет");
-[$code, $html] = http("/admin/structure/single/divEditor/$contacts/edit/");
+[$code, $html] = http("/admin/structure/single/divEditor/$info/edit/");
 [, $j] = json('/admin/structure/single/divEditor/save', formData($html, ['share_sitemap[smap_in_menu]' => '0']));
 check('флажок, снятый в форме правки, сохраняется', !empty($j['result'])
-    && (int)scalar('SELECT smap_in_menu FROM share_sitemap WHERE smap_id = ?', [$contacts]) === 0, json_encode($j, JSON_UNESCAPED_UNICODE));
+    && (int)scalar('SELECT smap_in_menu FROM share_sitemap WHERE smap_id = ?', [$info]) === 0, json_encode($j, JSON_UNESCAPED_UNICODE));
 logout();
 [, $html] = http('/');
-check('страница со снятым в форме флажком не в меню гостя', !in_array('contacts', menu($html)), implode(' ', menu($html)));
-q('UPDATE share_sitemap SET smap_in_menu = ? WHERE smap_id = ?', [$orig, $contacts]);
+check('страница со снятым в форме флажком не в меню гостя', !in_array('info', menu($html)), implode(' ', menu($html)));
+q('UPDATE share_sitemap SET smap_in_menu = ? WHERE smap_id = ?', [$orig, $info]);
 login();
 
 // 4. подменю админки у администратора

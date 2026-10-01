@@ -1,6 +1,6 @@
 // Browser test: escaping of HTML in the admin grids (stage 5a). Markup that a visitor could send
-// (feedback, registration) or an editor could write (a file title, a page name) is shown as text in the
-// grids — feedback, users, file repository — and in the page tree, and nothing of it is parsed or run.
+// (registration) or an editor could write (a file title, a page name) is shown as text in the grids —
+// users, file repository — and in the page tree, and nothing of it is parsed or run.
 // The grids' own markup (activity checkboxes, image previews, the file link) stays.
 // Everything the test adds is removed (grids-db.php remove).
 // Run in a subshell, like crawl.js:
@@ -63,7 +63,6 @@ const inspect = (page) => page.evaluate(() => {
     const ids = JSON.parse(db('add'));
     try {
         const grids = [
-            { label: 'обратная связь', url: 'admin/feedback-editor/' },
             { label: 'пользователи', url: 'admin/users/', extra: (r) => check('пользователи: флажки активности на месте', r.checkboxes > 0, JSON.stringify(r)) },
             {
                 label: 'файлы', url: 'admin/users/single/adminPanel/file-library/', folder: ids.root,
@@ -81,32 +80,6 @@ const inspect = (page) => page.evaluate(() => {
             check(`${g.label}: разметка не разобрана и не исполнена`, !r.parsedImg && !r.parsedB && !r.ran, JSON.stringify(r));
             if (g.extra) g.extra(r);
             check(`${g.label}: без ошибок JS и 404`, !errors.list().length, errors.list().join(' | '));
-            await p.close();
-        }
-
-        // the view form of a feedback message (the grid's «Просмотр»): the visitor's fields are read-only there,
-        // their values — text too
-        {
-            const p = await ctx.newPage();
-            const errors = watch(p);
-            await p.goto(BASE + 'admin/feedback-editor/single/feedbackList/' + ids.feed + '/', { waitUntil: 'networkidle' });
-            await p.waitForTimeout(500);
-            const r = await p.evaluate(() => {
-                const shown = [...document.querySelectorAll('.control, .read')].map((x) => {
-                    const input = x.matches('input') ? x : x.querySelector('input[type="text"]');
-                    return (input ? input.value : '') + x.textContent;
-                });
-                return {
-                    fields: document.querySelectorAll('.field').length,
-                    literal: shown.filter((s) => s.includes('<img src="x"')).length,
-                    parsedImg: !!document.querySelector('img[src="x"]'),
-                    parsedB: [...document.querySelectorAll('b')].some((b) => b.textContent === 'claude-grid'),
-                    ran: window.claudeXss || 0,
-                };
-            });
-            check('обратная связь, просмотр: поля обращения — текстом (автор, тема, сообщение)', r.fields > 0 && r.literal >= 3, JSON.stringify(r));
-            check('обратная связь, просмотр: разметка не разобрана и не исполнена', !r.parsedImg && !r.parsedB && !r.ran, JSON.stringify(r));
-            check('обратная связь, просмотр: без ошибок JS и 404', !errors.list().length, errors.list().join(' | '));
             await p.close();
         }
 
@@ -129,9 +102,8 @@ const inspect = (page) => page.evaluate(() => {
         check('дерево страниц: без ошибок JS и 404', !errors.list().length, errors.list().join(' | '));
         await p.close();
 
-        // одно дерево разделов: без выбора сайта, узлы загружаются (редактор структуры и выбор раздела новости)
-        for (const [label, url] of [['структура', 'admin/structure/'],
-            ['выбор раздела новости', 'admin/news-editor/single/newsRepo/3594/selector/']]) {
+        // одно дерево разделов: без выбора сайта, узлы загружаются (редактор структуры)
+        for (const [label, url] of [['структура', 'admin/structure/']]) {
             const tp = await ctx.newPage();
             const tErrors = watch(tp);
             await tp.goto(BASE + url, { waitUntil: 'networkidle' });

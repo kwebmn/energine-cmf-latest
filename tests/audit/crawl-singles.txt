@@ -1,12 +1,8 @@
 admin/action-log/single/actionsList/
-admin/feedback-editor/single/feedbackList/
 admin/mail-templates/single/mailTemplateEditor/
-admin/news-categories/single/newsCategoriesEditor/
-admin/news-editor/single/newsRepo/
 admin/structure/single/divEditor/
 admin/translations/single/transEditor/
 admin/users/single/userEditor/
 admin/settings/single/settings/
 admin/translations/languages/single/langEditor/
 admin/users/roles/single/roleEditor/
-admin/feedback-editor/recipients/single/feedbackRecipientsEditor/

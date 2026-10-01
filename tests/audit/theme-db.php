@@ -3,8 +3,6 @@
 // регистрации) и его удаление.
 //   php8.5 theme-db.php user-add       — создать, вывести {"login": …, "password": …}
 //   php8.5 theme-db.php user-remove    — удалить всех посетителей теста
-//   php8.5 theme-db.php news-add       — 12 временных новостей в ленте (листалка по страницам)
-//   php8.5 theme-db.php news-remove    — удалить их
 //   php8.5 theme-db.php menu-child on|off — «Возможности / Структура и тексты» в меню (подпункт меню)
 require dirname(__DIR__) . '/testlib.php';
 
@@ -22,19 +20,6 @@ switch ($cmd) {
         break;
     case 'user-remove':
         q("DELETE FROM user_users WHERE u_name LIKE 'claude-theme-%'");
-        break;
-    case 'news-add':
-        $feed = scalar("SELECT smap_id FROM share_sitemap WHERE smap_segment = 'news' AND smap_content = 'news.content.xml'");
-        for ($i = 1; $i <= 12; $i++) {
-            q("INSERT INTO apps_news (smap_id, news_is_active, news_date, news_segment) VALUES (?, 1, NOW() - INTERVAL ? DAY, ?)",
-                [$feed, 400 + $i, 'claude-theme-' . $i]);
-            $id = pdo()->lastInsertId();
-            q("INSERT INTO apps_news_translation (news_id, lang_id, news_title, news_announce_rtf, news_text_rtf)
-               SELECT ?, lang_id, ?, '', '' FROM share_languages", [$id, 'Claude theme ' . $i]);
-        }
-        break;
-    case 'news-remove':
-        q("DELETE FROM apps_news WHERE news_segment LIKE 'claude-theme-%'");
         break;
     case 'menu-child':
         q("UPDATE share_sitemap s JOIN share_sitemap p ON p.smap_id = s.smap_pid SET s.smap_in_menu = ?

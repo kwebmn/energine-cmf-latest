@@ -71,24 +71,6 @@ if [ -n "$ID" ]; then
   isok && [ "$(q "SELECT COUNT(*) FROM share_sitemap WHERE smap_id=$ID")" = 0 ] && ok "page delete" || bad "page delete"
 fi
 
-# --- news: add, view, delete
-N=$A/news-editor/single/newsRepo/
-# новости, оставшиеся от прерванных прогонов, мешают найти свою
-stale=$(q "SELECT COUNT(*) FROM apps_news WHERE news_segment='claude-test-news'")
-[ "$stale" != 0 ] && { q "DELETE FROM apps_news WHERE news_segment='claude-test-news'"; echo "note removed stale claude-test-news: $stale"; }
-post "${N}save" --data-urlencode "componentAction=add" --data-urlencode "apps_news[news_id]=" --data-urlencode "apps_news[smap_id]=3594" \
-  --data-urlencode "apps_news[news_date]=2026-09-13 17:00:00" --data-urlencode "apps_news[news_segment]=claude-test-news" \
-  --data-urlencode "apps_news[news_is_active]=1" \
-  --data-urlencode "apps_news_translation[1][news_title]=Тестовая новость" --data-urlencode "apps_news_translation[1][news_announce_rtf]=<p>анонс</p>" \
-  --data-urlencode "apps_news_translation[1][news_text_rtf]=<p>текст</p>" --data-urlencode "apps_news_translation[2][news_title]=Тест" \
-  --data-urlencode "apps_news_translation[2][news_announce_rtf]=" --data-urlencode "apps_news_translation[2][news_text_rtf]="
-NID=$(php8.5 -r '$d=json_decode(file_get_contents($argv[1]),true); echo is_array($d) && ($d["mode"] ?? "") === "insert" ? (int)$d["data"] : "";' $R)
-isok && [ -n "$NID" ] && ok "news add ($NID)" || bad "news add"
-if [ -n "$NID" ]; then
-  [ "$(curl -sS -o /dev/null -w '%{http_code}' $B/news/${NID}--claude-test-news/)" = 200 ] && ok "news view" || bad "news view"
-  post "${N}${NID}/delete/"; isok && ok "news delete" || bad "news delete"
-fi
-
 # --- translation: add, delete
 T=$A/translations/single/transEditor/
 post "${T}save" --data-urlencode "componentAction=add" --data-urlencode "share_lang_tags[ltag_id]=" --data-urlencode "share_lang_tags[ltag_name]=TXT_CLAUDE_TEST" \

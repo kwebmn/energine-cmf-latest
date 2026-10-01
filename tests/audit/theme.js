@@ -25,8 +25,7 @@ function check(label, cond, detail = '') {
     return cond;
 }
 const PAGES = [
-    ['главная', ''], ['текстовая', 'features/content/'], ['подразделы', 'features/'], ['лента новостей', 'news/'],
-    ['новость', null], ['галерея', 'media/'], ['обратная связь', 'contacts/'], ['карта сайта', 'sitemap/'],
+    ['главная', ''], ['текстовая', 'features/content/'], ['подразделы', 'features/'], ['карта сайта', 'sitemap/'],
     ['вход', 'login/'], ['регистрация', 'register/'], ['восстановление пароля', 'restore-password/'],
     ['профиль', 'profile/', 'user'], ['404', 'claude-no-such-page/', null, 404],
 ];
@@ -69,16 +68,6 @@ async function inspect(page) {
         await lp.close();
     }
     const guest = await browser.newContext({ locale: 'ru-RU' });
-    {
-        const p = await guest.newPage();
-        await p.goto(BASE + 'news/', { waitUntil: 'networkidle' });
-        const href = await p.evaluate(() => {
-            const a = [...document.querySelectorAll('a[href]')].find((x) => /\/\d+--[^/]+\/$/.test(x.getAttribute('href')));
-            return a ? a.getAttribute('href') : null;
-        });
-        PAGES.find((x) => x[0] === 'новость')[1] = href ? href.replace(/^\//, '').replace(BASE, '') : 'news/';
-        await p.close();
-    }
 
     for (const [label, url, who, status] of PAGES) {
         for (const [w, h, tag] of [[390, 844, 'телефон'], [1280, 900, 'десктоп']]) {
@@ -87,10 +76,15 @@ async function inspect(page) {
             await p.setViewportSize({ width: w, height: h });
             const errors = [];
             const foreign = new Set();
-            p.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + m.text()); });
+            // the page's own status is checked separately (the 404 page answers 404 by design): the browser's
+            // console line about that status is not an error either
+            p.on('console', (m) => {
+                if (m.type() === 'error' && !(status && m.location().url === BASE + url && m.text().includes(`status of ${status}`))) {
+                    errors.push('console: ' + m.text());
+                }
+            });
             p.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
             p.on('request', (r) => { const u = new URL(r.url()); if (/^https?:$/.test(u.protocol) && u.host !== HOST) foreign.add(u.host); });
-            // the page's own status is checked separately (the 404 page answers 404 by design)
             p.on('response', (r) => {
                 if (r.status() >= 400 && !(r.request().isNavigationRequest() && r.frame() === p.mainFrame())) errors.push(`http ${r.status()}: ${r.url()}`);
             });
@@ -107,7 +101,7 @@ async function inspect(page) {
             check(`${where}: main#content, содержимое раньше боковой колонки`, r.main && r.mainFirst, JSON.stringify(r));
             check(`${where}: один заголовок h1`, r.h1 === 1, `h1: ${r.h1}`);
             check(`${where}: ссылка «к содержимому»`, r.skip);
-            if (label === 'главная' || label === 'обратная связь') {
+            if (label === 'главная' || label === 'регистрация') {
                 // Tab: the skip link first, then the site's links; the focused element has a visible ring
                 await p.keyboard.press('Tab');
                 const first = await p.evaluate(() => document.activeElement && document.activeElement.className);
@@ -145,7 +139,7 @@ async function inspect(page) {
         await p.close();
     }
 
-    // страницы (задача 4): новость, галерея, форма обратной связи, страницы ошибок
+    // страницы (задача 4): форма регистрации, страницы ошибок
     const admin = await browser.newContext({ locale: 'ru-RU' });
     {
         const lp = await admin.newPage();
@@ -175,51 +169,9 @@ async function inspect(page) {
             return [p, errors];
         };
 
-        // новость: её название — единственный заголовок h1, картинка видна и помещается
+        // регистрация: поля видны, ловушка для ботов скрыта, подписи над полями
         let [p] = await open(guest);
-        await p.goto(BASE + PAGES.find((x) => x[0] === 'новость')[1], { waitUntil: 'networkidle' });
-        const n = await p.evaluate(() => {
-            const crumb = document.querySelector('.breadcrumbs [aria-current]');
-            const img = document.querySelector('main .feed_image img');
-            return { h1: [...document.querySelectorAll('h1')].map((x) => x.textContent.trim()), crumb: crumb && crumb.textContent.trim(),
-                img: !!img && img.complete && img.naturalWidth > 0, fits: !!img && img.getBoundingClientRect().right <= document.documentElement.clientWidth };
-        });
-        check(`новость, ${tag}: заголовок h1 — название новости`, n.h1.length === 1 && n.h1[0] === n.crumb, JSON.stringify(n));
-        check(`новость, ${tag}: картинка видна и помещается`, n.img && n.fits, JSON.stringify(n));
-        if (w > 600) {
-            // картинка для соцсетей (og:image) — существующая: адрес ресайзера отдаёт изображение
-            const og = await p.evaluate(() => [...document.querySelectorAll('meta[property="og:image"]')].map((m) => m.content));
-            const answers = [];
-            for (const u of og) {
-                const a = await p.request.get(u);
-                answers.push(`${a.status()} ${a.headers()['content-type'] || ''}`);
-            }
-            check('новость: og:image отдаётся картинкой', og.length > 0 && answers.every((x) => /^200 image\//.test(x)), JSON.stringify({ og, answers }));
-        }
-        await p.close();
-
-        // галерея: превью сеткой, каждое — ссылка на файл; кнопок карусели без скрипта нет
-        [p] = await open(guest);
-        await p.goto(BASE + 'media/', { waitUntil: 'networkidle' });
-        const g = await p.evaluate(() => {
-            const list = document.querySelector('main ul.gallery');
-            const items = list ? [...list.children] : [];
-            const imgs = items.map((li) => li.querySelector('img')).filter(Boolean);
-            return { list: !!list, display: list ? getComputedStyle(list).display : null, items: items.length,
-                sameRow: items.length > 1 && Math.abs(items[0].getBoundingClientRect().top - items[1].getBoundingClientRect().top) < 2,
-                width: imgs.length ? Math.round(imgs[0].getBoundingClientRect().width) : 0,
-                loaded: imgs.length > 0 && imgs.every((i) => i.complete && i.naturalWidth > 0),
-                links: items.length > 0 && items.every((li) => li.querySelector('a[href]')),
-                controls: document.querySelectorAll('.previous_control, .next_control').length };
-        });
-        check(`галерея, ${tag}: превью сеткой, каждое — ссылка`, g.list && g.display === 'grid' && g.items >= 2 && g.loaded && g.links, JSON.stringify(g));
-        if (w > 600) check('галерея, десктоп: несколько превью в ряд, превью не меньше 120 px', g.sameRow && g.width >= 120, JSON.stringify(g));
-        check(`галерея, ${tag}: нет кнопок карусели`, g.controls === 0, JSON.stringify(g));
-        await p.close();
-
-        // обратная связь: поля видны, ловушка для ботов скрыта, подписи над полями
-        [p] = await open(guest);
-        await p.goto(BASE + 'contacts/', { waitUntil: 'networkidle' });
+        await p.goto(BASE + 'register/', { waitUntil: 'networkidle' });
         const f = await p.evaluate(() => {
             const form = document.querySelector('main form');
             const visible = form ? [...form.querySelectorAll('input:not([type=hidden]), textarea, select')].filter((x) => x.checkVisibility()) : [];
@@ -232,14 +184,14 @@ async function inspect(page) {
             return { fields: visible.length, trap: !!trap, trapHidden: offscreen && trap.tabIndex === -1 && !!trap.closest('[aria-hidden="true"]'),
                 labelAbove: !!(label && input) && label.getBoundingClientRect().bottom <= input.getBoundingClientRect().top + 1 };
         });
-        check(`обратная связь, ${tag}: поля видны, ловушка для ботов скрыта`, f.fields >= 3 && f.trap && f.trapHidden, JSON.stringify(f));
-        check(`обратная связь, ${tag}: подписи над полями`, f.labelAbove, JSON.stringify(f));
+        check(`регистрация, ${tag}: поля видны, ловушка для ботов скрыта`, f.fields >= 3 && f.trap && f.trapHidden, JSON.stringify(f));
+        check(`регистрация, ${tag}: подписи над полями`, f.labelAbove, JSON.stringify(f));
 
         // страница ошибки сайта: форма без токена (422 — эту страницу, в отличие от 404, ISPConfig не подменяет)
         const [resp] = await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle' }), p.evaluate((b) => {
             const form = document.createElement('form');
             form.method = 'post';
-            form.action = b + 'contacts/send/';
+            form.action = b + 'register/save-new-user/';
             document.body.append(form);
             form.submit();
         }, BASE)]);
@@ -255,7 +207,7 @@ async function inspect(page) {
         // страница ErrorDocument (ошибка вне раскладки сайта): администратор открыл ссылку на удаление GET-ом
         let errors;
         [p, errors] = await open(admin);
-        const resp2 = await p.goto(BASE + 'admin/feedback-editor/single/feedbackList/999999/delete/', { waitUntil: 'networkidle' });
+        const resp2 = await p.goto(BASE + 'admin/users/single/userEditor/999999/delete/', { waitUntil: 'networkidle' });
         r = await inspect(p);
         e = await homeLink(p);
         check(`страница ErrorDocument, ${tag}: ответ 422`, resp2 && resp2.status() === 422, resp2 && resp2.status());
@@ -267,11 +219,10 @@ async function inspect(page) {
         await p.close();
     }
 
-    // исправления финального ревью темы: меню без ::details-content, подпункты меню, листалка ленты,
-    // админка внутри страниц сайта. Временные новости и подпункт меню убираются и при сбое (process exit)
-    db('news-add');
+    // исправления финального ревью темы: меню без ::details-content, подпункты меню, админка внутри
+    // страниц сайта. Подпункт меню убирается и при сбое (process exit)
     db('menu-child', 'on');
-    process.on('exit', () => { try { db('news-remove'); db('menu-child', 'off'); } catch (e) { } });
+    process.on('exit', () => { try { db('menu-child', 'off'); } catch (e) { } });
     try {
         // браузер без ::details-content (Safari до 18.4, Firefox ESR): правила с ним он отбрасывает целиком —
         // так же и здесь убираются правила с этим селектором и блоки @supports с условием о нём
@@ -319,19 +270,6 @@ async function inspect(page) {
         check('десктоп: подпункт меню виден при наведении и при фокусе с клавиатуры', present && hover && focus, JSON.stringify({ present, hover, focus }));
         await p.close();
 
-        // листалка ленты (больше 10 новостей): у ссылок «назад» и «вперёд» есть видимый текст или подпись
-        for (const [path, label] of [['news/', 'первая страница'], ['news/page-2/', 'вторая страница']]) {
-            p = await guest.newPage();
-            await p.setViewportSize({ width: 1280, height: 900 });
-            await p.goto(BASE + path, { waitUntil: 'networkidle' });
-            const g = await p.evaluate(() => {
-                const links = [...document.querySelectorAll('main .pager a, main .toolbar a')].filter((a) => /page-\d+/.test(a.getAttribute('href') || ''));
-                return links.map((a) => ({ name: (a.textContent.trim() || a.getAttribute('aria-label') || ''), width: Math.round(a.getBoundingClientRect().width) }));
-            });
-            check(`листалка ленты, ${label}: у каждой ссылки есть видимый текст и подпись`, g.length > 0 && g.every((x) => x.name !== '' && x.width > 0), JSON.stringify(g));
-            await p.close();
-        }
-
         // админка внутри страницы сайта (гриды): стили темы её не трогают
         p = await admin.newPage();
         await p.setViewportSize({ width: 1280, height: 900 });
@@ -350,7 +288,6 @@ async function inspect(page) {
         await p.screenshot({ path: path.join(SHOTS, 'админка-пользователи-1280.png'), fullPage: true });
         await p.close();
     } finally {
-        db('news-remove');
         db('menu-child', 'off');
     }
 

@@ -1,7 +1,6 @@
 <?php
-// Mail sending end-to-end on the site from env.php: registration, password restore, feedback form,
-// mail templates editor.
-// Every real message goes to the local mailbox MAILBOX (tests/local.php) only (recipients are switched before the run).
+// Mail sending end-to-end on the site from env.php: registration, password restore, mail templates editor.
+// Every real message goes to the local mailbox MAILBOX (tests/local.php) only.
 // No captcha on the site any more; HTML parts are checked for escaped visitor values (markup, quotes, &, line breaks).
 // Usage: php8.5 smoke-mail.php            (run cleanup-mail.php afterwards)
 require __DIR__ . '/testlib.php';
@@ -192,30 +191,6 @@ $m = bySubject(mboxWait($off, 1), "Зміна пароля на сайті " . s
 check('the Ukrainian request gets a Ukrainian mail with a /ua/ link', $m && preg_match('~https?://\S+/ua/restore-password/reset/[0-9a-f]{64}/~', $m['text']),
     brief(mboxRead($off)));
 q('UPDATE user_users SET u_restore_hash = NULL, u_restore_until = NULL WHERE u_name = ?', [TEST_EMAIL]);
-
-// =====================================================================================================
-echo "-- feedback form\n";
-freshJar('guest');
-$off = mboxSize();
-[$c, $html] = http('/contacts/');
-check('feedback form without captcha', $c == 200 && clean($html) && stripos($html, 'captcha') === false, $html);
-$feedback = ['apps_feedback[feed_author]' => 'Claude <b>Test</b>', 'apps_feedback[feed_email]' => TEST_EMAIL,
-    'apps_feedback[feed_theme]' => 'claude-test feedback', 'apps_feedback[feed_text]' => "Проверка <script>alert(1)</script> & \"кавычки\"\nвторая строка [feed_email]"];
-sleep(3);   // как человек: форма, отправленная сразу после показа, отклоняется (FormGuard)
-[$c, $body] = http('/contacts/send/', formIn($html, 'contacts/send', $feedback));
-$feed = q("SELECT feed_id, feed_date FROM apps_feedback WHERE feed_theme = 'claude-test feedback'")->fetch();
-check("feedback saved (HTTP $c, " . json_encode($feed) . ')', $feed && $c == 302 && abs(strtotime($feed['feed_date']) - time()) < 120, $body);
-$messages = mboxWait($off, 2);
-$user = bySubject($messages, 'Ваше сообщение получено');
-$admin = bySubject($messages, 'Сообщение с сайта: claude-test feedback');
-check('feedback confirmation to the visitor', count($messages) == 2 && $user && str_ends_with($user['to'], '<' . TEST_EMAIL . '>') && !str_contains($user['raw'], 'вторая строка'), brief($messages));
-check('feedback notification to the recipient', $admin && str_contains($admin['text'], "Имя: Claude <b>Test</b>\nE-mail: " . TEST_EMAIL) && str_contains($admin['text'], "\nвторая строка [feed_email]"), brief($messages));
-check('feedback notification: values escaped in HTML, macros in values left as they are', $admin
-    && str_contains($admin['html'], 'Имя: Claude &lt;b&gt;Test&lt;/b&gt;<br>')
-    && str_contains($admin['html'], "Проверка &lt;script&gt;alert(1)&lt;/script&gt; &amp; &quot;кавычки&quot;<br>\nвторая строка [feed_email]")
-    && !str_contains($admin['html'], '<script>') && !str_contains($admin['html'], '<b>Test</b>'), $admin['html'] ?? '');
-[$c, $body] = http('/contacts/success/');
-check('feedback success page', $c == 200 && clean($body), $body);
 
 // =====================================================================================================
 echo "-- mail templates editor\n";
