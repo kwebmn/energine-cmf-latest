@@ -34,17 +34,6 @@
     </xsl:template>
     
     <xsl:template match="component[@type='form' and @exttype='grid']">
-        <!--Если есть поля типа code  - добавляем вызовы js и css-->
-        <xsl:if test="recordset/record/field[@type='code']">
-            <link rel="stylesheet" href="scripts/codemirror/lib/codemirror.css" />
-            <script type="text/javascript" src="scripts/codemirror/lib/codemirror.js"></script>
-            <script type="text/javascript" src="scripts/codemirror/mode/xml/xml.js"></script>
-            <script  type="text/javascript" src="scripts/codemirror/mode/javascript/javascript.js"></script>
-            <script  type="text/javascript" src="scripts/codemirror/mode/css/css.js"></script>
-            <link rel="stylesheet" href="scripts/codemirror/theme/elegant.css" />
-            <script  type="text/javascript" src="scripts/codemirror/mode/htmlmixed/htmlmixed.js"></script>
-        </xsl:if>
-
         <form method="post" action="{@action}" class="e-grid-form">
             <input type="hidden" name="componentAction" value="{@componentAction}" id="componentAction"/>
             <input type="hidden" name="csrf_token" value="{$CSRF}"/>

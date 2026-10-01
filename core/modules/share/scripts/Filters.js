@@ -261,7 +261,7 @@ var Filter = new Class({
         this.condition.selectedIndex = 0;
         this.switchInputs(this.condition.get('value'), fieldType);
         this.disableInputField(isDate);
-        this.inputs.showDatePickers(isDate);
+        this.inputs.showDateInputs(isDate);
 
         if (this.inputs.inputs[0][0].getStyle('display') != 'none') {
             this.inputs.inputs[0][0].focus();
@@ -337,15 +337,13 @@ var Filter = new Class({
 Filter.QueryControls = new Class(/** @lends Filter.QueryControls# */{
     Implements: Events,
     /**
-     * Indicate, whether the date picker is used as query control.
+     * Indicate, whether the date inputs are used as query controls.
      * @type {boolean}
      */
     isDate: false,
 
     // constructor
     initialize: function (els) {
-        Asset.css('datepicker.css');
-
         /**
          * Holds the query containers.
          * @type {Elements}
@@ -355,34 +353,21 @@ Filter.QueryControls = new Class(/** @lends Filter.QueryControls# */{
         this.containers[0].removeClass('hidden');
 
         /**
-         * Holds all input fields, from which input fields for DatePicker will be created.
+         * Holds all input fields; their clones become the date inputs.
          * @type {Elements}
          */
         this.inputs = new Elements(this.containers.getElements('input'));
         /**
-         * Input elements for DatePicker.
+         * Date inputs: built-in browser fields (type="date"), the value is YYYY-MM-DD. Unlike
+         * [inputs]{@link Filter.QueryControls#inputs} (one collection per container), these are the inputs themselves.
          * @type {Elements}
          */
         this.dpsInputs = new Elements();
 
         for (var n = 0; n < this.containers.length; n++) {
-            this.dpsInputs.push(this.inputs[n][0].clone().addClass('hidden'));
+            this.dpsInputs.push(this.inputs[n][0].clone().set('type', 'date').addClass('hidden'));
             this.containers[n].grab(this.dpsInputs[n]);
         }
-
-        /**
-         * DatePickers.
-         * @type {DatePicker[]}
-         */
-        this.dps = [];
-
-        this.dpsInputs.each(function (el) {
-            this.dps.push(new DatePicker(el, {
-                format: '%Y-%m-%d',
-                allowEmpty: true,
-                useFadeInOut: false
-            }));
-        }.bind(this));
 
         this.dpsInputs.concat(this.inputs).addEvent('keydown', function (event) {
             if ((event.key == 'enter') && (event.target.value != '')) {
@@ -399,8 +384,9 @@ Filter.QueryControls = new Class(/** @lends Filter.QueryControls# */{
      * @returns {boolean}
      */
     hasValues: function () {
+        // в inputs — коллекция полей контейнера, в dpsInputs — само поле даты
         return this[(this.isDate) ? 'dpsInputs' : 'inputs'].some(function (el) {
-            return el[0].get('value');
+            return (typeOf(el) == 'element' ? el : el[0]).get('value');
         });
     },
 
@@ -467,12 +453,12 @@ Filter.QueryControls = new Class(/** @lends Filter.QueryControls# */{
         this.containers.addClass('hidden');
     },
     /**
-     * Show/hide date pickers.
+     * Show/hide date inputs.
      * @function
      * @public
-     * @param {boolean} toShow Defines whether the date pickers will be visible (by <tt>true</tt>) or hidden (by <tt>false</tt>).
+     * @param {boolean} toShow Defines whether the date inputs will be visible (by <tt>true</tt>) or hidden (by <tt>false</tt>).
      */
-    showDatePickers: function (toShow) {
+    showDateInputs: function (toShow) {
         this.isDate = toShow;
         if (toShow) {
             this.inputs.addClass('hidden');

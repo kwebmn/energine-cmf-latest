@@ -18,7 +18,7 @@ q('INSERT INTO user_users (u_name, u_password, u_fullname, u_is_active) VALUES (
     [$login, password_hash($password, PASSWORD_DEFAULT), 'Claude Profile']);
 $uid = (int)pdo()->lastInsertId();
 q('INSERT INTO user_user_groups (u_id, group_id) VALUES (?, 4)', [$uid]);
-$row = fn() => q('SELECT u_fullname, u_password, u_is_active, u_restore_hash, u_restore_until FROM user_users WHERE u_id = ?', [$uid])->fetch();
+$row = fn() => q('SELECT u_fullname, u_password, u_is_active, u_restore_hash, u_restore_until, u_bdate FROM user_users WHERE u_id = ?', [$uid])->fetch();
 
 function signIn($login, $password) {
     @unlink($GLOBALS['jar']);
@@ -73,6 +73,14 @@ $r = $row();
 check('поля, которых нет в форме, не сохраняются (активность, ссылка восстановления)', $r['u_fullname'] === 'Claude Profile 2'
     && (int)$r['u_is_active'] === 1 && $r['u_restore_hash'] === null && $r['u_restore_until'] === null,
     json_encode(array_diff_key($r, ['u_password' => 1])));
+
+echo "-- дата рождения\n";
+// поле даты — встроенное поле браузера (input type="date"): его значение приходит как ГГГГ-ММ-ДД
+$bdate = preg_match('~<input\b[^>]*\bname="user_users\[u_bdate\]"[^>]*>~', $html, $m) ? $m[0] : '';
+check('дата рождения в форме — встроенное поле даты браузера', str_contains($bdate, 'type="date"'),
+    $bdate ? 'type=' . (preg_match('~\btype="([^"]*)"~', $bdate, $t) ? $t[1] : '?') : 'поля нет');
+saveProfile($html, ['user_users[u_bdate]' => '1990-02-03'] + $noPassword);
+check('дата рождения из встроенного поля сохраняется', $row()['u_bdate'] === '1990-02-03', (string)$row()['u_bdate']);
 
 echo "-- смена пароля\n";
 $new = bin2hex(random_bytes(8));

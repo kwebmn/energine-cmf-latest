@@ -14,14 +14,13 @@
  * @requires Validator
  * @requires ModalBox
  * @requires Overlay
- * @requires datepicker
  *
  * @author Pavel Dubenko
  *
  * @version 1.0.1
  */
 
-ScriptLoader.load('EnergineEditor', 'TabPane', 'Toolbar', 'Validator', 'ModalBox', 'Overlay', 'datepicker');
+ScriptLoader.load('EnergineEditor', 'TabPane', 'Toolbar', 'Validator', 'ModalBox', 'Overlay');
 
 /**
  * Form.
@@ -59,18 +58,6 @@ var Form = new Class(/** @lends Form# */{
      * @type {Array}
      */
     textBoxes: [],
-
-    /**
-     * Array of date controls.
-     * @type {Array}
-     */
-    dateControls: [],
-
-    /**
-     * Array of code editors.
-     * @type {CodeMirror[]}
-     */
-    codeEditors: [],
 
 //    smapSelectors: [],
 
@@ -133,16 +120,6 @@ var Form = new Class(/** @lends Form# */{
             this.richEditors.push(new Form.RichEditor(textarea, this));
         }, this);
 
-        this.form.getElements('textarea.code').each(function (textarea) {
-            this.codeEditors.push(CodeMirror.fromTextArea(textarea, {
-                mode: "htmlmixed",
-                tabMode: "indent",
-                lineNumbers: true,
-                theme: 'elegant',
-                autofocus: false
-            }));
-        }, this);
-
 
         var showHideFunc = function (e) {
             e.stop();
@@ -169,13 +146,18 @@ var Form = new Class(/** @lends Form# */{
         }
 
 
-        (this.element.getElements('.inp_date') || []).append(this.element.getElements('.inp_datetime') || []).each(function (dateControl) {
-            var isNullable = !dateControl.getParent('.field').hasClass('required');
-            this.dateControls.push(
-                (dateControl.hasClass('inp_datetime') ? Energine.createDateTimePicker(dateControl, isNullable)
-                    : Energine.createDatePicker(dateControl, isNullable))
-            );
-        }, this);
+        // поля даты — встроенные поля браузера; обязательное пустое поле сразу получает сегодняшнюю дату (поле
+        // даты и времени — и текущее время), как раньше при открытии формы
+        this.element.getElements('input.inp_date, input.inp_datetime').each(function (dateControl) {
+            var field = dateControl.getParent('.field');
+            if (dateControl.get('value') === '' && field && field.hasClass('required')) {
+                var now = new Date(),
+                    pad = function (n) { return (n < 10 ? '0' : '') + n; },
+                    day = now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate());
+                dateControl.set('value', dateControl.hasClass('inp_datetime')
+                    ? day + 'T' + pad(now.getHours()) + ':' + pad(now.getMinutes()) : day);
+            }
+        });
 
         this.element.getElements('.pane').setStyles({
             'border': '1px dotted #777',
@@ -237,11 +219,6 @@ var Form = new Class(/** @lends Form# */{
                 }
             }));
             currentTab.loaded = true;
-        }
-        else {
-            this.codeEditors.each(function(ce){
-                ce.refresh();
-            });
         }
     },
 
@@ -315,9 +292,6 @@ var Form = new Class(/** @lends Form# */{
     save: function () {
         this.richEditors.each(function (editor) {
             editor.onSaveForm();
-        });
-        this.codeEditors.each(function (editor) {
-            editor.save();
         });
 
         if (!this.validator.validate()) {

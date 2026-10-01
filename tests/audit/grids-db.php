@@ -24,10 +24,14 @@ switch ($cmd) {
            VALUES (?, ?, 'claude-grid-file.png', 'claude-grid-file.png', ?, NOW(), 'image', 'image/png', 90, 68, 1)",
             [$root, FILE, PAYLOAD]);
         $upload = pdo()->lastInsertId();
-        echo json_encode(['user' => (int)$user, 'upload' => (int)$upload, 'root' => (int)$root]);
+        // запись журнала действий на сегодня — для фильтра журнала по дате
+        q("INSERT INTO share_action_log (al_date, al_classname, al_objectname, al_action, al_data) VALUES (NOW(), 'claude-grid', 'claude-grid', 'claude', '')");
+        echo json_encode(['user' => (int)$user, 'upload' => (int)$upload, 'root' => (int)$root,
+            'today' => scalar('SELECT DATE(NOW())')]);
         break;
     case 'remove':
         q('DELETE FROM user_users WHERE u_name LIKE ?', [MARK]);
+        q("DELETE FROM share_action_log WHERE al_classname = 'claude-grid'");
         q('DELETE FROM share_uploads WHERE upl_filename = ?', ['claude-grid-file.png']);
         @unlink(WEB . '/' . FILE);
         break;

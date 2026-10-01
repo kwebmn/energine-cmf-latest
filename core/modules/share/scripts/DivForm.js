@@ -94,10 +94,11 @@ var DivForm = new Class(/** @lends DivForm# */{
      * @public
      */
     clearContentXML: function () {
-        if (this.codeEditors.length) {
-            //Тут мы перполагаем что на форме только одно поле типа код... Пока что это так
-            this.codeEditors[0].setValue('');
-            this.codeEditors[0].getInputField().getParent('div.field').addClass('hidden');
+        // поле типа «код» на форме раздела одно — XML раздела
+        var code = this.form.getElement('textarea.code');
+        if (code) {
+            code.set('value', '');
+            code.getParent('div.field').addClass('hidden');
         }
     },
 
@@ -109,9 +110,6 @@ var DivForm = new Class(/** @lends DivForm# */{
     save: function () {
         this.richEditors.each(function (editor) {
             editor.onSaveForm();
-        });
-        this.codeEditors.each(function (editor) {
-            editor.save();
         });
         if (!this.validator.validate()) {
             return false;

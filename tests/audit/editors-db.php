@@ -10,6 +10,7 @@
 //   php8.5 editors-db.php tb-set ID JSON          — текстовый блок (русский) — эта разметка
 //   php8.5 editors-db.php tb-snap ID              — блок на всех языках, JSON
 //   php8.5 editors-db.php tb-restore ID JSON      — вернуть блок из tb-snap
+//   php8.5 editors-db.php mail-snap ID            — переводы шаблона письма (все языки и поля), JSON
 require dirname(__DIR__) . '/testlib.php';
 
 [, $cmd] = $argv + [null, null];
@@ -56,6 +57,9 @@ switch ($cmd) {
         foreach (json_decode($argv[3], true) as $r) {
             q('INSERT INTO share_textblocks_translation (tb_id, lang_id, tb_content) VALUES (?, ?, ?)', [(int)$argv[2], $r['lang_id'], $r['tb_content']]);
         }
+        break;
+    case 'mail-snap':
+        echo json_encode(q('SELECT * FROM mail_templates_translation WHERE template_id = ? ORDER BY lang_id', [(int)$argv[2]])->fetchAll(), JSON_UNESCAPED_UNICODE);
         break;
     default:
         fwrite(STDERR, "неизвестная команда\n");

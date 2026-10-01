@@ -119,6 +119,47 @@ const inspect = (page) => page.evaluate(() => {
             await tp.close();
         }
 
+        // журнал действий: фильтр по дате — встроенное поле даты браузера (input type="date"); за сегодня (запись
+        // теста) строки находятся, за день без записей — нет
+        {
+            const lp = await ctx.newPage();
+            const lErrors = watch(lp);
+            await lp.goto(BASE + 'admin/action-log/', { waitUntil: 'networkidle' });
+            await lp.waitForTimeout(1000);
+            const picked = await lp.evaluate(() => {
+                const sel = document.querySelector('.filters .filter .f_fields');
+                const opt = sel && [...sel.options].find((o) => ['date', 'datetime'].includes(o.getAttribute('type')));
+                if (!opt) return null;
+                sel.value = opt.value;
+                sel.dispatchEvent(new Event('change'));
+                return opt.value;
+            });
+            // панель фильтра раскрывается ссылкой только в окне грида и на узком экране, иначе она открыта
+            if (await lp.isVisible('.filter_toggle')) {
+                await lp.click('.filter_toggle');
+                await lp.waitForTimeout(800);
+            }
+            const input = lp.locator('.filters .filter .f_query_container input[type="date"]:visible').first();
+            if (check('журнал действий: фильтр по дате — встроенное поле даты', !!picked && await input.count() > 0, picked)) {
+                const rowsFor = async (day) => {
+                    await input.fill(day);
+                    const [resp] = await Promise.all([
+                        lp.waitForResponse((r) => r.url().includes('get-data'), { timeout: 15000 }),
+                        lp.click('button.f_apply'),
+                    ]);
+                    const j = await resp.json().catch(() => null);
+                    // строк нет — в ответе нет и data
+                    return j && j.result ? (Array.isArray(j.data) ? j.data.length : 0) : -1;
+                };
+                const today = await rowsFor(ids.today);
+                const empty = await rowsFor('2001-01-01');
+                check('журнал действий: фильтр по дате находит записи дня и не находит чужие', today > 0 && empty === 0,
+                    JSON.stringify({ day: ids.today, today, empty }));
+            }
+            check('журнал действий, фильтр по дате: без ошибок JS и 404', !lErrors.list().length, lErrors.list().join(' | '));
+            await lp.close();
+        }
+
         // «Настройки сайта» с панели страницы: окно с гридом единственной записи сайта
         const sp = await ctx.newPage();
         const spErrors = watch(sp);

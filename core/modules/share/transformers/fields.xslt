@@ -347,47 +347,29 @@
         </textarea>
     </xsl:template>
 
-    <!-- поле для даты (datetime) -->
+    <!-- поля даты — встроенные поля браузера; значение — из даты в базе (@date, без формата вывода):
+         у даты ГГГГ-ММ-ДД, у даты со временем ГГГГ-ММ-ДДTЧЧ:ММ -->
     <xsl:template match="field[@type='datetime'][ancestor::component[@type='form']]" mode="field_input">
+        <xsl:variable name="VALUE"><xsl:choose>
+            <xsl:when test="@date"><xsl:value-of select="@date"/></xsl:when>
+            <xsl:otherwise><xsl:value-of select="."/></xsl:otherwise>
+        </xsl:choose></xsl:variable>
         <input class="text inp_datetime">
             <xsl:call-template name="FORM_ELEMENT_ATTRIBUTES"/>
+            <xsl:attribute name="type">datetime-local</xsl:attribute>
+            <xsl:attribute name="value"><xsl:value-of select="translate(substring($VALUE, 1, 16), ' ', 'T')"/></xsl:attribute>
         </input>
-        <script type="text/javascript">
-            window.addEvent('domready', function(){
-            Energine.createDateTimePicker($('<xsl:value-of select="@name"/>'), <xsl:value-of
-                select="boolean(@nullable)"/>);
-            });
-        </script>
     </xsl:template>
 
-    <!-- поле для даты (date) -->
     <xsl:template match="field[@type='date'][ancestor::component[@type='form']]" mode="field_input">
+        <xsl:variable name="VALUE"><xsl:choose>
+            <xsl:when test="@date"><xsl:value-of select="@date"/></xsl:when>
+            <xsl:otherwise><xsl:value-of select="."/></xsl:otherwise>
+        </xsl:choose></xsl:variable>
         <input class="text inp_date">
             <xsl:call-template name="FORM_ELEMENT_ATTRIBUTES"/>
-        </input>
-        <script type="text/javascript">
-            window.addEvent('domready', function(){
-            Energine.createDatePicker(
-            $('<xsl:value-of select="@name"/>'),
-            <xsl:value-of select="boolean(@nullable)"/>
-            );
-            });
-        </script>
-    </xsl:template>
-
-    <!-- Для полей даты как части стандартной формы навешиваение DatePicker реализуется в js -->
-
-    <!-- поле для даты в гридах (datetime)  -->
-    <xsl:template match="field[@type='datetime'][ancestor::component[@type='form' and @exttype='grid']]" mode="field_input">
-        <input class="text inp_datetime">
-            <xsl:call-template name="FORM_ELEMENT_ATTRIBUTES"/>
-        </input>
-    </xsl:template>
-
-    <!-- поле для даты в гридах (date) -->
-    <xsl:template match="field[@type='date'][ancestor::component[@type='form' and @exttype='grid']]" mode="field_input">
-        <input class="text inp_date">
-            <xsl:call-template name="FORM_ELEMENT_ATTRIBUTES"/>
+            <xsl:attribute name="type">date</xsl:attribute>
+            <xsl:attribute name="value"><xsl:value-of select="substring($VALUE, 1, 10)"/></xsl:attribute>
         </input>
     </xsl:template>
 

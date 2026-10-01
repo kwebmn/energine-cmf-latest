@@ -9,7 +9,8 @@
 # Этап 6 — мультисайт: multisite (домены, привязка групп к сайтам, номер сайта у страниц, флажки сайта,
 #   редактор сайтов и доменов, список сайтов, междоменный вход)
 # Этап 7 — ядро: apps (модуль apps: новости, обратная связь, выбор раздела), gallery (галерея и вложения разделов,
-#   картинки вложений в OpenGraph), dead (мёртвый код ядра)
+#   картинки вложений в OpenGraph), editors (CodeMirror и свой календарь — поля кода и даты стали обычными),
+#   dead (мёртвый код ядра)
 # i18n — в справочнике переводов нет ни одной константы из списков удаления в sql/cut/*.sql.
 # mail-core — отправка писем живёт в ядре: класс Energine\share\gears\Mail есть,
 # а оставшийся код не ссылается на Energine\mail\gears\Mail*.
@@ -21,14 +22,14 @@ mods=("$@")
 [ ${#mods[@]} -eq 0 ] && mods=(mail-core mail calendar comments forms ads blog shop
                                 pageads branding tops vote feed tagcloud similar rss sockets htmlcap
                                 tags widgets storages watermark video flash lookup columns placehold
-                                ckeditor fileapi jsonp theme multisite apps gallery dead i18n)
+                                ckeditor fileapi jsonp theme multisite apps gallery editors dead i18n)
 
 # код: весь репозиторий, кроме истории (docs), переходного SQL (sql) и инструментов чистки
 CODE_DIRS=(core site htdocs configs setup tests)
 # сторонние библиотеки: их слова (createElement('video'), строки lang) — не следы Energine; удаляемые
 # каталоги ловит проверка FILES. Артефакты прогонов тестов (вне git) тоже не код.
 EXCLUDE=(--exclude=no-traces.sh --exclude-dir=tools
-         --exclude-dir=ckeditor --exclude-dir=codemirror --exclude-dir=FileAPI --exclude-dir=select2
+         --exclude-dir=ckeditor --exclude-dir=FileAPI --exclude-dir=select2
          --exclude-dir=jwplayer --exclude-dir=resizer --exclude-dir=jodit
          --exclude='*.out' --exclude='*cookies.txt' --exclude=smoke-write.json)
 KEPT_DIRS=(core/modules/share core/modules/user core/modules/seo site htdocs configs tests)
@@ -139,6 +140,10 @@ TABLES[apps]='^apps_'
 CODE[gallery]='AttachmentManager|AttachmentEditor|AttachmentSelector|attachmentEditor|PageMedia|media_textblock|Carousel|carousel\.css|share_sitemap_uploads|getUploadsTablename|linkExtraManagers|allAttachments|AttachedFiles|OGPrimitive|getOGObject|\.gallery|media_box|menu_image'
 FILES[gallery]='core/modules/share/gears/AttachmentManager.php core/modules/share/components/AttachmentEditor.php core/modules/share/components/PageMedia.php core/modules/share/scripts/Carousel.js core/modules/share/gears/OGPrimitive.php'
 TABLES[gallery]='^share_sitemap_uploads$'
+# этап 7: CodeMirror и свой календарь (спецификация этапа 7, §3.4) — поле кода стало textarea, даты — встроенными
+# полями браузера
+CODE[editors]='CodeMirror|codemirror|[Dd]atepicker|DatePicker|createDatePicker'
+FILES[editors]='core/modules/share/scripts/codemirror core/modules/share/scripts/datepicker.js core/modules/share/stylesheets/datepicker.css'
 PAGES[gallery]='media_textblock'
 XMLCLASS[gallery]='Energine\share\components\PageMedia"'
 

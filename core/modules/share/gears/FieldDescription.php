@@ -565,11 +565,12 @@ class FieldDescription extends Primitive implements \Iterator {
                 $this->length = true;
                 break;
             case self::FIELD_TYPE_DATETIME:
+                // встроенное поле браузера (datetime-local) присылает дату и время через T, база принимает и T,
+                // и пробел
                 if ($this->getPropertyValue('nullable') === false) {
-                    //$regexp = '/^\d{4}\-\d{1,2}\-\d{1,2} \d{1,2}:\d{1,2}:\d{1,2}$/';
-                    $regexp = '/^\d{4}\-\d{1,2}\-\d{1,2} \d{1,2}:\d{1,2}(:\d{1,2})?$/';
+                    $regexp = '/^\d{4}\-\d{1,2}\-\d{1,2}[ T]\d{1,2}:\d{1,2}(:\d{1,2})?$/';
                 } else {
-                    $regexp = '/^(\d{4}\-\d{1,2}\-\d{1,2} \d{1,2}:\d{1,2}(:\d{1,2})?)?$/';
+                    $regexp = '/^(\d{4}\-\d{1,2}\-\d{1,2}[ T]\d{1,2}:\d{1,2}(:\d{1,2})?)?$/';
                 }
                 $this->setProperty('sort', 1);
                 $this->setProperty('pattern', $regexp);

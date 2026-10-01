@@ -11,7 +11,6 @@
  * @requires Toolbar
  * @requires Overlay
  * @requires ModalBox
- * @requires datepicker
  * @requires Filters
  *
  * @author Pavel Dubenko
@@ -23,7 +22,7 @@
 
 // todo: Strange to use scrolling and changing pages to see more data fields.
 
-ScriptLoader.load('TabPane', 'PageList', 'Toolbar', 'Overlay', 'ModalBox', 'datepicker', 'Filters');
+ScriptLoader.load('TabPane', 'PageList', 'Toolbar', 'Overlay', 'ModalBox', 'Filters');
 
 /**
  * From MooTools it implements: Events, Options.

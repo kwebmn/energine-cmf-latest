@@ -289,16 +289,6 @@ div.with_append.focus_block input[type='button'] {
     line-height: 30px;
     padding-left: 6px;
 }
-.datepicker .time input,
-.datepicker .time input:hover,
-.datepicker .time input:focus {
-    border: 0;
-    padding: 0;
-    box-shadow: 0 0 0 0;
-    -webkit-box-shadow: 0 0 0 0;
-    transition: none;
-    -webkit-transition: none;
-}
 /*custom */
 .user_users.e-pane-item .field.file_upload {
     width: 200px; 

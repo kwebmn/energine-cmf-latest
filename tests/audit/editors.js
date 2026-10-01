@@ -402,7 +402,33 @@ const showTabOf = (page, selector) => page.evaluate((sel) => {
         }
     }
 
-    // 11. an upload that did not happen is reported as text with its reason, and the form forgets the file:
+    // 11. the code field of a mail template is a plain monospace textarea (no code editor): it is visible on its
+    //     tab, and the form saved without edits keeps the template exactly as it was
+    {
+        const p = await ctx.newPage();
+        const errors = watch(p);
+        const was = db('mail-snap', '1');
+        await p.goto(BASE + 'admin/mail-templates/single/mailTemplateEditor/1/edit/', { waitUntil: 'networkidle' });
+        const code = '#template_body_rtf_1';
+        await showTabOf(p, code);
+        // редактор кода прятал бы само поле и показывал свою разметку: видимое textarea — значит, его нет
+        const f = await p.evaluate((sel) => {
+            const t = document.querySelector(sel);
+            return { tag: t && t.tagName, cls: t && t.className, visible: !!t && t.checkVisibility(),
+                font: t && getComputedStyle(t).fontFamily };
+        }, code);
+        check('шаблон письма: поле кода — обычное видимое textarea моноширинным шрифтом',
+            f.tag === 'TEXTAREA' && /\bcode\b/.test(f.cls) && f.visible && /mono/i.test(f.font), JSON.stringify(f));
+        const [resp] = await Promise.all([
+            p.waitForResponse((r) => /\/save\/?(\?|$)/.test(r.url()) && r.request().method() === 'POST', { timeout: 15000 }),
+            p.click('li.save_btn'),
+        ]);
+        check('шаблон письма сохранён без правки — как был', resp.ok() && db('mail-snap', '1') === was);
+        check('шаблон письма: без ошибок JS и 404', !errors.length, errors.join(' | '));
+        await p.close();
+    }
+
+    // 12. an upload that did not happen is reported as text with its reason, and the form forgets the file:
     //     a file over the server limit, an answer that is not JSON (a proxy's 413 page), a failure after a success
     {
         const p = await ctx.newPage();

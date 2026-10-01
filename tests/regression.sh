@@ -19,6 +19,7 @@ echo "### csrf"; php8.5 smoke-csrf.php
 echo "### smoke-profile"; php8.5 smoke-profile.php
 echo "### session-id"; php8.5 session-id.php
 echo "### site-address"; php8.5 site-address.php
+echo "### field-dates"; php8.5 field-dates.php
 echo "### site-settings"; php8.5 site-settings.php
 echo "### rights"; php8.5 smoke-rights.php
 echo "### menu"; php8.5 menu.php

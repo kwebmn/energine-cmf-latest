@@ -38,8 +38,7 @@ form .field.max .icon_min_max {
     background: url(../images/desc.gif) -5px -2px no-repeat;
 }
 form .field.min .richEditor,
-form .field.min textarea,
-form .field.min div.CodeMirror-scroll{
+form .field.min textarea{
     height: 30px;
 }
 
@@ -75,6 +74,14 @@ form input.checkbox {
 form textarea {
 	/*width: 650px;*/
 	height: 200px;
+}
+/* поле кода (тело шаблона письма, XML раздела, данные журнала) — обычное textarea моноширинным шрифтом */
+form textarea.code,
+.e-pane-content textarea.code {
+	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+	font-size: 13px;
+	min-height: 240px;
+	tab-size: 4;
 }
 
 form .half {

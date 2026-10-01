@@ -386,16 +386,6 @@ div.grid .query {
     font-family: 'Roboto', sans-serif;
 }
 
-.f_datepicker {
-    /*vertical-align:middle;*/
-    margin-left: -23px;
-    padding-right: 5px;
-    position: relative;
-    top: 3px;
-    /*font-family: Tahoma, sans-serif;*/
-    font-family: 'Roboto', sans-serif;
-}
-
 .grid_breadcrumbs {
     /*     margin: 10px 0; */
     /*      margin: 31px 0;  */
