@@ -42,7 +42,8 @@ foreach ($configs as $file) {
     if (!defined('ROOT_DIR')) define('ROOT_DIR', $root);
     $secrets[] = readConfig($file)['database']['password'] ?? '';
 }
-if (is_file($local = $root . '/tests/local.php')) {
+// учётные данные тестов — как в tests/env.php: стенд (tests/tools/stand.sh) задаёт свои
+if (is_file($local = getenv('ENERGINE_LOCAL') ?: $root . '/tests/local.php')) {
     $secrets[] = readConfig($local)['admin_password'] ?? '';
 }
 $secrets = array_values(array_filter($secrets, fn($s) => strlen((string)$s) >= 6));
