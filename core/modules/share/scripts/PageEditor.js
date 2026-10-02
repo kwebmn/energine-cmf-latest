@@ -17,7 +17,7 @@
  * @version 1.0.0
  */
 
-ScriptLoader.load('EnergineEditor', 'ModalBox', 'Overlay');
+ScriptLoader.load('MooCompat', 'EnergineEditor', 'ModalBox', 'Overlay');
 
 /**
  * Правка текстовых блоков прямо на странице: каждый элемент .nrgnEditor —

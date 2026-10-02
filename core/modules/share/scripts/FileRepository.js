@@ -11,7 +11,7 @@
  *
  */
 
-ScriptLoader.load('GridManager');
+ScriptLoader.load('MooCompat', 'GridManager');
 
 /**
  * File cookie name.

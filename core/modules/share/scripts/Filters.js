@@ -14,6 +14,8 @@
  * @constructor
  * @param {GridManager} gridManager
  */
+ScriptLoader.load('MooCompat');
+
 var FiltersFabric = new Class({
         initialize: function (templateEl) {
             this.parentContainer = templateEl.getParent('.filters');

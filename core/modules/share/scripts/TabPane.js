@@ -15,6 +15,8 @@
  * @constructor
  * @param {Object} [options] Set of events. This class listens 'tabChange'-event.
  */
+ScriptLoader.load('MooCompat');
+
 var TabPane = new Class(/** @lends TabPane# */{
     Implements: [Options, Events],
 

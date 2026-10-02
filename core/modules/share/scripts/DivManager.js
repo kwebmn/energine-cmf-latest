@@ -16,7 +16,7 @@
 
 // TODO: DivManager class is very similar to the TreeView class! I think, one of them must be merged to another and remove the overloaded functionality. - wait for tests
 
-ScriptLoader.load('TabPane', 'Toolbar', 'ModalBox', 'TreeView');
+ScriptLoader.load('MooCompat', 'TabPane', 'Toolbar', 'ModalBox', 'TreeView');
 
 /**
  * DivManager.

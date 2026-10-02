@@ -8,7 +8,7 @@
  * @requires ModalBox
  */
 
-ScriptLoader.load('jodit/jodit.min', 'ModalBox');
+ScriptLoader.load('MooCompat', 'jodit/jodit.min', 'ModalBox');
 
 var EnergineEditor = {
     /**

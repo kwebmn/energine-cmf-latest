@@ -33,6 +33,8 @@
  * @constructor
  * @param {string} toolbarName The name of the toolbar.
  */
+ScriptLoader.load('MooCompat');
+
 var Toolbar = new Class(/** @lends Toolbar# */{
     /**
      * Object to which the toolbar is bounded.

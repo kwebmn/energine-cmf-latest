@@ -15,6 +15,8 @@
  * @constructor
  * @param {Object} [options] Set of events. [Options]{@link PageList#options}.
  */
+ScriptLoader.load('MooCompat');
+
 var PageList = new Class(/** @lends PageList# */{
     Implements: [Options, Events],
 

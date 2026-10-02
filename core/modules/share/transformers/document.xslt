@@ -122,7 +122,7 @@
         <script type="text/javascript" src="{/document/javascript/@mootools}"></script>
         <script type="text/javascript" src="{$STATIC_URL}scripts/Energine.js"></script>
         <script type="text/javascript">
-            Object.append(Energine, {
+            Object.assign(Energine, {
             <xsl:if test="document/@debug=1">'debug' :true,</xsl:if>
             'base' : '<xsl:value-of select="$BASE"/>',
             'static' : '<xsl:value-of select="$STATIC_URL"/>',
@@ -142,7 +142,7 @@
             <xsl:if test="count($COMPONENTS[recordset]/javascript/behavior[(@name!='PageEditor')]) &gt; 0">
                 var <xsl:for-each select="$COMPONENTS[recordset]/javascript[behavior[(@name!='PageEditor')]]"><xsl:for-each select="behavior"><xsl:value-of select="generate-id(../../recordset)"/><xsl:if test="position() != last()">,</xsl:if></xsl:for-each><xsl:if test="position() != last()">,</xsl:if></xsl:for-each>;
             </xsl:if>
-            window.addEvent('domready', function () {
+            document.addEventListener('DOMContentLoaded', function () {
                 <xsl:if test="$COMPONENTS[@componentAction='showPageToolbar']">
                     try {
                     <xsl:variable name="PAGE_TOOLBAR" select="$COMPONENTS[@componentAction='showPageToolbar']"></xsl:variable>

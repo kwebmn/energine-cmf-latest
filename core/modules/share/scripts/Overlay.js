@@ -16,6 +16,8 @@
  * @param {Element} parentElement
  * @param {Object} [options] [Options]{@link Overlay#options}.
  */
+ScriptLoader.load('MooCompat');
+
 var Overlay = new Class(/** @lends Overlay# */{
     Implements: [Options, Events],
 

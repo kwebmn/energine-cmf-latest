@@ -16,6 +16,8 @@
  * @param {Element|string} form Form element.
  * @param {TabPane} tabPane Tab panels.
  */
+ScriptLoader.load('MooCompat');
+
 var Validator = new Class(/** @lends Validator# */{
     // constructor
     initialize: function (form, tabPane) {

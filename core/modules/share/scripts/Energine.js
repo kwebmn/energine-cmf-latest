@@ -3,48 +3,19 @@
  * <ul>
  *     <li>[Energine]{@link Energine}</li>
  *     <li>[ScriptLoader]{@link ScriptLoader}</li>
- *     <li>[ScrollBarWidth]{@link ScrollBarWidth}</li>
  * </ul>
- *
- * @requires GridManager
+ * Чистый JavaScript, без MooTools: файл нужен и публичным страницам, где MooTools нет.
  *
  * @author Pavel Dubenko
  * @author Valerii Zinchenko
  *
- * @version 1.1.1
+ * @version 1.2.0
  */
 
 /**
- * Загружает указанные скрипты из директории scripts.
+ * Объявление зависимостей скрипта: setup scriptMap читает первый вызов в файле и пишет карту system.jsmap.php,
+ * по ней документ подключает скрипты в нужном порядке. В браузере вызов ничего не делает.
  */
-/**
- * Array.from у MooTools 1.5 не понимает итерируемые объекты — Set, Map, итераторы заворачивает в массив
- * из одного элемента — и не принимает функцию-отображение. Современные библиотеки (Jodit) рассчитывают
- * на стандартное поведение: для них оно такое, для остальных вызовов (код на MooTools) — прежнее.
- */
-(function () {
-    var mooFrom = Array.from;
-    Array.from = function (item, mapFn, thisArg) {
-        var result, i, it, step;
-        if (item != null && typeof item !== 'string' && typeof item.length !== 'number'
-            && typeof item[Symbol.iterator] === 'function') {
-            result = [];
-            for (it = item[Symbol.iterator](), step = it.next(); !step.done; step = it.next()) {
-                result.push(step.value);
-            }
-        } else if (typeof mapFn === 'function' && item != null && typeof item !== 'function'
-            && typeof item.length === 'number') {
-            result = [];
-            for (i = 0; i < item.length; i++) {
-                result.push(item[i]);
-            }
-        } else {
-            result = mooFrom(item);
-        }
-        return (typeof mapFn === 'function') ? result.map(mapFn, thisArg) : result;
-    };
-})();
-
 var ScriptLoader = {
     load: function () {
     }
@@ -60,8 +31,6 @@ var Energine = /** @lends Energine */{
      */
     debug: false,
 
-    //todo: Append to all URLs ending 'URL'
-    //---------
     /**
      * Base URL.
      * @type {string}
@@ -91,13 +60,24 @@ var Energine = /** @lends Energine */{
      * @type {string}
      */
     root: '',
-    //---------
 
     /**
      * Language ID.
      * @type {string}
      */
     lang: '',
+
+    /**
+     * Токен против подделки запросов; задаёт страница (document.xslt).
+     * @type {string}
+     */
+    csrf: '',
+
+    /**
+     * Окно админки (режим single).
+     * @type {boolean}
+     */
+    singleMode: false,
 
     /**
      * Translations.
@@ -119,7 +99,7 @@ var Energine = /** @lends Energine */{
             Energine.translations[constant] = translation;
         },
         'extend': function (obj) {
-            Object.append(Energine.translations, obj);
+            Object.assign(Energine.translations, obj);
         }
     },
 
@@ -136,12 +116,53 @@ var Energine = /** @lends Energine */{
     supportContentEdit: true,
 
     /**
+     * Запрос к серверу с теми же заголовками, что у прежнего запроса JSON на MooTools: X-Requested-With,
+     * X-Request: JSON (по нему сервер отвечает JSON), Accept, у POST — тип тела, и токен X-CSRF-Token.
+     *
+     * @function
+     * @static
+     * @param {string} uri URI
+     * @param {string|null} [body] Строка запроса.
+     * @param {string} [method = 'post'] 'get' или 'post'.
+     * @returns {Promise<{status: number, text: string, json: (Object|null)}>} сетевая ошибка — status 0
+     */
+    send: function (uri, body, method) {
+        method = (method || 'post').toUpperCase();
+        body = (body === null || body === undefined) ? '' : String(body);
+        var headers = {'X-Requested-With': 'XMLHttpRequest', 'X-Request': 'JSON', 'Accept': 'application/json'};
+        if (Energine.csrf) {
+            headers['X-CSRF-Token'] = Energine.csrf;
+        }
+        var init = {method: method, headers: headers, credentials: 'same-origin'};
+        if (method === 'GET') {
+            if (body) {
+                uri += ((uri.indexOf('?') === -1) ? '?' : '&') + body;
+            }
+        } else {
+            headers['Content-Type'] = 'application/x-www-form-urlencoded; charset=utf-8';
+            init.body = body;
+        }
+        return fetch(uri, init).then(function (response) {
+            return response.text().then(function (text) {
+                var json = null;
+                try {
+                    json = JSON.parse(text);
+                } catch (e) {
+                }
+                return {status: response.status, text: text, json: json};
+            });
+        }, function () {
+            return {status: 0, text: '', json: null};
+        });
+    },
+
+    /**
      * Send the request.
      *
      * @function
      * @static
      * @param {string} uri URI
-     * @param {string} data Request.
+     * @param {string|null} data Request.
      * @param {function} onSuccess Callback function that will be called by successful response.
      * @param {function} [onUserError] Callback function that will be called by user error.
      * @param {function} [onServerError] Callback function that will be called by server error.
@@ -150,14 +171,13 @@ var Energine = /** @lends Energine */{
     request: function (uri, data, onSuccess, onUserError, onServerError, method) {
         onServerError = onServerError || function (responseText) {
         };
-        method = method || 'post';
 
         // ошибки из ответа сервера: текст для администратора
         var showErrors = function (response) {
             var msg = (typeof response.title != 'undefined')
                 ? response.title
                 : 'Произошла ошибка:\n';
-            (response.errors || []).each(function (error) {
+            (response.errors || []).forEach(function (error) {
                 if (typeof error.field != 'undefined') {
                     msg += error.field + " :\t";
                 }
@@ -175,43 +195,27 @@ var Energine = /** @lends Energine */{
             }
         };
 
-        new Request.JSON({
-            'url': uri + ((Energine.forceJSON) ? '?json' : ''),
-            'method': method,
-            'data': data,
-            // 'noCache': true,
-            'evalResponse': false,
-            'onComplete': function (response, responseText) {
-                // ответ с кодом ошибки разбирает onFailure
-                if (this.status >= 400) {
-                    return;
-                }
-                if (!response) {
-                    onServerError(responseText);
-                    return;
-                }
-
-                if (response.result) {
-                    onSuccess(response);
-                } else {
-                    showErrors(response);
-                }
-            },
-            'onFailure': function (xhr) {
+        Energine.send(uri + ((Energine.forceJSON) ? '?json' : ''), data, method).then(function (r) {
+            if (r.status >= 400 || r.status === 0) {
                 // отказ с объяснением в JSON (например, устаревшая форма — код 422) показывается как ошибка формы
-                var response = null;
-                try {
-                    response = JSON.parse(xhr.responseText);
-                } catch (e) {
-                }
-                if (response && response.errors) {
-                    showErrors(response);
+                if (r.json && r.json.errors) {
+                    showErrors(r.json);
                 } else {
-                    onServerError(xhr.responseText);
-                    console.error(arguments);
+                    onServerError(r.text);
+                    console.error('Energine.request: HTTP ' + r.status + ' ' + uri);
                 }
+                return;
             }
-        }).send();
+            if (!r.json) {
+                onServerError(r.text);
+                return;
+            }
+            if (r.json.result) {
+                onSuccess(r.json);
+            } else {
+                showErrors(r.json);
+            }
+        });
     },
 
     /**
@@ -228,8 +232,8 @@ var Energine = /** @lends Energine */{
      *
      * @example
      * Energine.resizer = 'http://www.site.ua/resizer/';
-     * Energine.resize($$('img')[0], 'images/img01.png', 100, 50);
-     * $$('img')[0].getProperty('src') == 'http://www.site.ua/resizer/w100-h50/images/img01.png'
+     * Energine.resize(document.querySelector('img'), 'images/img01.png', 100, 50);
+     * document.querySelector('img').getAttribute('src') == 'http://www.site.ua/resizer/w100-h50/images/img01.png'
      */
     resize: function (img, src, w, h, r) {
         if (r === undefined)
@@ -247,26 +251,16 @@ var Energine = /** @lends Energine */{
 Energine.request.request = Energine.request;
 
 /**
- * Токен против подделки запросов (Csrf на сервере): каждый запрос MooTools несёт его в заголовке.
- * Energine.csrf задаёт страница (document.xslt).
- */
-(function () {
-    var send = Request.prototype.send;
-    Request.prototype.send = function () {
-        if (Energine.csrf) {
-            this.setHeader('X-CSRF-Token', Energine.csrf);
-        }
-        return send.apply(this, arguments);
-    };
-})();
-
-/**
  * Скрытое поле токена для форм, которые создаёт JS (формы из XSLT получают его в шаблоне).
  *
- * @returns {Element}
+ * @returns {HTMLInputElement}
  */
 Energine.csrfInput = function () {
-    return new Element('input', {'type': 'hidden', 'name': 'csrf_token', 'value': Energine.csrf || ''});
+    var input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'csrf_token';
+    input.value = Energine.csrf || '';
+    return input;
 };
 
 /**
@@ -282,20 +276,17 @@ Energine.placeholder = function (width, height) {
         + "'%3E%3Crect width='100%25' height='100%25' fill='%23e5e5e5'/%3E%3C/svg%3E";
 };
 
-$(window).addEvent('domready', function () {
-    if (Energine.debug)
-        document.getElements('img').each(function (el) {
-            el.onerror = function (e) {
-                var image= $(e.target);
-                var matches;
-                if (
-                    (matches = /\/resizer\/w(\d*)-h(\d*)/.exec(image.getProperty('src')))
-                &&
-                    (matches.length >2)
-                ) {
-                     image.setProperty('src', Energine.placeholder(matches[1], matches[2]));
-                }
-            };
+// в режиме отладки картинка ресайзера, которой нет, заменяется серой заглушкой того же размера
+document.addEventListener('DOMContentLoaded', function () {
+    if (!Energine.debug) {
+        return;
+    }
+    document.querySelectorAll('img').forEach(function (image) {
+        image.addEventListener('error', function () {
+            var matches = /\/resizer\/w(\d*)-h(\d*)/.exec(image.getAttribute('src') || '');
+            if (matches) {
+                image.setAttribute('src', Energine.placeholder(matches[1], matches[2]));
+            }
         });
+    });
 });
-

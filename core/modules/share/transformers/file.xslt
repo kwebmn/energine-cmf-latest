@@ -53,8 +53,10 @@
     </xsl:template>
     
     <xsl:template match="toolbar[parent::component[@class='ImageManager']]">
+        <!-- панель привязывается к гриду, которого нет до запуска поведений страницы (document.xslt): оба запуска
+             ждут DOMContentLoaded, и этот, объявленный ниже в документе, идёт вторым -->
         <script type="text/javascript">
-            window.addEvent('domready', function(){
+            document.addEventListener('DOMContentLoaded', function(){
                 componentToolbars['<xsl:value-of select="generate-id(../recordset)"/>'] = new Toolbar('<xsl:value-of select="@name"/>');
                 <xsl:apply-templates/>
                 if(<xsl:value-of select="generate-id(../recordset)"/>)<xsl:value-of select="generate-id(../recordset)"/>.attachToolbar(componentToolbars['<xsl:value-of select="generate-id(../recordset)"/>']);

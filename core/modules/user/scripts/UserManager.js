@@ -11,7 +11,7 @@
  * @version 1.0.0
  */
 
-ScriptLoader.load('GridManager');
+ScriptLoader.load('MooCompat', 'GridManager');
 
 /**
  * User manager.

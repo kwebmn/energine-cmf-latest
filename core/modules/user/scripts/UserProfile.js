@@ -12,7 +12,7 @@
  * @version 1.0.0
  */
 
-ScriptLoader.load('ValidForm');
+ScriptLoader.load('MooCompat', 'ValidForm');
 
 /**
  * User profile.

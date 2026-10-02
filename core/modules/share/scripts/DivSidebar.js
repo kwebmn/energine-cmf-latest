@@ -11,7 +11,7 @@
  * @version 1.0.0
  */
 
-ScriptLoader.load('DivManager');
+ScriptLoader.load('MooCompat', 'DivManager');
 
 // todo: Bad constructor! It is almost equal to the parent constructor except of few lines. By construct it seams, that this class must be the parent, not the child.
 /**

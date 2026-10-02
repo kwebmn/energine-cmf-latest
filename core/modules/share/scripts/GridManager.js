@@ -22,7 +22,7 @@
 
 // todo: Strange to use scrolling and changing pages to see more data fields.
 
-ScriptLoader.load('TabPane', 'PageList', 'Toolbar', 'Overlay', 'ModalBox', 'Filters');
+ScriptLoader.load('MooCompat', 'TabPane', 'PageList', 'Toolbar', 'Overlay', 'ModalBox', 'Filters');
 
 /**
  * From MooTools it implements: Events, Options.

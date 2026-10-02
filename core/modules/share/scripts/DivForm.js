@@ -12,7 +12,7 @@
  * @version 1.0.0
  */
 
-ScriptLoader.load('Form', 'ModalBox');
+ScriptLoader.load('MooCompat', 'Form', 'ModalBox');
 
 /**
  * DivForm.

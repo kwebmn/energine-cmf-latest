@@ -1,4 +1,4 @@
-ScriptLoader.load('GridManager');
+ScriptLoader.load('MooCompat', 'GridManager');
 var ActionLogManager = new Class({
     Extends: GridManager,
     clear: function () {

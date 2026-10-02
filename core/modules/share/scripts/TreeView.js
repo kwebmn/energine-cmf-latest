@@ -20,6 +20,8 @@
  * @param {Element|string} element The main tree element.
  * @param {Object} [options] Tree options.
  */
+ScriptLoader.load('MooCompat');
+
 var TreeView = new Class(/** @lends TreeView# */{
     Implements: [Options, Events],
 

@@ -20,7 +20,7 @@
  * @version 1.0.1
  */
 
-ScriptLoader.load('EnergineEditor', 'TabPane', 'Toolbar', 'Validator', 'ModalBox', 'Overlay');
+ScriptLoader.load('MooCompat', 'EnergineEditor', 'TabPane', 'Toolbar', 'Validator', 'ModalBox', 'Overlay');
 
 /**
  * Form.

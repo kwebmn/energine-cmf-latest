@@ -12,7 +12,7 @@
  * @version 1.0.0
  */
 
-ScriptLoader.load('Toolbar', 'ModalBox');
+ScriptLoader.load('MooCompat', 'Toolbar', 'ModalBox');
 
 /**
  * PageToolbar
