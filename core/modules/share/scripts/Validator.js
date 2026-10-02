@@ -84,10 +84,12 @@ var Validator = class Validator {
             return true;
         }
         this.showError(field, message);
-        // после первой ошибки поле проверяется при уходе с него, а ввод убирает ошибку
+        // после первой ошибки поле проверяется при уходе с него, а ввод убирает ошибку — и с клавиатуры, и вставкой
+        // или автозаполнением (они клавиш не нажимают, и без этого кнопка уезжала бы из-под щелчка)
         if (!field.getAttribute('check')) {
             field.addEventListener('blur', () => this.validateElement(field));
             field.addEventListener('keydown', () => this.removeError(field));
+            field.addEventListener('input', () => this.removeError(field));
             field.setAttribute('check', 'check');
         }
         return false;
