@@ -26,6 +26,9 @@ switch ($cmd) {
         $upload = pdo()->lastInsertId();
         // запись журнала действий на сегодня — для фильтра журнала по дате
         q("INSERT INTO share_action_log (al_date, al_classname, al_objectname, al_action, al_data) VALUES (NOW(), 'claude-grid', 'claude-grid', 'claude', '')");
+        // пользователь с «+» в логине — для фильтра грида: значение фильтра должно дойти до сервера как есть
+        q('INSERT INTO user_users (u_name, u_password, u_fullname, u_is_active) VALUES (?, ?, ?, 1)',
+            ['claude-grid-a+b@example.org', password_hash(bin2hex(random_bytes(8)), PASSWORD_DEFAULT), 'Claude Grid Plus']);
         echo json_encode(['user' => (int)$user, 'upload' => (int)$upload, 'root' => (int)$root,
             'today' => scalar('SELECT DATE(NOW())')]);
         break;

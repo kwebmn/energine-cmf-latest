@@ -92,7 +92,7 @@ const inspect = (page) => page.evaluate(() => {
             // a stand-in for the tree: the node only binds its listeners
             const tree = { nodeToggleListener() {}, nodeSelectListener() {}, options: { dblClick() {} } };
             const node = new TreeView.Node({ id: 'claude', name: payload, data: { segment: 'claude', icon: '' } }, tree);
-            const a = node.element.getElement('a');
+            const a = node.element.querySelector('a');
             const created = { text: a.textContent, img: !!a.querySelector('img') };
             node.setName(payload);
             return { created, renamed: { text: a.textContent, img: !!a.querySelector('img') }, ran: window.claudeXss || 0 };
@@ -327,6 +327,142 @@ const inspect = (page) => page.evaluate(() => {
             }
             check('журнал действий, фильтр по дате: без ошибок JS и 404', !lErrors.list().length, lErrors.list().join(' | '));
             await lp.close();
+        }
+
+        // фильтр грида (Filters) в окне грида пользователей: панель закрыта и открывается ссылкой, второй щелчок её
+        // закрывает; «+» добавляет фильтр с «и/или», «−» его убирает; значение с «+» доходит до сервера как есть;
+        // «Сбросить» возвращает все строки
+        {
+            const fp = await ctx.newPage();
+            const fErrors = watch(fp);
+            const bodies = [];
+            fp.on('request', (r) => { if (r.url().includes('/get-data/')) bodies.push(r.postData() || ''); });
+            await fp.goto(BASE + 'admin/users/single/userEditor/', { waitUntil: 'networkidle' });
+            const panel = () => fp.evaluate(() => {
+                const inner = document.querySelector('.filters_block_inner');
+                return { toggled: inner.classList.contains('toggled'), height: Math.round(inner.getBoundingClientRect().height) };
+            });
+            const closed = await panel();
+            await fp.click('.filter_toggle');
+            await fp.waitForTimeout(900);
+            const opened = await panel();
+            check('фильтр грида: в окне грида панель закрыта и открывается ссылкой',
+                closed.toggled && closed.height === 0 && !opened.toggled && opened.height > 0, JSON.stringify({ closed, opened }));
+            const filters = () => fp.evaluate(() => [...document.querySelectorAll('.filters .filter')].map((f) => ({
+                operand: f.querySelector('.filters_operand').offsetParent !== null,
+                removable: !f.querySelector('.remove_filter').disabled,
+            })));
+            await fp.click('button.add_filter');
+            const two = await filters();
+            await fp.evaluate(() => [...document.querySelectorAll('.filters .filter')].pop().querySelector('.remove_filter').click());
+            const one = await filters();
+            check('фильтр грида: «+» добавляет фильтр с «и/или», у обоих включается «−», «−» убирает второй',
+                two.length === 2 && !two[0].operand && two[1].operand && two.every((f) => f.removable)
+                && one.length === 1 && !one[0].operand && !one[0].removable, JSON.stringify({ two, one }));
+            const rows = () => fp.evaluate(() => [...document.querySelectorAll('tbody tr')].filter((tr) => tr.querySelector('td'))
+                .map((tr) => tr.textContent));
+            const all = (await rows()).length;
+            await fp.fill('.filters .filter .f_query_container input.query', 'grid-a+b');
+            await Promise.all([fp.waitForResponse((r) => r.url().includes('/get-data/')), fp.click('button.f_apply')]);
+            await fp.waitForTimeout(500);
+            const found = await rows();
+            check('фильтр грида: значение с «+» доходит до сервера как есть — найден свой пользователь',
+                found.length === 1 && found[0].includes('claude-grid-a+b@example.org'),
+                JSON.stringify({ found, body: bodies[bodies.length - 1] }));
+            await Promise.all([fp.waitForResponse((r) => r.url().includes('/get-data/')), fp.click('a.f_reset')]);
+            await fp.waitForTimeout(500);
+            const back = (await rows()).length;
+            check('фильтр грида: «Сбросить» возвращает все строки', back === all && all > 1, JSON.stringify({ all, back }));
+            await fp.click('.filter_toggle');
+            await fp.waitForTimeout(900);
+            const again = await panel();
+            check('фильтр грида: второй щелчок по ссылке закрывает панель', again.toggled && again.height === 0, JSON.stringify(again));
+            check('фильтр грида: без ошибок JS и 404', !fErrors.list().length, fErrors.list().join(' | '));
+            await fp.close();
+        }
+
+        // дерево разделов (TreeView) в структуре: щелчок по названию выбирает раздел и включает «Редактировать»,
+        // щелчок по значку слева от свёрнутой папки раскрывает её, второй — сворачивает
+        {
+            const dp = await ctx.newPage();
+            const dErrors = watch(dp);
+            await dp.goto(BASE + 'admin/structure/', { waitUntil: 'networkidle' });
+            await dp.waitForSelector('#divTree li a', { timeout: 10000 }).catch(() => null);
+            const target = await dp.evaluate(() => {
+                const li = [...document.querySelectorAll('#divTree li.folder')]
+                    .find((el) => !el.classList.contains('opened') && !el.classList.contains('selected'));
+                if (!li) return null;
+                li.setAttribute('data-test-node', '1');
+                const r = li.getBoundingClientRect();
+                return { x: r.left + 4, y: r.top + 8 };
+            });
+            const nodeState = () => dp.evaluate(() => {
+                const li = document.querySelector('[data-test-node]');
+                const edit = document.querySelector('ul.toolbar li.edit_btn');
+                return { selected: li.classList.contains('selected'), opened: li.classList.contains('opened'),
+                    hidden: li.querySelector(':scope > ul').classList.contains('hidden'),
+                    selectedCount: document.querySelectorAll('#divTree li.selected').length,
+                    edit: !!edit && !edit.classList.contains('disabled') };
+            });
+            let s1 = null, s2 = null, s3 = null;
+            if (target) {
+                await dp.click('[data-test-node] > a');
+                s1 = await nodeState();
+                await dp.mouse.click(target.x, target.y);
+                s2 = await nodeState();
+                await dp.mouse.click(target.x, target.y);
+                s3 = await nodeState();
+            }
+            check('дерево: щелчок по названию выбирает раздел (выбран один) и включает «Редактировать»',
+                !!s1 && s1.selected && s1.selectedCount === 1 && s1.edit && s1.hidden, JSON.stringify(s1));
+            check('дерево: щелчок по значку слева от папки раскрывает её, второй — сворачивает',
+                !!s2 && s2.opened && !s2.hidden && !!s3 && !s3.opened && s3.hidden, JSON.stringify({ s2, s3 }));
+            check('дерево: без ошибок JS и 404', !dErrors.list().length, dErrors.list().join(' | '));
+            await dp.close();
+        }
+
+        // узлы дерева (TreeView.Node) на своём дереве: классы folder и last; «вверх» и «вниз»; путь к узлу раскрывается;
+        // удалённый узел уходит из списка дерева (не находится по id), остальные находятся
+        {
+            const np = await ctx.newPage();
+            const nErrors = watch(np);
+            await np.goto(BASE + 'admin/structure/', { waitUntil: 'networkidle' });
+            const r = await np.evaluate(() => {
+                const ul = document.createElement('ul');
+                document.body.appendChild(ul);
+                const tree = new TreeView(ul, {});
+                const make = (id) => new TreeView.Node({ id, name: 'N' + id, data: { segment: 'n' + id, icon: '' } }, tree);
+                const [root, a, b, c, d] = [0, 1, 2, 3, 4].map(make);
+                tree.adopt(root);
+                root.adopt(a);
+                root.adopt(b);
+                root.adopt(c);
+                c.adopt(d);
+                tree.setupCssClasses();
+                const names = () => [...root.childs.children].map((li) => li.querySelector('a').textContent).join(',');
+                const result = { order0: names(), cFolder: c.element.classList.contains('folder'),
+                    cLast: c.element.classList.contains('last'), aLast: a.element.classList.contains('last') };
+                c.moveUp();
+                result.order1 = names();
+                a.moveDown();
+                result.order2 = names();
+                tree.expandToNode(4);
+                result.opened = root.opened && c.opened && !c.childs.classList.contains('hidden');
+                result.parents = d.getParent() === c && d.getParents().length === 2;
+                b.remove();
+                result.order3 = names();
+                result.removedFound = !!tree.getNodeById(2);
+                result.othersFound = [0, 1, 3, 4].every((id) => !!tree.getNodeById(id));
+                ul.remove();
+                return result;
+            });
+            check('узлы дерева: классы folder и last, «вверх» и «вниз»', r.order0 === 'N1,N2,N3' && r.cFolder && r.cLast && !r.aLast
+                && r.order1 === 'N1,N3,N2' && r.order2 === 'N3,N1,N2', JSON.stringify(r));
+            check('узлы дерева: путь к узлу раскрывается, родители узла', r.opened && r.parents, JSON.stringify(r));
+            check('узлы дерева: удалённый узел уходит из списка дерева, остальные находятся',
+                r.order3 === 'N3,N1' && !r.removedFound && r.othersFound, JSON.stringify(r));
+            check('узлы дерева: без ошибок JS', !nErrors.list().length, nErrors.list().join(' | '));
+            await np.close();
         }
 
         // панель страницы (PageToolbar) у администратора на главной: верхняя рамка с панелью, страница — в основной
