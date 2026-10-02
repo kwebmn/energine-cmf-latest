@@ -1,515 +1,391 @@
 /**
+ * @file Contain the description of the next classes:
  * <ul>
  *     <li>[Filters]{@link Filters}</li>
+ *     <li>[Filter]{@link Filter}</li>
  *     <li>[Filter.QueryControls]{@link Filter.QueryControls}</li>
+ *     <li>[Filter.Clause]{@link Filter.Clause}</li>
+ *     <li>[Filter.ClauseSet]{@link Filter.ClauseSet}</li>
  * </ul>
+ * Чистый JavaScript, без MooTools.
  */
 
+/**
+ * Образец фильтра: разметка первого фильтра (.filter) копируется для каждого нового.
+ *
+ * @constructor
+ * @param {Element} templateEl
+ */
+var FiltersFabric = class FiltersFabric {
+    constructor(templateEl) {
+        this.parentContainer = templateEl.parentElement.closest('.filters');
+        this.template = templateEl.cloneNode(true);
+        templateEl.remove();
+    }
+
+    create() {
+        const element = this.template.cloneNode(true);
+        this.parentContainer.appendChild(element);
+        return new Filter(element);
+    }
+};
 
 /**
- * Filter tool.
- *
- * @throws Element for GridManager.Filter was not found.
+ * Панель фильтров грида: один или несколько фильтров «поле — условие — значение», объединённых «и/или».
  *
  * @constructor
  * @param {GridManager} gridManager
  */
-ScriptLoader.load('MooCompat');
+var Filters = class Filters {
+    constructor(gridManager) {
+        this.filters = [];
+        this.active = false;
+        this.fabric = null;
+        this.gridManager = gridManager;
+        this.element = gridManager.element.querySelector('.filters_block');
+        if (!this.element) {
+            return;
+        }
+        this.fabric = new FiltersFabric(this.element.querySelector('.filter'));
+        this.add();
+        const inner = this.element.querySelector('.filters_block_inner');
+        // ссылка открывает и закрывает панель фильтров
+        this.element.querySelector('.filter_toggle').addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            if (inner.classList.contains('toggled')) {
+                inner.style.height = '';
+                inner.classList.remove('toggled');
+            } else {
+                inner.style.height = '0px';
+                inner.classList.add('toggled');
+            }
+        });
+        this.element.querySelector('.add_filter').addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            this.add();
+            Filters.resized();
+        });
+        this.element.querySelector('.f_apply').addEventListener('click', () => {
+            if (this.use()) {
+                this.gridManager.reload();
+            }
+        });
+        this.element.querySelector('.f_reset').addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            if (this.reset()) {
+                this.gridManager.reload();
+            }
+        });
+    }
 
-var FiltersFabric = new Class({
-        initialize: function (templateEl) {
-            this.parentContainer = templateEl.getParent('.filters');
+    // размер панели изменился: гриды подгоняют свой (они слушают resize окна)
+    static resized() {
+        window.dispatchEvent(new Event('resize'));
+    }
 
-            this.template = templateEl.clone();
-            templateEl.destroy();
-        },
-        create: function () {
-            var result = this.template.clone();
-            this.parentContainer.grab(result, 'bottom');
-            return new Filter(result);
+    add() {
+        const filter = this.fabric.create();
+        filter.onApply = () => {
+            if (this.use()) {
+                this.gridManager.reload();
+            }
+        };
+        filter.onDelete = (f) => this.remove(f);
+        this.filters.push(filter);
+        if (this.filters.length == 1) {
+            filter.element.querySelector('.operand_container').style.display = 'none';
+            filter.element.querySelector('.remove_filter').disabled = true;
+        } else {
+            const operand = filter.element.querySelector('.filters_operand');
+            if (getComputedStyle(operand).display === 'none') {
+                operand.style.display = 'block';
+            }
+            this.element.querySelectorAll('.remove_filter').forEach((button) => {
+                button.disabled = false;
+            });
         }
     }
-);
 
-var Filters = new Class(/** @lends Filter# */{
-    Implements: Events,
-    /**
-     * Filter object.
-     * @type {Filter[]}
-     */
-    filters: [],
-
-
-    /**
-     * Indicates whether the filter is active or not.
-     * @type {boolean}
-     */
-    active: false,
-    /**
-     * @type {FiltersFabric}
-     */
-    fabric: null,
-    gridManager: null,
-
-    // constructor
-    initialize: function (gridManager) {
-        this.gridManager = gridManager;
-        /**
-         * Filter element of the GridManager.
-         * @type {Element}
-         */
-        this.element = this.gridManager.element.getElement('.filters_block');
-
-        if (this.element) {
-            this.fabric = new FiltersFabric(this.element.getElement('.filter'));
-            this.add();
-
-            var addFilter = this.element.getElement('.add_filter'),
-                applyButton = this.element.getElement('.f_apply'),
-                resetLink = this.element.getElement('.f_reset'),
-                inner = this.element.getElement('.filters_block_inner');
-
-            this.element.getElement('.filter_toggle').addEvent('click', function (e) {
-                e.stop();
-
-                if (inner.hasClass('toggled')) {
-                    inner.tween('height').removeClass('toggled');
-                }
-                else {
-                    inner.tween('height', '0').addClass('toggled');
-                }
-
-
-            }.bind(this));
-            addFilter.addEvent('click', function (e) {
-                e.stop();
-                this.add();
-                window.fireEvent('resize');
-
-            }.bind(this));
-            applyButton.addEvent('click', function () {
-                if (this.use()) this.gridManager.reload();
-            }.bind(this));
-
-            resetLink.addEvent('click', function (e) {
-                e.stop();
-                if (this.reset()) this.gridManager.reload();
-
-                //window.fireEvent('resize');
-            }.bind(this));
+    remove(filter) {
+        if (!filter) {
+            return;
         }
-    },
-    add: function () {
-        var f = this.fabric.create();
-        f.addEvent('apply', function () {
-            if (this.use()) this.gridManager.reload();
-        }.bind(this));
-        this.filters.push(f);
-        f.addEvent('delete', this.remove.bind(this));
+        Filters.resized();
+        filter.onDelete = null;
+        const index = this.filters.indexOf(filter);
+        if (index !== -1) {
+            this.filters.splice(index, 1);
+        }
+        filter.reset();
         if (this.filters.length == 1) {
-            f.element.getElement('.operand_container').hide();
-            f.element.getElement('.remove_filter').setProperty('disabled', 'disabled');
+            this.filters[0].element.querySelector('.operand_container').style.display = 'none';
+            this.filters[0].element.querySelector('.remove_filter').disabled = true;
         }
-        else {
-            f.element.getElement('.filters_operand').show();
-            this.element.getElements('.remove_filter').removeProperty('disabled');
+    }
 
+    // все фильтры убираются, остаётся один пустой; false — сбрасывать нечего
+    reset() {
+        if (!this.active && this.filters.length <= 1) {
+            return false;
         }
-    },
-    remove: function (f) {
-        if (f) {
-            window.fireEvent('resize');
-            f.removeEvents('delete');
-            this.filters.erase(f);
-            f.reset();
-            if (this.filters.length == 1) {
-                this.filters[0].element.getElement('.operand_container').hide();
-                this.filters[0].element.getElement('.remove_filter').setProperty('disabled', 'disabled');
-            }
+        while (this.filters.length) {
+            this.filters[0].reset();
         }
+        this.element.classList.remove('active');
+        this.add();
+        this.active = false;
+        return true;
+    }
 
-    },
-    /**
-     * Reset the whole [filter element]{@link Filter#element}.
-     * @function
-     * @public
-     */
-    reset: function () {
-        if (this.active || (this.filters.length > 1)) {
-            var i = 0;
-            do {
-                this.filters[i].reset();
-            } while (this.filters.length);
-
-            this.element.removeClass('active');
-            this.add();
-
-            return !(this.active = false)
-        }
-        return false;
-    },
-
-    /**
-     * Mark the filter element as used or not.
-     *
-     * @function
-     * @public
-     * @returns {boolean}
-     */
-    use: function () {
+    use() {
         if (!this.isEmpty()) {
-            this.element.addClass('active');
+            this.element.classList.add('active');
             this.active = true;
         } else {
             this.reset();
         }
-
         return this.active;
-    },
-
-    /**
-     * Get filter string.
-     *
-     * @function
-     * @public
-     * @returns {string}
-     */
-    getValue: function () {
-        var result = '', fs;
-        if (this.active && !this.isEmpty()) {
-            fs = new Filter.ClauseSet();
-            this.filters.each(function (filter) {
-                fs.add(filter.getValue());
-            })
-            result = 'filter=' + JSON.encode(fs) + '&';
-        }
-        return result;
-    },
-    isEmpty: function () {
-        return this.filters.some(function (filter) {
-            return filter.isEmpty();
-        }, this);
     }
-});
-var Filter = new Class({
-    Implements: Events,
 
-    element: null,
-    /**
-     * Query controls for the filter.
-     * @type {Filter.QueryControls}
-     */
-    inputs: null,
-    /**
-     * Column names for filter.
-     * @type {Elements}
-     */
-    fields: null,
-
-    /**
-     * Filter condition.
-     * @type {Elements}
-     */
-    condition: null,
-    operator: null,
-    initialize: function (element) {
-        this.element = $(element);
-        this.inputs = new Filter.QueryControls(this.element.getElements('.f_query_container'));
-        this.removeBtn = this.element.getElement('.remove_filter');
-
-        this.removeBtn.addEvent('click', function () {
-            this.reset();
-        }.bind(this));
-        this.inputs.addEvent('apply', function (e) {
-            this.fireEvent('apply');
-        }.bind(this));
-        this.condition = this.element.getElement('.f_condition');
-        this.conditionOptions = [];
-
-        this.condition.getChildren().each(function (el) {
-            var types;
-            this.conditionOptions.push(el);
-            if (types = el.getProperty('data-types')) {
-                el.store('type', types.split('|'));
-                el.removeProperty('data-types');
-            }
-        }, this);
-
-        this.fields = this.element.getElement('.f_fields');
-        this.fields.addEvent('change', this.checkCondition.bind(this));
-        this.condition.addEvent('change', function (event) {
-            this.switchInputs($(event.target).get('value'), this.fields.getSelected()[0].getAttribute('type'));
-        }.bind(this));
-        this.checkCondition();
-        this.operator = this.element.getElement('.filters_operand');
-    },
-    /**
-     * Check the filter's condition option.
-     */
-    checkCondition: function () {
-        var fieldType = this.fields.getSelected()[0].getAttribute('type'),
-            isDate = (fieldType == 'datetime' || fieldType == 'date');
-        this.conditionOptions.each(function (el) {
-            var types;
-            if (types = el.retrieve('type')) {
-                if (types.contains(fieldType)) {
-                    this.condition.grab(el);
-                }
-                else {
-                    el.dispose();
-                }
-            }
-        }, this);
-        this.condition.selectedIndex = 0;
-        this.switchInputs(this.condition.get('value'), fieldType);
-        this.disableInputField(isDate);
-        this.inputs.showDateInputs(isDate);
-
-        if (this.inputs.inputs[0][0].getStyle('display') != 'none') {
-            this.inputs.inputs[0][0].focus();
+    // строка запроса для грида; JSON кодируется — «+», «&» и «%» в значении доходят до сервера как есть
+    getValue() {
+        if (!this.active || this.isEmpty()) {
+            return '';
         }
-    },
-    /**
-     * Shows inputs depending on fields' types and filter's condition
-     * @param {string} condition Filter condition name
-     * @param {string} type Filter field type
-     * @function
-     * @public
-     */
-    switchInputs: function (condition, type) {
-        if (type == 'boolean') {
-            this.inputs.hide();
-        }
-        else {
-            if (condition == 'between') {
-                this.inputs.asPeriod();
-            } else {
-                this.inputs.asScalar();
-            }
-        }
-    },
-    /**
-     * Disable input fields.
-     *
-     * @param {boolean} disable Disable input fields?
-     */
-    disableInputField: function (disable) {
-        if (disable) {
-            this.inputs.inputs.each(function (input) {
-                input[0].setProperty('disabled', true);
-                input[0].value = '';
-            });
-        } else if (this.inputs.inputs[0][0].get('disabled')) {
-            this.inputs.inputs.each(function (input) {
-                input[0].removeProperty('disabled');
-            });
-        }
-    },
-    isEmpty: function () {
-        return !((this.fields.getSelected()[0].getAttribute('type') == 'boolean') || this.inputs.hasValues());
-
-        return !this.inputs.hasValues();
-    },
-    reset: function () {
-        this.inputs.removeEvents('click');
-        this.fields.removeEvents('change');
-        this.condition.removeEvents('change');
-        this.removeBtn.removeEvents('click');
-        this.element.destroy();
-        this.fireEvent('delete', this);
-    },
-    getValue: function () {
-        return this.inputs.getValues(
-            new Filter.Clause(
-                this.fields.options[this.fields.selectedIndex].value,
-                this.condition.options[this.condition.selectedIndex].value,
-                this.fields.options[this.fields.selectedIndex].getAttribute('type'),
-                (this.operator.offsetParent) ? this.operator.options[this.operator.selectedIndex].value : null
-            )
-        );
+        const set = new Filter.ClauseSet();
+        this.filters.forEach((filter) => set.add(filter.getValue()));
+        return 'filter=' + encodeURIComponent(JSON.stringify(set)) + '&';
     }
-});
+
+    // пуст ли хоть один фильтр
+    isEmpty() {
+        return this.filters.some((filter) => filter.isEmpty());
+    }
+};
+
 /**
- * Query controls.
+ * Фильтр: поле, условие, значение (одно, период или дата); «−» убирает фильтр.
  *
  * @constructor
- * @param {Elements} els Elements with input fields.
- * @param {Element} applyAction Apply button.
+ * @param {Element} element
  */
-Filter.QueryControls = new Class(/** @lends Filter.QueryControls# */{
-    Implements: Events,
-    /**
-     * Indicate, whether the date inputs are used as query controls.
-     * @type {boolean}
-     */
-    isDate: false,
-
-    // constructor
-    initialize: function (els) {
-        /**
-         * Holds the query containers.
-         * @type {Elements}
-         */
-        this.containers = els;
-        //TODO: Remove the style hidden of the first container from the CSS or HTML!
-        this.containers[0].removeClass('hidden');
-
-        /**
-         * Holds all input fields; their clones become the date inputs.
-         * @type {Elements}
-         */
-        this.inputs = new Elements(this.containers.getElements('input'));
-        /**
-         * Date inputs: built-in browser fields (type="date"), the value is YYYY-MM-DD. Unlike
-         * [inputs]{@link Filter.QueryControls#inputs} (one collection per container), these are the inputs themselves.
-         * @type {Elements}
-         */
-        this.dpsInputs = new Elements();
-
-        for (var n = 0; n < this.containers.length; n++) {
-            this.dpsInputs.push(this.inputs[n][0].clone().set('type', 'date').addClass('hidden'));
-            this.containers[n].grab(this.dpsInputs[n]);
-        }
-
-        this.dpsInputs.concat(this.inputs).addEvent('keydown', function (event) {
-            if ((event.key == 'enter') && (event.target.value != '')) {
-                this.fireEvent('apply');
+var Filter = class Filter {
+    constructor(element) {
+        this.element = element;
+        // обратные вызовы панели фильтров
+        this.onApply = null;
+        this.onDelete = null;
+        this.inputs = new Filter.QueryControls(element.querySelectorAll('.f_query_container'), () => {
+            if (this.onApply) {
+                this.onApply();
             }
-        }.bind(this));
-    },
-
-    /**
-     * Return true if one of the [inputs]{@link Filter.QueryControls#dpsInputs} has a value, otherwise - false.
-     *
-     * @function
-     * @public
-     * @returns {boolean}
-     */
-    hasValues: function () {
-        // в inputs — коллекция полей контейнера, в dpsInputs — само поле даты
-        return this[(this.isDate) ? 'dpsInputs' : 'inputs'].some(function (el) {
-            return (typeOf(el) == 'element' ? el : el[0]).get('value');
         });
-    },
-
-    /**
-     * Clear the [input fields]{@link Filter.QueryControls#dpsInputs}.
-     * @function
-     * @public
-     */
-    empty: function () {
-        this.dpsInputs.concat(this.inputs).each(function (el) {
-            el.set('value', '')
+        this.removeBtn = element.querySelector('.remove_filter');
+        this.removeBtn.addEventListener('click', () => this.reset());
+        this.condition = element.querySelector('.f_condition');
+        // у условия — типы полей, для которых оно есть (data-types); без них условие есть для всех
+        this.conditionOptions = [...this.condition.children];
+        this.conditionTypes = new Map();
+        this.conditionOptions.forEach((option) => {
+            const types = option.getAttribute('data-types');
+            if (types) {
+                this.conditionTypes.set(option, types.split('|'));
+                option.removeAttribute('data-types');
+            }
         });
-    },
+        this.fields = element.querySelector('.f_fields');
+        this.fields.addEventListener('change', () => this.checkCondition());
+        this.condition.addEventListener('change', (event) => this.switchInputs(event.target.value, this.fieldType()));
+        this.checkCondition();
+        this.operator = element.querySelector('.filters_operand');
+    }
 
-    /**
-     * Build the filter's pattern string.
-     *
-     * @function
-     * @public
-     * @param {string} fieldName The field name from the recordset.
-     * @returns {string}
-     */
-    getValues: function (clause) {
-        this[(this.isDate) ? 'dpsInputs' : 'inputs'].each(function (el) {
-            clause.setValue(el.get('value').toString());
+    fieldType() {
+        const option = this.fields.options[this.fields.selectedIndex];
+        return option ? option.getAttribute('type') : null;
+    }
+
+    // условия — для типа выбранного поля; поля значения — для условия; для дат — поля даты
+    checkCondition() {
+        const fieldType = this.fieldType();
+        const isDate = (fieldType == 'datetime' || fieldType == 'date');
+        this.conditionOptions.forEach((option) => {
+            const types = this.conditionTypes.get(option);
+            if (types) {
+                if (types.includes(fieldType)) {
+                    this.condition.appendChild(option);
+                } else {
+                    option.remove();
+                }
+            }
         });
-        return clause;
-    },
-
-    /**
-     * Enable additional input fields for using the <tt>'between'</tt> filter condition.
-     * @function
-     * @public
-     */
-    asPeriod: function () {
-        this.show();
-        this.dpsInputs.concat(this.inputs).addClass('small');
-    },
-
-    /**
-     * Enable only one input field for filter.
-     * @function
-     * @public
-     */
-    asScalar: function () {
-        this.show();
-        this.containers[1].addClass('hidden');
-        this.dpsInputs.concat(this.inputs).removeClass('small');
-    },
-    /**
-     * Show all inputs
-     * @function
-     * @public
-     */
-    show: function () {
-        this.containers.removeClass('hidden');
-    },
-    /**
-     * hide inputs
-     * @function
-     * @public
-     */
-    hide: function () {
-        this.containers.addClass('hidden');
-    },
-    /**
-     * Show/hide date inputs.
-     * @function
-     * @public
-     * @param {boolean} toShow Defines whether the date inputs will be visible (by <tt>true</tt>) or hidden (by <tt>false</tt>).
-     */
-    showDateInputs: function (toShow) {
-        this.isDate = toShow;
-        if (toShow) {
-            this.inputs.addClass('hidden');
-            this.dpsInputs.removeClass('hidden');
-        } else {
-            this.inputs.removeClass('hidden');
-            this.dpsInputs.addClass('hidden');
+        this.condition.selectedIndex = 0;
+        this.switchInputs(this.condition.value, fieldType);
+        this.disableInputField(isDate);
+        this.inputs.showDateInputs(isDate);
+        const first = this.inputs.inputs[0];
+        if (getComputedStyle(first).display !== 'none') {
+            first.focus();
         }
     }
-});
-Filter.Clause = new Class({
-    value: '',
-    initialize: function (fieldName, condition, type, operator) {
+
+    // логическое поле — без значения; «между» — два поля; иначе одно
+    switchInputs(condition, type) {
+        if (type == 'boolean') {
+            this.inputs.hide();
+        } else if (condition == 'between') {
+            this.inputs.asPeriod();
+        } else {
+            this.inputs.asScalar();
+        }
+    }
+
+    // для дат текстовые поля выключены и пусты (значение — в полях даты)
+    disableInputField(disable) {
+        if (disable) {
+            this.inputs.inputs.forEach((input) => {
+                input.disabled = true;
+                input.value = '';
+            });
+        } else if (this.inputs.inputs[0].disabled) {
+            this.inputs.inputs.forEach((input) => {
+                input.disabled = false;
+            });
+        }
+    }
+
+    isEmpty() {
+        return !(this.fieldType() == 'boolean' || this.inputs.hasValues());
+    }
+
+    // фильтр уходит со страницы и из панели
+    reset() {
+        this.element.remove();
+        if (this.onDelete) {
+            this.onDelete(this);
+        }
+    }
+
+    getValue() {
+        const field = this.fields.options[this.fields.selectedIndex];
+        return this.inputs.getValues(new Filter.Clause(
+            field.value,
+            this.condition.options[this.condition.selectedIndex].value,
+            field.getAttribute('type'),
+            this.operator.offsetParent ? this.operator.options[this.operator.selectedIndex].value : null
+        ));
+    }
+};
+
+/**
+ * Поля значения фильтра: по контейнеру на значение (второй — для периода), в каждом — текстовое поле и поле даты.
+ *
+ * @constructor
+ * @param {NodeList} containers .f_query_container
+ * @param {function} onApply Enter в непустом поле.
+ */
+Filter.QueryControls = class FilterQueryControls {
+    constructor(containers, onApply) {
+        this.containers = [...containers];
+        this.isDate = false;
+        this.containers[0].classList.remove('hidden');
+        this.inputs = this.containers.map((container) => container.querySelector('input'));
+        this.dpsInputs = this.inputs.map((input, n) => {
+            const date = input.cloneNode(true);
+            date.type = 'date';
+            date.classList.add('hidden');
+            this.containers[n].appendChild(date);
+            return date;
+        });
+        this.all().forEach((input) => input.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' && event.target.value !== '') {
+                onApply();
+            }
+        }));
+    }
+
+    all() {
+        return [...this.dpsInputs, ...this.inputs];
+    }
+
+    hasValues() {
+        return (this.isDate ? this.dpsInputs : this.inputs).some((input) => input.value);
+    }
+
+    getValues(clause) {
+        (this.isDate ? this.dpsInputs : this.inputs).forEach((input) => clause.setValue(String(input.value)));
+        return clause;
+    }
+
+    asPeriod() {
+        this.show();
+        this.all().forEach((input) => input.classList.add('small'));
+    }
+
+    asScalar() {
+        this.show();
+        this.containers[1].classList.add('hidden');
+        this.all().forEach((input) => input.classList.remove('small'));
+    }
+
+    show() {
+        this.containers.forEach((container) => container.classList.remove('hidden'));
+    }
+
+    hide() {
+        this.containers.forEach((container) => container.classList.add('hidden'));
+    }
+
+    showDateInputs(toShow) {
+        this.isDate = toShow;
+        this.inputs.forEach((input) => input.classList.toggle('hidden', toShow));
+        this.dpsInputs.forEach((input) => input.classList.toggle('hidden', !toShow));
+    }
+};
+
+/**
+ * Условие фильтра для сервера: поле, условие, тип поля, «и/или» с предыдущим, значение (у периода — два).
+ *
+ * @constructor
+ */
+Filter.Clause = class FilterClause {
+    constructor(fieldName, condition, type, operator) {
         this.field = fieldName;
         this.condition = condition;
         this.type = type;
-        this.operator = ('undefined' != typeof operator) ? operator : '';
-    },
-    setValue: function (value) {
-        if (value) {
-            if (this.type == 'phone'){
-                value = value.replace(/\D/g,'');
-            }
+        this.operator = (typeof operator !== 'undefined') ? operator : '';
+    }
 
-            if (this.value) {
-                (this.value = [this.value]).push(value);
+    setValue(value) {
+        if (value) {
+            if (this.type == 'phone') {
+                value = value.replace(/\D/g, '');
             }
-            else {
+            if (this.value) {
+                this.value = [this.value, value];
+            } else {
                 this.value = value;
             }
         }
         return this;
     }
-});
-Filter.Clause.create = function (fieldName, tableName, condition, type, operator) {
-    return new Filter.Clause('[' + tableName + '][' + fieldName + ']', condition, type, operator);
 };
 
-Filter.ClauseSet = new Class({
-    children: [],
-    initialize: function () {
-        if (arguments.length) {
-            Array.each(arguments, function (arg) {
-                this.add(arg);
-            }, this);
-        }
+/**
+ * Набор условий фильтра (JSON для сервера: {"children": [...]}).
+ *
+ * @constructor
+ */
+Filter.ClauseSet = class FilterClauseSet {
+    constructor(...clauses) {
+        this.children = [];
+        clauses.forEach((clause) => this.add(clause));
+    }
 
-    },
-    add: function (clause) {
+    add(clause) {
         this.children.push(clause);
     }
-});
+};
