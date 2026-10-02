@@ -209,7 +209,7 @@ SMTP-сервер, в конфиг площадки добавляется бл�
 
 ```sh
 bash $R/tests/setup-linker.sh      # linker не трогает модули в core/modules
-bash $R/tests/no-traces.sh         # в коде и базе нет следов вырезанного на этапах 1–7
+bash $R/tests/no-traces.sh         # нет следов вырезанного (этапы 1–7) и MooTools в переписанных скриптах (этап 8)
 bash $R/tests/regression.sh        # все сценарные наборы и журнал ошибок PHP
 bash $R/tests/tools/install-check.sh   # установщик на временном экземпляре MariaDB
 bash $R/tests/tools/fresh-check.sh     # установка с нуля и демо == база площадки

@@ -11,6 +11,13 @@
 единственную запись сайта. Меню сайта строится по флагу страницы «Показывать в меню». Визуальный редактор — Jodit
 (MIT), загрузка файлов — `fetch`. Почта уходит через `mail()` или через SMTP (свой клиент).
 
+Этап 8 — переход с MooTools 1.5.2 на чистый JavaScript, файл за файлом, без изменений на сервере
+(`docs/superpowers/specs/2026-10-02-energine-simple-stage8-public-without-mootools-design.md`). Шаг 1 сделан:
+публичные страницы — без MooTools, общий `Energine.js` и формы сайта (`Validator`, вход, регистрация, профиль) —
+на чистом JavaScript с прежним интерфейсом. Скрипты админки пока на MooTools: каждый объявляет первой зависимостью
+`MooCompat` (заплатки к MooTools), и документ подключает MooTools только страницам с такими скриптами; следующие шаги
+переписывают админку и снимают объявления. Адрес каждого скрипта несёт версию (`?v=` — время изменения файла).
+
 Что вырезано:
 - этапы 1–6: модули shop, blog, comments, calendar, forms, ads и рассылки; теги, виджеты и редактор блоков,
   нелокальные хранилища, водяные знаки, видео и Flash, Lookup и select2, CKEditor и FileAPI; мультисайт;
@@ -46,7 +53,8 @@
 - страницы ошибок — в каркасе темы, с понятным текстом и ссылкой на главную.
 
 - Спецификации: `docs/superpowers/specs/2026-09-26-energine-simple-design.md` (этапы 1–6),
-  `docs/superpowers/specs/2026-10-01-energine-simple-stage7-core-design.md` (этап 7)
+  `docs/superpowers/specs/2026-10-01-energine-simple-stage7-core-design.md` (этап 7),
+  `docs/superpowers/specs/2026-10-02-energine-simple-stage8-public-without-mootools-design.md` (этап 8, шаг 1)
 - Установка: `docs/INSTALL.md`
 - Тесты: `tests/README.md`
 
