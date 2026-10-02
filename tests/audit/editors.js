@@ -994,6 +994,18 @@ const showTabOf = (page, selector) => page.evaluate((sel) => {
         db('form-remove');
     }
 
+    // 25. the folders for moving a file (FileRepository::getDirs) — a JSON list with the repositories, also without
+    //     any folder (here: the editors test makes none)
+    {
+        const p = await ctx.newPage();
+        await p.goto(BASE + 'admin/users/single/adminPanel/file-library/', { waitUntil: 'networkidle' });
+        const r = await p.evaluate(() => Energine.send(
+            document.querySelector('[single_template]').getAttribute('single_template') + '/getDirs/', 'languageID=1'));
+        check('папки для переноса: getDirs отвечает списком хранилищ', r.status === 200 && !!r.json && Array.isArray(r.json.data)
+            && r.json.data.some((d) => d.upl_internal_type === 'repo'), JSON.stringify({ status: r.status, text: (r.text || '').slice(0, 200) }));
+        await p.close();
+    }
+
     await browser.close();
     console.log(`== editors failures: ${fail}`);
     process.exit(fail ? 1 : 0);

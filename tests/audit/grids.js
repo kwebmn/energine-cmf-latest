@@ -1076,6 +1076,204 @@ const inspect = (page) => page.evaluate(() => {
             check('«Очистить» журнал: без ошибок JS и 404', !errors.list().length, errors.list().join(' | '));
             await p.close();
         }
+
+        // ===== stage 8, step 7: the structure (DivManager, DivTree, getDirsTree) without MooTools =====
+        // the tree manager of a page or a window (a global variable named by the component)
+        const manager = (target) => target.evaluate(() => {
+            for (const key of Object.keys(window)) {
+                try {
+                    const v = window[key];
+                    if (v && v.tree && typeof v.loadTree === 'function') {
+                        return key;
+                    }
+                } catch (e) {
+                }
+            }
+            return null;
+        });
+        // the link of a node; its folders are opened first, as a person would do
+        const nodeAnchor = (target, key, id) => target.evaluateHandle(([k, nodeId]) => {
+            window[k].tree.expandToNode(nodeId);
+            return window[k].tree.getNodeById(nodeId).element.querySelector('a');
+        }, [key, id]);
+
+        // 1. the structure page: the tree is built, the current page selected; a page enables every button, the root
+        //    only its own; «Вниз»/«Вверх» move the node (answered here — the order stays); «Править» refreshes the node
+        //    name (get-node-data, answered here); a double click opens the page
+        {
+            const p = await ctx.newPage();
+            const errors = watch(p);
+            const moves = [];
+            await p.route(/\/\d+\/(up|down)$/, (route) => {
+                const url = route.request().url();
+                moves.push(url);
+                route.fulfill({ status: 200, contentType: 'application/json',
+                    body: JSON.stringify({ result: true, dir: url.endsWith('/up') ? '<' : '>' }) });
+            });
+            await p.goto(BASE + 'admin/structure/', { waitUntil: 'networkidle' });
+            await p.waitForSelector('#divTree li', { timeout: 10000 });
+            await p.waitForTimeout(500);
+            const key = await manager(p);
+            const info = () => p.evaluate((k) => {
+                const m = window[k], sel = m.tree.getSelectedNode();
+                const on = (id) => {
+                    const c = m.toolbar.getControlById(id);
+                    return c ? !c.disabled() : null;
+                };
+                return {
+                    selected: sel ? { id: String(sel.getId()), segment: sel.getData().smap_segment } : null,
+                    buttons: { add: on('add'), edit: on('edit'), del: on('delete'), up: on('up'), down: on('down') },
+                };
+            }, key);
+            const start = await info();
+            check('структура: дерево построено, выбран текущий раздел', !!key && !!start.selected && /(^|\/)structure\/?$/.test(start.selected.segment),
+                JSON.stringify(start));
+            const pick = await p.evaluate((k) => {
+                const m = window[k];
+                const root = m.tree.nodes.find((n) => !n.getData().smap_pid);
+                const kids = m.tree.nodes.filter((n) => n.getData().smap_pid == root.getId());
+                const x = kids.find((n, i) => i < kids.length - 1 && n.getData().smap_segment);
+                return { root: String(root.getId()), x: String(x.getId()), segment: x.getData().smap_segment };
+            }, key);
+            await (await nodeAnchor(p, key, pick.x)).click();
+            const onX = await info();
+            await (await nodeAnchor(p, key, pick.root)).click();
+            const onRoot = await info();
+            check('структура: у раздела включены все кнопки, у корня — только «Добавить» и «Править»', onX.selected.id === pick.x
+                && onX.buttons.edit && onX.buttons.del && onX.buttons.up && onX.buttons.down && onRoot.selected.id === pick.root
+                && onRoot.buttons.add && onRoot.buttons.edit && !onRoot.buttons.del && !onRoot.buttons.up && !onRoot.buttons.down,
+                JSON.stringify({ onX, onRoot }));
+
+            const order = () => p.evaluate(([k, rootId]) => [...window[k].tree.getNodeById(rootId).childs.children]
+                .map((li) => String(li.treeNode.getId())), [key, pick.root]);
+            await (await nodeAnchor(p, key, pick.x)).click();
+            const before = await order();
+            await Promise.all([p.waitForResponse((r) => /\/down$/.test(r.url())), p.click('ul.toolbar li.down_btn')]);
+            await p.waitForTimeout(300);
+            const down = await order();
+            await Promise.all([p.waitForResponse((r) => /\/up$/.test(r.url())), p.click('ul.toolbar li.up_btn')]);
+            await p.waitForTimeout(300);
+            const up = await order();
+            check('структура: «Вниз» и «Вверх» — запросы …/<id>/down и …/<id>/up, раздел переставлен и вернулся', moves.length === 2
+                && moves[0].endsWith(`/${pick.x}/down`) && moves[1].endsWith(`/${pick.x}/up`)
+                && down.indexOf(pick.x) === before.indexOf(pick.x) + 1 && JSON.stringify(up) === JSON.stringify(before),
+                JSON.stringify({ moves, before, down, up }));
+
+            const data = await p.evaluate(([k, id]) => window[k].tree.getNodeById(id).getData(), [key, pick.x]);
+            await p.route(/get-node-data$/, (route) => route.fulfill({ status: 200, contentType: 'application/json',
+                body: JSON.stringify({ result: true, data: Object.assign({}, data, { smap_name: 'Claude renamed' }) }) }));
+            await p.click('ul.toolbar li.edit_btn');
+            const win = await p.waitForSelector('.e-modalbox iframe', { timeout: 10000 }).catch(() => null);
+            const src = win ? await win.evaluate((f) => f.src) : '';
+            await Promise.all([p.waitForRequest((r) => /get-node-data$/.test(r.url()), { timeout: 10000 }), p.evaluate(() => ModalBox.close())]);
+            await p.waitForTimeout(400);
+            const renamed = await p.evaluate(([k, id]) => window[k].tree.getNodeById(id).element.querySelector('a').textContent, [key, pick.x]);
+            check('структура: «Править» — окно правки раздела, после него имя узла обновлено', src.endsWith(`/${pick.x}/edit`)
+                && renamed === 'Claude renamed', JSON.stringify({ src, renamed }));
+
+            await Promise.all([p.waitForNavigation({ timeout: 15000 }), (await nodeAnchor(p, key, pick.x)).dblclick()]);
+            check('структура: двойной щелчок по разделу — его страница', new RegExp('/' + pick.segment + '/?$').test(p.url()), p.url());
+            check('структура: без ошибок JS и 404', !errors.list().length, errors.list().join(' | '));
+            await p.close();
+        }
+
+        // 2. the parent window of the page form (DivTree): the page itself cannot be chosen, another one goes back to
+        //    the form (id, name, segment); the form is not saved
+        {
+            const pageId = execFileSync('php8.5', [path.join(__dirname, 'editors-db.php'), 'page-id'], { encoding: 'utf8' }).trim();
+            const p = await ctx.newPage();
+            const errors = watch(p);
+            await p.goto(BASE + `admin/structure/single/divEditor/${pageId}/edit/`, { waitUntil: 'networkidle' });
+            await showTab(p, '#sitemap_selector');
+            await p.click('#sitemap_selector');
+            const el = await p.waitForSelector('.e-modalbox iframe', { timeout: 10000 });
+            const f = await el.contentFrame();
+            await f.waitForSelector('#divTree li', { timeout: 10000 });
+            await f.waitForTimeout(500);
+            const fk = await manager(f);
+            const canSelect = () => f.evaluate((k) => !window[k].toolbar.getControlById('select').disabled(), fk);
+            const other = await f.evaluate(([k, current]) => {
+                const n = window[k].tree.nodes.find((x) => x.getId() != current && x.getData().smap_pid && x.getData().smap_segment
+                    && !x.getParents().some((pa) => pa.id == current));
+                return { id: String(n.getId()), name: n.element.querySelector('a').textContent, segment: n.getData().smap_segment };
+            }, [fk, pageId]);
+            await (await nodeAnchor(f, fk, pageId)).click();
+            const onCurrent = await canSelect();
+            await (await nodeAnchor(f, fk, other.id)).click();
+            const onOther = await canSelect();
+            await f.click('ul.toolbar li.select_btn');
+            await p.waitForTimeout(600);
+            const form = await p.evaluate(() => {
+                const b = document.getElementById('sitemap_selector');
+                return { id: document.getElementById(b.getAttribute('hidden_field')).value,
+                    name: document.getElementById(b.getAttribute('span_field')).textContent,
+                    segment: (document.getElementById('smap_pid_segment') || {}).textContent,
+                    windows: document.querySelectorAll('.e-modalbox').length };
+            });
+            check('окно выбора родителя: текущий раздел выбрать нельзя, другой — «Выбрать» возвращает его в форму',
+                onCurrent === false && onOther === true && form.id === other.id && form.name === other.name
+                && form.segment === other.segment && form.windows === 0, JSON.stringify({ onCurrent, onOther, other, form }));
+            check('окно выбора родителя: без ошибок JS и 404', !errors.list().length, errors.list().join(' | '));
+            await p.close();
+        }
+
+        // 3. moving a file to a folder (getDirsTree; the move is answered here — the file stays): the folders, the
+        //    choice enables «Перенести», the request …/<file>,<folder>/getDirsMove/, the window closes; an empty list
+        //    of folders (answered here) — an empty tree without a JS error
+        {
+            const openMove = async (p) => {
+                await p.goto(BASE + 'admin/users/single/adminPanel/file-library/', { waitUntil: 'networkidle' });
+                await p.waitForSelector('tbody tr td', { timeout: 10000 });
+                await p.waitForTimeout(500);
+                await p.locator('.gridContainer tbody tr', { hasText: 'claude-grid-big' }).first().click();
+                await p.click('ul.toolbar li.moveToDir_btn');
+                const el = await p.waitForSelector('.e-modalbox iframe', { timeout: 10000 });
+                const f = await el.contentFrame();
+                await f.waitForLoadState('networkidle').catch(() => null);
+                await f.waitForTimeout(800);
+                return f;
+            };
+            await ctx.addCookies([{ name: 'NRGNFRPID', value: String(ids.dir), url: BASE }]);
+            const p = await ctx.newPage();
+            const errors = watch(p);
+            const moved = [];
+            await p.route(/\/getDirsMove\/$/, (route) => {
+                moved.push(route.request().url());
+                route.fulfill({ status: 200, contentType: 'application/json', body: '{"result":true}' });
+            });
+            const f = await openMove(p);
+            const fk = await manager(f);
+            const tree = await f.evaluate((k) => ({
+                names: window[k].tree.nodes.map((n) => n.element.querySelector('a').textContent),
+                ids: window[k].tree.nodes.map((n) => String(n.getId())),
+                move: !window[k].toolbar.getControlById('saveDirsMove').disabled(),
+            }), fk);
+            const target = tree.ids[tree.names.findIndex((n) => n.includes('claude-grid-dir'))];
+            if (target) {
+                await (await nodeAnchor(f, fk, target)).click();
+            }
+            const enabled = await f.evaluate((k) => !window[k].toolbar.getControlById('saveDirsMove').disabled(), fk);
+            await Promise.all([p.waitForRequest((r) => r.url().includes('/get-data/'), { timeout: 10000 }).catch(() => null),
+                f.click('ul.toolbar li.saveDirsMove_btn')]);
+            await p.waitForTimeout(500);
+            const windows = await p.evaluate(() => document.querySelectorAll('.e-modalbox').length);
+            check('перенос в папку: окно папок, выбор включает «Перенести», запрос …/<файл>,<папка>/getDirsMove/, окно закрыто',
+                !!target && !tree.move && enabled && moved.length === 1 && moved[0].endsWith(`/${ids.big},${target}/getDirsMove/`)
+                && windows === 0, JSON.stringify({ tree, enabled, moved, windows }));
+            check('перенос в папку: без ошибок JS и 404', !errors.list().length, errors.list().join(' | '));
+            await p.close();
+
+            const q = await ctx.newPage();
+            const qErrors = watch(q);
+            await q.route(/\/getDirs\/$/, (route) => route.fulfill({ status: 200, contentType: 'application/json',
+                body: '{"result":true,"data":[]}' }));
+            const g = await openMove(q);
+            const empty = await g.evaluate(() => document.querySelectorAll('#divTree li').length);
+            check('перенос в папку: пустой список папок — пустое дерево без ошибки JS', empty === 0 && !qErrors.list().length,
+                JSON.stringify({ empty, errors: qErrors.list() }));
+            await q.close();
+            await ctx.clearCookies({ name: 'NRGNFRPID' });
+        }
     } finally {
         db('remove');
     }

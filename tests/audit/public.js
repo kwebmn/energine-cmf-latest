@@ -73,6 +73,11 @@ const fieldError = (p, selector) => p.evaluate((sel) => {
             'ua/', 'ua/login/', 'ua/register/', 'ua/restore-password/', 'ua/sitemap/']) {
             await pageChecks(guest, 'гость', url);
         }
+        // 1a. the MooTools files are gone from the site (stage 8, step 7)
+        for (const file of ['scripts/mootools.min.js', 'scripts/MooCompat.js']) {
+            const r = await guest.request.get(BASE + file);
+            check(`${file}: на сайте нет (404)`, r.status() === 404, r.status());
+        }
 
         // 2. login: the empty form is not sent, both fields show errors; with the visitor's data — signed in
         const member = await browser.newContext({ locale: 'ru-RU' });

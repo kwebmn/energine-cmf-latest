@@ -27,11 +27,18 @@ const NO_EDIT = [/actionsList\/$/];
         page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
         page.on('response', (r) => { if (r.status() >= 400) errors.push(`http ${r.status()}: ${r.url()}`); });
         page.on('requestfailed', (r) => errors.push(`failed: ${r.url()} ${r.failure() ? r.failure().errorText : ''}`));
+        // этап 8: MooTools не запрашивается ни одним окном страницы и нигде не определена
+        page.on('request', (r) => { if (/mootools|moocompat/i.test(r.url())) errors.push('mootools: ' + r.url()); });
         let status = 0;
         try {
             const resp = await page.goto(url, { waitUntil: 'networkidle', timeout: 60000 });
             status = resp ? resp.status() : 0;
             await page.waitForTimeout(waitMs);
+            for (const frame of page.frames()) {
+                if (await frame.evaluate(() => typeof window.MooTools !== 'undefined').catch(() => false)) {
+                    errors.push('mootools: defined in ' + frame.url());
+                }
+            }
         } catch (e) {
             errors.push('goto: ' + e.message.split('\n')[0]);
         }
