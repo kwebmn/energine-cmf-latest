@@ -176,6 +176,106 @@ const inspect = (page) => page.evaluate(() => {
         }
 
 
+        // затемнение (Overlay): показать — убрать — показать подряд оставляет его видимым (новая загрузка сразу после
+        // быстрой); убранное после исчезновения уходит со страницы
+        {
+            const op = await ctx.newPage();
+            await op.goto(BASE + 'admin/users/', { waitUntil: 'networkidle' });
+            const race = await op.evaluate(async () => {
+                const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+                const box = document.createElement('div');
+                document.body.appendChild(box);
+                const overlay = new Overlay(box);
+                overlay.show();
+                overlay.hide();
+                overlay.show();
+                await wait(900);
+                const shown = { inDom: box.contains(overlay.element), opacity: +getComputedStyle(overlay.element).opacity };
+                overlay.hide();
+                await wait(900);
+                const hidden = { inDom: box.contains(overlay.element) };
+                box.remove();
+                return { shown, hidden };
+            });
+            check('затемнение: показать — убрать — показать подряд оставляет его видимым', race.shown.inDom && race.shown.opacity > 0.4,
+                JSON.stringify(race));
+            check('затемнение: убранное после исчезновения уходит со страницы', !race.hidden.inDom, JSON.stringify(race));
+            await op.close();
+        }
+
+        // листалка, затемнение и вкладки языков грида (PageList, Overlay, TabPane) — грид переводов: 18 страниц по 50
+        // строк, вкладки двух языков. Щелчок по странице показывает другие строки и отмечает её текущей; пока страница
+        // грузится, грид затемнён, а листалка не реагирует; после загрузки затемнения нет; на последней странице нет
+        // стрелки «дальше»; вкладка другого языка перезагружает строки на этом языке. Грид в одну страницу — без листалки
+        {
+            const gp = await ctx.newPage();
+            const gErrors = watch(gp);
+            const loads = [];
+            gp.on('request', (r) => { if (r.url().includes('/transEditor/get-data/')) loads.push({ url: r.url(), body: r.postData() || '' }); });
+            await gp.goto(BASE + 'admin/translations/', { waitUntil: 'networkidle' });
+            const state = () => gp.evaluate(() => {
+                const list = document.querySelector('.e-pagelist');
+                const items = list ? [...list.querySelectorAll('li')] : [];
+                return {
+                    visible: !!list && list.checkVisibility(),
+                    current: ((list && list.querySelector('li.current')) || {}).textContent || '',
+                    prev: items.some((li) => li.querySelector('img[alt="previous"]')),
+                    next: items.some((li) => li.querySelector('img[alt="next"]')),
+                    first: ((document.querySelector('tbody tr') || {}).textContent || '').trim(),
+                    overlays: [...document.querySelectorAll('.e-overlay')].map((o) => +getComputedStyle(o).opacity),
+                    tab: ((document.querySelector('ul.e-tabs li.current a')) || {}).textContent || '',
+                    css: ['tabpane.css', 'pagelist.css'].map((name) => [...document.querySelectorAll('link[rel="stylesheet"]')]
+                        .filter((l) => l.href.endsWith('/stylesheets/' + name)).length),
+                };
+            });
+            const s1 = await state();
+            check('грид переводов: листалка видна, текущая — 1, стрелки «назад» нет; стили вкладок и листалки — по разу',
+                s1.visible && s1.current === '1' && !s1.prev && s1.next && s1.css.join() === '1,1', JSON.stringify(s1));
+            // ответ сервера задерживается: видно затемнение и выключенную листалку
+            await gp.route('**/transEditor/get-data/**', async (route) => {
+                await new Promise((resolve) => setTimeout(resolve, 1500));
+                await route.continue().catch(() => {});
+            });
+            const before = loads.length;
+            const loaded = gp.waitForResponse((r) => r.url().includes('/transEditor/get-data/'), { timeout: 15000 });
+            await gp.click('.e-pagelist li[index="2"]');
+            await gp.waitForTimeout(500);
+            const during = await state();
+            // щелчок прямо по номеру страницы (мышь не прошла бы сквозь затемнение): выключенная листалка его не берёт
+            await gp.evaluate(() => document.querySelector('.e-pagelist li[index="3"]').click());
+            await loaded;
+            await gp.waitForTimeout(1000);
+            const s2 = await state();
+            check('листалка: пока страница грузится, грид затемнён', during.overlays.some((o) => o > 0), JSON.stringify(during));
+            check('листалка: во время загрузки щелчок по другой странице ничего не делает', loads.length - before === 1,
+                JSON.stringify(loads.slice(before)));
+            check('листалка: страница 2 — другие строки, текущая — 2, стрелка «назад» есть, затемнения нет',
+                s2.current === '2' && s2.first !== s1.first && s2.prev && !s2.overlays.length, JSON.stringify(s2));
+            await gp.unroute('**/transEditor/get-data/**');
+            await Promise.all([gp.waitForResponse((r) => r.url().includes('/transEditor/get-data/')), gp.click('.e-pagelist li[index="18"]')]);
+            await gp.waitForTimeout(800);
+            const s3 = await state();
+            check('листалка: последняя страница — текущая, стрелки «дальше» нет', s3.current === '18' && !s3.next && s3.prev,
+                JSON.stringify(s3));
+            await Promise.all([gp.waitForResponse((r) => r.url().includes('/transEditor/get-data/')), gp.click('ul.e-tabs li:nth-child(2) a')]);
+            await gp.waitForTimeout(800);
+            const s4 = await state();
+            const last = loads[loads.length - 1] || { body: '' };
+            check('вкладка языка: строки перезагружены на этом языке с первой страницы',
+                s4.tab === 'Українська' && /(^|&)languageID=2(&|$)/.test(last.body) && s4.current === '1', JSON.stringify({ s4, last }));
+            check('грид переводов: без ошибок JS и 404', !gErrors.list().length, gErrors.list().join(' | '));
+            await gp.close();
+
+            const up = await ctx.newPage();
+            await up.goto(BASE + 'admin/users/', { waitUntil: 'networkidle' });
+            const one = await up.evaluate(() => {
+                const list = document.querySelector('.e-pagelist');
+                return { exists: !!list, visible: !!list && list.checkVisibility() };
+            });
+            check('грид в одну страницу (пользователи): листалки не видно', one.exists && !one.visible, JSON.stringify(one));
+            await up.close();
+        }
+
         // журнал действий: фильтр по дате — встроенное поле даты браузера (input type="date"); за сегодня (запись
         // теста) строки находятся, за день без записей — нет
         {
@@ -234,6 +334,38 @@ const inspect = (page) => page.evaluate(() => {
             }
             check('панель страницы: «Настройки сайта» — окно с гридом одной записи', /site-settings\/$/.test(src) && rows === 1,
                 `src=${src} rows=${rows}`);
+            // окна (ModalBox, Overlay): Esc окно не закрывает (клиент просил не закрывать окно случайно); «Редактировать»
+            // открывает второе окно поверх первого, его «Закрыть» оставляет первое и затемнение; «Закрыть» первого
+            // убирает и окно, и затемнение; стили окон подключены один раз
+            const boxes = () => sp.evaluate(() => ({
+                boxes: document.querySelectorAll('.e-modalbox').length,
+                overlays: [...document.querySelectorAll('.e-overlay')].map((o) => +getComputedStyle(o).opacity),
+                css: [...document.querySelectorAll('link[rel="stylesheet"]')].filter((l) => l.href.endsWith('/stylesheets/modalbox.css')).length,
+            }));
+            if (frame) {
+                await sp.waitForTimeout(700);
+                await sp.keyboard.press('Escape');
+                await sp.waitForTimeout(300);
+                const esc = await boxes();
+                check('окно: Esc его не закрывает', esc.boxes === 1 && esc.overlays.length === 1 && esc.overlays[0] > 0.4, JSON.stringify(esc));
+                await frame.click('li.edit_btn');
+                await sp.waitForFunction(() => document.querySelectorAll('.e-modalbox').length === 2, null, { timeout: 10000 }).catch(() => null);
+                const innerEl = (await sp.$$('.e-modalbox iframe'))[1];
+                const inner = innerEl && await innerEl.contentFrame();
+                if (check('окно в окне: «Редактировать» открывает второе окно', !!inner)) {
+                    await inner.waitForSelector('li.list_btn', { timeout: 10000 }).catch(() => null);
+                    await inner.click('li.list_btn');
+                    await sp.waitForTimeout(800);
+                    const one = await boxes();
+                    check('окно в окне: «Закрыть» второго оставляет первое и затемнение',
+                        one.boxes === 1 && one.overlays.length === 1 && one.overlays[0] > 0.4, JSON.stringify(one));
+                }
+                await frame.click('li.close_btn');
+                await sp.waitForTimeout(900);
+                const none = await boxes();
+                check('окно: «Закрыть» убирает окно и затемнение; стили окон подключены один раз',
+                    none.boxes === 0 && !none.overlays.length && none.css === 1, JSON.stringify(none));
+            }
         }
         check('панель страницы, «Настройки сайта»: без ошибок JS и 404', !spErrors.list().length, spErrors.list().join(' | '));
         await sp.close();

@@ -439,6 +439,17 @@ const showTabOf = (page, selector) => page.evaluate((sel) => {
             return { error: err ? err.textContent.trim() : '', markup: err ? err.children.length : 0,
                 preview: document.getElementById('preview').getAttribute('src') || '', data: document.getElementById('data').value };
         });
+        // the second tab (the small picture) is closed until an image is uploaded (TabPane.disableTab, enableTab)
+        const tabs = () => p.evaluate(() => [...document.querySelectorAll('ul.e-tabs li')].map((li) => {
+            const href = li.querySelector('a').getAttribute('href');
+            const pane = document.getElementById(href.slice(href.lastIndexOf('#') + 1));
+            return { current: li.classList.contains('current'), disabled: li.classList.contains('disabled'), shown: !!pane && pane.checkVisibility() };
+        }));
+        await p.click('ul.e-tabs li:nth-child(2)');
+        await p.waitForTimeout(200);
+        let t = await tabs();
+        check('форма файла: вкладка «Маленькое изображение» до загрузки выключена и не открывается',
+            t.length === 2 && t[1].disabled && !t[1].current && !t[1].shown && t[0].current && t[0].shown, JSON.stringify(t));
         const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'editors-'));
         try {
             const big = path.join(dir, 'claude-big.bin');
@@ -460,6 +471,14 @@ const showTabOf = (page, selector) => page.evaluate((sel) => {
             ]);
             const j = await ok.json().catch(() => null);
             await p.waitForTimeout(500);
+            t = await tabs();
+            check('форма файла: после загрузки картинки вкладка «Маленькое изображение» включена', !t[1].disabled, JSON.stringify(t));
+            await p.click('ul.e-tabs li:nth-child(2)');
+            await p.waitForTimeout(200);
+            t = await tabs();
+            check('форма файла: включённая вкладка открывается, прежняя прячется', t[1].current && t[1].shown && !t[0].current && !t[0].shown,
+                JSON.stringify(t));
+            await p.click('ul.e-tabs li:nth-child(1)');
             await p.route('**/upload-temp/**', (route) => route.fulfill({ status: 413, contentType: 'text/html',
                 body: '<html><body><h1>413 Request Entity Too Large</h1></body></html>' }));
             // another file: the same one again would not change the input, and the browser sends nothing
@@ -526,6 +545,35 @@ const showTabOf = (page, selector) => page.evaluate((sel) => {
         await p.close();
     }
 
+
+    // 14. tabs of a form (TabPane): a click on a tab shows its pane, hides the previous one, marks the tab current and
+    //     puts the focus into the pane's first text field
+    {
+        const p = await ctx.newPage();
+        const errors = watch(p);
+        await p.goto(BASE + 'admin/mail-templates/single/mailTemplateEditor/1/edit/', { waitUntil: 'networkidle' });
+        const tabsState = () => p.evaluate(() => [...document.querySelectorAll('ul.e-tabs li')].map((li) => {
+            const href = li.querySelector('a').getAttribute('href');
+            const pane = document.getElementById(href.slice(href.lastIndexOf('#') + 1));
+            return { current: li.classList.contains('current'), shown: !!pane && pane.checkVisibility(),
+                focus: !!pane && pane.contains(document.activeElement) };
+        }));
+        // the tab of the second language's name field
+        const idx = await p.evaluate(() => {
+            const pane = document.getElementById('template_name_2').closest('.e-pane-item');
+            return [...document.querySelectorAll('ul.e-tabs li')].findIndex((li) => li.querySelector('a').getAttribute('href').endsWith('#' + pane.id));
+        });
+        const before = await tabsState();
+        const was = before.findIndex((t) => t.current);
+        await p.click(`ul.e-tabs li:nth-child(${idx + 1})`);
+        await p.waitForTimeout(300);
+        const after = await tabsState();
+        check('вкладки формы: щелчок показывает панель вкладки, прячет прежнюю, отмечает вкладку и ставит фокус в первое поле',
+            idx > 0 && idx !== was && after[idx].current && after[idx].shown && after[idx].focus && !after[was].current && !after[was].shown,
+            JSON.stringify({ idx, was, before, after }));
+        check('вкладки формы: без ошибок JS и 404', !errors.length, errors.join(' | '));
+        await p.close();
+    }
 
     await browser.close();
     console.log(`== editors failures: ${fail}`);

@@ -91,7 +91,11 @@ const fieldError = (p, selector) => p.evaluate((sel) => {
             // port) — not checked here; the profile below opens only to a signed-in visitor
             // typed, as a person does: a key in a field with an error removes the error at once (fill() presses no
             // keys, the error would go only when the field is left — and the button would move under the click)
-            await p.locator('#username').pressSequentially(visitor.login);
+            // a value put in without keys (paste, autofill) removes the field's error at once
+            await p.fill('#username', visitor.login);
+            const pasted = await fieldError(p, '#username');
+            check('вход: значение, вставленное без клавиш, сразу убирает ошибку поля', !pasted.invalid && pasted.error === '',
+                JSON.stringify(pasted));
             await p.locator('#password').pressSequentially(visitor.password);
             await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle' }), p.click('button[name="user[login]"]')]);
             await p.close();
