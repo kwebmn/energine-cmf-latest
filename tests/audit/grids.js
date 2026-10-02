@@ -374,6 +374,34 @@ const inspect = (page) => page.evaluate(() => {
                 await hp.evaluate(() => ModalBox.close());
                 await hp.waitForTimeout(700);
             }
+            // боковая панель: скрипты разделов на MooTools в iframe над страницей без MooTools — дерево и панель
+            // строятся, щелчок по разделу включает «Редактировать», оно открывает окно формы раздела через окна страницы
+            await hp.click('.e-topframe img.pagetb_logo');
+            const sideEl = await hp.$('.e-sideframe iframe');
+            const side = sideEl && await sideEl.contentFrame();
+            let tree = { nodes: 0, buttons: 0 }, editOn = false, opened = false;
+            if (side) {
+                await side.waitForSelector('#divTree li a', { timeout: 10000 }).catch(() => null);
+                tree = await side.evaluate(() => ({ nodes: document.querySelectorAll('#divTree li a').length,
+                    buttons: document.querySelectorAll('ul.toolbar li').length }));
+                await side.click('#divTree li a').catch(() => null);
+                await side.waitForTimeout(300);
+                editOn = await side.evaluate(() => {
+                    const b = document.querySelector('ul.toolbar li.edit_btn');
+                    return !!b && !b.classList.contains('disabled');
+                });
+                if (editOn) {
+                    await side.click('ul.toolbar li.edit_btn');
+                    const winEl = await hp.waitForSelector('.e-modalbox iframe', { timeout: 10000 }).catch(() => null);
+                    const win = winEl && await winEl.contentFrame();
+                    opened = !!win && !!(await win.waitForSelector('ul.toolbar li', { timeout: 10000 }).catch(() => null));
+                    await hp.evaluate(() => ModalBox.close());
+                    await hp.waitForTimeout(700);
+                }
+            }
+            check('панель страницы: боковая панель — дерево разделов и панель, «Редактировать» открывает окно раздела',
+                tree.nodes > 1 && tree.buttons > 0 && editOn && opened, JSON.stringify({ tree, editOn, opened }));
+            await hp.click('.e-topframe img.pagetb_logo');
             check('панель страницы: без ошибок JS и 404', !hErrors.list().length, hErrors.list().join(' | '));
             await hp.close();
         }
