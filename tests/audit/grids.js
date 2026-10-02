@@ -324,6 +324,29 @@ const inspect = (page) => page.evaluate(() => {
                 const empty = await rowsFor('2001-01-01');
                 check('журнал действий: фильтр по дате находит записи дня и не находит чужие', today > 0 && empty === 0,
                     JSON.stringify({ day: ids.today, today, empty }));
+                // «между» — два поля; после смены условия на одиночное второе поле скрыто и в запрос не уходит
+                const sentValue = await lp.evaluate(() => {
+                    const cond = document.querySelector('.filters .filter .f_condition');
+                    const between = [...cond.options].find((o) => o.value === 'between');
+                    if (!between) return 'no between';
+                    cond.value = 'between';
+                    cond.dispatchEvent(new Event('change'));
+                    const dates = [...document.querySelectorAll('.filters .filter .f_query_container input[type="date"]')];
+                    dates[1].value = '2099-12-31';
+                    const single = [...cond.options].find((o) => o.value !== 'between');
+                    cond.value = single.value;
+                    cond.dispatchEvent(new Event('change'));
+                    return single.value;
+                });
+                await input.fill(ids.today);
+                const [resp] = await Promise.all([
+                    lp.waitForResponse((r) => r.url().includes('get-data'), { timeout: 15000 }),
+                    lp.click('button.f_apply'),
+                ]);
+                const body = decodeURIComponent((resp.request().postData() || '').replace(/^.*?filter=/, '').replace(/&.*$/, ''));
+                const clause = (() => { try { return JSON.parse(body).children[0]; } catch (e) { return null; } })();
+                check('журнал действий: после «между» одиночное условие уходит с одним значением — видимым',
+                    !!clause && clause.value === ids.today, JSON.stringify({ sentValue, clause, body: body.slice(0, 300) }));
             }
             check('журнал действий, фильтр по дате: без ошибок JS и 404', !lErrors.list().length, lErrors.list().join(' | '));
             await lp.close();
@@ -369,6 +392,18 @@ const inspect = (page) => page.evaluate(() => {
             check('фильтр грида: значение с «+» доходит до сервера как есть — найден свой пользователь',
                 found.length === 1 && found[0].includes('claude-grid-a+b@example.org'),
                 JSON.stringify({ found, body: bodies[bodies.length - 1] }));
+            // значение стёрто — «Применить» снимает фильтр и возвращает все строки
+            await fp.fill('.filters .filter .f_query_container input.query', '');
+            const cleared = await Promise.all([fp.waitForResponse((r) => r.url().includes('/get-data/'), { timeout: 5000 }).catch(() => null),
+                fp.click('button.f_apply')]).then(([resp]) => !!resp);
+            await fp.waitForTimeout(500);
+            const afterClear = { reloaded: cleared, rows: (await rows()).length,
+                active: await fp.evaluate(() => document.querySelector('.filters_block').classList.contains('active')) };
+            check('фильтр грида: «Применить» со стёртым значением снимает фильтр — все строки', afterClear.reloaded
+                && afterClear.rows === all && !afterClear.active, JSON.stringify({ all, afterClear }));
+            await fp.fill('.filters .filter .f_query_container input.query', 'grid-a+b');
+            await Promise.all([fp.waitForResponse((r) => r.url().includes('/get-data/')), fp.click('button.f_apply')]);
+            await fp.waitForTimeout(500);
             await Promise.all([fp.waitForResponse((r) => r.url().includes('/get-data/')), fp.click('a.f_reset')]);
             await fp.waitForTimeout(500);
             const back = (await rows()).length;

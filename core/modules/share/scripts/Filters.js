@@ -140,14 +140,15 @@ var Filters = class Filters {
         return true;
     }
 
+    // непустой фильтр применяется, пустой сбрасывается; true — грид нужно перезагрузить (и после сброса: на экране
+    // остались отфильтрованные строки)
     use() {
         if (!this.isEmpty()) {
             this.element.classList.add('active');
             this.active = true;
-        } else {
-            this.reset();
+            return true;
         }
-        return this.active;
+        return this.reset();
     }
 
     // строка запроса для грида; JSON кодируется — «+», «&» и «%» в значении доходят до сервера как есть
@@ -311,12 +312,18 @@ Filter.QueryControls = class FilterQueryControls {
         return [...this.dpsInputs, ...this.inputs];
     }
 
+    // поля значения видимых контейнеров: второй скрыт у одиночного условия, все — у логического поля
+    current() {
+        const inputs = this.isDate ? this.dpsInputs : this.inputs;
+        return inputs.filter((input, n) => !this.containers[n].classList.contains('hidden'));
+    }
+
     hasValues() {
-        return (this.isDate ? this.dpsInputs : this.inputs).some((input) => input.value);
+        return this.current().some((input) => input.value);
     }
 
     getValues(clause) {
-        (this.isDate ? this.dpsInputs : this.inputs).forEach((input) => clause.setValue(String(input.value)));
+        this.current().forEach((input) => clause.setValue(String(input.value)));
         return clause;
     }
 
