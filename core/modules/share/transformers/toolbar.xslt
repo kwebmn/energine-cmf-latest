@@ -67,19 +67,6 @@
                 select="."/>'<xsl:if test="position()!=last()">,</xsl:if>}</xsl:for-each></xsl:if>);
                 <xsl:apply-templates />
                 if(<xsl:value-of select="generate-id(../recordset)"/>)<xsl:value-of select="generate-id(../recordset)"/>.attachToolbar(componentToolbars['<xsl:value-of select="generate-id(../recordset)"/>']);
-                var holder = document.id('<xsl:value-of select="generate-id(../recordset)"/>'),
-                    content = holder.getElement('.e-pane-content');
-                if (content <xsl:text disable-output-escaping="yes">&amp;&amp;</xsl:text> $(document.body).clientWidth.toInt() <xsl:text disable-output-escaping="yes">&lt;</xsl:text>= 680) {
-                    var tToolbar = holder.getElement('.e-pane-t-toolbar'),
-                        bToolbar = holder.getElement('.e-pane-b-toolbar'),
-                        contentHeight = $(document.body).getSize().y;
-                    if (tToolbar) contentHeight -= tToolbar.getComputedSize().totalHeight;
-                    if (bToolbar) contentHeight -= bToolbar.getComputedSize().totalHeight;
-                    <!--content.setStyles({
-                        height: contentHeight,
-                        position: 'static'
-                    });-->
-                }
             });
         </script>
     </xsl:template>    

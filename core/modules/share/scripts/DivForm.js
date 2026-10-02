@@ -3,144 +3,118 @@
  * <ul>
  *     <li>[DivForm]{@link DivForm}</li>
  * </ul>
+ * Чистый JavaScript, без MooTools.
  *
  * @requires Form
  * @requires ModalBox
  *
  * @author Pavel Dubenko, Valerii Zinchenko
  *
- * @version 1.0.0
+ * @version 1.1.0
  */
 
-ScriptLoader.load('MooCompat', 'Form', 'ModalBox');
+ScriptLoader.load('Form', 'ModalBox');
 
 /**
- * DivForm.
+ * Форма раздела: выбор родителя (Form.Label), шаблон содержимого задаёт сегмент и макет, сброс изменённого шаблона,
+ * имя раздела на каждом включённом языке обязательно.
  *
  * @augments Form
- *
- * @borrows Form.Label.setLabel as DivForm#setLabel
- * @borrows Form.Label.prepareLabel as DivForm#prepareLabel
- * @borrows Form.Label.restoreLabel as DivForm#restoreLabel
- * @borrows Form.Label.showTree as DivForm#showTree
  *
  * @constructor
  * @param {Element|string} element The form element.
  */
-var DivForm = new Class(/** @lends DivForm# */{
-    Extends: Form,
-
-    // constructor
-    initialize: function (element) {
-        this.parent(element);
+var DivForm = class DivForm extends Form {
+    constructor(element) {
+        super(element);
         this.prepareLabel('list/');
 
-        var contentSelector = this.element.getElementById('smap_content'),
-            layoutSelector = this.element.getElementById('smap_layout'),
-            segmentInput = this.element.getElementById('smap_segment'),
-            contentFunc;
+        const contentSelector = this.element.querySelector('#smap_content'),
+            layoutSelector = this.element.querySelector('#smap_layout'),
+            segmentInput = this.element.querySelector('#smap_segment');
 
-        //чтоб ради одного вызова не биндится на this
-        var t = this;
-
-        contentFunc = function () {
-            var segment, layout;
-
+        // шаблон со своим сегментом закрепляет сегмент, со своим макетом — выбирает макет; XML раздела сбрасывается
+        contentSelector.addEventListener('change', () => {
+            const option = contentSelector.selectedOptions[0];
+            let segment, layout;
             if (segmentInput) {
-                if (segment = contentSelector.getSelected()[0].getProperty('data-segment')) {
-                    segmentInput.setProperty('readOnly', 'readOnly');
-                    segmentInput.set('value', segment);
-                }
-                else {
-
-                    segmentInput.removeProperty('readOnly');
+                if ((segment = option.getAttribute('data-segment'))) {
+                    segmentInput.readOnly = true;
+                    segmentInput.value = segment;
+                } else {
+                    segmentInput.readOnly = false;
                 }
             }
-
-            if ((layout = contentSelector.getSelected()[0].getProperty('data-layout')) && (layout != '*')/* && (!new Boolean(layoutSelector.get('value').toInt()).valueOf())*/) {
-                layoutSelector.set('value', layout);
+            if ((layout = option.getAttribute('data-layout')) && (layout != '*')) {
+                layoutSelector.value = layout;
             }
-
-            t.clearContentXML();
-        };
-        contentSelector.addEvent('change', contentFunc);
-    },
+            this.clearContentXML();
+        });
+    }
 
     /**
      * Reset the page content template.
-     * @function
-     * @public
      */
-    resetPageContentTemplate: function () {
-        this.request(
-            this.singlePath + 'reset-templates/' + this.element.getElementById('smap_id').get('value') + '/',
+    resetPageContentTemplate() {
+        Energine.request(
+            this.singlePath + 'reset-templates/' + this.element.querySelector('#smap_id').value + '/',
             null,
-            function (response) {
+            (response) => {
                 if (response.result) {
-                    var select = this.element.getElementById('smap_content'),
-                        option = select.getChildren()[select.selectedIndex],
-                        optionText = option.get('text');
-
-                    option.set('text', optionText.substring(0, optionText.lastIndexOf('-')));
+                    const select = this.element.querySelector('#smap_content'),
+                        option = select.children[select.selectedIndex],
+                        optionText = option.textContent;
+                    option.textContent = optionText.substring(0, optionText.lastIndexOf('-'));
                     this.clearContentXML();
                 }
-            }.bind(this)
-        )
-    },
+            }
+        );
+    }
 
     /**
      * Clear XML content.
-     * @function
-     * @public
      */
-    clearContentXML: function () {
+    clearContentXML() {
         // поле типа «код» на форме раздела одно — XML раздела
-        var code = this.form.getElement('textarea.code');
+        const code = this.form.querySelector('textarea.code');
         if (code) {
-            code.set('value', '');
-            code.getParent('div.field').addClass('hidden');
+            code.value = '';
+            code.closest('div.field').classList.add('hidden');
         }
-    },
+    }
 
     /**
-     * Overridden parent [save]{@link Form#save} action.
-     * @function
-     * @public
+     * Overridden parent [save]{@link Form#save} action: имя раздела на вкладке языка (раздел на нём не выключен)
+     * обязательно.
      */
-    save: function () {
-        this.richEditors.each(function (editor) {
-            editor.onSaveForm();
-        });
+    save() {
+        this.richEditors.forEach((editor) => editor.onSaveForm());
         if (!this.validator.validate()) {
             return false;
         }
 
-        var tabs = this.tabPane.getTabs();
-        var valid = true;
-        tabs.each(function (tab) {
+        let valid = true;
+        this.tabPane.getTabs().forEach((tab) => {
             if (tab.data.lang) {
-                var checkbox = tab.pane.getElement('input[type="checkbox"]');
-                if(checkbox) {
-                    var disabled = checkbox.name.test(/share_sitemap_translation\[\d+\]\[smap_is_disabled\]/) ? checkbox.checked : false;
-                    if (!disabled) {
-                        if (tab.pane.getElement('input[type="text"]').value.trim().length == 0) {
-                            valid = false;
-                        }
+                const checkbox = tab.pane.querySelector('input[type="checkbox"]');
+                if (checkbox) {
+                    const disabled = /share_sitemap_translation\[\d+\]\[smap_is_disabled\]/.test(checkbox.name) ? checkbox.checked : false;
+                    if (!disabled && tab.pane.querySelector('input[type="text"]').value.trim().length == 0) {
+                        valid = false;
                     }
                 }
             }
         });
 
-
         if (!valid) {
             alert(Energine.translations.get('ERR_NO_DIV_NAME'));
             return false;
         }
-        this.request(
+        Energine.request(
             this.singlePath + 'save',
-            this.form.toQueryString(),
-            this.processServerResponse.bind(this)
+            Form.toQueryString(this.form),
+            (response) => this.processServerResponse(response)
         );
     }
-});
-DivForm.implement(Form.Label);
+};
+Object.assign(DivForm.prototype, Form.Label);

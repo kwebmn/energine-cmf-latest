@@ -3,128 +3,115 @@
  * <ul>
  *     <li>[FileRepoForm]{@link FileRepoForm}</li>
  * </ul>
+ * Чистый JavaScript, без MooTools.
  *
  * @requires Form
  *
  * @author Pavel Dubenko
  *
- * @version 1.0.0
+ * @version 1.1.0
  */
 
-ScriptLoader.load('MooCompat', 'Form');
+ScriptLoader.load('Form');
 
 /**
- * FileRepoForm
+ * Форма файла репозитория: файл уходит во временный файл (upload-temp) сразу при выборе, превью и маленькие
+ * изображения строятся по нему; вкладка «Маленькое изображение» включается после загрузки картинки.
  *
  * @augments Form
  *
  * @constructor
- * @param {Element|string} element The form element.
+ * @param {Element|string} el The main holder element.
  */
-var FileRepoForm = new Class(/** @lends FileRepoForm# */{
-    Extends:Form,
+var FileRepoForm = class FileRepoForm extends Form {
+    constructor(el) {
+        super(el);
 
-    // constructor
-    initialize:function (el) {
-        this.parent(el);
-
-        var uploader = this.element.getElementById('uploader');
+        const uploader = this.element.querySelector('#uploader');
         if (uploader) {
-            uploader.addEvent('change', this.showPreview.bind(this))
+            uploader.addEventListener('change', (evt) => this.showPreview(evt));
         }
 
         /**
          * Thumbnails.
-         * @type {Elements}
+         * @type {Element[]}
          */
-        this.thumbs = this.element.getElements('img.thumb');
-        if (this.thumbs) {
-            this.element.getElements('input.thumb').addEvent('change', this.showThumbPreview.bind(this));
+        this.thumbs = Array.from(this.element.querySelectorAll('img.thumb'));
+        this.element.querySelectorAll('input.thumb').forEach((input) => {
+            input.addEventListener('change', (evt) => this.showThumbPreview(evt));
+        });
+        this.element.querySelectorAll('input.preview').forEach((input) => {
+            input.addEventListener('change', (evt) => this.showAltPreview(evt));
+        });
 
-            var altPreview = this.element.getElements('input.preview');
-            if (altPreview) {
-                altPreview.addEvent('change', this.showAltPreview.bind(this));
-            }
-        }
-
-        var data = this.element.getElementById('data');
-        if(data && !(data.get('value'))) {
+        const data = this.element.querySelector('#data');
+        if (data && !data.value) {
             this.tabPane.disableTab(1);
         }
-    },
+    }
 
     /**
-     * Event handler. Show alternative preview.
+     * Show alternative preview.
      *
-     * @function
-     * @public
      * @param {Object} evt Event.
      */
-    showAltPreview:function (evt) {
-       this.showThumbPreview(evt);
-    },
+    showAltPreview(evt) {
+        this.showThumbPreview(evt);
+    }
 
     /**
-     * Event handler. Show thumbnail.
+     * Маленькое изображение: картинка уходит во временный файл, превью — по нему.
      *
-     * @function
-     * @public
      * @param {Object} evt Event.
      */
-    showThumbPreview:function (evt) {
-        var el = $(evt.target);
-        var files = Array.from(el.files || []);
+    showThumbPreview(evt) {
+        const el = evt.target,
+            files = Array.from(el.files || []);
 
-        for (var i = 0; i < files.length; i++) {
+        for (let i = 0; i < files.length; i++) {
             if (files[i].type.match('image.*')) {
-                this.xhrFileUpload(
-                    el.getProperty('id'),
-                    files,
-                    function (response) {
-                        var previewElement = $(el.getProperty('preview')),
-                            dataElement = $(el.getProperty('data'));
-                        if (previewElement) {
-                            previewElement.removeClass('hidden')
-                                .setProperty('src', Energine.base + 'resizer/' + 'w0-h0/' + response.tmp_name);
-                        }
-                        if (dataElement) {
-                            dataElement.set('value', response.tmp_name);
-                        }
+                this.xhrFileUpload(el.id, files, (response) => {
+                    const previewElement = document.getElementById(el.getAttribute('preview')),
+                        dataElement = document.getElementById(el.getAttribute('data'));
+                    if (previewElement) {
+                        previewElement.classList.remove('hidden');
+                        previewElement.setAttribute('src', Energine.base + 'resizer/' + 'w0-h0/' + response.tmp_name);
                     }
-                );
+                    if (dataElement) {
+                        dataElement.value = response.tmp_name;
+                    }
+                });
             }
         }
-    },
+    }
 
     /**
      * Generate previews.
      *
-     * @function
-     * @public
-     * @param {string} tmpFileName File name.
+     * @param {string} tmpFileName
      */
-    generatePreviews:function (tmpFileName) {
-        if (this.thumbs)
-            this.thumbs.each(function (el) {
-                el.removeClass('hidden');
-                el.setProperty('src', Energine.base +'resizer/'+ 'w' + el.getProperty('width') + '-h' + el.getProperty('height') + '/' + tmpFileName);
-            });
-    },
+    generatePreviews(tmpFileName) {
+        this.thumbs.forEach((el) => {
+            el.classList.remove('hidden');
+            el.setAttribute('src', Energine.base + 'resizer/' + 'w' + el.getAttribute('width') + '-h'
+                + el.getAttribute('height') + '/' + tmpFileName);
+        });
+    }
 
     /**
-     * XMLHttpRequest for uploading the file.
+     * Загрузка файла во временный: fetch с токеном; отказ сервера или чужой ответ — причина у поля.
      *
-     * @param {string} field_name Field name.
-     * @param {} files
-     * @param {} response_callback
-     * @returns {*|XMLHttpRequestEventTarget}
+     * @param {string} field_name id поля файла
+     * @param {File[]} files
+     * @param {function} response_callback вызывается с ответом сервера, если файл принят
+     * @returns {Promise}
      */
-    xhrFileUpload: function (field_name, files, response_callback) {
-        var body = new FormData(),
-            field = this.element.getElementById(field_name);
+    xhrFileUpload(field_name, files, response_callback) {
+        const body = new FormData(),
+            field = this.element.querySelector('#' + CSS.escape(field_name));
         body.append('csrf_token', Energine.csrf || '');
         body.append('key', field_name);
-        body.append('pid', $('upl_pid').get('value'));
+        body.append('pid', document.getElementById('upl_pid').value);
         body.append(field_name, files[0]);
 
         this.validator.removeError(field);
@@ -132,104 +119,98 @@ var FileRepoForm = new Class(/** @lends FileRepoForm# */{
         // объяснить размер, а не «устаревшую форму»
         return fetch(this.singlePath + 'upload-temp/?json', {method: 'POST', body: body, credentials: 'same-origin',
             headers: {'X-CSRF-Token': Energine.csrf || ''}})
-            .then(function (response) {
-                return response.text().then(function (text) {
-                    var result = null;
-                    try {
-                        result = JSON.parse(text);
-                    } catch (e) {
-                    }
-                    if (result && !result.error && result.tmp_name) {
-                        response_callback(result);
-                        return;
-                    }
-                    // отказ сервера (запрещённый тип файла, размер, нет прав, устаревшая форма) или ответ
-                    // не сервера сайта (страница прокси) — причина у поля
-                    this.uploadFailed(field, (result && (result.error_message
-                        || (result.errors && result.errors[0] && result.errors[0].message)))
-                        || this.uploadFailedText(response.status));
-                }.bind(this));
-            }.bind(this))
-            .catch(function () {
-                this.uploadFailed(field, this.uploadFailedText(0));
-            }.bind(this));
-    },
+            .then((response) => response.text().then((text) => {
+                let result = null;
+                try {
+                    result = JSON.parse(text);
+                } catch (e) {
+                }
+                if (result && !result.error && result.tmp_name) {
+                    response_callback(result);
+                    return;
+                }
+                // отказ сервера (запрещённый тип файла, размер, нет прав, устаревшая форма) или ответ
+                // не сервера сайта (страница прокси) — причина у поля
+                this.uploadFailed(field, (result && (result.error_message
+                    || (result.errors && result.errors[0] && result.errors[0].message)))
+                    || this.uploadFailedText(response.status));
+            }))
+            .catch(() => this.uploadFailed(field, this.uploadFailedText(0)));
+    }
 
     /**
-     * Общий текст неудачной загрузки.
-     * @param {number} status код ответа (0 — ответа нет)
+     * Текст неудачной загрузки с кодом ответа.
+     *
+     * @param {number} status
      * @returns {string}
      */
-    uploadFailedText: function (status) {
+    uploadFailedText(status) {
         return (Energine.translations.get('ERR_UPLOAD_FAILED') || 'Upload failed') + (status ? ' (HTTP ' + status + ')' : '');
-    },
+    }
 
     /**
-     * Загрузка не состоялась: причина у поля (Validator выводит её текстом), а форма забывает файл:
-     * превью и путь прошлой загрузки сбрасываются, тот же файл можно выбрать снова.
+     * Загрузка не удалась: причина у поля, превью и путь временного файла убраны, поле файла пусто.
      *
-     * @param {Element} field поле файла
+     * @param {Element} field
      * @param {string} message
      */
-    uploadFailed: function (field, message) {
+    uploadFailed(field, message) {
         this.validator.showError(field, String(message));
-        var isMain = (field.get('id') == 'uploader'),
-            preview = isMain ? $('preview') : $(field.getProperty('preview')),
-            data = isMain ? $('data') : $(field.getProperty('data'));
+        const isMain = (field.id == 'uploader'),
+            preview = isMain ? document.getElementById('preview') : document.getElementById(field.getAttribute('preview')),
+            data = isMain ? document.getElementById('data') : document.getElementById(field.getAttribute('data'));
         if (preview) {
-            preview.removeProperty('src').addClass('hidden');
+            preview.removeAttribute('src');
+            preview.classList.add('hidden');
         }
         if (data) {
-            data.set('value', '');
+            data.value = '';
         }
         field.value = '';
-    },
+    }
 
     /**
-     * Event handler. Show preview.
+     * Show preview.
+     *
      * @param {Object} evt Event.
      */
-    showPreview:function (evt) {
-        var previewElement = document.getElementById('preview');
-        previewElement.removeProperty('src');
+    showPreview(evt) {
+        const previewElement = document.getElementById('preview');
+        previewElement.removeAttribute('src');
+        this.thumbs.forEach((thumb) => {
+            thumb.removeAttribute('src');
+            thumb.classList.add('hidden');
+        });
+        previewElement.setAttribute('src', Energine.base + 'images/loading.gif');
 
-        if (this.thumbs) {
-            this.thumbs.removeProperty('src').addClass('hidden');
-        }
-        previewElement.setProperty('src', Energine.base + 'images/loading.gif');
-
-        var files = Array.from($(evt.target).files || []);
-        var enableTab = this.tabPane.enableTab.pass(1, this.tabPane);
-        var generatePreviews = this.generatePreviews.bind(this);
-        for (var i = 0; i < files.length; i++) {
-            this.xhrFileUpload('uploader', files, function (response) {
-                document.getElementById('upl_name').set('value', response.name);
-                document.getElementById('upl_filename').set('value', response.name);
-                //document.getElementById('file_type').set('value', theFile.type);
-                document.getElementById('data').set('value', response.tmp_name);
-                document.getElementById('upl_title').set('value', response.name.split('.')[0]);
+        const files = Array.from(evt.target.files || []);
+        for (let i = 0; i < files.length; i++) {
+            this.xhrFileUpload('uploader', files, (response) => {
+                document.getElementById('upl_name').value = response.name;
+                document.getElementById('upl_filename').value = response.name;
+                document.getElementById('data').value = response.tmp_name;
+                document.getElementById('upl_title').value = response.name.split('.')[0];
 
                 if (response.type.match('image.*')) {
-                    previewElement.removeProperty('src').addClass('hidden');
-                    previewElement.setProperty('src', Energine.base + 'resizer/' + 'w0-h0/' + response.tmp_name);
-                    generatePreviews(response.tmp_name);
-                    enableTab();
+                    previewElement.removeAttribute('src');
+                    previewElement.classList.add('hidden');
+                    previewElement.setAttribute('src', Energine.base + 'resizer/' + 'w0-h0/' + response.tmp_name);
+                    this.generatePreviews(response.tmp_name);
+                    this.tabPane.enableTab(1);
                 } else {
-                    previewElement.setProperty('src', Energine['static'] + 'images/icons/icon_undefined.gif');
+                    previewElement.setAttribute('src', Energine['static'] + 'images/icons/icon_undefined.gif');
                 }
-                previewElement.removeClass('hidden');
+                previewElement.classList.remove('hidden');
             });
         }
-    },
+    }
 
     /**
-     * Overridden parent [save]{@link Form#buildSaveURL} action.
+     * Overridden parent [buildSaveURL]{@link Form#buildSaveURL} method.
      *
-     * @function
-     * @public
-     * @return {string}
+     * @returns {string}
      */
-    buildSaveURL: function() {
-        return Energine.base + this.form.getProperty('action');
+    buildSaveURL() {
+        return Energine.base + this.form.getAttribute('action');
     }
-});
+};

@@ -3,148 +3,146 @@
  * <ul>
  *     <li>[ImageManager]{@link ImageManager}</li>
  * </ul>
+ * Чистый JavaScript, без MooTools.
  *
  * @requires Form
  * @requires ModalBox
  *
  * @author Pavel Dubenko
  *
- * @version 1.0.0
+ * @version 1.1.0
  */
 
-ScriptLoader.load('MooCompat', 'Form', 'ModalBox');
+ScriptLoader.load('Form', 'ModalBox');
 
 /**
- * ImageManager
+ * Окно картинки при вставке в текст: данные картинки — из окна-родителя, размеры (по пропорции), выравнивание,
+ * отступы, подпись; «Вставить» возвращает картинку.
  *
  * @augments Form
  *
  * @constructor
  * @param {Element|string} element The form element.
  */
-var ImageManager = new Class(/** @lends ImageManager# */{
-    Extends:Form,
-
-    // constructor
-    initialize:function (element) {
-        this.parent(element);
-
+var ImageManager = class ImageManager extends Form {
+    constructor(element) {
+        super(element);
         /**
-         * Image.
+         * Image data.
          * @type {Object}
          */
         this.image = {};
-
         /**
-         * Defines whether the image ratio will be kept.
+         * Defines whether the ratio will be saved.
          * @type {boolean}
          */
         this.saveRatio = false;
-
         /**
-         * Array of image margins.
+         * Image margins.
          * @type {string[]}
          */
         this.imageMargins = ['margin-left', 'margin-right', 'margin-top', 'margin-bottom'];
 
-        $('filename').disabled = true;
-        var imageData = ModalBox.getExtraData();
+        this.field('filename').disabled = true;
+        const imageData = ModalBox.getExtraData();
         if (imageData != null) {
             this.image = imageData;
             this.updateForm();
         }
 
-        $('width').addEvent('change', this.checkRatio.bind(this));
-        $('height').addEvent('change', this.checkRatio.bind(this));
-    },
+        this.field('width').addEventListener('change', (event) => this.checkRatio(event));
+        this.field('height').addEventListener('change', (event) => this.checkRatio(event));
+    }
 
     /**
-     * Event handler. Check the image ratio.
+     * Поле окна по id.
      *
-     * @function
-     * @public
-     * @param {Object} e Event.
+     * @param {string} id
+     * @returns {Element}
      */
-    checkRatio:function (e) {
-        var target = $(e.target).id,
+    field(id) {
+        return document.getElementById(id);
+    }
+
+    /**
+     * Ширина меняет высоту по пропорции (и наоборот); путь — через resizer, превью следом.
+     *
+     * @param {Object} event
+     */
+    checkRatio(event) {
+        const target = event.target.id,
             oldWidth = this.image.upl_width,
-            oldHeight = this.image.upl_height,
-            width = $('width').get('value').toInt(),
-            height = $('height').get('value').toInt(),
+            oldHeight = this.image.upl_height;
+        let width = parseInt(this.field('width').value, 10),
+            height = parseInt(this.field('height').value, 10),
             src;
 
         if (oldWidth != width || oldHeight != height) {
-            (target == 'width')
-                ? height = Math.round((oldHeight * width) / oldWidth)
-                : width = Math.round((oldWidth * height) / oldHeight);
-
-            $('width').set('value', width);
-            $('height').set('value', height);
-            $('filename').set('value', src = Energine.resizer + 'w'+width+'-h'+height+'/' + this.image['upl_path']);
-            $('thumbnail').set('src', src);
+            if (target == 'width') {
+                height = Math.round((oldHeight * width) / oldWidth);
+            } else {
+                width = Math.round((oldWidth * height) / oldHeight);
+            }
+            this.field('width').value = width;
+            this.field('height').value = height;
+            this.field('filename').value = src = Energine.resizer + 'w' + width + '-h' + height + '/' + this.image['upl_path'];
+            this.field('thumbnail').setAttribute('src', src);
         }
-    },
+    }
 
     /**
-     * Open image library.
-     * @function
-     * @public
+     * Open the image library.
      */
-    openImageLib:function () {
+    openImageLib() {
         ModalBox.open({
             url: this.singlePath + 'file-library/',
-            'post': JSON.encode(this.image),
-            onClose: function (result) {
+            'post': JSON.stringify(this.image),
+            onClose: (result) => {
                 if (result) {
                     this.image = result;
                     this.updateForm();
                 }
                 window.focus();
-            }.bind(this)
+            }
         });
-    },
+    }
 
     /**
-     * Update form.
-     * @function
-     * @public
+     * Update the form.
      */
-    updateForm:function () {
-        $('filename').value = this.image['upl_path'];
-        $('thumbnail').src = Energine.media /*+ 'resizer/w40-h40/'*/ + this.image['upl_path'];
-        $('width').value = this.image['upl_width'] || 0;
-        $('height').value = this.image['upl_height'] || 0;
-        $('align').set('value', this.image.align || '');
+    updateForm() {
+        this.field('filename').value = this.image['upl_path'];
+        this.field('thumbnail').src = Energine.media + this.image['upl_path'];
+        this.field('width').value = this.image['upl_width'] || 0;
+        this.field('height').value = this.image['upl_height'] || 0;
+        this.field('align').value = this.image.align || '';
 
-        this.imageMargins.each(function (propertyName) {
-            $(propertyName).value = $(propertyName).value || this.image[propertyName] || '0';
-        }, this);
+        this.imageMargins.forEach((propertyName) => {
+            this.field(propertyName).value = this.field(propertyName).value || this.image[propertyName] || '0';
+        });
 
-        var alt = $('alt');
+        const alt = this.field('alt');
         if (!alt.value) {
             alt.value = this.image['upl_title'] || '';
         }
-    },
+    }
 
     /**
-     * Insert image.
-     * @function
-     * @public
+     * Insert the image.
      */
-    insertImage:function () {
-        if ($('filename').value) {
-            this.image.filename = $('filename').value;
-            this.image.width = parseInt($('width').value) || '';
-            this.image.height = parseInt($('height').value) || '';
-            this.image.align = $('align').value || '';
-            this.imageMargins.each(function (propertyName) {
-                this.image[propertyName] = parseInt($(propertyName).value) || 0;
-            }, this);
-            this.image.alt = $('alt').value;
-            this.image.thumbnail = $('thumbnail').src;
-            //this.image.insertThumbnail = $('insThumbnail').checked;
-            ModalBox.setReturnValue(this.image)
+    insertImage() {
+        if (this.field('filename').value) {
+            this.image.filename = this.field('filename').value;
+            this.image.width = parseInt(this.field('width').value) || '';
+            this.image.height = parseInt(this.field('height').value) || '';
+            this.image.align = this.field('align').value || '';
+            this.imageMargins.forEach((propertyName) => {
+                this.image[propertyName] = parseInt(this.field(propertyName).value) || 0;
+            });
+            this.image.alt = this.field('alt').value;
+            this.image.thumbnail = this.field('thumbnail').src;
+            ModalBox.setReturnValue(this.image);
         }
         this.close();
     }
-});
+};

@@ -3,61 +3,44 @@
  * <ul>
  *     <li>[GroupForm]{@link GroupForm}</li>
  * </ul>
+ * Чистый JavaScript, без MooTools.
  *
  * @requires share/Form
  *
  * @author Pavel Dubenko
  *
- * @version 1.0.0
+ * @version 1.1.0
  */
 
-ScriptLoader.load('MooCompat', 'Form');
+ScriptLoader.load('Form');
 
 /**
- * GroupForm
+ * Форма роли: переключатель в строке «Все разделы» отмечает весь свой столбец прав.
  *
  * @augments Form
  *
  * @constructor
  * @param {Element|string} element The form element.
  */
-var GroupForm = new Class(/** @lends GroupForm# */{
-    Extends: Form,
-
-    // constructor
-    initialize:function(element) {
-        this.parent(element);
-
-        this.element.getElements('.groupRadio').addEvent('click', this.checkAllRadioInColumn);
-//        this.element.getElements('input[type=radio]').addEvent('change', this.uncheckGroupRadio);
-    },
+var GroupForm = class GroupForm extends Form {
+    constructor(element) {
+        super(element);
+        this.element.querySelectorAll('.groupRadio').forEach((radio) => {
+            radio.addEventListener('click', (event) => this.checkAllRadioInColumn(event));
+        });
+    }
 
     /**
      * Event handler. Check radio button.
      *
-     * @function
-     * @public
      * @param {Object} event Event.
      */
-    checkAllRadioInColumn:function(event) {
-        var radio = $(event.target);
-        radio.getParent('tbody')
-            .getElements('td.' + radio.getParent('td').getProperty('class') + ' input[type=radio]')
-            .setProperty('checked', 'checked');
-    },
-
-    /**
-     * Event handler. Uncheck the radio button.
-     *
-     * @function
-     * @public
-     * @param {Object} event Event.
-     */
-    uncheckGroupRadio: function(event) {
-        if (!radio.hasClass('groupRadio')) {
-            radio.getParent('tbody')
-                .getElement('tr.section_name td.' + radio.getParent('td').getProperty('class') + ' input[type=radio]')
-                .removeProperty('checked');
-        }
+    checkAllRadioInColumn(event) {
+        const radio = event.target;
+        radio.closest('tbody')
+            .querySelectorAll('td.' + radio.closest('td').getAttribute('class') + ' input[type=radio]')
+            .forEach((input) => {
+                input.checked = true;
+            });
     }
-});
+};
