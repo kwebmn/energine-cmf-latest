@@ -329,7 +329,8 @@ var DivManager = class DivManager {
                     this.tree.expandToNode(parentNode);
                     currentNode.injectInside(parentNode);
                 }
-                currentNode.setData(response.data);
+                // сервер отдаёт только имя, родителя и порядок — остальные данные узла (сегмент и др.) остаются
+                currentNode.setData(Object.assign({}, currentNode.getData(), response.data));
                 currentNode.setName(response.data.smap_name);
             }
         );

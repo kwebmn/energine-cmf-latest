@@ -1160,8 +1160,10 @@ const inspect = (page) => page.evaluate(() => {
                 JSON.stringify({ moves, before, down, up }));
 
             const data = await p.evaluate(([k, id]) => window[k].tree.getNodeById(id).getData(), [key, pick.x]);
+            // the server answers get-node-data with the name, the parent and the order only (DivisionEditor::getNodeData)
             await p.route(/get-node-data$/, (route) => route.fulfill({ status: 200, contentType: 'application/json',
-                body: JSON.stringify({ result: true, data: Object.assign({}, data, { smap_name: 'Claude renamed' }) }) }));
+                body: JSON.stringify({ result: true, data: { smap_name: 'Claude renamed', smap_pid: data.smap_pid,
+                    smap_order_num: data.smap_order_num } }) }));
             await p.click('ul.toolbar li.edit_btn');
             const win = await p.waitForSelector('.e-modalbox iframe', { timeout: 10000 }).catch(() => null);
             const src = win ? await win.evaluate((f) => f.src) : '';
@@ -1170,8 +1172,10 @@ const inspect = (page) => page.evaluate(() => {
             const renamed = await p.evaluate(([k, id]) => window[k].tree.getNodeById(id).element.querySelector('a').textContent, [key, pick.x]);
             check('структура: «Править» — окно правки раздела, после него имя узла обновлено', src.endsWith(`/${pick.x}/edit`)
                 && renamed === 'Claude renamed', JSON.stringify({ src, renamed }));
+            const kept = await p.evaluate(([k, id]) => window[k].tree.getNodeById(id).getData().smap_segment, [key, pick.x]);
+            check('структура: после «Править» данные узла на месте (сегмент — для перехода)', kept === pick.segment, String(kept));
 
-            await Promise.all([p.waitForNavigation({ timeout: 15000 }), (await nodeAnchor(p, key, pick.x)).dblclick()]);
+            await Promise.all([p.waitForNavigation({ timeout: 15000 }).catch(() => null), (await nodeAnchor(p, key, pick.x)).dblclick()]);
             check('структура: двойной щелчок по разделу — его страница', new RegExp('/' + pick.segment + '/?$').test(p.url()), p.url());
             check('структура: без ошибок JS и 404', !errors.list().length, errors.list().join(' | '));
             await p.close();
@@ -1213,6 +1217,17 @@ const inspect = (page) => page.evaluate(() => {
             check('окно выбора родителя: текущий раздел выбрать нельзя, другой — «Выбрать» возвращает его в форму',
                 onCurrent === false && onOther === true && form.id === other.id && form.name === other.name
                 && form.segment === other.segment && form.windows === 0, JSON.stringify({ onCurrent, onOther, other, form }));
+            // a double click in the window chooses nothing and does not take the page away from the unsaved form
+            const formUrl = p.url();
+            await p.click('#sitemap_selector');
+            const el2 = await p.waitForSelector('.e-modalbox iframe', { timeout: 10000 });
+            const f2 = await el2.contentFrame();
+            await f2.waitForSelector('#divTree li', { timeout: 10000 });
+            await f2.waitForTimeout(500);
+            const fk2 = await manager(f2);
+            await (await nodeAnchor(f2, fk2, other.id)).dblclick();
+            await p.waitForTimeout(1500);
+            check('окно выбора родителя: двойной щелчок не уводит со страницы с формой', p.url() === formUrl, p.url());
             check('окно выбора родителя: без ошибок JS и 404', !errors.list().length, errors.list().join(' | '));
             await p.close();
         }
