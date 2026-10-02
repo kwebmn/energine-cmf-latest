@@ -911,7 +911,8 @@ var GridManager = new Class(/** @lends GridManager# */{
          */
         this.element = $(element);
         $(element).GridManager=this;// needed ??
-        if($(window.parent.document).getElement('form.e-grid-form')){
+        // документ родительского окна — без методов MooTools: её может не быть там (страница сайта у администратора)
+        if (window.parent.document.querySelector('form.e-grid-form')) {
             this.element.addClass('inside-form');
         }
         this.delConfirmCounter = 0;

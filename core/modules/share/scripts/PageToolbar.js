@@ -3,245 +3,167 @@
  * <ul>
  *     <li>[PageToolbar]{@link PageToolbar}</li>
  * </ul>
+ * Чистый JavaScript, без MooTools.
  *
  * @requires Toolbar
  * @requires ModalBox
  *
  * @author Pavel Dubenko
  *
- * @version 1.0.0
+ * @version 1.1.0
  */
 
-ScriptLoader.load('MooCompat', 'Toolbar', 'ModalBox');
+ScriptLoader.load('Toolbar', 'ModalBox');
 
 /**
- * PageToolbar
- *
- * @augments Toolbar
+ * Панель страницы у администратора на сайте: прикреплена сверху, страница — в основной рамке, сбоку — панель разделов
+ * (iframe). Действия кнопок — методы панели: режим правки и окна админки.
  *
  * @constructor
- * @param {string} componentPath Component path.
- * @param {number} documentId Document ID.
- * @param {string} toolbarName Toolbar name.
- * @param controlsDesc
+ * @param {string} componentPath Адрес компонента панели (…/single/adminPanel/).
+ * @param {number} documentId id страницы.
+ * @param {string} toolbarName
+ * @param {Object[]} [controlsDesc] Описания кнопок {type, id, title, onclick, …}.
+ * @param {Object} [props] Свойства панели (noSideFrame — без боковой панели).
  */
-var PageToolbar = new Class(/** @lends PageToolbar# */{
-    Extends: Toolbar,
-
-    // constructor
-    initialize: function (componentPath, documentId, toolbarName, controlsDesc, props) {
-        this.parent(toolbarName, props);
-
-        Asset.css('pagetoolbar.css');
-
-        /**
-         * Component path.
-         * @type {string}
-         */
+var PageToolbar = class PageToolbar extends Toolbar {
+    constructor(componentPath, documentId, toolbarName, controlsDesc, props) {
+        super(toolbarName, props);
+        Energine.loadCSS('pagetoolbar.css');
         this.componentPath = componentPath;
-
-        /**
-         * Document ID.
-         * @type {number}
-         */
         this.documentId = documentId;
-
         this.dock();
         this.bindTo(this);
         if (controlsDesc) {
-            controlsDesc.each(this.appendControl.bind(this));
+            controlsDesc.forEach((control) => this.appendControl(control));
         }
-
         this.setupLayout();
-    },
+    }
 
-    /**
-     * Setup the layout.
-     * @function
-     * @public
-     */
-    setupLayout: function () {
-        var html = $$('html')[0];
-        if (!html.hasClass('e-has-topframe1')) {
-            html.addClass('e-has-topframe1');
-        }
-        var currentBody = $(document.body).getChildren().filter(function (element) {
-                return !((element.get('tag') !== 'svg') && element.hasClass('e-overlay'));
-            }),
-            mainFrame = new Element('div', {'class': 'e-mainframe'}),
-            topFrame = new Element('div', {'class': 'e-topframe'});
+    // верхняя рамка с панелью и значком, основная рамка со страницей, боковая панель
+    setupLayout() {
+        const html = document.documentElement;
+        html.classList.add('e-has-topframe1');
 
-        $(document.body).adopt([topFrame, mainFrame]);
-        mainFrame.adopt(currentBody);
+        // содержимое страницы, кроме затемнений, переходит в основную рамку
+        const currentBody = [...document.body.children]
+            .filter((element) => element.tagName.toLowerCase() === 'svg' || !element.classList.contains('e-overlay'));
+        const mainFrame = document.createElement('div');
+        mainFrame.className = 'e-mainframe';
+        const topFrame = document.createElement('div');
+        topFrame.className = 'e-topframe';
+        document.body.append(topFrame, mainFrame);
+        mainFrame.append(...currentBody);
+        topFrame.appendChild(this.element);
 
-        topFrame.grab(this.element);
-        var gear = new Element('img', {
-            'src': Energine.static + ((Energine.debug) ? 'images/toolbar/nrgnptbdbg.png' : 'images/toolbar/nrgnptb.png'),
-            'class': 'pagetb_logo'
-        }).inject(topFrame, 'top');
+        const gear = document.createElement('img');
+        gear.src = Energine['static'] + (Energine.debug ? 'images/toolbar/nrgnptbdbg.png' : 'images/toolbar/nrgnptb.png');
+        gear.className = 'pagetb_logo';
+        topFrame.prepend(gear);
 
-        if (!this.properties['noSideFrame']) {
-            if ((Cookie.read('sidebar') == 1)) {
-                $$('html')[0].addClass('e-has-sideframe');
+        if (!this.properties.noSideFrame) {
+            if (PageToolbar.readCookie('sidebar') == 1) {
+                html.classList.add('e-has-sideframe');
             }
-            var sidebarFrame = new Element('div', {'class': 'e-sideframe'}), sidebarFrameContent = new Element('div', {'class': 'e-sideframe-content'}), sidebarFrameBorder = new Element('div', {'class': 'e-sideframe-border'});
-            $(document.body).grab(sidebarFrame);
-            sidebarFrame.adopt([sidebarFrameContent, sidebarFrameBorder]);
-            new Element('iframe').setProperties({
-                'src': this.componentPath + 'show/'/* + this.documentId + '/'*/,
-                'frameBorder': '0'
-            }).inject(sidebarFrameContent);
-            gear.addEvent('click', this.toggleSidebar);
+            const sidebarFrame = document.createElement('div');
+            sidebarFrame.className = 'e-sideframe';
+            const sidebarFrameContent = document.createElement('div');
+            sidebarFrameContent.className = 'e-sideframe-content';
+            const sidebarFrameBorder = document.createElement('div');
+            sidebarFrameBorder.className = 'e-sideframe-border';
+            document.body.appendChild(sidebarFrame);
+            sidebarFrame.append(sidebarFrameContent, sidebarFrameBorder);
+            const iframe = document.createElement('iframe');
+            iframe.src = this.componentPath + 'show/';
+            iframe.frameBorder = '0';
+            sidebarFrameContent.appendChild(iframe);
+            gear.addEventListener('click', () => this.toggleSidebar());
         }
+    }
 
-    },
-    // Actions:
-    /**
-     * Edit mode action.
-     * @function
-     * @public
-     */
-    editMode: function () {
-        if (this.getControlById('editMode')
-            && this.getControlById('editMode').getState() == 0) {
+    // Действия кнопок
+
+    // режим правки: включить — страница приходит заново формой (editMode=1), выключить — перезагрузкой
+    editMode() {
+        const control = this.getControlById('editMode');
+        if (control && control.getState() == 0) {
             this._reloadWindowInEditMode();
         } else {
             window.location = window.location;
         }
-    },
-
-    /**
-     * Add action.
-     * @function
-     * @public
-     */
-    add: function () {
-        ModalBox.open({'url': this.componentPath + 'add/' + this.documentId});
-    },
-
-    /**
-     * Edit action.
-     * @function
-     * @public
-     */
-    edit: function () {
-        ModalBox.open({
-            'url': this.componentPath + this.documentId +
-            '/edit'
-        });
-    },
-
-    /**
-     * Toggle sidebar.
-     * @function
-     * @public
-     */
-    toggleSidebar: function () {
-        $$('html')[0].toggleClass('e-has-sideframe');
-        var url;
-        if (new URI(Energine.base).get('host').contains(new URI(Energine.root).get('host'))) {
-            url = Energine.root;
-        }
-        else {
-            url = Energine.base;
-        }
-        url = new URI(url);
-
-        Cookie.write('sidebar',
-            $$('html')[0].hasClass('e-has-sideframe') ? 1 : 0,
-            {
-                domain: '.' + url.get('host'),
-                path: url.get('directory'),
-                duration: 30
-            });
-    },
-
-    /**
-     * Show template editor.
-     * @function
-     * @public
-     */
-    showTmplEditor: function () {
-        ModalBox.open({'url': this.componentPath + 'template'});
-    },
-
-    /**
-     * Show translation editor.
-     * @function
-     * @public
-     */
-    showTransEditor: function () {
-        ModalBox.open({'url': this.componentPath + 'translation'});
-    },
-
-    /**
-     * Show user editor.
-     * @function
-     * @public
-     */
-    showUserEditor: function () {
-        ModalBox.open({'url': this.componentPath + 'user'});
-    },
-
-    /**
-     * Show role editor.
-     * @function
-     * @public
-     */
-    showRoleEditor: function () {
-        ModalBox.open({'url': this.componentPath + 'role'});
-    },
-
-    /**
-     * Show language editor.
-     * @function
-     * @public
-     */
-    showLangEditor: function () {
-        ModalBox.open({'url': this.componentPath + 'languages'});
-    },
-
-    /**
-     * Show file repository.
-     * @function
-     * @public
-     */
-    showFileRepository: function () {
-        ModalBox.open({'url': this.componentPath + 'file-library'});
-    },
-
-    /**
-     * «Настройки сайта»: единственная запись сайта во всплывающем окне.
-     * @function
-     * @public
-     */
-    showSiteSettings: function () {
-        ModalBox.open({'url': this.componentPath + 'site-settings/'});
-    },
-
-    //todo: Why not to inject this to the editMode() method? - try
-    /**
-     * Reload window in the edit mode.
-     * @function
-     * @private
-     */
-    _reloadWindowInEditMode: function () {
-        new Element('form', {styles: {display: 'none'}})
-            .setProperties({
-                action: '',
-                method: 'post'
-            })
-            .grab(new Element('input')
-                .setProperty('name', 'editMode')
-                .setProperties({
-                    type: 'hidden',
-                    value: '1'
-                }))
-            .grab(Energine.csrfInput())
-            .inject(document.body).submit();
     }
-});
 
-PageToolbar.Logo = new Class({
-    Extends: Toolbar.Control
-});
+    add() {
+        ModalBox.open({url: this.componentPath + 'add/' + this.documentId});
+    }
+
+    edit() {
+        ModalBox.open({url: this.componentPath + this.documentId + '/edit'});
+    }
+
+    // боковая панель: открыть или закрыть и запомнить это в cookie на 30 дней (домен — главного сайта, если адрес
+    // сайта на нём)
+    toggleSidebar() {
+        const html = document.documentElement;
+        html.classList.toggle('e-has-sideframe');
+        const base = new URL(Energine.base, document.baseURI);
+        const root = new URL(Energine.root || Energine.base, document.baseURI);
+        const url = base.hostname.includes(root.hostname) ? root : base;
+        PageToolbar.writeCookie('sidebar', html.classList.contains('e-has-sideframe') ? 1 : 0,
+            '.' + url.hostname, url.pathname.replace(/[^/]*$/, ''), 30);
+    }
+
+    showTmplEditor() {
+        ModalBox.open({url: this.componentPath + 'template'});
+    }
+
+    showTransEditor() {
+        ModalBox.open({url: this.componentPath + 'translation'});
+    }
+
+    showUserEditor() {
+        ModalBox.open({url: this.componentPath + 'user'});
+    }
+
+    showRoleEditor() {
+        ModalBox.open({url: this.componentPath + 'role'});
+    }
+
+    showLangEditor() {
+        ModalBox.open({url: this.componentPath + 'languages'});
+    }
+
+    showFileRepository() {
+        ModalBox.open({url: this.componentPath + 'file-library'});
+    }
+
+    showSiteSettings() {
+        ModalBox.open({url: this.componentPath + 'site-settings/'});
+    }
+
+    // вход в режим правки: та же страница формой POST editMode=1 с токеном
+    _reloadWindowInEditMode() {
+        const form = document.createElement('form');
+        form.style.display = 'none';
+        form.action = '';
+        form.method = 'post';
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'editMode';
+        input.value = '1';
+        form.append(input, Energine.csrfInput());
+        document.body.appendChild(form);
+        form.submit();
+    }
+
+    static readCookie(name) {
+        const pair = document.cookie.split(/;\s*/).find((item) => item.startsWith(name + '='));
+        return pair ? decodeURIComponent(pair.slice(name.length + 1)) : null;
+    }
+
+    static writeCookie(name, value, domain, path, days) {
+        const expires = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toUTCString();
+        document.cookie = name + '=' + encodeURIComponent(value) + '; domain=' + domain + '; path=' + path
+            + '; expires=' + expires;
+    }
+};

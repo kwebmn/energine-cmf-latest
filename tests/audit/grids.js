@@ -363,6 +363,17 @@ const inspect = (page) => page.evaluate(() => {
             check('панель страницы: значок открывает боковую панель и запоминает это, второй щелчок закрывает',
                 /\be-has-sideframe\b/.test(open.html) && open.cookie === '1' && !/\be-has-sideframe\b/.test(closed.html) && closed.cookie === '0',
                 JSON.stringify({ open, closed }));
+            // окна с панели страницы открываются над страницей без MooTools: грид в каждом строится (скрипты окна на
+            // MooTools не должны вызывать её методы у документа родительского окна)
+            for (const btn of ['transEditor', 'language', 'user', 'role', 'fileRepository', 'siteSettings']) {
+                await hp.click(`li.${btn}_btn`);
+                const frameEl = await hp.waitForSelector('.e-modalbox iframe', { timeout: 10000 }).catch(() => null);
+                const frame = frameEl && await frameEl.contentFrame();
+                const built = !!frame && !!(await frame.waitForSelector('ul.toolbar li', { timeout: 10000 }).catch(() => null));
+                check(`панель страницы: окно «${btn}» — грид с панелью построен`, built);
+                await hp.evaluate(() => ModalBox.close());
+                await hp.waitForTimeout(700);
+            }
             check('панель страницы: без ошибок JS и 404', !hErrors.list().length, hErrors.list().join(' | '));
             await hp.close();
         }
