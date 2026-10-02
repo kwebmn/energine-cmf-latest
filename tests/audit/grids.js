@@ -468,11 +468,11 @@ const inspect = (page) => page.evaluate(() => {
                 const tree = new TreeView(ul, {});
                 const make = (id) => new TreeView.Node({ id, name: 'N' + id, data: { segment: 'n' + id, icon: '' } }, tree);
                 const [root, a, b, c, d] = [0, 1, 2, 3, 4].map(make);
-                tree.adopt(root);
-                root.adopt(a);
-                root.adopt(b);
-                root.adopt(c);
-                c.adopt(d);
+                tree.appendNode(root);
+                root.appendNode(a);
+                root.appendNode(b);
+                root.appendNode(c);
+                c.appendNode(d);
                 tree.setupCssClasses();
                 const names = () => [...root.childs.children].map((li) => li.querySelector('a').textContent).join(',');
                 const result = { order0: names(), cFolder: c.element.classList.contains('folder'),

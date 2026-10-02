@@ -29,7 +29,7 @@ var TreeView = class TreeView {
     }
 
     // узел верхнего уровня
-    adopt(node) {
+    appendNode(node) {
         this.nodes.push(node);
         this.element.appendChild(node.element);
     }
@@ -96,7 +96,7 @@ var TreeView = class TreeView {
 
 /**
  * Узел дерева: li > a (название — ссылка на страницу) и, у папки, ul с вложенными узлами. События узла —
- * addEvent('select', обработчик): обработчик получает узел.
+ * on('select', обработчик): обработчик получает узел.
  *
  * @constructor
  * @param {Object|Element} nodeInfo Описание {id, name, data: {segment, icon, class}} или готовый li.
@@ -137,7 +137,7 @@ TreeView.Node = class TreeViewNode {
         anchor.addEventListener('click', (event) => this.tree.nodeSelectListener(event, this));
     }
 
-    addEvent(type, handler) {
+    on(type, handler) {
         (this.events[type] = this.events[type] || []).push(handler);
         return this;
     }
@@ -152,7 +152,7 @@ TreeView.Node = class TreeViewNode {
     }
 
     // вложенный узел — в конец папки (новая папка свёрнута)
-    adopt(node) {
+    appendNode(node) {
         if (!(node instanceof TreeView.Node)) {
             return;
         }

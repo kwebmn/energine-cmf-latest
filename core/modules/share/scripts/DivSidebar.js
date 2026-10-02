@@ -3,72 +3,61 @@
  * <ul>
  *     <li>[DivSidebar]{@link DivSidebar}</li>
  * </ul>
+ * Чистый JavaScript, без MooTools.
  *
  * @requires DivManager
  *
  * @author Pavel Dubenko
  *
- * @version 1.0.0
+ * @version 1.1.0
  */
 
-ScriptLoader.load('MooCompat', 'DivManager');
+ScriptLoader.load('DivManager');
 
-// todo: Bad constructor! It is almost equal to the parent constructor except of few lines. By construct it seams, that this class must be the parent, not the child.
 /**
- * DivSidebar
+ * Дерево разделов в боковой панели администратора: без вкладок и подгонки под окно, панель сверху, у html — класс
+ * e-divtree-panel.
  *
  * @augments DivManager
  *
  * @constructor
  * @param {Element|string} element The main holder element.
  */
-var DivSidebar = new Class(/** @lends DivSidebar# */{
-    Extends: DivManager,
-
-    // constructor
-    initialize: function(element) {
-        Asset.css('div.css');
-
-        this.element = $(element);
-
-        new Element('ul')
-            .setProperty('id', 'divTree')
-            .addClass('treeview')
-            .inject($('treeContainer'));
-
-        this.langId = this.element.getProperty('lang_id');
-
-        this.tree = new TreeView('divTree', {dblClick: this.go.bind(this)});
-
-        /*this.treeRoot = this.tree.getSelectedNode();
-        this.treeRoot.onSelect = this.onSelectNode.bind(this);*/
-
-        this.singlePath = this.element.getProperty('single_template');
-
-        $$('html')[0].addClass('e-divtree-panel');
-
+var DivSidebar = class DivSidebar extends DivManager {
+    /**
+     * Своя настройка вместо настройки DivManager.
+     *
+     * @param {Element|string} element
+     */
+    setup(element) {
+        Energine.loadCSS('div.css');
+        this.element = DivManager.element(element);
+        const list = DivManager.treeList();
+        this.langId = this.element.getAttribute('lang_id');
+        this.tree = new TreeView(list, {dblClick: () => this.go()});
+        this.singlePath = this.element.getAttribute('single_template');
+        document.documentElement.classList.add('e-divtree-panel');
         this.loadTree();
-    },
+    }
 
     /**
-     * Overridden parent [attachToolbar]{@link DivManager#attachToolbar} method.
+     * Панель — сверху, включены «Добавить» и «Выбрать».
      *
-     * @function
-     * @public
-     * @param {Toolbar} toolbar Toolbar that will be attached.
+     * @param {Toolbar} toolbar
      */
-    attachToolbar: function(toolbar) {
-        if (this.toolbar = toolbar) {
-            this.toolbar.getElement().inject(this.element, 'top');
+    attachToolbar(toolbar) {
+        if ((this.toolbar = toolbar)) {
+            this.element.prepend(this.toolbar.element);
             this.toolbar.disableControls();
-            var addBtn, selectBtn;
-            if (addBtn = this.toolbar.getControlById('add')) {
+            const addBtn = this.toolbar.getControlById('add'),
+                selectBtn = this.toolbar.getControlById('select');
+            if (addBtn) {
                 addBtn.enable();
             }
-            if (selectBtn = this.toolbar.getControlById('select')) {
+            if (selectBtn) {
                 selectBtn.enable();
             }
             toolbar.bindTo(this);
         }
     }
-});
+};

@@ -3,94 +3,77 @@
  * <ul>
  *     <li>[DivTree]{@link DivTree}</li>
  * </ul>
+ * Чистый JavaScript, без MooTools.
  *
  * @requires DivManager
  *
  * @author Pavel Dubenko
  *
- * @version 1.0.0
+ * @version 1.1.0
  */
 
-ScriptLoader.load('MooCompat', 'DivManager');
+ScriptLoader.load('DivManager');
 
 /**
- * DivTree.
+ * Окно выбора раздела (родитель раздела): раздел формы, из которой окно открыто, и его потомков выбрать нельзя.
  *
  * @augments DivManager
  *
  * @constructor
  * @param {Element|string} el The main holder element.
  */
-var DivTree = new Class(/** @lends DivTree# */{
-    Extends: DivManager,
-
-    /**
-     * Current ID.
-     * @type {number}
-     */
-    currentID: 0,
-
-    // constructor
-    initialize: function (el) {
-        this.parent(el);
-
-        var iframes = window.top.document.getElementsByTagName('iframe'),
-            srcWindows = [window.top],
-            result = false,
-            i;
-
-        for (i = 0; i < iframes.length; i++) {
-            if (iframes[i].contentWindow) {
-                srcWindows.push(iframes[i].contentWindow);
+var DivTree = class DivTree extends DivManager {
+    constructor(el) {
+        super(el);
+        /**
+         * Id раздела формы (поле #smap_id в одном из окон страницы) или 0.
+         * @type {number}
+         */
+        this.currentID = 0;
+        const srcWindows = [window.top];
+        Array.from(window.top.document.getElementsByTagName('iframe')).forEach((iframe) => {
+            if (iframe.contentWindow) {
+                srcWindows.push(iframe.contentWindow);
             }
-        }
-
-        for (i = 0; i < srcWindows.length; i++) {
+        });
+        for (let i = 0; i < srcWindows.length; i++) {
             try {
-                result = srcWindows[i].document.getElementById('smap_id');
+                const result = srcWindows[i].document.getElementById('smap_id');
                 if (result) {
-                    this.currentID = result.value.toInt();
+                    this.currentID = parseInt(result.value, 10);
                     break;
                 }
-            }
-            catch (e) {
+            } catch (e) {
             }
         }
-    },
+    }
 
     /**
-     * Extend parent [onSelectNode]{@link DivManager#onSelectNode} method.
+     * «Выбрать» выключена у раздела формы и у его потомков.
      *
-     * @function
-     * @public
-     * @param {TreeView.Node} node Node that will be selected.
+     * @param {TreeView.Node} node
      */
-    onSelectNode: function (node) {
-        this.parent(node);
-
-        var btnSelect = this.toolbar.getControlById('select');
+    onSelectNode(node) {
+        super.onSelectNode(node);
+        const btnSelect = this.toolbar.getControlById('select');
         if (this.currentID) {
             if (this.currentID == node.id) {
                 if (btnSelect) {
                     btnSelect.disable();
                 }
             } else {
-                var p = node.getParents(), l;
-                if (l = p.length) {
-                    for (var i = 0; i < l; i++) {
-                        if (p[i].id == this.currentID) {
-                            if (btnSelect) {
-                                btnSelect.disable();
-                            }
-                            break;
+                const parents = node.getParents();
+                for (let i = 0; i < parents.length; i++) {
+                    if (parents[i].id == this.currentID) {
+                        if (btnSelect) {
+                            btnSelect.disable();
                         }
+                        break;
                     }
                 }
             }
-        } else {
-            if (btnSelect) {
-                btnSelect.enable();
-            }
+        } else if (btnSelect) {
+            btnSelect.enable();
         }
     }
-});
+};

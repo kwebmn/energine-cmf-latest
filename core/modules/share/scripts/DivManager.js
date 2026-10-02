@@ -3,6 +3,7 @@
  * <ul>
  *     <li>[DivManager]{@link DivManager}</li>
  * </ul>
+ * Чистый JavaScript, без MooTools.
  *
  * @requires TabPane
  * @requires Toolbar
@@ -11,428 +12,349 @@
  *
  * @author Pavel Dubenko
  *
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 // TODO: DivManager class is very similar to the TreeView class! I think, one of them must be merged to another and remove the overloaded functionality. - wait for tests
 
-ScriptLoader.load('MooCompat', 'TabPane', 'Toolbar', 'ModalBox', 'TreeView');
+ScriptLoader.load('TabPane', 'Toolbar', 'ModalBox', 'TreeView');
 
 /**
- * DivManager.
+ * Структура сайта: дерево разделов с панелью — добавить, править, удалить, переставить, выбрать (в окне), перейти на
+ * страницу раздела (двойной щелчок).
  *
  * @constructor
- * @param {Element|string} element The main holder element.
+ * @param {Element|string} element Элемент компонента (или его id).
  */
-var DivManager = new Class(/** @lends DivManager# */{
-    /**
-     * @see Energine.request
-     * @deprecated Use Energine.request instead.
-     */
-    request: Energine.request,
-
-    /**
-     * Toolbar.
-     * @type {Toolbar}
-     */
-    toolbar: null,
-
-    // constructor
-    initialize: function (element) {
-        Asset.css('div.css');
-
+var DivManager = class DivManager {
+    constructor(element) {
         /**
-         * The main holder element.
-         * @type {Element}
+         * Toolbar.
+         * @type {Toolbar}
          */
-        this.element = $(element);
-
-        /**
-         * Tab panels.
-         * @type {TabPane}
-         */
-        this.tabPane = new TabPane(this.element);
-
-        /**
-         * Language ID.
-         * @type {string|number}
-         */
-        this.langId = this.element.getProperty('lang_id');
-
-        new Element('ul')
-            .setProperty('id', 'divTree')
-            .addClass('treeview')
-            .inject($('treeContainer'));
-
-        /**
-         * Tree.
-         * @type {TreeView}
-         */
-
-        this.tree = new TreeView('divTree', {dblClick: this.go.bind(this)});
-
-        /**
-         * Trre's root node.
-         * @type {TreeView.Node}
-         */
+        this.toolbar = null;
         this.treeRoot = null;
+        this.setup(element);
+    }
 
-        /**
-         * Path to the component on the page.
-         * @type {string}
-         */
-        this.singlePath = this.element.getProperty('single_template');
-
+    /**
+     * Настройка: вкладки, дерево в #treeContainer, загрузка разделов; на странице панель подгоняется под окно.
+     *
+     * @param {Element|string} element
+     */
+    setup(element) {
+        Energine.loadCSS('div.css');
+        this.element = DivManager.element(element);
+        this.tabPane = new TabPane(this.element);
+        this.langId = this.element.getAttribute('lang_id');
+        this.tree = new TreeView(DivManager.treeList(), {dblClick: () => this.go()});
+        this.singlePath = this.element.getAttribute('single_template');
         this.loadTree();
 
         /* вешаем пересчет размеров формы на ресайз окна */
-        if (!(document.getElement('.e-singlemode-layout'))) {
-            window.addEvent('resize', this.fitTreeFormSize.bind(this));
+        if (!document.querySelector('.e-singlemode-layout')) {
+            window.addEventListener('resize', () => this.fitTreeFormSize());
         }
-    },
+    }
 
     /**
-     * Attach toolbar.
+     * Панель — внизу; «Добавить», «Выбрать», «Закрыть», «Править» включены сразу, остальные — по выбору раздела.
      *
-     * @function
-     * @public
-     * @param {Toolbar} toolbar Toolbar that will be attached.
+     * @param {Toolbar} toolbar
      */
-    attachToolbar: function (toolbar) {
-        var toolbarContainer = this.element.getElement('.e-pane-b-toolbar');
-
+    attachToolbar(toolbar) {
+        const toolbarContainer = this.element.querySelector('.e-pane-b-toolbar');
         this.toolbar = toolbar;
-
-        if (toolbarContainer) {
-            toolbarContainer.adopt(this.toolbar.getElement());
-        } else {
-            this.element.adopt(this.toolbar.getElement());
-        }
+        (toolbarContainer || this.element).appendChild(this.toolbar.element);
         this.toolbar.disableControls();
-
-        ['add', 'select', 'close', 'edit'].each(function (btnID) {
-            var btn = this.toolbar.getControlById(btnID);
+        ['add', 'select', 'close', 'edit'].forEach((btnID) => {
+            const btn = this.toolbar.getControlById(btnID);
             if (btn) {
                 btn.enable();
             }
-        }, this);
-
+        });
         toolbar.bindTo(this);
-    },
+    }
 
     /**
-     * Load the tree.
-     * @function
-     * @public
-     */
-    loadTree: function () {
-        Energine.request(
-            this.singlePath + 'get-data/',
-            'languageID=' + this.langId,
-            function (response) {
-                this.buildTree(response.data, (response.current) ? response.current : null);
-
-                /* растягиваем всю форму до высоты видимого окна */
-                if (!(document.getElement('.e-singlemode-layout'))) {
-                    this.pane = this.element;
-                    this.paneContent = this.pane.getElement('.e-pane-item');
-                    this.treeContainer = this.pane.getElement('.e-divtree-select');
-                    this.minPaneHeight = 300;
-
-                    this.fitTreeFormSize();
-
-                    new Fx.Scroll(document.getElement('.e-mainframe') ? document.getElement('.e-mainframe') : window).toElement(this.pane);
-                }
-            }.bind(this)
-        );
-    },
-
-    /**
-     * Build the tree.
+     * Адрес данных дерева.
      *
-     * @function
-     * @public
-     * @param {} nodes Tree nodes.
-     * @param {} currentNodeID Current node in the tree.
+     * @returns {string}
      */
-    buildTree: function (nodes, currentNodeID) {
-        var treeInfo = {};
-        for (var i = 0; i < nodes.length; i++) {
-            var node = nodes[i];
-            var pid = node['smap_pid'] || 'treeRoot';
-            if (!treeInfo[pid]) {
-                treeInfo[pid] = [];
-            }
-            treeInfo[pid].push(node);
-        }
+    treeDataURL() {
+        return this.singlePath + 'get-data/';
+    }
 
-        var lambda = function (nodeId, parentElement) {
-            //console.log(treeInfo[nodeId], nodeId);
-            for (var i = 0; i < treeInfo[nodeId].length; i++) {
-                var child = treeInfo[nodeId][i],
-                    icon = (child['tmpl_icon'])
+    /**
+     * Загрузить разделы и построить дерево; на странице панель подгоняется под окно и прокручивается в видимую часть.
+     */
+    loadTree() {
+        Energine.request(
+            this.treeDataURL(),
+            'languageID=' + this.langId,
+            (response) => {
+                this.buildTree(response.data, (response.current) ? response.current : null);
+                /* растягиваем всю форму до высоты видимого окна */
+                if (!document.querySelector('.e-singlemode-layout')) {
+                    this.pane = this.element;
+                    this.paneContent = this.pane.querySelector('.e-pane-item');
+                    this.treeContainer = this.pane.querySelector('.e-divtree-select');
+                    this.minPaneHeight = 300;
+                    this.fitTreeFormSize();
+                    this.pane.scrollIntoView({block: 'start'});
+                }
+            }
+        );
+    }
+
+    /**
+     * Дерево из списка разделов (родитель — smap_pid); пустой список — пустое дерево.
+     *
+     * @param {Object[]} nodes
+     * @param {number|string} currentNodeID
+     */
+    buildTree(nodes, currentNodeID) {
+        const treeInfo = {};
+        (nodes || []).forEach((node) => {
+            const pid = node['smap_pid'] || 'treeRoot';
+            (treeInfo[pid] = treeInfo[pid] || []).push(node);
+        });
+
+        const lambda = (nodeId, parentNode) => {
+            (treeInfo[nodeId] || []).forEach((child) => {
+                const icon = (child['tmpl_icon'])
                         ? Energine.base + child['tmpl_icon']
                         : Energine.base + 'templates/icons/empty.icon.gif',
                     childId = child['smap_id'];
-
-                var newNode = new TreeView.Node({
+                const newNode = new TreeView.Node({
                     id: childId,
                     name: child['smap_name'],
                     data: {
-                        'segment':child['smap_segment'],
+                        'segment': child['smap_segment'],
                         'class': ((childId == currentNodeID) ? ' current' : ''),
                         'icon': icon
                     }
                 }, this.tree);
-
                 newNode.setData(child);
-                newNode.addEvent('select', this.onSelectNode.bind(this));
-                parentElement.adopt(newNode);
-
-
+                newNode.on('select', (node) => this.onSelectNode(node));
+                parentNode.appendNode(newNode);
                 if (treeInfo[childId]) {
                     lambda(childId, newNode);
                 }
-            }
-        }.bind(this);
+            });
+        };
+
         lambda('treeRoot', this.tree);
+        this.showCurrent(currentNodeID);
+    }
 
-
+    /**
+     * Текущий раздел выбран и раскрыт, иначе раскрыты все.
+     *
+     * @param {number|string} currentNodeID
+     */
+    showCurrent(currentNodeID) {
         this.tree.setupCssClasses();
         this.tree.expandToNode(currentNodeID);
-
-        if (this.tree.getNodeById(currentNodeID)) {
-            this.tree.getNodeById(currentNodeID).select();
-            this.tree.getNodeById(currentNodeID).expand();
-        }
-        else {
+        const current = this.tree.getNodeById(currentNodeID);
+        if (current) {
+            current.select();
+            current.expand();
+        } else {
             this.tree.expandAllNodes();
         }
-    },
+    }
 
     /**
-     * Fit the tree's form size.
-     * @function
-     * @public
+     * Панель на странице — по дереву, но не выше окна (и не ниже 300px).
      */
-    fitTreeFormSize: function () {
-        var windowHeight = window.getSize().y - 10,
-            treeContainerHeight = this.treeContainer.getSize().y,
-            paneOthersHeight = this.pane.getSize().y - this.paneContent.getSize().y + 22;
+    fitTreeFormSize() {
+        if (!this.pane) {
+            return;
+        }
+        const windowHeight = document.documentElement.clientHeight - 10,
+            treeContainerHeight = this.treeContainer.getBoundingClientRect().height,
+            paneOthersHeight = this.pane.getBoundingClientRect().height - this.paneContent.getBoundingClientRect().height + 22;
 
         if (windowHeight > this.minPaneHeight) {
-            var tree_pane = treeContainerHeight + paneOthersHeight;
-            if (tree_pane > windowHeight) {
-                this.pane.setStyle('height', windowHeight);
-            } else {
-                this.pane.setStyle('height', tree_pane);
-            }
+            const treePane = treeContainerHeight + paneOthersHeight;
+            this.pane.style.height = Math.round((treePane > windowHeight) ? windowHeight : treePane) + 'px';
         } else {
-            this.pane.setStyle('height', this.minPaneHeight);
+            this.pane.style.height = this.minPaneHeight + 'px';
         }
-    },
+    }
 
-    /**
-     * Reload.
-     *
-     * @function
-     * @public
-     */
-    reload: function () {
+    reload() {
         this.tree.empty();
         this.loadTree();
-    },
+    }
 
     // Actions:
+
     /**
-     * Add action.
-     * @function
-     * @public
+     * Окно добавления раздела в выбранный; ответ окна: add — ещё раз, go — переход на новую страницу, иначе — дерево
+     * заново.
      */
-    add: function () {
-        var nodeId = this.tree.getSelectedNode().getId();
+    add() {
+        const nodeId = this.tree.getSelectedNode().getId();
         ModalBox.open({
             url: this.singlePath + 'add/' + nodeId + '/',
-            onClose: function (returnValue) {
+            onClose: (returnValue) => {
                 if (returnValue) {
                     switch (returnValue.afterClose) {
                         case 'add':
                             this.add();
                             break;
-
                         case 'go':
                             window.top.location.href = Energine.base + returnValue.url;
                             break;
-
-                        default :
+                        default:
                             this.reload();
                     }
                 }
-            }.bind(this),
+            },
             extraData: this.tree.getSelectedNode()
         });
-    },
+    }
 
     /**
-     * Edit action.
-     * @function
-     * @public
+     * Окно правки раздела; после него — имя и место узла с сервера.
      */
-    edit: function () {
-        var nodeId = this.tree.getSelectedNode().getId();
+    edit() {
+        const nodeId = this.tree.getSelectedNode().getId();
         ModalBox.open({
             url: this.singlePath + nodeId + '/edit',
-            onClose: this.refreshNode.bind(this),
+            onClose: () => this.refreshNode(),
             extraData: this.tree.getSelectedNode()
         });
-    },
+    }
 
-    /**
-     * Delete action.
-     * @function
-     * @public
-     */
-    del: function () {
-        var MSG_CONFIRM_DELETE = Energine.translations.get('MSG_CONFIRM_DELETE') ||
+    del() {
+        const MSG_CONFIRM_DELETE = Energine.translations.get('MSG_CONFIRM_DELETE') ||
             'Do you really want to delete record?';
-        if (!confirm(MSG_CONFIRM_DELETE)) return;
-
-        var nodeId = this.tree.getSelectedNode().getId();
-        Energine.request(
-            this.singlePath + nodeId + '/delete/',
-            '',
-            this.reload.bind(this)
-        );
-    },
+        if (!confirm(MSG_CONFIRM_DELETE)) {
+            return;
+        }
+        const nodeId = this.tree.getSelectedNode().getId();
+        Energine.request(this.singlePath + nodeId + '/delete/', '', () => this.reload());
+    }
 
     /**
-     * Change order.
+     * Ответ на «вверх»/«вниз»: узел переставляется по направлению из ответа.
      *
-     * @function
-     * @public
-     * @param {Object} response Server response.
+     * @param {Object} response {result, dir}
      */
-    changeOrder: function (response) {
+    changeOrder(response) {
         if (!response.result) {
             return;
         }
-
         this.tree.getSelectedNode()[(response.dir == '<') ? 'moveUp' : 'moveDown']();
-    },
+    }
 
-    /**
-     * Move node up action.
-     * @function
-     * @public
-     */
-    up: function () {
-        var nodeId = this.tree.getSelectedNode().getId();
-        Energine.request(this.singlePath + nodeId + '/up', '', this.changeOrder.bind(this));
-    },
+    up() {
+        const nodeId = this.tree.getSelectedNode().getId();
+        Energine.request(this.singlePath + nodeId + '/up', '', (response) => this.changeOrder(response));
+    }
 
-    /**
-     * Move node down action.
-     * @function
-     * @public
-     */
-    down: function () {
-        var nodeId = this.tree.getSelectedNode().getId();
-        Energine.request(this.singlePath + nodeId + '/down', '', this.changeOrder.bind(this));
-    },
+    down() {
+        const nodeId = this.tree.getSelectedNode().getId();
+        Energine.request(this.singlePath + nodeId + '/down', '', (response) => this.changeOrder(response));
+    }
 
-    /**
-     * Select action.
-     * @function
-     * @public
-     */
-    select: function () {
-        var nodeData = this.tree.getSelectedNode().getData();
-
-        ModalBox.setReturnValue(nodeData);
+    select() {
+        ModalBox.setReturnValue(this.tree.getSelectedNode().getData());
         ModalBox.close();
-    },
+    }
 
-    /**
-     * Close action.
-     * @function
-     * @public
-     */
-    close: function () {
+    close() {
         ModalBox.close();
-    },
+    }
 
     /**
-     * Go action.
-     * @function
-     * @public
+     * Перейти на страницу выбранного раздела — в верхнем окне.
      */
-    go: function () {
-        var nodeData = this.tree.getSelectedNode().getData();
-
+    go() {
+        const nodeData = this.tree.getSelectedNode().getData();
         if (nodeData.smap_segment || !nodeData.smap_pid) {
             window.top.document.location = Energine.base + nodeData.smap_segment;
         }
-    },
+    }
+
     // End actions
 
     /**
-     * Event handler. Select node.
+     * Выбран раздел: у раздела включены все кнопки, у корня — только «Закрыть», «Добавить», «Править», «Выбрать».
      *
-     * @function
-     * @public
-     * @param {TreeView.Node} node Node that will be selected.
+     * @param {TreeView.Node} node
      */
-    onSelectNode: function (node) {
+    onSelectNode(node) {
         if (!this.toolbar) {
             return;
         }
-
-        var data = node.getData(),
+        const data = node.getData(),
             buttons = [this.toolbar.getControlById('close')];
-
         if ((data != undefined) && data.smap_pid) {
             this.toolbar.enableControls();
         } else {
             this.toolbar.disableControls();
-
-            buttons.append([
+            buttons.push(
                 this.toolbar.getControlById('add'),
                 this.toolbar.getControlById('edit'),
                 this.toolbar.getControlById('select')
-            ]);
+            );
         }
-
-        buttons.each(function (btn) {
+        buttons.forEach((btn) => {
             if (btn) {
                 btn.enable();
             }
-        })
-    },
+        });
+    }
 
     /**
-     * Refresh node.
-     * @function
-     * @public
+     * Имя и место выбранного узла — с сервера (после окна правки).
      */
-    refreshNode: function () {
-        var nodeId = this.tree.getSelectedNode().getId();
+    refreshNode() {
+        const nodeId = this.tree.getSelectedNode().getId();
         Energine.request(
             this.singlePath + 'get-node-data',
             'languageID=' + this.langId + '&id=' + nodeId,
-            function (response) {
+            (response) => {
                 if (response.data.smap_pid == null) {
                     response.data.smap_pid = '';
                 }
-                var smapPid = response.data.smap_pid;
-                var currentNode = this.tree.getSelectedNode();
+                const smapPid = response.data.smap_pid,
+                    currentNode = this.tree.getSelectedNode();
                 if (smapPid != currentNode.getData().smap_pid) {
-                    var parentNode = (smapPid) ? this.tree.getNodeById(smapPid) : this.treeRoot;
+                    const parentNode = (smapPid) ? this.tree.getNodeById(smapPid) : this.treeRoot;
                     this.tree.expandToNode(parentNode);
                     currentNode.injectInside(parentNode);
                 }
                 currentNode.setData(response.data);
                 currentNode.setName(response.data.smap_name);
-            }.bind(this)
+            }
         );
     }
-});
+
+    /**
+     * Элемент по id или сам элемент.
+     *
+     * @param {Element|string} element
+     * @returns {Element}
+     */
+    static element(element) {
+        return (typeof element === 'string') ? document.getElementById(element) : element;
+    }
+
+    /**
+     * Список дерева (ul#divTree.treeview) в #treeContainer.
+     *
+     * @returns {Element}
+     */
+    static treeList() {
+        const list = document.createElement('ul');
+        list.id = 'divTree';
+        list.classList.add('treeview');
+        document.getElementById('treeContainer').appendChild(list);
+        return list;
+    }
+};
