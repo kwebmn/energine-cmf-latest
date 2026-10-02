@@ -23,7 +23,7 @@ Document root ISPConfig фиксирован (`web/`), а `open_basedir` пус�
 | `web/index.php`, `bootstrap.php`, `auth.php`, `resizer/` | точка входа, копии из `htdocs/` репозитория; после обновления кода копируются заново |
 | `web/uploads/` | файлы площадки (в git только каркас `htdocs/uploads`) |
 | `web/system.config.php` | симлинк на `private/energine/configs/system.config.<домен>.php` |
-| `web/images`, `scripts`, `stylesheets`, `templates`, `system.jsmap.php` | генерирует `setup`, руками не править |
+| `web/images`, `scripts`, `stylesheets`, `templates` | генерирует `setup linker`, руками не править |
 | `private/energine/` | репозиторий: ядро `core/`, сайт `site/`, `setup/`, `sql/`, `tests/`, `docs/` |
 | `private/energine/configs/system.config.<домен>.php` | конфиг площадки с паролем базы, режим 600, вне git |
 | `private/energine/tests/local.php` | учётные данные тестов, режим 600, вне git |
@@ -92,7 +92,7 @@ R=$H/private/energine
    - адрес сайта пишет только в конфиг: `site.domain` — хост из `--domain` или `--url`, с портом, если он
      нестандартный (`--url=http://127.0.0.1:8123/` → `127.0.0.1:8123`), `site.root` — путь из `--url`
      (по умолчанию `/`); в базу адрес не пишется;
-   - раскладывает статику (`setup linker`, `setup scriptMap`).
+   - раскладывает статику (`setup linker`).
 
    Пароли в аргументах не принимаются — их видно в списке процессов и в истории команд. Без
    переменных окружения установщик спросит пароль базы и пароль администратора с терминала
@@ -124,7 +124,7 @@ R=$H/private/energine
 ```sh
 cp $R/htdocs/index.php $R/htdocs/bootstrap.php $R/htdocs/auth.php $H/web/
 chown -R web97:client1 $H/private $H/web
-cd $H/web && runuser -u web97 -- php8.5 index.php setup linker && runuser -u web97 -- php8.5 index.php setup scriptMap
+cd $H/web && runuser -u web97 -- php8.5 index.php setup linker
 ```
 Изменения базы между версиями — переходные скрипты `sql/cut/stage*.sql` (см. ниже).
 

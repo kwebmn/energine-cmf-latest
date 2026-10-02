@@ -193,9 +193,9 @@ is "setup install со статикой — код 0" "$rc" 0
 [ $rc -eq 0 ] || echo "$out" | tail -5 | sed 's/^/     /'
 links=$(find "$S2/web/scripts" -maxdepth 1 -name '*.js' -type l 2>/dev/null | wc -l)
 files=$(find "$S2/web/scripts" -maxdepth 1 -name '*.js' -type f 2>/dev/null | wc -l)
-[ "$links" -gt 0 ] && [ "$files" = 0 ] && [ -s "$S2/web/system.jsmap.php" ] \
-  && ok "статика — ссылками на файлы модулей ($links скриптов), карта скриптов записана" \
-  || bad "статика" "ссылок $links, файлов-копий $files, карта $([ -s "$S2/web/system.jsmap.php" ] && echo есть || echo нет)"
+[ "$links" -gt 0 ] && [ "$files" = 0 ] && [ ! -e "$S2/web/system.jsmap.php" ] \
+  && ok "статика — ссылками на файлы модулей ($links скриптов), карты зависимостей скриптов нет (этап 9)" \
+  || bad "статика" "ссылок $links, файлов-копий $files, карта $([ -e "$S2/web/system.jsmap.php" ] && echo есть || echo нет)"
 (cd "$S2/web" && exec runuser -u "$SITE_USER" -- php8.5 -S "127.0.0.1:$PORT" -t "$S2/web" "$S2/web/router.php") > "$T/server2.log" 2>&1 &
 SRV=$!
 for _ in $(seq 50); do curl -s -o /dev/null "$URL" && break; sleep 0.2; done

@@ -77,8 +77,8 @@ tempsite() {
   S="$T/site"
   mkdir -p "$S/web/uploads" "$S/private" && ln -s "$R" "$S/private/energine" \
     && cp "$R/htdocs/index.php" "$R/htdocs/bootstrap.php" "$R/htdocs/auth.php" "$S/web/" || return 2
-  # статика и карта скриптов — площадки (установка с --no-static их не раскладывает)
-  for d in images scripts stylesheets templates resizer system.jsmap.php; do ln -s "$web/$d" "$S/web/$d" || return 2; done
+  # статика — площадки (установка с --no-static её не раскладывает)
+  for d in images scripts stylesheets templates resizer; do ln -s "$web/$d" "$S/web/$d" || return 2; done
   cat > "$S/web/router.php" <<'PHP'
 <?php
 // встроенный сервер PHP: файлы (статика, auth.php) — как есть, остальное — index.php, как у nginx площадки
