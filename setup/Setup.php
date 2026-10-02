@@ -978,6 +978,8 @@ final class Setup {
             }
         }
 
+        // карта зависимостей скриптов (её писали установщики до этапа 9) не нужна: модули подключает import map
+        @unlink(HTDOCS_DIR . '/system.jsmap.php');
         foreach ($this->htdocsDirs as $dir) {
             $dir = HTDOCS_DIR . DIRECTORY_SEPARATOR . $dir;
 

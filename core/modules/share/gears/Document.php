@@ -355,7 +355,8 @@ final class Document extends Primitive implements IDocument {
             $files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($dir,
                 \FilesystemIterator::SKIP_DOTS | \FilesystemIterator::FOLLOW_SYMLINKS));
             foreach ($files as $file) {
-                if ($file->getExtension() === 'js') {
+                // битая ссылка (скрипт убран из кода, setup linker ещё не запускали) — пропускается, страница цела
+                if ($file->getExtension() === 'js' && $file->isFile()) {
                     $name = substr(str_replace('\\', '/', substr($file->getPathname(), strlen($dir) + 1)), 0, -3);
                     $modules[$name] = (string)$file->getMTime();
                 }

@@ -157,7 +157,8 @@ FILES[dead]='core/modules/share/scripts/mootools.js core/modules/share/scripts/S
 # этап 8: MooTools ушла (шаг 7): ни в одном скрипте ядра и сайта (кроме Jodit) нет её конструкций, файлов нет
 MOOTOOLS_FILES='core/modules/share/scripts/mootools.min.js core/modules/share/scripts/MooCompat.js'
 MOOTOOLS_CODE='new Class\(|\$\$?\(|\.(add|remove)Events?\(|\.fireEvent\(|Request\.JSON|new Request\(|Object\.append|new Element\(|\.getElements?\(|\.getParent\(|\.inject\(|\.grab\(|\.adopt\(|\.pass\(|\.each\(|\.(get|set)Property\(|\.(add|remove|has)Class\(|\.(get|set)\(.(value|html|text|tag|disabled).|Fx\.|\.toInt\(\)|Browser\.|typeOf\(|instanceOf\('
-MODULES_CODE='ScriptLoader|system\.jsmap|scriptMap'
+# карту зависимостей никто не читает и не пишет (удалять устаревший файл — можно)
+MODULES_CODE='ScriptLoader|scriptMap|jsMapFile|createJavascriptDependencies|(include|require|file_put_contents)[^;]*jsmap'
 # содержимое сайта: ссылки на удалённые разделы и слова вырезанных функций в текстовых блоках
 # (новости, где они тоже проверялись, удалены с модулем apps на этапе 7)
 declare -A LINKS WORDS

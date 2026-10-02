@@ -203,7 +203,19 @@ code=$(curl -s -o "$T/page2.html" -w '%{http_code}' "$URL")
 js=$(curl -s -o /dev/null -w '%{http_code}' "${URL}scripts/Energine.js")
 [ "$code" = 200 ] && grep -q '<main id="content"' "$T/page2.html" && [ "$js" = 200 ] \
   && ok "сайт со своей статикой отвечает: главная и scripts/Energine.js — 200" || bad "сайт со своей статикой" "главная $code, скрипт $js"
+# этап 9: битая ссылка в web/scripts (скрипт убран из кода, а setup linker ещё не запускали) не роняет страницы:
+# в import map её нет, остальное на месте
+ln -s "$S2/web/scripts/claude-nowhere.js" "$S2/web/scripts/claude-dangling.js"
+code=$(curl -s -o "$T/page3.html" -w '%{http_code}' "$URL")
+[ "$code" = 200 ] && grep -q '"Energine":' "$T/page3.html" && ! grep -q 'claude-dangling' "$T/page3.html" \
+  && ok "битая ссылка в web/scripts — страница 200, в import map её нет" || bad "битая ссылка в web/scripts" "код $code"
+rm -f "$S2/web/scripts/claude-dangling.js"
 kill "$SRV" 2>/dev/null; SRV=
+# этап 9: setup linker убирает устаревшую карту зависимостей скриптов (её писали установщики до этапа 9)
+printf '<?php return [];' > "$S2/web/system.jsmap.php" && chown "$SITE_USER" "$S2/web/system.jsmap.php"
+runuser -u "$SITE_USER" -- php8.5 "$S2/web/index.php" setup linker < /dev/null > /dev/null 2>&1
+[ ! -e "$S2/web/system.jsmap.php" ] && ok "setup linker убирает устаревшую карту зависимостей скриптов" \
+  || bad "устаревшая карта зависимостей скриптов" "осталась после setup linker"
 # модуль в конфиге без каталога (так выглядит конфиг площадки после этапа 7: модуль apps убран из ядра) —
 # setup linker отказывается до любых изменений, каталоги статики не очищаются
 C2="$S2/web/system.config.php"
