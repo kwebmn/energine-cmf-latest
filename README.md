@@ -27,7 +27,10 @@
 (`docs/superpowers/specs/2026-10-02-energine-simple-stage8-step5-forms-editor-design.md`): формы админки, визуальный
 редактор и правка на странице — на чистом JavaScript; окна форм и режим правки MooTools не получают. Шаг 6
 (`docs/superpowers/specs/2026-10-02-energine-simple-stage8-step6-grids-design.md`): гриды админки — на чистом
-JavaScript; гриды и их окна MooTools не получают.
+JavaScript; гриды и их окна MooTools не получают. Шаг 7
+(`docs/superpowers/specs/2026-10-02-energine-simple-stage8-step7-structure-no-mootools-design.md`): структура сайта —
+на чистом JavaScript; `mootools.min.js` и `MooCompat.js` удалены, MooTools не загружает ни одна страница. Этап 8
+закончен.
 
 Что вырезано:
 - этапы 1–6: модули shop, blog, comments, calendar, forms, ads и рассылки; теги, виджеты и редактор блоков,
@@ -70,7 +73,8 @@ JavaScript; гриды и их окна MooTools не получают.
   `docs/superpowers/specs/2026-10-02-energine-simple-stage8-step3-toolbars-design.md` (этап 8, шаг 3),
   `docs/superpowers/specs/2026-10-02-energine-simple-stage8-step4-filters-tree-design.md` (этап 8, шаг 4),
   `docs/superpowers/specs/2026-10-02-energine-simple-stage8-step5-forms-editor-design.md` (этап 8, шаг 5),
-  `docs/superpowers/specs/2026-10-02-energine-simple-stage8-step6-grids-design.md` (этап 8, шаг 6)
+  `docs/superpowers/specs/2026-10-02-energine-simple-stage8-step6-grids-design.md` (этап 8, шаг 6),
+  `docs/superpowers/specs/2026-10-02-energine-simple-stage8-step7-structure-no-mootools-design.md` (этап 8, шаг 7)
 - Установка: `docs/INSTALL.md`
 - Тесты: `tests/README.md`
 
