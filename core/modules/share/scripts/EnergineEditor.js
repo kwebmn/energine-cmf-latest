@@ -3,12 +3,13 @@
  * прямо на странице (PageEditor): язык, панель инструментов, кнопки «Картинка из репозитория»
  * и «Файл из репозитория». Встроенные загрузчик и файловый браузер Jodit выключены — файлы
  * приходят только из репозитория Energine.
+ * Чистый JavaScript, без MooTools.
  *
  * @requires jodit/jodit.min
  * @requires ModalBox
  */
 
-ScriptLoader.load('MooCompat', 'jodit/jodit.min', 'ModalBox');
+ScriptLoader.load('jodit/jodit.min', 'ModalBox');
 
 var EnergineEditor = {
     /**
@@ -42,8 +43,6 @@ var EnergineEditor = {
         sandboxIframesInContent: false
     },
 
-    cssLoaded: false,
-
     /**
      * Создать редактор.
      *
@@ -54,13 +53,10 @@ var EnergineEditor = {
      */
     make: function (element, options) {
         options = options || {};
-        if (!EnergineEditor.cssLoaded) {
-            Asset.css('../scripts/jodit/jodit.min.css');
-            EnergineEditor.cssLoaded = true;
-        }
+        Energine.loadCSS('../scripts/jodit/jodit.min.css');
         var labels = EnergineEditor.labels[Energine.lang] || EnergineEditor.labels.en,
             singlePath = options.singlePath || '';
-        var config = Object.merge({
+        var config = Object.assign({
             language: Energine.lang,
             toolbarAdaptive: false,
             showCharsCounter: false,
@@ -133,7 +129,7 @@ var EnergineEditor = {
                             return;
                         }
                         var style = '';
-                        ['margin-left', 'margin-right', 'margin-top', 'margin-bottom'].each(function (prop) {
+                        ['margin-left', 'margin-right', 'margin-top', 'margin-bottom'].forEach(function (prop) {
                             if (image[prop] && image[prop] != 0) {
                                 style += prop + ':' + parseInt(image[prop], 10) + 'px;';
                             }

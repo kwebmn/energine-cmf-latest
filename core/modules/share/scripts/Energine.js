@@ -287,6 +287,44 @@ Energine.loadCSS = function (name) {
 };
 
 /**
+ * Cookie по имени (значение — через decodeURIComponent, как у Cookie MooTools) или null.
+ * @param {string} name
+ * @returns {string|null}
+ */
+Energine.readCookie = function (name) {
+    var pair = document.cookie.split(/;\s*/).find(function (item) {
+        return item.indexOf(name + '=') === 0;
+    });
+    return pair ? decodeURIComponent(pair.slice(name.length + 1)) : null;
+};
+
+/**
+ * Записать cookie (значение — через encodeURIComponent, как у Cookie MooTools).
+ * @param {string} name
+ * @param {*} value
+ * @param {{path: string, domain: string, days: number}} [options] путь (по умолчанию «/»), домен, срок в днях
+ */
+Energine.writeCookie = function (name, value, options) {
+    options = options || {};
+    var cookie = name + '=' + encodeURIComponent(value) + '; path=' + (options.path || '/');
+    if (options.domain) {
+        cookie += '; domain=' + options.domain;
+    }
+    if (options.days) {
+        cookie += '; expires=' + new Date(Date.now() + options.days * 24 * 60 * 60 * 1000).toUTCString();
+    }
+    document.cookie = cookie;
+};
+
+/**
+ * Путь сайта — каталог адреса Energine.base («/» или «/папка/»): путь cookie админки.
+ * @returns {string}
+ */
+Energine.sitePath = function () {
+    return new URL(Energine.base, document.baseURI).pathname.replace(/[^/]*$/, '');
+};
+
+/**
  * Local placeholder for an image of the given size: a grey SVG in a data: URL.
  * It replaced an external placeholder service (dead, and a third party saw every address).
  *

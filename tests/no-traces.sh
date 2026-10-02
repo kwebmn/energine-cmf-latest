@@ -161,7 +161,8 @@ VANILLA_JS=(core/modules/share/scripts/Energine.js core/modules/share/scripts/Va
             core/modules/share/scripts/Overlay.js core/modules/share/scripts/ModalBox.js
             core/modules/share/scripts/TabPane.js core/modules/share/scripts/PageList.js
             core/modules/share/scripts/Toolbar.js core/modules/share/scripts/PageToolbar.js
-            core/modules/share/scripts/Filters.js core/modules/share/scripts/TreeView.js)
+            core/modules/share/scripts/Filters.js core/modules/share/scripts/TreeView.js
+            core/modules/share/scripts/EnergineEditor.js core/modules/share/scripts/PageEditor.js)
 MOOTOOLS_CODE='new Class\(|\$\$?\(|\.(add|remove)Events?\(|\.fireEvent\(|Request\.JSON|new Request\(|Object\.append|new Element\(|\.getElements?\(|\.getParent\(|\.inject\(|\.grab\(|\.adopt\(|\.pass\(|\.each\(|\.(get|set)Property\(|\.(add|remove|has)Class\(|\.(get|set)\(.(value|html|text|tag|disabled).|Fx\.|\.toInt\(\)|Browser\.|typeOf\(|instanceOf\('
 # первая зависимость скрипта — как её читает setup scriptMap (Setup::parseScriptLoader): первый в файле вызов
 # ScriptLoader.load с именем в кавычках

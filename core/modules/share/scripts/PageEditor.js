@@ -4,6 +4,7 @@
  *     <li>[PageEditor]{@link PageEditor}</li>
  *     <li>[PageEditor.BlockEditor]{@link PageEditor.BlockEditor}</li>
  * </ul>
+ * Чистый JavaScript, без MooTools.
  *
  * @requires Energine
  * @requires EnergineEditor
@@ -14,10 +15,10 @@
  * @author Andy Karpov
  * @author Valerii Zinchenko
  *
- * @version 1.0.0
+ * @version 1.1.0
  */
 
-ScriptLoader.load('MooCompat', 'EnergineEditor', 'ModalBox', 'Overlay');
+ScriptLoader.load('EnergineEditor', 'ModalBox', 'Overlay');
 
 /**
  * Правка текстовых блоков прямо на странице: каждый элемент .nrgnEditor —
@@ -26,32 +27,27 @@ ScriptLoader.load('MooCompat', 'EnergineEditor', 'ModalBox', 'Overlay');
  *
  * @constructor
  */
-var PageEditor = new Class(/** @lends PageEditor# */{
-    /**
-     * Class name of the editable elements.
-     * @type {string}
-     */
-    editorClassName: 'nrgnEditor',
-
-    /**
-     * Block editors.
-     * @type {PageEditor.BlockEditor[]}
-     */
-    editors: [],
-
-    // constructor
-    initialize: function () {
-        $(document.body).getElements('.' + this.editorClassName).each(function (element) {
+var PageEditor = class PageEditor {
+    constructor() {
+        /**
+         * Class name of the editable blocks.
+         * @type {string}
+         */
+        this.editorClassName = 'nrgnEditor';
+        /**
+         * Block editors.
+         * @type {PageEditor.BlockEditor[]}
+         */
+        this.editors = [];
+        document.querySelectorAll('.' + this.editorClassName).forEach((element) => {
             this.editors.push(new PageEditor.BlockEditor(element));
-        }, this);
+        });
 
-        window.addEventListener('pagehide', function () {
-            this.editors.each(function (editor) {
-                editor.beacon();
-            });
-        }.bind(this));
+        window.addEventListener('pagehide', () => {
+            this.editors.forEach((editor) => editor.beacon());
+        });
     }
-});
+};
 
 /**
  * Редактор одного блока.
@@ -59,13 +55,12 @@ var PageEditor = new Class(/** @lends PageEditor# */{
  * @constructor
  * @param {Element} area Элемент .nrgnEditor с атрибутами single_template, eID, num.
  */
-PageEditor.BlockEditor = new Class(/** @lends PageEditor.BlockEditor# */{
-    // constructor
-    initialize: function (area) {
+PageEditor.BlockEditor = class PageEditorBlock {
+    constructor(area) {
         this.area = area;
-        this.singlePath = this.area.getProperty('single_template');
-        this.ID = this.area.getProperty('eID') || '';
-        this.num = this.area.getProperty('num') || '';
+        this.singlePath = area.getAttribute('single_template');
+        this.ID = area.getAttribute('eID') || '';
+        this.num = area.getAttribute('num') || '';
 
         this.editor = EnergineEditor.make(this.area, {
             singlePath: this.singlePath,
@@ -76,23 +71,23 @@ PageEditor.BlockEditor = new Class(/** @lends PageEditor.BlockEditor# */{
          * @type {string}
          */
         this.saved = this.editor.value;
-        this.editor.events.on('blur', this.save.bind(this));
-    },
+        this.editor.events.on('blur', () => this.save());
+    }
 
     /**
      * Есть ли несохранённые изменения.
      * @returns {boolean}
      */
-    isDirty: function () {
+    isDirty() {
         return this.editor.value !== this.saved;
-    },
+    }
 
     /**
      * Тело запроса save-text.
      * @returns {URLSearchParams}
      */
-    body: function (value) {
-        var data = new URLSearchParams();
+    body(value) {
+        const data = new URLSearchParams();
         // токен в теле: маяк заголовков не передаёт
         data.append('csrf_token', Energine.csrf || '');
         data.append('data', value);
@@ -103,45 +98,41 @@ PageEditor.BlockEditor = new Class(/** @lends PageEditor.BlockEditor# */{
             data.append('num', this.num);
         }
         return data;
-    },
+    }
 
     /**
      * Адрес сохранения: ответ JSON, в том числе при отказе (?json — маяк заголовков не передаёт).
      * @returns {string}
      */
-    url: function () {
+    url() {
         return this.singlePath + 'save-text?json';
-    },
+    }
 
     /**
      * Сохранить блок, если он изменился. Сохранённым считается только ответ {result: true}:
      * страница вместо ответа (нет прав, сессия закончилась) и отказ сервера оставляют блок несохранённым.
      */
-    save: function () {
+    save() {
         if (!this.isDirty()) {
             return;
         }
-        var value = this.editor.value;
+        const value = this.editor.value;
         fetch(this.url(), {method: 'POST', body: this.body(value), credentials: 'same-origin'})
-            .then(function (response) {
-                return response.text().then(function (text) {
-                    var result = null;
-                    try {
-                        result = JSON.parse(text);
-                    } catch (e) {
-                    }
-                    if (response.ok && result && result.result) {
-                        this.saved = value;
-                        this.area.removeClass('nrgnEditorError');
-                    } else {
-                        this.fail(result, response.status);
-                    }
-                }.bind(this));
-            }.bind(this))
-            .catch(function () {
-                this.fail(null, 0);
-            }.bind(this));
-    },
+            .then((response) => response.text().then((text) => {
+                let result = null;
+                try {
+                    result = JSON.parse(text);
+                } catch (e) {
+                }
+                if (response.ok && result && result.result) {
+                    this.saved = value;
+                    this.area.classList.remove('nrgnEditorError');
+                } else {
+                    this.fail(result, response.status);
+                }
+            }))
+            .catch(() => this.fail(null, 0));
+    }
 
     /**
      * Блок не сохранён: он помечается и остаётся несохранённым (следующий уход из блока или со страницы
@@ -150,21 +141,21 @@ PageEditor.BlockEditor = new Class(/** @lends PageEditor.BlockEditor# */{
      * @param {Object} result ответ сервера, если это JSON
      * @param {number} status код ответа
      */
-    fail: function (result, status) {
-        this.area.addClass('nrgnEditorError');
+    fail(result, status) {
+        this.area.classList.add('nrgnEditorError');
         alert((result && result.errors && result.errors[0] && result.errors[0].message)
             || ((Energine.translations.get('ERR_TEXT_NOT_SAVED') || 'Error') + (status ? ' (HTTP ' + status + ')' : '')));
-    },
+    }
 
     /**
      * При уходе со страницы: несохранённое отправляется маяком.
      */
-    beacon: function () {
+    beacon() {
         if (this.isDirty()) {
-            var value = this.editor.value;
+            const value = this.editor.value;
             if (navigator.sendBeacon(this.url(), this.body(value))) {
                 this.saved = value;
             }
         }
     }
-});
+};

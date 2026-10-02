@@ -62,7 +62,7 @@ var PageToolbar = class PageToolbar extends Toolbar {
         topFrame.prepend(gear);
 
         if (!this.properties.noSideFrame) {
-            if (PageToolbar.readCookie('sidebar') == 1) {
+            if (Energine.readCookie('sidebar') == 1) {
                 html.classList.add('e-has-sideframe');
             }
             const sidebarFrame = document.createElement('div');
@@ -109,8 +109,8 @@ var PageToolbar = class PageToolbar extends Toolbar {
         const base = new URL(Energine.base, document.baseURI);
         const root = new URL(Energine.root || Energine.base, document.baseURI);
         const url = base.hostname.includes(root.hostname) ? root : base;
-        PageToolbar.writeCookie('sidebar', html.classList.contains('e-has-sideframe') ? 1 : 0,
-            '.' + url.hostname, url.pathname.replace(/[^/]*$/, ''), 30);
+        Energine.writeCookie('sidebar', html.classList.contains('e-has-sideframe') ? 1 : 0,
+            {domain: '.' + url.hostname, path: url.pathname.replace(/[^/]*$/, ''), days: 30});
     }
 
     showTmplEditor() {
@@ -154,16 +154,5 @@ var PageToolbar = class PageToolbar extends Toolbar {
         form.append(input, Energine.csrfInput());
         document.body.appendChild(form);
         form.submit();
-    }
-
-    static readCookie(name) {
-        const pair = document.cookie.split(/;\s*/).find((item) => item.startsWith(name + '='));
-        return pair ? decodeURIComponent(pair.slice(name.length + 1)) : null;
-    }
-
-    static writeCookie(name, value, domain, path, days) {
-        const expires = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toUTCString();
-        document.cookie = name + '=' + encodeURIComponent(value) + '; domain=' + domain + '; path=' + path
-            + '; expires=' + expires;
     }
 };
