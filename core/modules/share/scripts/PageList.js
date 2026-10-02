@@ -3,229 +3,135 @@
  * <ul>
  *     <li>[PageList]{@link PageList}</li>
  * </ul>
+ * Чистый JavaScript, без MooTools.
  *
  * @author Pavel Dubenko, Valerii Zinchenko
  *
- * @version 1.0.2
+ * @version 1.1.0
  */
 
 /**
- * List of pages. From MooTools it implements: Options, Events.
+ * Листалка страниц грида: номера около текущей, первые и последние страницы, многоточия, стрелки.
  *
  * @constructor
- * @param {Object} [options] Set of events. [Options]{@link PageList#options}.
+ * @param {Object} [options]
+ * @param {function} [options.onPageSelect] Вызывается с номером выбранной страницы.
  */
-ScriptLoader.load('MooCompat');
-
-var PageList = new Class(/** @lends PageList# */{
-    Implements: [Options, Events],
-
-    /**
-     * Current page number.
-     * @type {number}
-     */
-    currentPage: 1,
-
-    /**
-     * Indicates whether the PageList is disabled.
-     * @type {boolean}
-     */
-    disabled: false,
-
-    // constructor
-    initialize: function(options) {
-        Asset.css('pagelist.css');
-        this.setOptions(options);
-
-        /**
-         * The main holder element.
-         * @type {Element}
-         */
-        this.element = new Element('ul').addClass('e-pane-toolbar e-pagelist').setProperty('unselectable', 'on');
-    },
-
-    /**
-     * Get the [main holder element]{@link PageList#element}.
-     * @function
-     * @public
-     * @returns {Element}
-     */
-    getElement: function() {
-        return this.element;
-    },
-
-    /**
-     * Disable the PageList.
-     * @function
-     * @public
-     */
-    disable: function() {
-        this.disabled = true;
-        this.element.setStyle('opacity', 0.25);
-    },
-
-    /**
-     * Enable PageList.
-     * @function
-     * @public
-     */
-    enable: function() {
+var PageList = class PageList {
+    constructor(options) {
+        Energine.loadCSS('pagelist.css');
+        this.options = Object.assign({}, options);
+        this.currentPage = 1;
         this.disabled = false;
-        this.element.setStyle('opacity', 1);
-    },
+        this.element = document.createElement('ul');
+        this.element.className = 'e-pane-toolbar e-pagelist';
+        this.element.setAttribute('unselectable', 'on');
+    }
 
-    /**
-     * Build the list of pages.
-     *
-     * @param {number} numPages Total amount of pages.
-     * @param {number} currentPage Current viewed page.
-     */
-    build: function(numPages, currentPage) {
+    getElement() {
+        return this.element;
+    }
+
+    // пока грид грузится, листалка полупрозрачна и не реагирует
+    disable() {
+        this.disabled = true;
+        this.element.style.opacity = '0.25';
+    }
+
+    enable() {
+        this.disabled = false;
+        this.element.style.opacity = '1';
+    }
+
+    build(numPages, currentPage) {
         this.currentPage = currentPage;
-        this.clear();
-
+        this.element.replaceChildren();
         if (numPages <= 1) {
-            this.element.hide();
+            this.element.style.display = 'none';
             return;
         }
-        else {
-            this.element.show();
-        }
+        this.element.style.display = '';
 
-        // Amount of visible pages on the each side relative to the current page.
-        var VISIBLE_PAGES_COUNT = 2;
+        // сколько номеров видно с каждой стороны от текущего
+        const VISIBLE_PAGES_COUNT = 2;
+        const startPage = (currentPage > VISIBLE_PAGES_COUNT) ? currentPage - VISIBLE_PAGES_COUNT : 1;
+        const endPage = Math.min(currentPage + VISIBLE_PAGES_COUNT, numPages);
+        const add = (title, index) => this.element.appendChild(this.createPageLink(title, index));
 
-        var startPage = (currentPage > VISIBLE_PAGES_COUNT) ? currentPage - VISIBLE_PAGES_COUNT : 1;
-        var endPage = currentPage + VISIBLE_PAGES_COUNT;
-        if (endPage > numPages) {
-            endPage = numPages;
-        }
-
-        // Build first pages.
         if (startPage > 1) {
-            this._createPageLink(1, 1).inject(this.element);
+            add(1, 1);
             if (startPage > 2) {
-                this._createPageLink(2, 2).inject(this.element);
+                add(2, 2);
                 if (startPage > 3) {
-                    this._createPageLink('...').inject(this.element)
+                    add('...');
                 }
             }
         }
-
-        // Build the main range of pages.
-        for (var i = startPage; i <= endPage; i++) {
-            this._createPageLink(i, i).inject(this.element);
+        for (let i = startPage; i <= endPage; i++) {
+            add(i, i);
         }
-
-        // Build last pages.
         if (endPage < numPages) {
-            if (endPage < (numPages - 1)) {
-                if (endPage < (numPages - 2)) {
-                    this._createPageLink('...').inject(this.element)
+            if (endPage < numPages - 1) {
+                if (endPage < numPages - 2) {
+                    add('...');
                 }
-                this._createPageLink(numPages - 1, numPages - 1).inject(this.element)
+                add(numPages - 1, numPages - 1);
             }
-            this._createPageLink(numPages, numPages).inject(this.element)
+            add(numPages, numPages);
         }
+        this.element.querySelector('li[index="' + this.currentPage + '"]').classList.add('current');
 
-        this.element.getElement('[index=' + this.currentPage + ']').addClass('current');
-
-        // Add buttons to the current page.
         if (currentPage != 1) {
-            this._createPageLink('previous',currentPage-1, 'images/prev_page.gif').inject(this.element, 'top');
+            this.element.prepend(this.createPageLink('previous', currentPage - 1, 'images/prev_page.gif'));
         }
         if (currentPage != numPages) {
-            this._createPageLink('next', currentPage+1, 'images/next_page.gif').inject(this.element, 'bottom');
+            this.element.appendChild(this.createPageLink('next', currentPage + 1, 'images/next_page.gif'));
         }
-    },
+    }
 
-    /**
-     * Select the page based on the page item.
-     *
-     * @fires PageList#pageSelect
-     *
-     * @function
-     * @public
-     * @param {Element} listItem Page item.
-     */
-    selectPage: function(listItem) {
-        this.element.getElement('li.current').removeClass('current');
-        this.currentPage = listItem.getProperty('index').toInt();
-        /**
-         * The page is selected.
-         * @event PageList#selectPage
-         * @param {number} Current selected page number.
-         */
-        this.fireEvent('pageSelect', this.currentPage);
-    },
+    selectPage(listItem) {
+        const current = this.element.querySelector('li.current');
+        if (current) {
+            current.classList.remove('current');
+        }
+        this.currentPage = parseInt(listItem.getAttribute('index'), 10);
+        if (this.options.onPageSelect) {
+            this.options.onPageSelect(this.currentPage);
+        }
+    }
 
-    /**
-     * Select the page by number.
-     *
-     * @fires PageList#pageSelect
-     *
-     * @function
-     * @public
-     * @param num Page number.
-     */
-    selectPageByNum: function (num) {
-        this.currentPage = num;
-        this.fireEvent('pageSelect', this.currentPage);
-    },
-
-    /**
-     * Create the element for the specific page.
-     *
-     * @function
-     * @protected
-     * @param {string|number} title Page title.
-     * @param {number} [index = 0] Page number.
-     * @param {string} [image = ''] Source to the image.
-     * @returns {Element}
-     */
-    _createPageLink : function(title, index, image){
+    // пункт листалки: номер, многоточие (index 0 — без действий) или стрелка-картинка
+    createPageLink(title, index, image) {
         index = index || 0;
-        image = image || '';
-
-        var listItem = new Element('li');
+        const listItem = document.createElement('li');
         if (image) {
-            new Element('img', {'src':image, 'border': 0, 'align':'absmiddle', alt:title, title:title, 'styles':{width:6, height:11}}).inject(listItem);
+            const img = document.createElement('img');
+            img.src = image;
+            img.setAttribute('border', '0');
+            img.setAttribute('align', 'absmiddle');
+            img.alt = title;
+            img.title = title;
+            img.style.width = '6px';
+            img.style.height = '11px';
+            listItem.appendChild(img);
         } else {
-            listItem.appendText(title);
+            listItem.appendChild(document.createTextNode(title));
         }
-
-        listItem.setProperty('index', index);
+        listItem.setAttribute('index', index);
 
         if (index) {
-            var pageList = this;
-            listItem.addEvents({
-                'mouseover': function() {
-                    if (!pageList.disabled) {
-                        this.addClass('highlighted');
-                    }
-                },
-                'mouseout': function() {
-                    this.removeClass('highlighted');
-                },
-                'click': function() {
-                    if (!pageList.disabled && this.getProperty('index') != pageList.currentPage.toString()) {
-                        pageList.selectPage(this);
-                    }
+            listItem.addEventListener('mouseover', () => {
+                if (!this.disabled) {
+                    listItem.classList.add('highlighted');
+                }
+            });
+            listItem.addEventListener('mouseout', () => listItem.classList.remove('highlighted'));
+            listItem.addEventListener('click', () => {
+                if (!this.disabled && listItem.getAttribute('index') != String(this.currentPage)) {
+                    this.selectPage(listItem);
                 }
             });
         }
-
         return listItem;
-    }.protect(),
-
-    /**
-     * Clear the PageList.
-     * @function
-     * @protected
-     */
-    clear: function() {
-        while (this.element.hasChildNodes()) {
-            this.element.removeChild(this.element.firstChild);
-        }
-    }.protect()
-});
+    }
+};

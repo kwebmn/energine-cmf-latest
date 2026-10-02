@@ -97,7 +97,7 @@
                             <xsl:variable name="TAB_NAME" select="."/>
                             <li>
                                 <a href="#{$TAB_ID}"><xsl:value-of select="."/></a>
-                                <span class="data">{ lang: <xsl:value-of select="$FIELDS[@tabName=$TAB_NAME]/@language"/> }</span>
+                                <span class="data">{"lang": <xsl:value-of select="$FIELDS[@tabName=$TAB_NAME]/@language"/>}</span>
                             </li>
                         </xsl:for-each>        
                     </xsl:when>

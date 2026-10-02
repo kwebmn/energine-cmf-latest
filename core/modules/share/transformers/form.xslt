@@ -78,7 +78,7 @@
                             <li>
                                 <a href="#{generate-id(.)}"><xsl:value-of select="$TAB_NAME" /></a>
                                 <xsl:if test="$FIELDS[@tabName=$TAB_NAME][1]/@language">
-                                    <span class="data">{ lang: <xsl:value-of select="$FIELDS[@tabName=$TAB_NAME][1]/@language" /> }</span>                                
+                                    <span class="data">{"lang": <xsl:value-of select="$FIELDS[@tabName=$TAB_NAME][1]/@language" />}</span>                                
                                 </xsl:if>
                             </li>
                         </xsl:if>

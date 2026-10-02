@@ -3,248 +3,111 @@
  * <ul>
  *     <li>[TabPane]{@link TabPane}</li>
  * </ul>
+ * Чистый JavaScript, без MooTools.
  *
  * @author Pavel Dubenko
  *
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 /**
- * Abstract tab panel.
+ * Вкладки формы или грида: ul.e-tabs (li > a[href="#панель"]) и панели div#панель. Несколько вкладок могут вести на
+ * одну панель (вкладки языков грида). Данные вкладки — JSON в span.data ({"lang": N}).
  *
  * @constructor
- * @param {Object} [options] Set of events. This class listens 'tabChange'-event.
+ * @param {Element|string} element
+ * @param {Object} [options]
+ * @param {function} [options.onTabChange] Вызывается при смене вкладки с её данными.
  */
-ScriptLoader.load('MooCompat');
+var TabPane = class TabPane {
+    constructor(element, options) {
+        Energine.loadCSS('tabpane.css');
+        this.options = Object.assign({}, options);
+        this.element = (typeof element === 'string') ? document.getElementById(element) : element;
 
-var TabPane = new Class(/** @lends TabPane# */{
-    Implements: [Options, Events],
-
-    Static: {
-        count: 1,
-        assignID: function() {
-            return this.count++;
-        }
-    },
-
-    // constructor
-    initialize: function (element, options) {
-        Asset.css('tabpane.css');
-        this.setOptions(options);
-
-        /**
-         * The main holder element.
-         * @type {Element}
-         */
-        this.element = $(element);
-
-        /**
-         * Array of tabs.
-         * @type {Elements}
-         */
-        this.tabs = this.element.getElement('ul.e-tabs').addClass('clearfix').getElements('li');
-
-        /**
-         * Current viewed tab.
-         * @type {Element}
-         */
+        const list = this.element.querySelector('ul.e-tabs');
+        list.classList.add('clearfix');
+        this.tabs = [...list.querySelectorAll('li')];
         this.currentTab = this.tabs[0];
-        this.element.addClass('e-items-count-' + this.tabs.length )
-        this.tabs.each(function (tab) {
-            tab.setProperty('unselectable', 'on');
-            var anchor = tab.getElement('a');
-            var paneId = anchor.getProperty('href').slice(anchor.getProperty('href').lastIndexOf('#'));
-            anchor.addEvent('click', function (event) {
-                event.preventDefault();
-                //tab.blur();
-            });
+        this.element.classList.add('e-items-count-' + this.tabs.length);
 
-            var tabData = tab.getElement('span.data');
-            tab.data = (tabData ? JSON.decode(tabData.firstChild.nodeValue, false) : {});
-            tab.pane = this.element.getElement('div' + paneId).addClass('e-pane-item').setStyle('display', 'none');
+        this.tabs.forEach((tab) => {
+            tab.setAttribute('unselectable', 'on');
+            const anchor = tab.querySelector('a');
+            const href = anchor.getAttribute('href');
+            anchor.addEventListener('click', (event) => event.preventDefault());
+
+            const data = tab.querySelector('span.data');
+            tab.data = data ? JSON.parse(data.textContent) : {};
+            tab.pane = this.element.querySelector('div#' + CSS.escape(href.slice(href.lastIndexOf('#') + 1)));
+            tab.pane.classList.add('e-pane-item');
+            tab.pane.style.display = 'none';
             tab.pane.tab = tab;
 
-            var tabpane = this;
-            tab.addEvents({
-                'mouseover': function () {
-                    if (this != tabpane.currentTab) {
-                        this.addClass('highlighted');
-                    }
-                },
-                'mouseout': function () {
-                    this.removeClass('highlighted');
-                },
-                'click': function () {
-                    if ((this != tabpane.currentTab) && !this.hasClass('disabled')) {
-                        tabpane.show(this);
-                    }
+            tab.addEventListener('mouseover', () => {
+                if (tab !== this.currentTab) {
+                    tab.classList.add('highlighted');
                 }
             });
-        }, this);
+            tab.addEventListener('mouseout', () => tab.classList.remove('highlighted'));
+            tab.addEventListener('click', () => {
+                if (tab !== this.currentTab && !tab.classList.contains('disabled')) {
+                    this.show(tab);
+                }
+            });
+        });
 
         this.selectTab(this.currentTab);
-    },
+    }
 
-    /**
-     * Show the specific tab.
-     *
-     * @fires TabPane#tabChange
-     *
-     * @function
-     * @public
-     * @param {Element} tab Tab that will be viewed.
-     */
-    show: function (tab) {
+    show(tab) {
         this.selectTab(tab);
-        /**
-         * Changing the tab panel.
-         * @event TabPane#tabChange
-         * @param {Object} Object with language ID.
-         */
-        this.fireEvent('tabChange', this.currentTab.data);
-    },
+        if (this.options.onTabChange) {
+            this.options.onTabChange(this.currentTab.data);
+        }
+    }
 
-    /**
-     * Select the tab.
-     *
-     * @function
-     * @public
-     * @param {Element} tab Tab that will be selected.
-     */
-    selectTab: function (tab) {
-        if(!tab) return;
-        this.currentTab.removeClass('current').pane.setStyle('display', 'none');
-        tab.addClass('current').pane.setStyle('display', '');
+    // вкладка становится текущей, её панель — видимой; фокус — в первое текстовое поле панели
+    selectTab(tab) {
+        if (!tab) {
+            return;
+        }
+        this.currentTab.classList.remove('current');
+        this.currentTab.pane.style.display = 'none';
+        tab.classList.add('current');
+        tab.pane.style.display = '';
         this.currentTab = tab;
 
-        var firstInput = this.currentTab.pane.getElement('div.field div.control input[type=text]')
-            || this.currentTab.pane.getElement('div.field div.control textarea');
+        const firstInput = tab.pane.querySelector('div.field div.control input[type=text]')
+            || tab.pane.querySelector('div.field div.control textarea');
         if (firstInput) {
             firstInput.focus();
         }
-    },
+    }
 
-    /**
-     * Get the all [tabs]{@link TabPane#tabs}.
-     *
-     * @function
-     * @public
-     * @returns {Elements}
-     */
-    getTabs: function () {
+    getTabs() {
         return this.tabs;
-    },
+    }
 
-    /**
-     * Get the [current viewed tab]{@link TabPane#currentTab}.
-     *
-     * @function
-     * @public
-     * @returns {Element}
-     */
-    getCurrentTab: function () {
-        return this.currentTab;
-    },
-
-    /**
-     * Set the title of tab.
-     *
-     * @function
-     * @public
-     * @param {string} title The title.
-     * @param {Element} tab The tab from the [tabs]{@link TabPane#tabs}.
-     */
-    setTabTitle: function (title, tab) {
-        tab = Array.pick([tab, this.getCurrentTab()]);
-        tab.getElement('a').set('html', title);
-    },
-
-    /**
-     * Create the new tab.
-     *
-     * @function
-     * @public
-     * @param {string} tabTitle The title.
-     * @returns {Element} New tab.
-     */
-    createNewTab: function (tabTitle) {
-        var tabID = 'id' + TabPane.assignID(),
-            titleElement = new Element('a', {'href': '#' + tabID, 'html': tabTitle}),
-            tabPane = new Element('div', {'id': tabID, 'class': 'e-pane-item', 'styles': {'display': 'none'}}).inject(this.element.getElement('.e-pane-content')),
-            tabElement = new Element('li', {'unselectable': 'on'}).grab(titleElement);
-
-        this.element.getElement('ul.e-tabs').grab(tabElement);
-        this.tabs.push(tabElement);
-
-        titleElement.addEvent('click', function (event) {
-            event.preventDefault();
-            tabElement.blur();
-        });
-        tabElement.pane = tabPane;
-        tabElement.pane.tab = tabElement;
-
-        var tabpane = this;
-        tabElement.addEvents({
-            'mouseover': function () {
-                if (this != tabpane.currentTab) {
-                    this.addClass('highlighted');
-                }
-            },
-            'mouseout': function () {
-                this.removeClass('highlighted');
-            },
-            'click': function () {
-                if (this != tabpane.currentTab) {
-                    tabpane.show(this);
-                }
-            }
-        });
-        return tabElement;
-    },
-
-    /**
-     * Find the tab.
-     *
-     * @function
-     * @public
-     * @param {Element} element
-     * @returns {Element}
-     */
-    whereIs: function (element) {
-        var el = $(element),
-            pane = null;
-        while (el = el.getParent()) {
-            if (el.hasClass('e-pane-item') && el.tab) {
-                pane = el.tab;
-                break;
+    // вкладка, на панели которой лежит элемент (null — не на вкладке)
+    whereIs(element) {
+        for (let el = element.parentElement; el; el = el.parentElement) {
+            if (el.classList.contains('e-pane-item') && el.tab) {
+                return el.tab;
             }
         }
-        return pane;
-    },
+        return null;
+    }
 
-    /**
-     * Enable the tab by his index.
-     *
-     * @function
-     * @public
-     * @param {number} tabIndex The index of the tab.
-     */
-    enableTab: function (tabIndex) {
+    enableTab(tabIndex) {
         if (this.tabs[tabIndex]) {
-            this.tabs[tabIndex].removeClass('disabled');
-        }
-    },
-
-    /**
-     * Disable the tab by his index.
-     *
-     * @function
-     * @public
-     * @param {number} tabIndex The index of the tab.
-     */
-    disableTab: function (tabIndex) {
-        if (this.tabs[tabIndex]) {
-            this.tabs[tabIndex].addClass('disabled');
+            this.tabs[tabIndex].classList.remove('disabled');
         }
     }
-});
+
+    disableTab(tabIndex) {
+        if (this.tabs[tabIndex]) {
+            this.tabs[tabIndex].classList.add('disabled');
+        }
+    }
+};
