@@ -19,7 +19,9 @@
 переписывают админку и снимают объявления. Адрес каждого скрипта несёт версию (`?v=` — время изменения файла).
 Шаг 2 (`docs/superpowers/specs/2026-10-02-energine-simple-stage8-step2-admin-building-blocks-design.md`): основа
 админки — затемнение, окна, вкладки и листалка — тоже на чистом JavaScript; стили этих элементов подключает
-`Energine.loadCSS`, данные вкладок шаблоны пишут как JSON.
+`Energine.loadCSS`, данные вкладок шаблоны пишут как JSON. Шаг 3
+(`docs/superpowers/specs/2026-10-02-energine-simple-stage8-step3-toolbars-design.md`): панели кнопок админки и панель
+страницы — на чистом JavaScript; администратор на страницах сайта вне режима правки MooTools не получает.
 
 Что вырезано:
 - этапы 1–6: модули shop, blog, comments, calendar, forms, ads и рассылки; теги, виджеты и редактор блоков,
@@ -58,7 +60,8 @@
 - Спецификации: `docs/superpowers/specs/2026-09-26-energine-simple-design.md` (этапы 1–6),
   `docs/superpowers/specs/2026-10-01-energine-simple-stage7-core-design.md` (этап 7),
   `docs/superpowers/specs/2026-10-02-energine-simple-stage8-public-without-mootools-design.md` (этап 8, шаг 1),
-  `docs/superpowers/specs/2026-10-02-energine-simple-stage8-step2-admin-building-blocks-design.md` (этап 8, шаг 2)
+  `docs/superpowers/specs/2026-10-02-energine-simple-stage8-step2-admin-building-blocks-design.md` (этап 8, шаг 2),
+  `docs/superpowers/specs/2026-10-02-energine-simple-stage8-step3-toolbars-design.md` (этап 8, шаг 3)
 - Установка: `docs/INSTALL.md`
 - Тесты: `tests/README.md`
 
