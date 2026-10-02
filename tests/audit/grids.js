@@ -119,6 +119,50 @@ const inspect = (page) => page.evaluate(() => {
             await tp.close();
         }
 
+        // запросы админки через Energine.request: заголовки и тело — как у прежнего запроса MooTools (грид
+        // пользователей при открытии); отказ сервера (чужой токен — 422 с текстом ERR_CSRF) — текст отказа и
+        // onUserError. Панель грида привязана к гриду: встроенный скрипт панели (toolbar.xslt) запускается после
+        // поведений страницы (document.xslt)
+        {
+            const rp = await ctx.newPage();
+            const rErrors = watch(rp);
+            const sent = [];
+            rp.on('request', (r) => {
+                if (r.url().includes('/get-data/')) sent.push({ url: r.url(), method: r.method(), headers: r.headers(), body: r.postData() });
+            });
+            await rp.goto(BASE + 'admin/users/', { waitUntil: 'networkidle' });
+            const q = sent[0] || { headers: {} };
+            const h = q.headers;
+            check('Energine.request: POST, заголовки X-Request, X-Requested-With, Accept, тип тела и токен',
+                q.method === 'POST' && h['x-request'] === 'JSON' && h['x-requested-with'] === 'XMLHttpRequest'
+                && h['accept'] === 'application/json'
+                && /^application\/x-www-form-urlencoded; charset=utf-8$/i.test(h['content-type'] || '')
+                && /^[0-9a-f]{64}$/.test(h['x-csrf-token'] || ''), JSON.stringify({ method: q.method, headers: h }));
+            check('Energine.request: тело запроса грида при открытии — пустое', !!sent.length && !q.body, String(q.body));
+            const tb = await rp.evaluate(() => Object.keys(window.componentToolbars || {}).map((id) => ({ id,
+                attached: !!window[id] && window[id].toolbar === window.componentToolbars[id] })));
+            const buttons = await rp.evaluate(() => document.querySelectorAll('.e-pane-t-toolbar li.add_btn, .e-pane-t-toolbar li.edit_btn').length);
+            check('грид пользователей: панель привязана к гриду, кнопки на месте', tb.length === 1 && tb[0].attached && buttons === 2,
+                JSON.stringify({ tb, buttons }));
+            const dialogs = [];
+            rp.on('dialog', (d) => { dialogs.push(d.message()); d.accept(); });
+            const outcome = await rp.evaluate((url) => new Promise((resolve) => {
+                const csrf = Energine.csrf;
+                Energine.csrf = '0'.repeat(64);
+                Energine.request(url, null, () => resolve('success'), () => resolve('userError'),
+                    (text) => resolve('serverError: ' + text));
+                Energine.csrf = csrf;
+                setTimeout(() => resolve('timeout'), 10000);
+            }), q.url || '');
+            check('Energine.request: отказ сервера (422) — текст отказа и onUserError', outcome === 'userError'
+                && dialogs.length === 1 && dialogs[0].includes('Форма устарела'), JSON.stringify({ outcome, dialogs }));
+            // отказ 422 здесь ожидаем; всё прочее — ошибка
+            const other = rErrors.list().filter((e) => !/^http 422: .*\/get-data\//.test(e) && !/status of 422/.test(e));
+            check('Energine.request: без других ошибок JS и 404', !other.length, other.join(' | '));
+            await rp.close();
+        }
+
+
         // журнал действий: фильтр по дате — встроенное поле даты браузера (input type="date"); за сегодня (запись
         // теста) строки находятся, за день без записей — нет
         {

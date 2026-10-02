@@ -1,5 +1,6 @@
 // Browser test of the rich editors and the upload (stage 4): Jodit in the page (division) form and in
 // page edit mode, the «image from the repository» button, the file upload in the repository form via fetch.
+// The form's Validator: an error on a tab that is not open opens that tab.
 // Everything the test changes is restored (texts through editors-db.php, the temporary upload file).
 // Run in a subshell, like crawl.js:
 //   cd tests/audit && ( envsh=$(php8.5 ../env.php --shell) && eval "$envsh" && node editors.js )
@@ -474,6 +475,20 @@ const showTabOf = (page, selector) => page.evaluate((sel) => {
                 JSON.stringify(st));
             check('неудачная загрузка после удачной не оставляет прежний файл', st.data === '' && !/loading\.gif/.test(st.preview),
                 JSON.stringify(st));
+            // a refusal whose reason holds "<" and "&": shown as it is, nothing of it parsed
+            await p.unroute('**/upload-temp/**');
+            await p.route('**/upload-temp/**', (route) => route.fulfill({ status: 200, contentType: 'application/json',
+                body: JSON.stringify({ result: false, error: true, error_message: 'claude <b>1</b> & 2' }) }));
+            const third = path.join(dir, 'claude-test-3.png');
+            fs.copyFileSync(path.join(__dirname, '..', 'claude-test.png'), third);
+            await Promise.all([
+                p.waitForResponse((r) => r.url().includes('upload-temp'), { timeout: 20000 }),
+                p.setInputFiles('#uploader', third),
+            ]);
+            await p.waitForTimeout(500);
+            st = await state();
+            check('причина отказа с «<» и «&» — как есть, текстом', st.error === 'claude <b>1</b> & 2' && st.markup === 0,
+                JSON.stringify(st));
             if (j && j.tmp_name) {
                 const tmp = path.join(process.env.WEB, j.tmp_name);
                 if (fs.existsSync(tmp)) fs.unlinkSync(tmp);
@@ -483,6 +498,34 @@ const showTabOf = (page, selector) => page.evaluate((sel) => {
         }
         await p.close();
     }
+
+    // 13. a required field left empty on a tab that is not open: the form is not sent, its tab opens, the field shows
+    //     the error (Validator with the form's tabs); the template stays as it was
+    {
+        const p = await ctx.newPage();
+        const errors = watch(p);
+        const was = db('mail-snap', '1');
+        const saves = [];
+        p.on('request', (r) => { if (/\/save\/?(\?|$)/.test(r.url()) && r.method() === 'POST') saves.push(r.url()); });
+        await p.goto(BASE + 'admin/mail-templates/single/mailTemplateEditor/1/edit/', { waitUntil: 'networkidle' });
+        await showTabOf(p, '#template_name_1');
+        await p.evaluate(() => { document.getElementById('template_name_2').value = ''; });
+        const hidden = await p.evaluate(() => !document.getElementById('template_name_2').checkVisibility());
+        await p.click('li.save_btn');
+        await p.waitForTimeout(1000);
+        const f = await p.evaluate(() => {
+            const field = document.getElementById('template_name_2');
+            const box = field.closest('.field');
+            return { invalid: field.classList.contains('invalid'), visible: field.checkVisibility(),
+                error: !!(box && box.querySelector('div.error')) };
+        });
+        check('форма с вкладками: пустое обязательное поле на другой вкладке — форма не ушла, вкладка открыта, ошибка у поля',
+            hidden && !saves.length && f.invalid && f.visible && f.error, JSON.stringify({ hidden, ...f, saves }));
+        check('форма с вкладками: шаблон не изменился', db('mail-snap', '1') === was);
+        check('форма с вкладками: без ошибок JS и 404', !errors.length, errors.join(' | '));
+        await p.close();
+    }
+
 
     await browser.close();
     console.log(`== editors failures: ${fail}`);
