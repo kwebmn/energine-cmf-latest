@@ -265,6 +265,28 @@ Energine.csrfInput = function () {
 };
 
 /**
+ * Стили элемента админки: stylesheets/<имя> подключается один раз. Для скриптов на MooTools то же делает Asset.css
+ * (вставка Energine в mootools.min.js); файл, уже подключённый ссылкой, второй раз не грузится.
+ *
+ * @param {string} name Имя файла в stylesheets/.
+ */
+Energine.loadCSS = function (name) {
+    var href = new URL((Energine['static'] || '') + 'stylesheets/' + name, document.baseURI).href;
+    var links = document.querySelectorAll('link[rel="stylesheet"]');
+    for (var i = 0; i < links.length; i++) {
+        if (links[i].href === href) {
+            return;
+        }
+    }
+    var link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.type = 'text/css';
+    link.media = 'Screen, projection';
+    link.href = href;
+    document.head.appendChild(link);
+};
+
+/**
  * Local placeholder for an image of the given size: a grey SVG in a data: URL.
  * It replaced an external placeholder service (dead, and a third party saw every address).
  *

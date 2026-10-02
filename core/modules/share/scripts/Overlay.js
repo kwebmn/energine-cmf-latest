@@ -3,112 +3,53 @@
  * <ul>
  *     <li>[Overlay]{@link Overlay}</li>
  * </ul>
+ * Чистый JavaScript, без MooTools.
  *
  * @author Pavel Dubenko
  *
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 /**
- * This can be used to create a 'busy' effect. From MooTools it implements: Options.
+ * Затемнение («занято»): полупрозрачный слой поверх элемента, по умолчанию — поверх всей страницы верхнего окна.
  *
  * @constructor
- * @param {Element} parentElement
- * @param {Object} [options] [Options]{@link Overlay#options}.
+ * @param {Element} [parentElement] Что затемняется; по умолчанию — body верхнего окна.
+ * @param {Object} [options]
+ * @param {number} [options.opacity = 0.5] Непрозрачность видимого затемнения.
+ * @param {number} [options.duration = 500] Длительность появления и исчезновения, мс.
+ * @param {boolean} [options.indicator = true] Знак загрузки (класс e-overlay-loading).
  */
-ScriptLoader.load('MooCompat');
-
-var Overlay = new Class(/** @lends Overlay# */{
-    Implements: [Options, Events],
-
-    /**
-     * Overlay options.
-     * @type {Object}
-     *
-     * @property {number} [opacity = 0.5] The opacity of the overlay.
-     * @property {boolean} [hideObjects = true] Defines whether to hide the objects under or not.
-     * @property {boolean} [indicator = true]
-     */
-    options: {
-        duration: 500,
-        opacity: 0.5,
-        indicator: true
-    },
-
-    // constructor
-    initialize: function (parentElement, options) {
-        this.setOptions(options);
-
-        //определяем родительский элемент
-        parentElement = $(parentElement) || $(window.top.document.body);
-        if (!parentElement.getElement) {
-            parentElement = window.top.document;
-        }
-        this.container = parentElement;
-
-        //создаем елемент но не присоединяем его
-        this.element = new Element('div', {
-            'styles': {opacity: 0},
-            'class': 'e-overlay ' + ((this.options.indicator) ? 'e-overlay-loading' : '')
-        });
-
-        this.tween = new Fx.Tween(this.element, {
-            duration: this.options.duration,
-            link: 'cancel',
-            property: 'opacity',
-            onComplete: function () {
-                var type = (this.element.get('opacity') == this.options.opacity) ? 'show' : 'hide';
-
-                this.fireEvent(type);
-            }.bind(this)
-        });
-    },
-    isVisible: function(){
-        return this.element.getStyle('opacity') == 0;
-    },
-    /**
-     * Show the overlay.
-     * @function
-     * @public
-     */
-    show: function () {
-        this.setupObjects(true);
-
-        if (!this.container.getChildren('.e-overlay').length) {
-            this.element.inject(this.container);
-        }
-        this.tween.start(this.options.opacity);
-    },
-
-    /**
-     * Hide the overlay.
-     * @function
-     * @public
-     */
-    hide: function () {
-        this.setupObjects(false);
-        this.tween.start(0).chain(
-            function () {
-                this.element = this.element.dispose();
-            }.bind(this)
-        );
-	
-    },
-
-    /**
-     * Setup the objects.
-     *
-     * @function
-     * @public
-     * @param {boolean} hide
-     */
-    setupObjects: function (hide) {
-        var body;
-
-        var elements = Array.from((body = $(document.body)).getElements('object'));
-        elements.append(Array.from(body.getElements(Browser.ie ? 'select' : 'embed')));
-        elements.each(function (element) {
-            element.style.visibility = hide ? 'hidden' : '';
-        });
+var Overlay = class Overlay {
+    constructor(parentElement, options) {
+        this.options = Object.assign({duration: 500, opacity: 0.5, indicator: true}, options);
+        this.container = parentElement || window.top.document.body;
+        this.element = document.createElement('div');
+        this.element.className = 'e-overlay' + (this.options.indicator ? ' e-overlay-loading' : '');
+        this.element.style.opacity = '0';
+        this.element.style.transition = 'opacity ' + this.options.duration + 'ms ease-in-out';
+        this.removal = null;
     }
-});
+
+    show() {
+        clearTimeout(this.removal);
+        this.removal = null;
+        // у элемента одно затемнение: если оно уже есть, второе не добавляется
+        if (![...this.container.children].some((child) => child.classList.contains('e-overlay'))) {
+            this.container.appendChild(this.element);
+        }
+        // без расчёта начального состояния браузер не показал бы появление
+        void this.element.offsetWidth;
+        this.element.style.opacity = String(this.options.opacity);
+    }
+
+    // затемнение исчезает и уходит со страницы; новое show() до конца исчезновения его оставляет
+    hide() {
+        this.element.style.opacity = '0';
+        clearTimeout(this.removal);
+        this.removal = setTimeout(() => {
+            this.removal = null;
+            this.element.remove();
+        }, this.options.duration);
+    }
+};
