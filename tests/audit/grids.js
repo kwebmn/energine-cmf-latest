@@ -704,6 +704,378 @@ const inspect = (page) => page.evaluate(() => {
         }
         check('панель страницы, «Настройки сайта»: без ошибок JS и 404', !spErrors.list().length, spErrors.list().join(' | '));
         await sp.close();
+
+        // ===== stage 8, step 6: the grids without MooTools — what they do stays as it was =====
+        const SITE_PATH = new URL(BASE).pathname;
+        const showTab = (page, selector) => page.evaluate((sel) => {
+            for (let el = document.querySelector(sel); el; el = el.parentElement) {
+                const link = el.id && document.querySelector('a[href="#' + el.id + '"]');
+                if (link) {
+                    link.click();
+                    return true;
+                }
+            }
+            return false;
+        }, selector);
+        const gridState = (target) => target.evaluate(() => {
+            const gm = [...document.querySelectorAll('.e-pane')].find((pane) => pane.GridManager).GridManager;
+            return {
+                rows: [...gm.grid.tbody.querySelectorAll('tr')].filter((tr) => tr.record)
+                    .map((tr) => ({ key: String(tr.record[gm.grid.keyFieldName]), sel: tr.classList.contains('selected'), text: tr.textContent.trim() })),
+                keys: String(gm.grid.getSelectedRecordKey(true)),
+            };
+        });
+        const filterGrid = async (page, value) => {
+            await page.click('.filter_toggle');
+            await page.waitForTimeout(300);
+            await page.fill('.filters .filter .f_query_container input.query', value);
+            await Promise.all([page.waitForResponse((r) => r.url().includes('/get-data/')), page.click('button.f_apply')]);
+            await page.waitForTimeout(500);
+        };
+
+        // 1. no MooTools: the grid pages and the file library in a form window (requests of the checked document
+        //    only: the sidebar of a full page — DivSidebar — keeps MooTools till step 7)
+        {
+            const mooFree = async (label, open) => {
+                const p = await ctx.newPage();
+                const errors = watch(p);
+                const requests = [];
+                p.on('request', (r) => { if (/mootools/i.test(r.url())) requests.push(r); });
+                const target = await open(p);
+                const frame = target && (target.mainFrame ? target.mainFrame() : target);
+                const asked = requests.filter((r) => r.frame() === frame).map((r) => r.url());
+                const moo = target ? await target.evaluate(() => typeof window.MooTools) : 'no window';
+                check(`гриды без MooTools: ${label}`, moo === 'undefined' && !asked.length, JSON.stringify({ moo, asked }));
+                check(`гриды без MooTools: ${label} — без ошибок JS и 404`, !errors.list().length, errors.list().join(' | '));
+                await p.close();
+            };
+            for (const [label, url] of [['пользователи', 'admin/users/'], ['роли', 'admin/users/roles/'],
+                ['языки', 'admin/translations/languages/'], ['переводы', 'admin/translations/'],
+                ['шаблоны писем', 'admin/mail-templates/'], ['журнал действий', 'admin/action-log/'],
+                ['репозиторий файлов', 'admin/users/single/adminPanel/file-library/']]) {
+                await mooFree(label, async (p) => {
+                    await p.goto(BASE + url, { waitUntil: 'networkidle' });
+                    return p;
+                });
+            }
+            await mooFree('библиотека файлов в окне формы', async (p) => {
+                await p.goto(BASE + `admin/users/single/userEditor/${ids.user}/edit/`, { waitUntil: 'networkidle' });
+                await showTab(p, 'button[onclick*="openFileLib"]');
+                await p.click('button[onclick*="openFileLib"]');
+                const el = await p.waitForSelector('.e-modalbox iframe', { timeout: 10000 }).catch(() => null);
+                const f = el && await el.contentFrame();
+                if (f) {
+                    await f.waitForLoadState('networkidle').catch(() => null);
+                    await f.waitForSelector('tbody tr td', { timeout: 10000 }).catch(() => null);
+                }
+                return f;
+            });
+        }
+
+        // 2. rows (users window, the test users by the grid filter): a click selects one row, Shift — a range,
+        //    Ctrl — one more; the keys go comma-separated; a double click opens the record; «Удалить» two rows
+        {
+            const p = await ctx.newPage();
+            const errors = watch(p);
+            const dialogs = [];
+            p.on('dialog', (d) => { dialogs.push(d.type()); d.accept(); });
+            await p.goto(BASE + 'admin/users/single/userEditor/', { waitUntil: 'networkidle' });
+            await filterGrid(p, 'claude-grid-del');
+            const rows = p.locator('.gridContainer tbody tr');
+            const s0 = await gridState(p);
+            await rows.nth(0).click();
+            const s1 = await gridState(p);
+            await rows.nth(2).click({ modifiers: ['Shift'] });
+            const s2 = await gridState(p);
+            await rows.nth(1).click();
+            await rows.nth(2).click({ modifiers: ['Control'] });
+            const s3 = await gridState(p);
+            check('выбор строк: щелчок — одна строка', s0.rows.length === 3 && s1.rows.filter((r) => r.sel).length === 1 && s1.rows[0].sel,
+                JSON.stringify({ s0, s1 }));
+            check('выбор строк: Shift+щелчок — диапазон', s2.rows.every((r) => r.sel)
+                && s2.keys === [s2.rows[0].key, s2.rows[1].key, s2.rows[2].key].join(','), JSON.stringify(s2));
+            check('выбор строк: Ctrl+щелчок — ещё одна, ключи через запятую', !s3.rows[0].sel && s3.rows[1].sel && s3.rows[2].sel
+                && s3.keys === [s3.rows[1].key, s3.rows[2].key].join(','), JSON.stringify(s3));
+
+            await rows.nth(1).dblclick();
+            const win = await p.waitForSelector('.e-modalbox iframe', { timeout: 10000 }).catch(() => null);
+            const src = win ? await win.evaluate((f) => f.src) : '';
+            check('двойной щелчок по строке — окно правки этой записи', src.endsWith(`/${s3.rows[1].key}/edit`), src);
+            await p.evaluate(() => ModalBox.close());
+            await p.waitForTimeout(600);
+
+            await rows.nth(1).click();
+            await rows.nth(2).click({ modifiers: ['Control'] });
+            const keys = (await gridState(p)).keys;
+            const [del] = await Promise.all([
+                p.waitForRequest((r) => /\/delete\/?$/.test(r.url()), { timeout: 10000 }),
+                p.click('ul.toolbar li.delete_btn'),
+            ]);
+            await p.waitForResponse((r) => r.url().includes('/get-data/'), { timeout: 10000 }).catch(() => null);
+            await p.waitForTimeout(600);
+            const left = await gridState(p);
+            check('«Удалить» двух выбранных: подтверждение, запрос …/id1,id2/delete/, осталась одна строка', dialogs.includes('confirm')
+                && del.url().endsWith(`/${keys}/delete/`) && left.rows.length === 1 && left.rows[0].key === s3.rows[0].key,
+                JSON.stringify({ dialogs, url: del.url(), keys, left }));
+            check('выбор и удаление строк: без ошибок JS и 404', !errors.list().length, errors.list().join(' | '));
+            await p.close();
+        }
+
+        // 3. sorting, columns, window size (users window): the header cycles asc → desc → none; the head columns are
+        //    as wide as the body ones; the grid follows the window height
+        {
+            const p = await ctx.newPage();
+            const errors = watch(p);
+            const urls = [];
+            p.on('request', (r) => { if (r.url().includes('/get-data/')) urls.push(r.url()); });
+            await p.setViewportSize({ width: 1280, height: 720 });
+            await p.goto(BASE + 'admin/users/single/userEditor/', { waitUntil: 'networkidle' });
+            const head = '.gridHeadContainer th[name="u_name"]';
+            const clickSort = async () => {
+                await Promise.all([p.waitForResponse((r) => r.url().includes('/get-data/')), p.click(head)]);
+                await p.waitForTimeout(300);
+                return { url: urls[urls.length - 1], cls: await p.evaluate((s) => document.querySelector(s).className, head) };
+            };
+            const a = await clickSort(), d = await clickSort(), n = await clickSort();
+            check('сортировка: щелчок по заголовку — по возрастанию, второй — по убыванию, третий — без сортировки',
+                /get-data\/u_name-asc\/page-1$/.test(a.url) && a.cls === 'asc' && /get-data\/u_name-desc\/page-1$/.test(d.url)
+                && d.cls === 'desc' && /get-data\/page-1$/.test(n.url) && n.cls === '', JSON.stringify({ a, d, n }));
+            const cols = await p.evaluate(() => ({
+                head: [...document.querySelectorAll('.gridHeadContainer col')].map((c) => c.style.width),
+                body: [...document.querySelectorAll('.gridContainer col')].map((c) => c.style.width),
+                ths: [...document.querySelectorAll('.gridHeadContainer th')].map((th) => Math.round(th.getBoundingClientRect().width)),
+                tds: [...document.querySelectorAll('.gridContainer tbody tr:first-child td')].map((td) => Math.round(td.getBoundingClientRect().width)),
+            }));
+            check('колонки: ширины колонок заголовка — как у тела', cols.head.length > 0 && cols.head.join() === cols.body.join()
+                && cols.head.every((w) => /^\d+px$/.test(w)) && cols.ths.every((w, i) => Math.abs(w - cols.tds[i]) <= 1), JSON.stringify(cols));
+            const height = () => p.evaluate(() => parseInt(document.querySelector('.gridContainer').style.height, 10));
+            const h720 = await height();
+            await p.setViewportSize({ width: 1280, height: 480 });
+            await p.waitForTimeout(600);
+            const h480 = await height();
+            check('размер окна: высота грида в окне следует за окном', h720 > 0 && h720 - h480 === 240, JSON.stringify({ h720, h480 }));
+            check('сортировка, колонки, размер окна: без ошибок JS и 404', !errors.list().length, errors.list().join(' | '));
+            await p.close();
+        }
+        {
+            // a full page: the pane follows the window
+            const p = await ctx.newPage();
+            const errors = watch(p);
+            await p.setViewportSize({ width: 1280, height: 720 });
+            await p.goto(BASE + 'admin/translations/', { waitUntil: 'networkidle' });
+            await p.waitForTimeout(600);
+            const size = () => p.evaluate(() => {
+                const g = document.querySelector('.gridContainer');
+                return { pane: parseInt(g.closest('.e-pane').style.height, 10), grid: parseInt(g.style.height, 10) };
+            });
+            const s720 = await size();
+            await p.setViewportSize({ width: 1280, height: 480 });
+            await p.waitForTimeout(600);
+            const s480 = await size();
+            await p.setViewportSize({ width: 1280, height: 900 });
+            await p.waitForTimeout(600);
+            const s900 = await size();
+            check('размер окна: панель грида на странице следует за окном', s480.pane < s720.pane && s720.pane < s900.pane
+                && s900.grid > s720.grid, JSON.stringify({ s480, s720, s900 }));
+            check('размер окна, страница: без ошибок JS и 404', !errors.list().length, errors.list().join(' | '));
+            await p.close();
+        }
+
+        // 4. «Вверх», «Вниз» (languages window; the requests are answered here — the order of the languages stays)
+        {
+            const p = await ctx.newPage();
+            const errors = watch(p);
+            const moves = [];
+            await p.route(/\/(up|down)\/$/, (route) => {
+                moves.push(route.request().url());
+                route.fulfill({ status: 200, contentType: 'application/json', body: '{"result":true}' });
+            });
+            await p.goto(BASE + 'admin/translations/languages/single/langEditor/', { waitUntil: 'networkidle' });
+            await p.locator('.gridContainer tbody tr').nth(0).click();
+            const key = (await gridState(p)).keys;
+            const [down] = await Promise.all([
+                p.waitForRequest((r) => r.url().includes('/get-data/'), { timeout: 10000 }),
+                p.click('ul.toolbar li.down_btn'),
+            ]);
+            await p.waitForTimeout(500);
+            await p.locator('.gridContainer tbody tr').nth(0).click();
+            const [up] = await Promise.all([
+                p.waitForRequest((r) => r.url().includes('/get-data/'), { timeout: 10000 }),
+                p.click('ul.toolbar li.up_btn'),
+            ]);
+            check('«Вниз» и «Вверх»: запросы …/<id>/down/ и …/<id>/up/, грид перезагружает ту же страницу', moves.length === 2
+                && moves[0].endsWith(`/${key}/down/`) && moves[1].endsWith(`/${key}/up/`)
+                && /get-data\/page-1$/.test(down.url()) && /get-data\/page-1$/.test(up.url()), JSON.stringify({ moves, down: down.url(), up: up.url() }));
+            check('«Вниз» и «Вверх»: без ошибок JS и 404', !errors.list().length, errors.list().join(' | '));
+            await p.close();
+        }
+
+        // 5. «Править предыдущий» (mail templates): the window closes, the grid opens the previous template; the
+        //    template saved without edits is unchanged
+        {
+            const mailAll = () => execFileSync('php8.5', [path.join(__dirname, 'editors-db.php'), 'mail-all'], { encoding: 'utf8' });
+            const was = mailAll();
+            const p = await ctx.newPage();
+            const errors = watch(p);
+            await p.goto(BASE + 'admin/mail-templates/', { waitUntil: 'networkidle' });
+            await p.waitForSelector('tbody tr td', { timeout: 10000 });
+            const rows = p.locator('.gridContainer tbody tr');
+            await rows.nth(1).click();
+            const keys = (await gridState(p)).rows.map((r) => r.key);
+            await p.click('ul.toolbar li.edit_btn');
+            const frameEl = await p.waitForSelector('.e-modalbox iframe', { timeout: 10000 });
+            const first = await frameEl.evaluate((f) => f.src);
+            const frame = await frameEl.contentFrame();
+            await frame.waitForSelector('li.save_btn', { timeout: 10000 });
+            await frame.selectOption('li.select select', 'editPrev');
+            await Promise.all([
+                p.waitForResponse((r) => /\/save\/?(\?|$)/.test(r.url()) && r.request().method() === 'POST', { timeout: 15000 }),
+                frame.click('li.save_btn'),
+            ]);
+            await p.waitForFunction((url) => [...document.querySelectorAll('.e-modalbox iframe')]
+                .some((f) => f.src !== url && /\/edit\/?$/.test(f.src)), first, { timeout: 15000 }).catch(() => null);
+            const next = await p.evaluate(() => [...document.querySelectorAll('.e-modalbox iframe')].map((f) => f.src));
+            check('«Править предыдущий»: окно закрыто, открыта правка предыдущей записи', first.endsWith(`/${keys[1]}/edit`)
+                && next.length === 1 && next[0].endsWith(`/${keys[0]}/edit`), JSON.stringify({ keys, first, next }));
+            check('«Править предыдущий»: шаблон без правки не изменился', mailAll() === was);
+            check('«Править предыдущий»: без ошибок JS и 404', !errors.list().length, errors.list().join(' | '));
+            await p.close();
+            await ctx.clearCookies({ name: 'after_add_default_action' });
+        }
+
+        // 6. the file repository: a double click opens the repository and the folder; the crumbs lead back; the
+        //    folder is remembered in a cookie and opened after a reload; file sizes (also of a file under 1 KiB);
+        //    hovering a preview shows a bigger picture, leaving it removes it
+        {
+            await ctx.clearCookies({ name: 'NRGNFRPID' });
+            const p = await ctx.newPage();
+            const errors = watch(p);
+            const loads = [];
+            p.on('request', (r) => { if (r.url().includes('/get-data/')) loads.push(r.url()); });
+            const lib = BASE + 'admin/users/single/adminPanel/file-library/';
+            await p.goto(lib, { waitUntil: 'networkidle' });
+            const openRow = async (title) => {
+                const row = p.locator('.gridContainer tbody tr', { hasText: title }).first();
+                await Promise.all([p.waitForResponse((r) => r.url().includes('/get-data/')), row.dblclick()]);
+                await p.waitForTimeout(800);
+            };
+            const titles = async () => (await gridState(p)).rows.map((r) => r.text);
+            await openRow((await titles())[0]);
+            await openRow('claude-grid-dir');
+            const inside = await titles();
+            const crumbs = await p.evaluate(() => [...document.querySelectorAll('#breadcrumbs a')].map((a) => a.textContent));
+            const cookie = (await ctx.cookies(BASE)).find((c) => c.name === 'NRGNFRPID');
+            check('репозиторий: двойной щелчок открывает хранилище и папку, крошки — путь', inside.some((t) => t.includes('claude-grid-big'))
+                && inside.some((t) => t.includes('claude-grid-tiny')) && crumbs.length >= 2 && crumbs[crumbs.length - 1].includes('claude-grid-dir'),
+                JSON.stringify({ inside, crumbs }));
+            check('репозиторий: папка запомнена в cookie на сутки с путём сайта', !!cookie && cookie.value === String(ids.dir)
+                && cookie.path === SITE_PATH, JSON.stringify(cookie));
+            await p.waitForTimeout(1500);
+            const sizes = await p.evaluate(() => [...document.querySelectorAll('.gridContainer tbody tr')].map((tr) => ({
+                text: tr.textContent, size: [...tr.querySelectorAll('td.properties tr')].map((r) => r.textContent).find((t) => /\d (B|KiB|MiB)$/.test(t)) || '',
+            })).filter((r) => r.text.includes('claude-grid-')));
+            const big = sizes.find((r) => r.text.includes('claude-grid-big')) || {}, tiny = sizes.find((r) => r.text.includes('claude-grid-tiny')) || {};
+            check('репозиторий: размер файла в свойствах', /9\.0\d KiB$/.test(big.size || ''), JSON.stringify(sizes));
+            check('репозиторий: размер файла меньше 1 КиБ — в байтах, без ошибки JS', /\d+(\.\d+)? B$/.test(tiny.size || '')
+                && !errors.list().some((e) => /toPrecision/.test(e)), JSON.stringify({ sizes, errors: errors.list() }));
+
+            const thumb = p.locator('.gridContainer tbody tr', { hasText: 'claude-grid-big' }).locator('.thumb_container').first();
+            await thumb.hover();
+            await p.waitForTimeout(1200);
+            const popup = await p.evaluate(() => {
+                const img = [...document.querySelectorAll('body > img')].find((i) => i.src.includes('w298-h224/'));
+                return img ? { src: img.src, w: Math.round(img.getBoundingClientRect().width) } : null;
+            });
+            await p.mouse.move(5, 5);
+            await p.waitForTimeout(500);
+            const after = await p.evaluate(() => [...document.querySelectorAll('body > img')].filter((i) => i.src.includes('w298-h224/')).length);
+            check('репозиторий: наведение на превью — увеличенная картинка, уход мыши — убрана', !!popup
+                && popup.src.endsWith('w298-h224/uploads/public/claude-grid-dir/claude-grid-big.png') && popup.w > 200 && after === 0,
+                JSON.stringify({ popup, after }));
+
+            loads.length = 0;
+            await p.goto(lib, { waitUntil: 'networkidle' });
+            check('репозиторий: после перезагрузки открыта запомненная папка', loads.length > 0 && loads[0].includes(`/${ids.dir}/get-data/`),
+                JSON.stringify(loads));
+            await Promise.all([p.waitForResponse((r) => r.url().includes('/get-data/')), p.click('#breadcrumbs a')]);
+            await p.waitForTimeout(800);
+            check('репозиторий: крошка ведёт назад — в папке видна папка теста', (await titles()).some((t) => t.includes('claude-grid-dir')),
+                JSON.stringify(await titles()));
+            check('репозиторий: без ошибок JS и 404', !errors.list().length, errors.list().join(' | '));
+            await p.close();
+        }
+
+        // 7. the library in a form window: «…» → the remembered folder → a file → «Выбрать» — the path in the form
+        {
+            await ctx.addCookies([{ name: 'NRGNFRPID', value: String(ids.dir), url: BASE }]);
+            const p = await ctx.newPage();
+            const errors = watch(p);
+            await p.goto(BASE + `admin/users/single/userEditor/${ids.user}/edit/`, { waitUntil: 'networkidle' });
+            await showTab(p, 'button[onclick*="openFileLib"]');
+            await p.click('button[onclick*="openFileLib"]');
+            const el = await p.waitForSelector('.e-modalbox iframe', { timeout: 10000 });
+            const f = await el.contentFrame();
+            await f.waitForSelector('tbody tr td', { timeout: 10000 });
+            await f.waitForTimeout(800);
+            await f.locator('.gridContainer tbody tr', { hasText: 'claude-grid-big' }).first().click();
+            await f.click('ul.toolbar li.open_btn');
+            await p.waitForTimeout(800);
+            const value = await p.evaluate(() => {
+                const btn = document.querySelector('button[onclick*="openFileLib"]');
+                return { path: document.getElementById(btn.getAttribute('link')).value, windows: document.querySelectorAll('.e-modalbox').length };
+            });
+            check('библиотека в окне формы: файл из папки — путь в поле формы, окно закрыто',
+                value.path === 'uploads/public/claude-grid-dir/claude-grid-big.png' && value.windows === 0, JSON.stringify(value));
+            check('библиотека в окне формы: без ошибок JS и 404', !errors.list().length, errors.list().join(' | '));
+            await p.close();   // the form is not saved
+            await ctx.clearCookies({ name: 'NRGNFRPID' });
+        }
+
+        // 8. «Активировать» (users window, the inactive test user)
+        {
+            const p = await ctx.newPage();
+            const errors = watch(p);
+            await p.goto(BASE + 'admin/users/single/userEditor/', { waitUntil: 'networkidle' });
+            await filterGrid(p, 'claude-grid-off');
+            await p.locator('.gridContainer tbody tr').nth(0).click();
+            const before = db('user-active', String(ids.off)).trim();
+            const [act] = await Promise.all([
+                p.waitForRequest((r) => r.url().includes('/activate/'), { timeout: 10000 }),
+                p.click('ul.toolbar li.activate_btn'),
+            ]);
+            await p.waitForResponse((r) => r.url().includes('/get-data/'), { timeout: 10000 }).catch(() => null);
+            check('«Активировать»: запрос …/<id>/activate/, пользователь активен, грид перезагружен', before === '0'
+                && act.url().endsWith(`/${ids.off}/activate/`) && db('user-active', String(ids.off)).trim() === '1', act.url());
+            check('«Активировать»: без ошибок JS и 404', !errors.list().length, errors.list().join(' | '));
+            await p.close();
+        }
+
+        // 9. «Очистить» the action log (the request is answered here — the log stays): a refusal sends nothing,
+        //    the consent sends clear and reloads the grid
+        {
+            const p = await ctx.newPage();
+            const errors = watch(p);
+            let consent = false;
+            p.on('dialog', (d) => (consent ? d.accept() : d.dismiss()));
+            const clears = [];
+            await p.route(/\/clear\/$/, (route) => {
+                clears.push(route.request().url());
+                route.fulfill({ status: 200, contentType: 'application/json', body: '{"result":true}' });
+            });
+            await p.goto(BASE + 'admin/action-log/single/actionsList/', { waitUntil: 'networkidle' });
+            await p.click('ul.toolbar li.clear_btn');
+            await p.waitForTimeout(600);
+            const refused = clears.length;
+            consent = true;
+            const [reload] = await Promise.all([
+                p.waitForRequest((r) => r.url().includes('/get-data/'), { timeout: 10000 }),
+                p.click('ul.toolbar li.clear_btn'),
+            ]);
+            check('«Очистить» журнал: отказ — запроса нет, согласие — запрос clear и перезагрузка', refused === 0 && clears.length === 1
+                && /\/clear\/$/.test(clears[0]) && !!reload, JSON.stringify({ refused, clears }));
+            check('«Очистить» журнал: без ошибок JS и 404', !errors.list().length, errors.list().join(' | '));
+            await p.close();
+        }
     } finally {
         db('remove');
     }
