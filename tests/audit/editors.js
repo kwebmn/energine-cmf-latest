@@ -575,6 +575,53 @@ const showTabOf = (page, selector) => page.evaluate((sel) => {
         await p.close();
     }
 
+    // 15. the form toolbar (Toolbar): the «after saving» select shows the value remembered in the cookie and getValue()
+    //     returns it; pressing the mouse on a toolbar button does not take the focus from the field
+    {
+        await ctx.addCookies([{ name: 'after_add_default_action', value: 'editNext', url: BASE }]);
+        const p = await ctx.newPage();
+        const errors = watch(p);
+        await p.goto(BASE + 'admin/mail-templates/single/mailTemplateEditor/1/edit/', { waitUntil: 'networkidle' });
+        const sel = await p.evaluate(() => {
+            const id = Object.keys(window.componentToolbars)[0];
+            const control = window.componentToolbars[id].getControlById('after_save_action');
+            return { shown: document.querySelector('li.select select').value, value: control && control.getValue() };
+        });
+        check('панель формы: список «после сохранения» показывает значение из cookie, getValue() его возвращает',
+            sel.shown === 'editNext' && sel.value === 'editNext', JSON.stringify(sel));
+        await showTabOf(p, '#template_name_1');
+        await p.focus('#template_name_1');
+        const btn = await p.locator('li.save_btn').boundingBox();
+        await p.mouse.move(btn.x + btn.width / 2, btn.y + btn.height / 2);
+        await p.mouse.down();
+        const focus = await p.evaluate(() => document.activeElement && document.activeElement.id);
+        // the button is released elsewhere: no click, nothing is saved
+        await p.mouse.move(btn.x + btn.width / 2, btn.y + btn.height + 200);
+        await p.mouse.up();
+        check('панель формы: нажатие мыши на кнопку не уводит фокус из поля', focus === 'template_name_1', focus);
+        check('панель формы: без ошибок JS и 404', !errors.length, errors.join(' | '));
+        await p.close();
+        await ctx.clearCookies({ name: 'after_add_default_action' });
+    }
+
+    // 16. the edit mode switcher of the page toolbar (Toolbar.Switcher, PageToolbar.editMode): pressed in edit mode,
+    //     a second click leaves edit mode
+    {
+        const p = await ctx.newPage();
+        const errors = watch(p);
+        await p.goto(BASE, { waitUntil: 'networkidle' });
+        const pressed = () => p.evaluate(() => document.querySelector('li.editMode_btn').classList.contains('pressed'));
+        const before = await pressed();
+        await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle' }), p.click('li.editMode_btn')]);
+        const inEdit = { pressed: await pressed(), jodit: await isJodit(p, '.nrgnEditor[num="1"]') };
+        await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle' }), p.click('li.editMode_btn')]);
+        const after = { pressed: await pressed(), jodit: await isJodit(p, '.nrgnEditor[num="1"]') };
+        check('переключатель «Режим правки»: в режиме правки нажат, повторный щелчок из него выходит',
+            !before && inEdit.pressed && inEdit.jodit && !after.pressed && !after.jodit, JSON.stringify({ before, inEdit, after }));
+        check('переключатель «Режим правки»: без ошибок JS и 404', !errors.length, errors.join(' | '));
+        await p.close();
+    }
+
     await browser.close();
     console.log(`== editors failures: ${fail}`);
     process.exit(fail ? 1 : 0);

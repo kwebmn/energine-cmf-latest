@@ -329,6 +329,119 @@ const inspect = (page) => page.evaluate(() => {
             await lp.close();
         }
 
+        // панель страницы (PageToolbar) у администратора на главной: верхняя рамка с панелью, страница — в основной
+        // рамке, значок, боковая панель с iframe; щелчок по значку открывает боковую панель и запоминает это в cookie,
+        // второй закрывает; стили панелей — по разу; MooTools в документе страницы не запрашивается и не определена (вне
+        // режима правки панель страницы — единственный скрипт админки там)
+        {
+            const hp = await ctx.newPage();
+            const hErrors = watch(hp);
+            const moo = [];
+            hp.on('request', (r) => { if (/mootools/i.test(r.url()) && r.frame() === hp.mainFrame()) moo.push(r.url()); });
+            await hp.goto(BASE, { waitUntil: 'networkidle' });
+            const st = () => hp.evaluate(() => ({
+                html: document.documentElement.className,
+                top: !!document.querySelector('body > .e-topframe ul.toolbar.docked_toolbar li.editMode_btn'),
+                main: !!document.querySelector('body > .e-mainframe'),
+                logo: !!document.querySelector('.e-topframe img.pagetb_logo'),
+                side: ((document.querySelector('.e-sideframe .e-sideframe-content iframe') || {}).src || ''),
+                css: ['toolbar.css', 'pagetoolbar.css'].map((name) => [...document.querySelectorAll('link[rel="stylesheet"]')]
+                    .filter((l) => l.href.endsWith('/stylesheets/' + name)).length),
+                moo: typeof window.MooTools !== 'undefined',
+            }));
+            const s = await st();
+            check('панель страницы: верхняя рамка с панелью, страница — в основной рамке, значок, боковая панель; стили — по разу',
+                /\be-has-topframe1\b/.test(s.html) && s.top && s.main && s.logo && /\/show\/$/.test(s.side) && s.css.join() === '1,1',
+                JSON.stringify(s));
+            check('панель страницы: MooTools у администратора на главной не запрашивается и не определена', !moo.length && !s.moo,
+                moo.join(' ') || 'MooTools определена');
+            const sidebar = async () => ((await ctx.cookies(BASE)).find((c) => c.name === 'sidebar') || {}).value;
+            await hp.click('.e-topframe img.pagetb_logo');
+            const open = { html: (await st()).html, cookie: await sidebar() };
+            await hp.click('.e-topframe img.pagetb_logo');
+            const closed = { html: (await st()).html, cookie: await sidebar() };
+            check('панель страницы: значок открывает боковую панель и запоминает это, второй щелчок закрывает',
+                /\be-has-sideframe\b/.test(open.html) && open.cookie === '1' && !/\be-has-sideframe\b/.test(closed.html) && closed.cookie === '0',
+                JSON.stringify({ open, closed }));
+            check('панель страницы: без ошибок JS и 404', !hErrors.list().length, hErrors.list().join(' | '));
+            await hp.close();
+        }
+
+        // панель грида (Toolbar, кнопки из toolbar.xslt — с пустым class): выключенная кнопка ничего не делает,
+        // включённая выполняет действие (окно добавления)
+        {
+            const tp = await ctx.newPage();
+            const tErrors = watch(tp);
+            await tp.goto(BASE + 'admin/users/', { waitUntil: 'networkidle' });
+            const toolbar = (method) => tp.evaluate((m) => {
+                const id = Object.keys(window.componentToolbars)[0];
+                window.componentToolbars[id][m]('add');
+            }, method);
+            const boxes = () => tp.evaluate(() => document.querySelectorAll('.e-modalbox').length);
+            const buttons = await tp.evaluate(() => ['add_btn', 'edit_btn', 'delete_btn'].filter((c) => document.querySelector('ul.toolbar li.' + c)).length);
+            await toolbar('disableControls');
+            const off = await tp.evaluate(() => document.querySelector('li.add_btn').classList.contains('disabled'));
+            await tp.click('li.add_btn');
+            await tp.waitForTimeout(800);
+            const whenOff = await boxes();
+            await toolbar('enableControls');
+            await tp.click('li.add_btn');
+            await tp.waitForSelector('.e-modalbox iframe', { timeout: 10000 }).catch(() => null);
+            const whenOn = await boxes();
+            check('панель грида: кнопки на месте; выключенная ничего не делает, включённая открывает окно добавления',
+                buttons === 3 && off && whenOff === 0 && whenOn === 1, JSON.stringify({ buttons, off, whenOff, whenOn }));
+            await tp.evaluate(() => ModalBox.close());
+            await tp.waitForTimeout(700);
+            check('панель грида: без ошибок JS и 404', !tErrors.list().length, tErrors.list().join(' | '));
+            await tp.close();
+        }
+
+        // кнопки панели (Toolbar): выключенная в описании остаётся выключенной после enableControls() и включается
+        // enable(true); выключенный переключатель не меняет состояние и не вызывает действие; смена списка вызывает
+        // действие с самим списком, getValue() — выбранное значение
+        {
+            const ap = await ctx.newPage();
+            const aErrors = watch(ap);
+            await ap.goto(BASE + 'admin/users/', { waitUntil: 'networkidle' });
+            const api = await ap.evaluate(() => {
+                const calls = [];
+                const box = document.createElement('div');
+                document.body.appendChild(box);
+                const tb = new Toolbar('claude_tb');
+                tb.bindTo({ act: (data) => calls.push(data && data.properties ? 'select:' + data.getValue() : 'act') });
+                tb.appendControl(new Toolbar.Button({ id: 'off', title: 'Off', action: 'act', disabled: 'disabled' }),
+                    new Toolbar.Switcher({ id: 'sw', title: 'Sw', action: 'act', state: '0' }),
+                    new Toolbar.Select({ id: 'sel', title: 'Sel', action: 'act' }, { a: 'A', b: 'B' }, 'a'));
+                box.appendChild(tb.getElement());
+                tb.enableControls();
+                const off = tb.getControlById('off');
+                const stillOff = !!off.disabled() && off.element.classList.contains('disabled');
+                off.element.click();
+                const callsWhenOff = calls.length;
+                off.enable(true);
+                const nowOn = !off.disabled() && !off.element.classList.contains('disabled');
+                const sw = tb.getControlById('sw');
+                sw.disable();
+                sw.element.click();
+                const swState = { state: sw.getState(), pressed: sw.element.classList.contains('pressed'), calls: calls.length };
+                const sel = tb.getControlById('sel');
+                const initial = sel.getValue();
+                sel.select.value = 'b';
+                sel.select.dispatchEvent(new Event('change'));
+                const result = { stillOff, callsWhenOff, nowOn, swState, initial, calls: calls.slice(), value: sel.getValue() };
+                box.remove();
+                return result;
+            });
+            check('кнопки панели: выключенная в описании остаётся выключенной после enableControls(), enable(true) её включает',
+                api.stillOff && api.callsWhenOff === 0 && api.nowOn, JSON.stringify(api));
+            check('кнопки панели: выключенный переключатель не меняет состояние и не вызывает действие',
+                api.swState.state === false && !api.swState.pressed && api.swState.calls === 0, JSON.stringify(api));
+            check('кнопки панели: список — начальное значение, смена вызывает действие с самим списком, getValue() — выбранное',
+                api.initial === 'a' && api.calls.join() === 'select:b' && api.value === 'b', JSON.stringify(api));
+            check('кнопки панели: без ошибок JS', !aErrors.list().length, aErrors.list().join(' | '));
+            await ap.close();
+        }
+
         // «Настройки сайта» с панели страницы: окно с гридом единственной записи сайта
         const sp = await ctx.newPage();
         const spErrors = watch(sp);
