@@ -263,6 +263,18 @@ const inspect = (page) => page.evaluate(() => {
             const last = loads[loads.length - 1] || { body: '' };
             check('вкладка языка: строки перезагружены на этом языке с первой страницы',
                 s4.tab === 'Українська' && /(^|&)languageID=2(&|$)/.test(last.body) && s4.current === '1', JSON.stringify({ s4, last }));
+            // номер страницы за последней (сервер его не ограничивает — так бывает после удаления единственной записи
+            // последней страницы): листалка отмечает последнюю страницу, грид не остаётся затемнённым
+            const beyond = await gp.evaluate(async () => {
+                const id = document.querySelector('.e-pagelist').closest('[id]').id;
+                window[id].loadPage(99);
+                await new Promise((resolve) => setTimeout(resolve, 2500));
+                const list = document.querySelector('.e-pagelist');
+                return { current: ((list.querySelector('li.current')) || {}).textContent || '',
+                    next: !!list.querySelector('img[alt="next"]'), overlays: document.querySelectorAll('.e-overlay').length };
+            });
+            check('листалка: страница за последней — отмечена последняя, стрелки «дальше» нет, затемнения нет',
+                beyond.current === '18' && !beyond.next && !beyond.overlays, JSON.stringify(beyond));
             check('грид переводов: без ошибок JS и 404', !gErrors.list().length, gErrors.list().join(' | '));
             await gp.close();
 

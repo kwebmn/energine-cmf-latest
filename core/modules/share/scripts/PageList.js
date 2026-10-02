@@ -44,6 +44,9 @@ var PageList = class PageList {
     }
 
     build(numPages, currentPage) {
+        // номер за последней страницей (сервер его не ограничивает — так бывает после удаления единственной записи
+        // последней страницы) — листалка показывает последнюю
+        currentPage = Math.min(currentPage, Math.max(numPages, 1));
         this.currentPage = currentPage;
         this.element.replaceChildren();
         if (numPages <= 1) {
