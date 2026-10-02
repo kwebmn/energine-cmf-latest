@@ -12,7 +12,9 @@
  * @version 1.1.0
  */
 
-ScriptLoader.load('DivManager');
+import {Energine} from 'Energine';
+import {DivManager} from 'DivManager';
+import {TreeView} from 'TreeView';
 
 /**
  * Дерево разделов в боковой панели администратора: без вкладок и подгонки под окно, панель сверху, у html — класс
@@ -23,7 +25,7 @@ ScriptLoader.load('DivManager');
  * @constructor
  * @param {Element|string} element The main holder element.
  */
-var DivSidebar = class DivSidebar extends DivManager {
+export class DivSidebar extends DivManager {
     /**
      * Своя настройка вместо настройки DivManager.
      *

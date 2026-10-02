@@ -13,7 +13,9 @@
  * @version 1.1.0
  */
 
-ScriptLoader.load('Form', 'ModalBox');
+import {Energine} from 'Energine';
+import {Form} from 'Form';
+import {ModalBox} from 'ModalBox';
 
 /**
  * Окно картинки при вставке в текст: данные картинки — из окна-родителя, размеры (по пропорции), выравнивание,
@@ -24,7 +26,7 @@ ScriptLoader.load('Form', 'ModalBox');
  * @constructor
  * @param {Element|string} element The form element.
  */
-var ImageManager = class ImageManager extends Form {
+export class ImageManager extends Form {
     constructor(element) {
         super(element);
         /**

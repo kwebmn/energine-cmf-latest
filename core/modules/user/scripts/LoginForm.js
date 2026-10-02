@@ -12,10 +12,10 @@
  *
  * @version 1.1.0
  */
-ScriptLoader.load('ValidForm');
+import {ValidForm} from 'ValidForm';
 
 /**
  * Форма входа: поля проверяются перед отправкой.
  */
-var LoginForm = class LoginForm extends ValidForm {
+export class LoginForm extends ValidForm {
 };

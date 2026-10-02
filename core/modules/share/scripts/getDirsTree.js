@@ -12,7 +12,9 @@
  * @version 1.1.0
  */
 
-ScriptLoader.load('DivManager');
+import {Energine} from 'Energine';
+import {DivManager} from 'DivManager';
+import {TreeView} from 'TreeView';
 
 /**
  * Окно выбора папки для переноса файла или папки: хранилища и папки репозитория без переносимой папки и её
@@ -23,7 +25,7 @@ ScriptLoader.load('DivManager');
  * @constructor
  * @param {Element|string} element The main holder element.
  */
-var getDirsTree = class getDirsTree extends DivManager {
+export class getDirsTree extends DivManager {
     treeDataURL() {
         return this.singlePath + '/getDirs/';
     }

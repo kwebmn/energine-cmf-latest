@@ -17,7 +17,7 @@
  * @param {Element|string} form Form element.
  * @param {TabPane} [tabPane] Вкладки формы админки: поле с ошибкой на закрытой вкладке её открывает.
  */
-var Validator = class Validator {
+export class Validator {
     constructor(form, tabPane) {
         this.form = (typeof form === 'string') ? document.getElementById(form) : form;
         this.tabPane = tabPane || null;

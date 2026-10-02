@@ -18,7 +18,8 @@
  * @version 1.1.0
  */
 
-ScriptLoader.load('EnergineEditor', 'ModalBox', 'Overlay');
+import {Energine} from 'Energine';
+import {EnergineEditor} from 'EnergineEditor';
 
 /**
  * Правка текстовых блоков прямо на странице: каждый элемент .nrgnEditor —
@@ -27,7 +28,7 @@ ScriptLoader.load('EnergineEditor', 'ModalBox', 'Overlay');
  *
  * @constructor
  */
-var PageEditor = class PageEditor {
+export class PageEditor {
     constructor() {
         /**
          * Class name of the editable blocks.

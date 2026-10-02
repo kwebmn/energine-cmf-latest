@@ -327,50 +327,42 @@ final class Document extends Primitive implements IDocument {
             }
         }
 
-        // скрипты страницы и их зависимости — по карте system.jsmap.php (setup scriptMap)
+        // модули страницы: поведения компонентов и все скрипты web/scripts для import map (имя → время файла:
+        // после обновления браузер не возьмёт из кэша прежний файл ни у страницы, ни у её зависимостей)
         $dom_javascript = $this->doc->createElement('javascript');
-        // версия в адресе скрипта — время изменения файла: после обновления браузер не возьмёт из кэша прежний файл
-        $scriptVersion = function ($path) {
-            $file = HTDOCS_DIR . '/scripts/' . $path . '.js';
-            return is_file($file) ? (string)filemtime($file) : '';
-        };
-        $dom_javascript->setAttribute('energine-version', $scriptVersion('Energine'));
         $dom_root->appendChild($dom_javascript);
         foreach ($this->js as $behavior) {
             $dom_javascript->appendChild($this->doc->importNode($behavior, true));
         }
-
-        // построение списка подключаемых js библиотек в порядке зависимостей
-        $jsMapFile = HTDOCS_DIR . '/system.jsmap.php';
-        if (!file_exists($jsMapFile)) {
-            throw new \RuntimeException('JS dependencies file ' . $jsMapFile . ' does\'nt exists');
+        foreach ($this->scriptModules() as $name => $version) {
+            $dom_module = $this->doc->createElement('module');
+            $dom_module->setAttribute('name', $name);
+            $dom_module->setAttribute('version', $version);
+            $dom_javascript->appendChild($dom_module);
         }
-        $jsIncludes = [];
-        $jsmap = include($jsMapFile);
+    }
 
-        $xpath = new \DOMXPath($this->doc);
-        $nl = $xpath->query('//javascript/behavior');
-
-        if ($nl->length) {
-            foreach ($nl as $node) {
-                $classPath = $node->getAttribute('path');
-                if ($classPath && substr($classPath, -1) != '/') {
-                    $classPath .= '/';
+    /**
+     * Модули для import map: файлы .js в web/scripts (ссылки на скрипты модулей и Jodit) — имя (путь без .js) →
+     * время изменения файла.
+     *
+     * @return array
+     */
+    protected function scriptModules() {
+        $dir = HTDOCS_DIR . '/scripts';
+        $modules = [];
+        if (is_dir($dir)) {
+            $files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($dir,
+                \FilesystemIterator::SKIP_DOTS | \FilesystemIterator::FOLLOW_SYMLINKS));
+            foreach ($files as $file) {
+                if ($file->getExtension() === 'js') {
+                    $name = substr(str_replace('\\', '/', substr($file->getPathname(), strlen($dir) + 1)), 0, -3);
+                    $modules[$name] = (string)$file->getMTime();
                 }
-                $cls = (($classPath) ? $classPath : '') . $node->getAttribute('name');
-
-                $this->createJavascriptDependencies([$cls], $jsmap, $jsIncludes);
             }
         }
-        foreach ($jsIncludes as $js) {
-            $dom_js_library = $this->doc->createElement('library');
-            $dom_js_library->setAttribute('path', $js);
-            $dom_js_library->setAttribute('version', $scriptVersion($js));
-            $onlyName = explode('/', $js);
-            $dom_js_library->setAttribute('name', array_pop($onlyName));
-            $dom_javascript->appendChild($dom_js_library);
-        }
-
+        ksort($modules);
+        return $modules;
     }
 
     /**
@@ -398,26 +390,6 @@ final class Document extends Primitive implements IDocument {
     public function setLang($lang_id) {
         $this->lang=$lang_id;
     }
-    /**
-     * Create unique flat array of connected .js-files and their dependencies.
-     * @param array $dependencies Dependencies.
-     * @param array $jsmap JS map.
-     * @param array $jsIncludes JS includes.
-     */
-    protected function createJavascriptDependencies($dependencies, $jsmap, &$jsIncludes) {
-        if ($dependencies) {
-            foreach ($dependencies as $dep) {
-                if (isset($jsmap[$dep])) {
-                    $this->createJavascriptDependencies($jsmap[$dep], $jsmap, $jsIncludes);
-                }
-
-                if (!in_array($dep, $jsIncludes)) {
-                    $jsIncludes[] = $dep;
-                }
-            }
-        }
-    }
-
     public function getResult() {
         return $this->doc;
     }

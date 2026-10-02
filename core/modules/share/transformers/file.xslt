@@ -55,7 +55,8 @@
     <xsl:template match="toolbar[parent::component[@class='ImageManager']]">
         <!-- панель привязывается к гриду, которого нет до запуска поведений страницы (document.xslt): оба запуска
              ждут DOMContentLoaded, и этот, объявленный ниже в документе, идёт вторым -->
-        <script type="text/javascript">
+        <script type="module">
+            import {Toolbar} from 'Toolbar';
             document.addEventListener('DOMContentLoaded', function(){
                 componentToolbars['<xsl:value-of select="generate-id(../recordset)"/>'] = new Toolbar('<xsl:value-of select="@name"/>');
                 <xsl:apply-templates/>
@@ -72,8 +73,8 @@
     </xsl:template>
     
     <xsl:template match="control[ancestor::component[@class='ImageManager']]">
-        button = new Toolbar.Button({ id: '<xsl:value-of select="@id"/>', title: '<xsl:value-of select="@title"/>', action: '<xsl:value-of select="@onclick"/>' });
-        componentToolbars['<xsl:value-of select="generate-id(../../recordset)"/>'].appendControl(button);
+        componentToolbars['<xsl:value-of select="generate-id(../../recordset)"/>'].appendControl(
+            new Toolbar.Button({ id: '<xsl:value-of select="@id"/>', title: '<xsl:value-of select="@title"/>', action: '<xsl:value-of select="@onclick"/>' }));
     </xsl:template>
     <!-- /компонент ImageManager -->
 

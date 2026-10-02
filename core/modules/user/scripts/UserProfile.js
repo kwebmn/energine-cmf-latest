@@ -13,7 +13,7 @@
  * @version 1.1.0
  */
 
-ScriptLoader.load('ValidForm');
+import {ValidForm} from 'ValidForm';
 
 /**
  * Профиль посетителя: новый пароль и повтор должны совпадать (текст ошибки — nrgn:message2 поля пароля).
@@ -21,7 +21,7 @@ ScriptLoader.load('ValidForm');
  * @constructor
  * @param {Element|string} element
  */
-var UserProfile = class UserProfile extends ValidForm {
+export class UserProfile extends ValidForm {
     validateForm(event) {
         const field = document.getElementById('u_password');
         const field2 = document.getElementById('u_password2');

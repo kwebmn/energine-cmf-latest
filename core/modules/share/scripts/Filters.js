@@ -16,7 +16,7 @@
  * @constructor
  * @param {Element} templateEl
  */
-var FiltersFabric = class FiltersFabric {
+class FiltersFabric {
     constructor(templateEl) {
         this.parentContainer = templateEl.parentElement.closest('.filters');
         this.template = templateEl.cloneNode(true);
@@ -36,7 +36,7 @@ var FiltersFabric = class FiltersFabric {
  * @constructor
  * @param {GridManager} gridManager
  */
-var Filters = class Filters {
+export class Filters {
     constructor(gridManager) {
         this.filters = [];
         this.active = false;
@@ -173,7 +173,7 @@ var Filters = class Filters {
  * @constructor
  * @param {Element} element
  */
-var Filter = class Filter {
+class Filter {
     constructor(element) {
         this.element = element;
         // обратные вызовы панели фильтров

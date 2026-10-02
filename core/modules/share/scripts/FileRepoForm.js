@@ -12,7 +12,8 @@
  * @version 1.1.0
  */
 
-ScriptLoader.load('Form');
+import {Energine} from 'Energine';
+import {Form} from 'Form';
 
 /**
  * Форма файла репозитория: файл уходит во временный файл (upload-temp) сразу при выборе, превью и маленькие
@@ -23,7 +24,7 @@ ScriptLoader.load('Form');
  * @constructor
  * @param {Element|string} el The main holder element.
  */
-var FileRepoForm = class FileRepoForm extends Form {
+export class FileRepoForm extends Form {
     constructor(el) {
         super(el);
 

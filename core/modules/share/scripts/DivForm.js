@@ -13,7 +13,8 @@
  * @version 1.1.0
  */
 
-ScriptLoader.load('Form', 'ModalBox');
+import {Energine} from 'Energine';
+import {Form} from 'Form';
 
 /**
  * Форма раздела: выбор родителя (Form.Label), шаблон содержимого задаёт сегмент и макет, сброс изменённого шаблона,
@@ -24,7 +25,7 @@ ScriptLoader.load('Form', 'ModalBox');
  * @constructor
  * @param {Element|string} element The form element.
  */
-var DivForm = class DivForm extends Form {
+export class DivForm extends Form {
     constructor(element) {
         super(element);
         this.prepareLabel('list/');

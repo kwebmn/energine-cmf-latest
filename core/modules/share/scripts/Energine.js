@@ -2,7 +2,6 @@
  * @file Contain the description of the next objects:
  * <ul>
  *     <li>[Energine]{@link Energine}</li>
- *     <li>[ScriptLoader]{@link ScriptLoader}</li>
  * </ul>
  * Чистый JavaScript, без MooTools: файл нужен и публичным страницам, где MooTools нет.
  *
@@ -13,18 +12,9 @@
  */
 
 /**
- * Объявление зависимостей скрипта: setup scriptMap читает первый вызов в файле и пишет карту system.jsmap.php,
- * по ней документ подключает скрипты в нужном порядке. В браузере вызов ничего не делает.
- */
-var ScriptLoader = {
-    load: function () {
-    }
-};
-
-/**
  * @namespace
  */
-var Energine = /** @lends Energine */{
+export const Energine = /** @lends Energine */{
     /**
      * Debug flag.
      * @type {boolean}
@@ -351,3 +341,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 });
+
+// договор страницы: встроенные скрипты шаблонов сайта и отладка видят Energine
+window.Energine = Energine;

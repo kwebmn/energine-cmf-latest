@@ -12,13 +12,15 @@
  * @author Pavel Dubenko
  */
 
-ScriptLoader.load('GridManager');
+import {Energine} from 'Energine';
+import {Grid, GridManager} from 'GridManager';
+import {ModalBox} from 'ModalBox';
 
 /**
  * Cookie с папкой, открытой последней.
  * @type {string}
  */
-var FILE_COOKIE_NAME = 'NRGNFRPID';
+const FILE_COOKIE_NAME = 'NRGNFRPID';
 
 /**
  * Файловый репозиторий: двойной щелчок по папке открывает её, по файлу — выбор (в окне выбора) или правка; хлебные
@@ -29,7 +31,7 @@ var FILE_COOKIE_NAME = 'NRGNFRPID';
  * @constructor
  * @param {Element|string} element The main holder element.
  */
-var FileRepository = class FileRepository extends GridManager {
+export class FileRepository extends GridManager {
     constructor(element) {
         super(element);
         document.FileRepository = this;
@@ -506,7 +508,7 @@ FileRepository.Grid = class FileRepositoryGrid extends Grid {
  * @constructor
  * @param {Element|string} el
  */
-var PathList = class PathList {
+class PathList {
     constructor(el) {
         this.element = (typeof el === 'string') ? document.getElementById(el) : el;
     }

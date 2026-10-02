@@ -17,7 +17,10 @@
 
 // TODO: DivManager class is very similar to the TreeView class! I think, one of them must be merged to another and remove the overloaded functionality. - wait for tests
 
-ScriptLoader.load('TabPane', 'Toolbar', 'ModalBox', 'TreeView');
+import {Energine} from 'Energine';
+import {TabPane} from 'TabPane';
+import {ModalBox} from 'ModalBox';
+import {TreeView} from 'TreeView';
 
 /**
  * Структура сайта: дерево разделов с панелью — добавить, править, удалить, переставить, выбрать (в окне), перейти на
@@ -26,7 +29,7 @@ ScriptLoader.load('TabPane', 'Toolbar', 'ModalBox', 'TreeView');
  * @constructor
  * @param {Element|string} element Элемент компонента (или его id).
  */
-var DivManager = class DivManager {
+export class DivManager {
     constructor(element) {
         /**
          * Toolbar.

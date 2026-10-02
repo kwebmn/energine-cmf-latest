@@ -11,6 +11,8 @@
  * @version 1.1.0
  */
 
+import {Energine} from 'Energine';
+
 /**
  * Дерево разделов: ul с узлами li > a; у папки — вложенный ul. Двойной щелчок по названию — options.dblClick.
  *
@@ -19,7 +21,7 @@
  * @param {Object} [options]
  * @param {function} [options.dblClick] Двойной щелчок по названию узла.
  */
-var TreeView = class TreeView {
+export class TreeView {
     constructor(element, options) {
         Energine.loadCSS('treeview.css');
         this.element = (typeof element === 'string') ? document.getElementById(element) : element;

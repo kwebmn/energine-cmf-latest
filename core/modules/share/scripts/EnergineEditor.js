@@ -9,9 +9,11 @@
  * @requires ModalBox
  */
 
-ScriptLoader.load('jodit/jodit.min', 'ModalBox');
+import 'jodit/jodit.min';
+import {Energine} from 'Energine';
+import {ModalBox} from 'ModalBox';
 
-var EnergineEditor = {
+export const EnergineEditor = {
     /**
      * Подписи своих кнопок (те же, что были у прежних кнопок вставки из медиа-библиотеки).
      */

@@ -12,7 +12,7 @@
  * @version 1.1.0
  */
 
-ScriptLoader.load('DivManager');
+import {DivManager} from 'DivManager';
 
 /**
  * Окно выбора раздела (родитель раздела): раздел формы, из которой окно открыто, и его потомков выбрать нельзя.
@@ -22,7 +22,7 @@ ScriptLoader.load('DivManager');
  * @constructor
  * @param {Element|string} el The main holder element.
  */
-var DivTree = class DivTree extends DivManager {
+export class DivTree extends DivManager {
     constructor(el) {
         super(el);
         /**

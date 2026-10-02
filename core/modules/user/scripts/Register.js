@@ -12,7 +12,8 @@
  * @version 1.1.0
  */
 
-ScriptLoader.load('ValidForm');
+import {Energine} from 'Energine';
+import {ValidForm} from 'ValidForm';
 
 /**
  * Регистрация: логин (e-mail) проверяется на занятость, когда посетитель уходит с поля; пока логин неверен или
@@ -21,7 +22,7 @@ ScriptLoader.load('ValidForm');
  * @constructor
  * @param {Element|string} element
  */
-var Register = class Register extends ValidForm {
+export class Register extends ValidForm {
     constructor(element) {
         super(element);
         if (!this.form) {

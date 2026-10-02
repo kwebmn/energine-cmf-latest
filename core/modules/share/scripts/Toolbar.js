@@ -18,6 +18,8 @@
  * @version 1.1.0
  */
 
+import {Energine} from 'Energine';
+
 /**
  * Панель кнопок: ul.toolbar с кнопками li. Действие кнопки — метод объекта, к которому панель привязана (bindTo).
  *
@@ -25,7 +27,7 @@
  * @param {string} toolbarName Имя панели: класс ul и начало id кнопок со значками.
  * @param {Object} [props] Свойства панели (например, noSideFrame у панели страницы).
  */
-var Toolbar = class Toolbar {
+export class Toolbar {
     constructor(toolbarName, props) {
         Energine.loadCSS('toolbar.css');
         this.name = toolbarName;

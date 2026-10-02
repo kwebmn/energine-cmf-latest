@@ -10,6 +10,8 @@
  * @version 1.1.0
  */
 
+import {Energine} from 'Energine';
+
 /**
  * Вкладки формы или грида: ul.e-tabs (li > a[href="#панель"]) и панели div#панель. Несколько вкладок могут вести на
  * одну панель (вкладки языков грида). Данные вкладки — JSON в span.data ({"lang": N}).
@@ -19,7 +21,7 @@
  * @param {Object} [options]
  * @param {function} [options.onTabChange] Вызывается при смене вкладки с её данными.
  */
-var TabPane = class TabPane {
+export class TabPane {
     constructor(element, options) {
         Energine.loadCSS('tabpane.css');
         this.options = Object.assign({}, options);

@@ -13,7 +13,9 @@
  * @version 1.1.0
  */
 
-ScriptLoader.load('Toolbar', 'ModalBox');
+import {Energine} from 'Energine';
+import {Toolbar} from 'Toolbar';
+import {ModalBox} from 'ModalBox';
 
 /**
  * Панель страницы у администратора на сайте: прикреплена сверху, страница — в основной рамке, сбоку — панель разделов
@@ -26,7 +28,7 @@ ScriptLoader.load('Toolbar', 'ModalBox');
  * @param {Object[]} [controlsDesc] Описания кнопок {type, id, title, onclick, …}.
  * @param {Object} [props] Свойства панели (noSideFrame — без боковой панели).
  */
-var PageToolbar = class PageToolbar extends Toolbar {
+export class PageToolbar extends Toolbar {
     constructor(componentPath, documentId, toolbarName, controlsDesc, props) {
         super(toolbarName, props);
         Energine.loadCSS('pagetoolbar.css');

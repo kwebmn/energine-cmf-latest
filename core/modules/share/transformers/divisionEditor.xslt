@@ -5,7 +5,8 @@
     >
 
     <xsl:template match="document/translations[translation[@component=//component[@sample='DivisionEditor']/@name]]">
-            <script type="text/javascript">
+            <script type="module">
+                import {Energine} from 'Energine';
                 <xsl:for-each select="translation[@component=$COMPONENTS[@sample='DivisionEditor']/@name]">
                     Energine.translations.set('<xsl:value-of select="@const"/>', '<xsl:value-of select="." disable-output-escaping="yes"/>');
                 </xsl:for-each>

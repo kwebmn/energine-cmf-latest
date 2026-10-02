@@ -10,6 +10,8 @@
  * @version 1.1.0
  */
 
+import {Energine} from 'Energine';
+
 /**
  * Листалка страниц грида: номера около текущей, первые и последние страницы, многоточия, стрелки.
  *
@@ -17,7 +19,7 @@
  * @param {Object} [options]
  * @param {function} [options.onPageSelect] Вызывается с номером выбранной страницы.
  */
-var PageList = class PageList {
+export class PageList {
     constructor(options) {
         Energine.loadCSS('pagelist.css');
         this.options = Object.assign({}, options);

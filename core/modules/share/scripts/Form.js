@@ -20,7 +20,12 @@
  * @version 1.1.0
  */
 
-ScriptLoader.load('EnergineEditor', 'TabPane', 'Toolbar', 'Validator', 'ModalBox', 'Overlay');
+import {Energine} from 'Energine';
+import {EnergineEditor} from 'EnergineEditor';
+import {TabPane} from 'TabPane';
+import {Validator} from 'Validator';
+import {ModalBox} from 'ModalBox';
+import {Overlay} from 'Overlay';
 
 /**
  * Форма админки: вкладки, проверка полей, визуальные поля, поля файлов. «Сохранить» отправляет поля формы и
@@ -29,7 +34,7 @@ ScriptLoader.load('EnergineEditor', 'TabPane', 'Toolbar', 'Validator', 'ModalBox
  * @constructor
  * @param {Element|string} element Элемент компонента (или его id) внутри формы.
  */
-var Form = class Form {
+export class Form {
     constructor(element) {
         Energine.loadCSS('form.css');
 

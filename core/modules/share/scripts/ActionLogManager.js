@@ -4,7 +4,8 @@
  * @requires GridManager
  */
 
-ScriptLoader.load('GridManager');
+import {Energine} from 'Energine';
+import {GridManager} from 'GridManager';
 
 /**
  * Журнал действий.
@@ -14,7 +15,7 @@ ScriptLoader.load('GridManager');
  * @constructor
  * @param {Element|string} element The main holder element.
  */
-var ActionLogManager = class ActionLogManager extends GridManager {
+export class ActionLogManager extends GridManager {
     /**
      * Очистить журнал — после подтверждения; грид — та же страница заново.
      */

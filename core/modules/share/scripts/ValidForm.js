@@ -13,7 +13,7 @@
  * @version 1.1.0
  */
 
-ScriptLoader.load('Validator');
+import {Validator} from 'Validator';
 
 /**
  * Форма сайта, которая проверяется перед отправкой.
@@ -21,7 +21,7 @@ ScriptLoader.load('Validator');
  * @constructor
  * @param {Element|string} element Форма или элемент внутри неё (id).
  */
-var ValidForm = class ValidForm {
+export class ValidForm {
     constructor(element) {
         this.element = (typeof element === 'string') ? document.getElementById(element) : element;
         if (!this.element) {

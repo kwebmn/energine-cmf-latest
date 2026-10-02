@@ -23,7 +23,12 @@
 
 // todo: Strange to use scrolling and changing pages to see more data fields.
 
-ScriptLoader.load('TabPane', 'PageList', 'Toolbar', 'Overlay', 'ModalBox', 'Filters');
+import {Energine} from 'Energine';
+import {TabPane} from 'TabPane';
+import {PageList} from 'PageList';
+import {Overlay} from 'Overlay';
+import {ModalBox} from 'ModalBox';
+import {Filters} from 'Filters';
 
 /**
  * Таблица грида: строки записей, выбор (Ctrl — ещё строка, Shift — диапазон), сортировка по заголовку, ширины колонок
@@ -33,7 +38,7 @@ ScriptLoader.load('TabPane', 'PageList', 'Toolbar', 'Overlay', 'ModalBox', 'Filt
  * @param {Element} element Элемент .grid.
  * @param {Object} [options] Обработчики onSelect(строка), onSortChange(), onDoubleClick().
  */
-var Grid = class Grid {
+export class Grid {
     constructor(element, options) {
         Energine.loadCSS('grid.css');
         this.element = element;
@@ -714,7 +719,7 @@ var Grid = class Grid {
  * @constructor
  * @param {Element|string} element Элемент компонента (или его id).
  */
-var GridManager = class GridManager {
+export class GridManager {
     constructor(element) {
         /**
          * Id of the record that is moved (state /move/).

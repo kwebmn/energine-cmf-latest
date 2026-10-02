@@ -20,7 +20,7 @@
  * @param {number} [options.duration = 500] Длительность появления и исчезновения, мс.
  * @param {boolean} [options.indicator = true] Знак загрузки (класс e-overlay-loading).
  */
-var Overlay = class Overlay {
+export class Overlay {
     constructor(parentElement, options) {
         this.options = Object.assign({duration: 500, opacity: 0.5, indicator: true}, options);
         this.container = parentElement || window.top.document.body;

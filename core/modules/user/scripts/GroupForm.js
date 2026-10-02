@@ -12,7 +12,7 @@
  * @version 1.1.0
  */
 
-ScriptLoader.load('Form');
+import {Form} from 'Form';
 
 /**
  * Форма роли: переключатель в строке «Все разделы» отмечает весь свой столбец прав.
@@ -22,7 +22,7 @@ ScriptLoader.load('Form');
  * @constructor
  * @param {Element|string} element The form element.
  */
-var GroupForm = class GroupForm extends Form {
+export class GroupForm extends Form {
     constructor(element) {
         super(element);
         this.element.querySelectorAll('.groupRadio').forEach((radio) => {

@@ -12,7 +12,8 @@
  * @version 1.1.0
  */
 
-ScriptLoader.load('GridManager');
+import {Energine} from 'Energine';
+import {GridManager} from 'GridManager';
 
 /**
  * Пользователи: «Активировать».
@@ -22,7 +23,7 @@ ScriptLoader.load('GridManager');
  * @constructor
  * @param {Element|string} element The main holder element.
  */
-var UserManager = class UserManager extends GridManager {
+export class UserManager extends GridManager {
     /**
      * Активировать выбранного пользователя; грид — та же страница заново.
      */

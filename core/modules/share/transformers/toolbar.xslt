@@ -60,7 +60,8 @@
     <xsl:template match="toolbar[parent::component[@exttype='grid']]">    
         <!-- панель привязывается к гриду, которого нет до запуска поведений страницы (document.xslt): оба запуска
              ждут DOMContentLoaded, и этот, объявленный ниже в документе, идёт вторым -->
-        <script type="text/javascript">
+        <script type="module">
+            import {Toolbar} from 'Toolbar';
             document.addEventListener('DOMContentLoaded', function(){
                     componentToolbars['<xsl:value-of select="generate-id(../recordset)"/>'] = new Toolbar('<xsl:value-of select="@name"/>'<xsl:if
                 test="properties/property">, <xsl:for-each select="properties/property">{'<xsl:value-of select="@name"/>':'<xsl:value-of

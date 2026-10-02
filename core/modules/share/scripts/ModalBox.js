@@ -13,7 +13,8 @@
  * @version 1.1.0
  */
 
-ScriptLoader.load('Overlay');
+import {Energine} from 'Energine';
+import {Overlay} from 'Overlay';
 
 /**
  * Окна админки: страница в iframe поверх текущей. Объект общий для вложенных окон: внутри окна работает объект
@@ -22,7 +23,7 @@ ScriptLoader.load('Overlay');
  *
  * @namespace
  */
-var ModalBox = window.top.ModalBox || /** @lends ModalBox */{
+export const ModalBox = window.top.ModalBox || /** @lends ModalBox */{
     /**
      * Открытые окна, последнее — верхнее.
      * @type {Element[]}
@@ -142,3 +143,6 @@ if (!ModalBox.initialized) {
         ModalBox.init();
     });
 }
+
+// окна страницы ищут общую очередь окон в window.top.ModalBox
+window.ModalBox = ModalBox;

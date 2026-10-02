@@ -119,8 +119,9 @@
             <meta name="robots" content="{$DOC_PROPS[@name='robots']}"/>
         </xsl:if>
         <xsl:apply-templates select="." mode="og"/>
-        <script type="text/javascript" src="{$STATIC_URL}scripts/Energine.js?v={/document/javascript/@energine-version}"></script>
-        <script type="text/javascript">
+        <script type="importmap">{"imports": {<xsl:for-each select="/document/javascript/module">"<xsl:value-of select="@name"/>": "<xsl:value-of select="$STATIC_URL"/>scripts/<xsl:value-of select="@name"/>.js?v=<xsl:value-of select="@version"/>"<xsl:if test="position() != last()">, </xsl:if></xsl:for-each>}}</script>
+        <script type="module">
+            import {Energine} from 'Energine';
             Object.assign(Energine, {
             <xsl:if test="document/@debug=1">'debug' :true,</xsl:if>
             'base' : '<xsl:value-of select="$BASE"/>',
@@ -134,13 +135,15 @@
             });
         </script>
         <xsl:apply-templates select="/document//javascript/variable" mode="head"/>
-        <xsl:apply-templates select="/document/javascript/library" mode="head"/>
         <xsl:apply-templates select="." mode="scripts"/>
-        <script type="text/javascript">
-            var componentToolbars = [];
-            <xsl:if test="count($COMPONENTS[recordset]/javascript/behavior[(@name!='PageEditor')]) &gt; 0">
-                var <xsl:for-each select="$COMPONENTS[recordset]/javascript[behavior[(@name!='PageEditor')]]"><xsl:for-each select="behavior"><xsl:value-of select="generate-id(../../recordset)"/><xsl:if test="position() != last()">,</xsl:if></xsl:for-each><xsl:if test="position() != last()">,</xsl:if></xsl:for-each>;
-            </xsl:if>
+        <script type="module">
+            <xsl:for-each select="//javascript/behavior[not(@name = preceding::behavior/@name)]">
+                import {<xsl:value-of select="@name"/>} from '<xsl:if test="@path"><xsl:value-of select="@path"/>/</xsl:if><xsl:value-of select="@name"/>';
+            </xsl:for-each>
+            window.componentToolbars = [];
+            <xsl:for-each select="$COMPONENTS[recordset]/javascript[behavior[(@name!='PageEditor')]]/behavior">
+                window['<xsl:value-of select="generate-id(../../recordset)"/>'] = null;
+            </xsl:for-each>
             document.addEventListener('DOMContentLoaded', function () {
                 <xsl:if test="$COMPONENTS[@componentAction='showPageToolbar']">
                     try {
@@ -169,7 +172,7 @@
                     <xsl:if test="position()=1">
                         <xsl:variable name="objectID" select="generate-id($COMPONENTS[javascript/behavior[@name='PageEditor']]/recordset)"/>
                         try {
-                            <xsl:value-of select="$objectID"/> = new PageEditor();
+                            window['<xsl:value-of select="$objectID"/>'] = new PageEditor();
                         }
                         catch (e) {
                             console.error(e);
@@ -186,7 +189,7 @@
         <xsl:choose>
             <xsl:when test="$objectID!=''">
                 if(document.getElementById('<xsl:value-of select="$objectID"/>')){
-                    <xsl:value-of select="$objectID"/> = new <xsl:value-of select="@name"/>('<xsl:value-of select="$objectID"/>');
+                    window['<xsl:value-of select="$objectID"/>'] = new <xsl:value-of select="@name"/>('<xsl:value-of select="$objectID"/>');
                 }
             </xsl:when>
             <xsl:otherwise>
@@ -212,7 +215,8 @@
     
     <!-- Выводим переводы для WYSIWYG -->
     <xsl:template match="/document/translations[translation[@component=//component[@editable]/@name]]">
-            <script type="text/javascript">
+            <script type="module">
+                import {Energine} from 'Energine';
                 <xsl:for-each select="translation[@component=$COMPONENTS[@editable]/@name]">
                     Energine.translations.set('<xsl:value-of select="@const"/>', '<xsl:value-of select="."/>');
                 </xsl:for-each>
@@ -221,13 +225,7 @@
 
     <xsl:template match="/document/javascript"/>
 
-    <xsl:template match="/document/javascript/library"/>
-
     <xsl:template match="/document//javascript/variable"/>
-
-    <xsl:template match="/document/javascript/library" mode="head">
-        <script type="text/javascript" src="{$STATIC_URL}scripts/{@path}.js?v={@version}"/>
-    </xsl:template>
 
     <xsl:template match="/document//javascript/variable" mode="head">
         <script type="text/javascript">

@@ -64,7 +64,8 @@
             </xsl:if>
             <xsl:call-template name="BUILD_GRID"/>
             <xsl:if test="count($TRANSLATION[@component=$NAME])&gt;0">
-                <script type="text/javascript">
+                <script type="module">
+                    import {Energine} from 'Energine';
                     <xsl:for-each select="$TRANSLATION[@component=$NAME]">
                         Energine.translations.set('<xsl:value-of select="@const"/>', '<xsl:value-of select="."/>');
                     </xsl:for-each>
@@ -75,7 +76,8 @@
     
     <!-- Выводим переводы для WYSIWYG -->
     <xsl:template match="document/translations[translation[@component=//component[@type='form' and @exttype='grid'][descendant::field[@type='htmlblock']]/@name]]">
-            <script type="text/javascript">
+            <script type="module">
+                import {Energine} from 'Energine';
                 <xsl:for-each select="translation[@component=$COMPONENTS[@type='form' and @exttype='grid'][descendant::field[@type='htmlblock']]/@name]">
                     Energine.translations.set('<xsl:value-of select="@const"/>', '<xsl:value-of select="."/>');
                 </xsl:for-each>
