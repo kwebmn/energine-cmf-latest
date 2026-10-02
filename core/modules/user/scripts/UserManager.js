@@ -3,34 +3,35 @@
  * <ul>
  *     <li>[UserManager]{@link UserManager}</li>
  * </ul>
+ * Чистый JavaScript, без MooTools.
  *
  * @requires share/GridManager
  *
  * @author Pavel Dubenko
  *
- * @version 1.0.0
+ * @version 1.1.0
  */
 
-ScriptLoader.load('MooCompat', 'GridManager');
+ScriptLoader.load('GridManager');
 
 /**
- * User manager.
- * @class
+ * Пользователи: «Активировать».
+ *
  * @augments GridManager
+ *
+ * @constructor
+ * @param {Element|string} element The main holder element.
  */
-var UserManager  = new Class(/** @lends UserManager# */{
-    Extends: GridManager,
-
+var UserManager = class UserManager extends GridManager {
     /**
-     * Activate.
-     * @function
-     * @public
+     * Активировать выбранного пользователя; грид — та же страница заново.
      */
-    activate: function(){
-        this.request(
+    activate() {
+        const page = this.pageList.currentPage;
+        Energine.request(
             this.singlePath + this.grid.getSelectedRecordKey() + '/activate/',
             null,
-            this.loadPage.pass(this.pageList.currentPage, this)
+            () => this.loadPage(page)
         );
     }
-});
+};

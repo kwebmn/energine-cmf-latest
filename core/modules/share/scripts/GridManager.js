@@ -4,6 +4,7 @@
  *     <li>[Grid]{@link Grid}</li>
  *     <li>[GridManager]{@link GridManager}</li>
  * </ul>
+ * Чистый JavaScript, без MooTools.
  *
  * @requires Energine
  * @requires TabPane
@@ -17,1105 +18,837 @@
  * @author Valerii Zinchenko
  * @author Oleg Marichev
  *
- * @version 1.1.5
+ * @version 1.2.0
  */
 
 // todo: Strange to use scrolling and changing pages to see more data fields.
 
-ScriptLoader.load('MooCompat', 'TabPane', 'PageList', 'Toolbar', 'Overlay', 'ModalBox', 'Filters');
+ScriptLoader.load('TabPane', 'PageList', 'Toolbar', 'Overlay', 'ModalBox', 'Filters');
 
 /**
- * From MooTools it implements: Events, Options.
+ * Таблица грида: строки записей, выбор (Ctrl — ещё строка, Shift — диапазон), сортировка по заголовку, ширины колонок
+ * и высота под панель и окно.
  *
  * @constructor
- * @param {Element} element Element identifier in DOM Tree for the Grid.
- * @param {Object} [options] Set of events.
+ * @param {Element} element Элемент .grid.
+ * @param {Object} [options] Обработчики onSelect(строка), onSortChange(), onDoubleClick().
  */
-var Grid = (function () {
-    /**
-     * Fit the headers.
-     * @deprecated
-     * @function
-     * @memberOf Grid#
-     * @private
-     */
-    function fitHeaders() {
-        this.headersContainer.setStyle('visibility', '');
-        var firstRow = this.tbody.getFirst();
-        this.headers.each(function (header, i) {
-            var delta = -(i == 0 ? 27 : 28);
-            // Увеличиваем дельту на 16px (размер полосы прокрутки) если это последняя колонка и грид не пустой.
-            if (i == firstRow.childNodes.length - 1) {
-                delta += ((this.data.length ||
-                this.prevDataLength > 0) ? 16 : 0);
-                this.prevDataLength = this.data.length;
-            }
-            header.setStyle('width', firstRow.childNodes[i].getSize().size.x +
-                delta + 'px');
-        }, this);
-        if (!this.data.length) this.tbody.getFirst().dispose();
+var Grid = class Grid {
+    constructor(element, options) {
+        Energine.loadCSS('grid.css');
+        this.element = element;
+        this.options = Object.assign({}, options);
+        /**
+         * Data of the grid.
+         * @type {Object[]}
+         */
+        this.data = null;
+        /**
+         * Metadata of the grid.
+         * @type {Object}
+         */
+        this.metadata = null;
+        /**
+         * Selected rows.
+         * @type {Element[]}
+         */
+        this.selectedItem = [];
+        /**
+         * Sort parameters.
+         * @type {{field: string, order: string}}
+         */
+        this.sort = {field: null, order: null};
+
+        // TODO: I think this.headOff can be removed, because it is always hidden.
+        this.headOff = this.element.querySelector('.gridContainer thead');
+        this.headOff.style.display = 'none';
+        this.tbody = this.element.querySelector('.gridContainer tbody');
+        this.headers = Array.from(this.element.querySelectorAll('.gridHeadContainer table.gridTable th'));
+        this.headers.forEach((header) => header.addEventListener('click', (event) => this.onChangeSort(event)));
+
+        // добавляем к контейнеру класс, который указывает, что в нем есть грид
+        this.element.closest('.e-pane').classList.add('e-grid-pane');
+
+        // вешаем пересчет размеров гридовой формы на ресайз окна
+        if (document.querySelector('.e-singlemode-layout')) {
+            window.addEventListener('resize', () => this.fitGridSize());
+        } else {
+            window.addEventListener('resize', () => this.fitGridFormSize());
+        }
     }
 
     /**
-     * Adds records to the Grid.
+     * Обработчик из параметров: 'select' → onSelect и т. д.
      *
-     * @function
-     * @memberOf Grid#
-     * @private
-     * @param {Object} record Object with current record properties.
-     * @param {number} id ID of the recordset.
-     * @param {string|boolean} currentKey Defines which recordset must be selected.
+     * @param {string} type
+     * @param {...*} args
      */
-    function addRecord(record, id, currentKey) {
-        var row,
-            prevRow;
+    emit(type, ...args) {
+        const handler = this.options['on' + type.charAt(0).toUpperCase() + type.slice(1)];
+        if (handler) {
+            handler(...args);
+        }
+    }
 
+    /**
+     * Set the metadata; the key field is the one marked key.
+     *
+     * @param {Object} metadata
+     */
+    setMetadata(metadata) {
+        for (const fieldName in metadata) {
+            if (metadata[fieldName].key) {
+                /**
+                 * Key field name.
+                 * @type {string}
+                 */
+                this.keyFieldName = fieldName;
+            }
+        }
+        this.metadata = metadata;
+    }
+
+    getMetadata() {
+        return this.metadata;
+    }
+
+    /**
+     * Set the data (metadata first).
+     *
+     * @param {Object[]} data
+     * @returns {boolean}
+     */
+    setData(data) {
+        if (!this.metadata) {
+            alert('Cannot set data without specified metadata.');
+            return false;
+        }
+        this.data = data;
+        return true;
+    }
+
+    // кнопки с классом nomultiselect выключены, пока выбрано несколько строк
+    disableControlByMultiselect() {
+        this.multiselectControls().forEach((control) => control.DisableAndSetProperty('DisabledByMultiselect'));
+    }
+
+    enableControlByMultiselect() {
+        this.multiselectControls().forEach((control) => control.EnableByProperty('DisabledByMultiselect'));
+    }
+
+    multiselectControls() {
+        const manager = this.element.closest('.e-pane').GridManager;
+        if (!manager || !manager.toolbar) {
+            return [];
+        }
+        return manager.toolbar.controls.filter((control) => control.element.classList.contains('nomultiselect'));
+    }
+
+    /**
+     * Выбрать строку: без multiple — только её; multiple — добавить к выбранным; rangeselect — ещё и строки между ней
+     * и последней выбранной.
+     *
+     * @param {Element} item
+     * @param {boolean} [multiple]
+     * @param {boolean} [rangeselect]
+     */
+    selectItem(item, multiple, rangeselect) {
+        if (!multiple) {
+            this.deselectItem();
+            this.enableControlByMultiselect();
+        }
+        if (item) {
+            item.classList.add('selected');
+            if (multiple) {
+                this.disableControlByMultiselect();
+                if (rangeselect && this.selectedItem.length > 0) {
+                    const el = this.selectedItem[this.selectedItem.length - 1];
+                    let findup = el, finddown = el;
+                    while (findup.previousSibling || finddown.nextSibling) {
+                        if (findup.previousSibling) {
+                            findup = findup.previousSibling;
+                        }
+                        if (finddown.nextSibling) {
+                            finddown = finddown.nextSibling;
+                        }
+                        if (findup === item) {
+                            finddown = false;
+                            break;
+                        } else if (finddown === item) {
+                            findup = false;
+                            break;
+                        }
+                    }
+                    if (finddown === false || findup === false) {
+                        let selected = (finddown === false) ? findup.nextSibling : finddown.previousSibling;
+                        while (selected !== el) {
+                            selected.classList.add('selected');
+                            this.selectedItem.push(selected);
+                            this.emit('select', selected);
+                            selected = (finddown === false) ? selected.nextSibling : selected.previousSibling;
+                        }
+                    }
+                }
+                this.selectedItem.push(item);
+            } else {
+                this.selectedItem = [item];
+            }
+            this.emit('select', item);
+        }
+    }
+
+    deselectItem() {
+        this.selectedItem.forEach((row) => row.classList.remove('selected'));
+    }
+
+    /**
+     * Выбранная строка (первая) или, с аргументом, все выбранные; null — ничего не выбрано.
+     *
+     * @param {boolean} [returnAsArray]
+     * @returns {Element|Element[]|null}
+     */
+    getSelectedItem(returnAsArray) {
+        if (!arguments.length) {
+            return (this.selectedItem.length) ? this.selectedItem[0] : null;
+        }
+        return (this.selectedItem.length) ? this.selectedItem : null;
+    }
+
+    /**
+     * Поля записи в порядке заголовков: скрытые и особые (custom) — первыми; заголовок без поля в записи прячется.
+     *
+     * @param {Object} record
+     * @param {Element[]} header
+     * @returns {Object}
+     */
+    sortRecordAsHeadersName(record, header) {
+        const sorted = {};
+        for (const fieldName in record) {
+            if ((this.metadata[fieldName].type == 'hidden') ^ (this.metadata[fieldName].type == 'custom')) {
+                sorted[fieldName] = record[fieldName];
+            }
+        }
+        for (let i = 0; i < header.length; i++) {
+            const colname = header[i].getAttribute('name');
+            if (Object.prototype.hasOwnProperty.call(record, colname)) {
+                sorted[colname] = record[colname];
+            } else {
+                header[i].style.display = 'none';
+            }
+        }
+        return sorted;
+    }
+
+    /**
+     * Build the rows: the record selected before (if it is still there) is selected and scrolled into view,
+     * otherwise the first row; then the columns and the height.
+     */
+    build() {
+        let previouslySelectedRecordKey = this.getSelectedRecordKey();
+        this.selectedItem = [];
+        this.gridHeadContainer = this.element.querySelector('.gridHeadContainer');
+        this.gridHeadContainerTabs = Array.from(this.gridHeadContainer.querySelectorAll('th'));
+        this.paneContent = this.element.closest('.e-pane-item');
+        this.gridToolbar = this.element.querySelector('.grid_toolbar');
+        this.gridContainer = this.element.querySelector('.gridContainer');
+
+        if (!this.isEmpty()) {
+            if (!this.dataKeyExists(previouslySelectedRecordKey)) {
+                previouslySelectedRecordKey = false;
+            }
+            this.data.forEach((record, id) => {
+                this.addRecord(this.sortRecordAsHeadersName(record, this.gridHeadContainerTabs), id, previouslySelectedRecordKey);
+            });
+            if (!this.selectedItem.length && !previouslySelectedRecordKey) {
+                this.selectItem(this.tbody.firstElementChild);
+            }
+        } else {
+            this.tbody.appendChild(document.createElement('tr'));
+        }
+
+        this.adjustColumns();
+        // растягиваем gridContainer на высоту родительского элемента минус фильтр и голова грида
+        this.fitGridSize();
+        if (!this.minGridHeight) {
+            const h = Grid.style(this.gridContainer, 'height');
+            //Если грид запустился внутри вкладки формы
+            this.minGridHeight = h ? parseInt(h, 10) : 300;
+        }
+
+        /* растягиваем всю форму до высоты видимого окна */
+        if (!document.querySelector('.e-singlemode-layout')) {
+            this.pane = this.element.closest('.e-pane');
+            this.gridBodyContainer = this.element.querySelector('.gridBodyContainer');
+            this.fitGridFormSize();
+        }
+    }
+
+    /**
+     * Строка записи: ячейки полей, подсветка под мышью, выбор щелчком (Ctrl — ещё строка, Shift — диапазон),
+     * двойной щелчок — onDoubleClick.
+     *
+     * @param {Object} record
+     * @param {number} id номер записи (чётность — класс строки)
+     * @param {*} currentKey ключ записи, выбранной до перезагрузки
+     */
+    addRecord(record, id, currentKey) {
         // Проверяем соответствие записи метаданным.
-        for (var fieldName in record) {
+        for (const fieldName in record) {
             if (!this.metadata[fieldName]) {
                 alert('Grid: record doesn\'t conform to metadata.');
                 return;
             }
         }
-
-        // Создаем новую строку в таблице.        
-        row = new Element('tr').addClass((id % 2 == 0) ? 'odd' : 'even').setProperty('unselectable', 'on').inject(this.tbody);
-        
+        // Создаем новую строку в таблице.
+        const row = document.createElement('tr');
+        row.className = (id % 2 == 0) ? 'odd' : 'even';
+        row.setAttribute('unselectable', 'on');
+        this.tbody.appendChild(row);
         // Сохраняем запись в объекте строки.
         row.record = record;
-
-        for (var fieldName in record) {
+        for (const fieldName in record) {
             this.iterateFields(fieldName, record, row);
         }
-
         // Помечаем первую ячейку строки.
-        row.getFirst().addClass('firstColumn');
+        row.firstElementChild.classList.add('firstColumn');
 
         if (currentKey == record[this.keyFieldName]) {
             this.selectItem(row);
-            new Fx.Scroll($(document.body).getElement('.gridContainer')).toElement(row);
+            // выбранная прежде запись — в видимой части списка
+            const container = document.body.querySelector('.gridContainer');
+            container.scrollTop += row.getBoundingClientRect().top - container.getBoundingClientRect().top;
         }
 
-        var grid = this;
-        row.addEvents({
-            'mouseover': function () {
-                if (this != grid.getSelectedItem()) {
-                    this.addClass('highlighted');
-                }
-            },
-            'mouseout': function () {
-                this.removeClass('highlighted');
-            },
-            'click': function (e) { 		
-                if (!(e.control || e.shift)) {
-                    if (this != grid.getSelectedItem()) {
-                        grid.selectItem(this);
-                    }
-                }
-                else {
-		    if (e.shift) {
-		      //e.preventDefault();
-		      //document.getSelection().removeAllRanges();
-		      grid.selectItem(this, true,true);
-		    } else {
-		      grid.selectItem(this, true);
-		    }
-                }
-
-            },
-            'dblclick': function () {
-                /**
-                 * Double click event.
-                 * @event Grid#doubleClick
-                 */
-                grid.fireEvent('doubleClick');
+        row.addEventListener('mouseover', () => {
+            if (row != this.getSelectedItem()) {
+                row.classList.add('highlighted');
             }
         });
+        row.addEventListener('mouseout', () => row.classList.remove('highlighted'));
+        row.addEventListener('click', (event) => {
+            if (!(event.ctrlKey || event.shiftKey)) {
+                if (row != this.getSelectedItem()) {
+                    this.selectItem(row);
+                }
+            } else if (event.shiftKey) {
+                this.selectItem(row, true, true);
+            } else {
+                this.selectItem(row, true);
+            }
+        });
+        row.addEventListener('dblclick', () => this.emit('doubleClick'));
     }
 
-    return new Class(/** @lends Grid# */{
-        Implements: [Events, Options],
-
-        /**
-         * Array of data fields.
-         * @type {Object[]}
-         */
-        data: null,
-
-        /**
-         * Array-like object. Each internal object contain the properties (see below) to the each data field in the [data]{@link Grid#data}.
-         * @type {Object}
-         *
-         * @property {string} type Type of the field.
-         * @property {boolean} [key] Defines if this field is key field.
-         * @property {boolean|number} [sort] Defines the sorting allowed (true == 1; false == 0).
-         * @property {boolean} [visible] Defines if the field is visible or not.
-         *
-         * @example <caption>Structure of metadata</caption>
-         * metadata = {
-         *     'field1': {
-         *         type: 'fieldType1',
-         *         [key: true,]
-         *         [sort: 'asc'|'desc',]
-         *         [visible: true]
-         *     },
-         *     'field2': {
-         *         type: 'fieldType2',
-         *         [key: true,]
-         *         [sort: 'asc'|'desc',]
-         *         [visible: true]
-         *     },
-         *     ...
-         * }
-         */
-        metadata: null,
-
-        /**
-         * Current selected data field.
-         * @type {Elements}
-         */
-        selectedItem: new Elements(),
-
-        /**
-         * Sorting properties.
-         * @type {Object}
-         * @property {string} [field = null] Defines the field by which the sorting will applied.
-         * @property {string} [order = null] Defines the direction of the sorting. Can be: '', 'asc', 'desc'.
-         */
-        sort: {
-            field: null,
-            order: null
-        },
-        /**
-         * Flag that show that dataset is changed eg: when rows are added, updated or deleted
-         * Changed as a result
-         * @type {Boolean}
-         */
-        isDirty: false,
-
-        // constructor
-        initialize: function (element, options) {
-            Asset.css('grid.css');
-
-            /**
-             * The main element.
-             * @type {Element}
-             */
-            this.element = $(element);
-            this.setOptions(options);
-
-            // TODO: I think this.headOff can be removed, because it is always hidden.
-            /**
-             * Header of a table in the element '.gridContainer'.
-             * @type {Element}
-             * @deprecated
-             */
-            this.headOff = this.element.getElement('.gridContainer thead').setStyle('display', 'none');
-
-            /**
-             * Grid's table body.
-             * @type {Element}
-             */
-            this.tbody = this.element.getElement('.gridContainer tbody');
-
-            /**
-             * Grid's header.
-             * @type {Element}
-             */
-            this.headers = this.element.getElements('.gridHeadContainer table.gridTable th');
-            this.headers.addEvent('click', this.onChangeSort.bind(this));
-
-            // добавляем к контейнеру класс, который указывает, что в нем есть грид
-            this.element.getParents('.e-pane')[0].addClass('e-grid-pane');
-
-            // вешаем пересчет размеров гридовой формы на ресайз окна
-            if (document.getElement('.e-singlemode-layout')) {
-                window.addEvent('resize', this.fitGridSize.bind(this));
-            } else {
-                window.addEvent('resize', this.fitGridFormSize.bind(this));
+    /**
+     * Ячейка поля записи (невидимые поля пропускаются).
+     *
+     * @param {string} fieldName
+     * @param {Object} record
+     * @param {Element} row
+     */
+    iterateFields(fieldName, record, row) {
+        // Пропускаем невидимые поля.
+        if (!this.metadata[fieldName].visible || this.metadata[fieldName].type == 'hidden') {
+            return;
+        }
+        const cell = document.createElement('td');
+        cell.setAttribute('unselectable', 'on');
+        row.appendChild(cell);
+        cell.classList.add(fieldName); // добавляем имя поля в класс
+        switch (this.metadata[fieldName].type) {
+            case 'boolean': {
+                const checkbox = document.createElement('img');
+                checkbox.setAttribute('src', 'images/checkbox_' + (record[fieldName] == true ? 'on' : 'off') + '.png');
+                checkbox.setAttribute('width', '13');
+                checkbox.setAttribute('height', '13');
+                cell.appendChild(checkbox);
+                cell.style.textAlign = 'center';
+                cell.style.verticalAlign = 'middle';
+                break;
             }
-
-            this.addEvent('dirty', function () {
-                this.isDirty = true;
-            }.bind(this));
-        },
-
-        /**
-         * Set the [metadata]{@link Grid.metadata}. It also finds there the [key field name]{@link Grid#keyFieldName}.
-         *
-         * @function
-         * @public
-         * @param {Object} metadata [Metadata]{@link Grid#metadata}.
-         */
-        setMetadata: function (metadata) {
-            /*
-             * Проверяем соответствие видимых полей физической структуре таблицы,
-             * определяем имя ключевого поля
-             */
-            //var visibleFieldsCount = 0;
-            for (var fieldName in metadata) {
-                if (metadata[fieldName].key) {
-                    /**
-                     * Key field name.
-                     * @type {string}
-                     */
-                    this.keyFieldName = fieldName;
+            // значения — текстом: в данных может оказаться разметка посетителя (обратная связь, регистрация)
+            case 'value':
+                cell.textContent = record[fieldName]['value'];
+                break;
+            case 'file':
+                if (record[fieldName]) {
+                    const image = document.createElement('img');
+                    image.setAttribute('src', Energine.resizer + 'w40-h40/' + record[fieldName]);
+                    image.setAttribute('width', 40);
+                    image.setAttribute('height', 40);
+                    cell.appendChild(image);
+                    cell.style.textAlign = 'center';
+                    cell.style.verticalAlign = 'middle';
                 }
-            }
-
-            this.metadata = metadata;
-        },
-
-        /**
-         * Get the current [metadata]{@link Grid#metadata}.
-         *
-         * @function
-         * @public
-         * @returns {Object} [Metadata]{@link Grid#metadata}.
-         */
-        getMetadata: function () {
-            return this.metadata;
-        },
-
-        /**
-         * Set the [data fields]{@link Grid#data}.
-         *
-         * @function
-         * @public
-         * @param {Object[]} data Object with [data fields]{@link Gird#data}.
-         * @returns {boolean} Returns true if the data fields were successful set, otherwise false.
-         */
-        setData: function (data) {
-            if (!this.metadata) {
-                alert('Cannot set data without specified metadata.');
-                return false;
-            }
-            this.data = data;
-            return true;
-        },
-        /**
-         * Disable Control in Multiselect
-         *
-         * @function
-         * @public         * 
-         */
-        disableControlByMultiselect: function () {
-           var controls=this.element.getParent('.e-pane').GridManager.toolbar.controls;
-           for (var i=0;i<controls.length;i++)                     
-              if (controls[i].element.hasClass('nomultiselect')) 
-                  controls[i].DisableAndSetProperty('DisabledByMultiselect'); 
-        },
-        /**
-         * Enable Control in normal  Multiselect
-         *
-         * @function
-         * @public         * 
-         */
-        enableControlByMultiselect: function () {
-           var controls=this.element.getParent('.e-pane').GridManager.toolbar.controls;
-           for (var i=0;i<controls.length;i++)                     
-              if (controls[i].element.hasClass('nomultiselect')) 
-                  controls[i].EnableByProperty('DisabledByMultiselect'); 
-        },        
-        /**
-         * Select the one data field from all [data fields]{@link Grid#data}.
-         *
-         * @fires Grid#select
-         *
-         * @function
-         * @public
-         * @param {Element} item Data field that will be selected.
-         */
-        selectItem: function (item, multiple,rangeselect) {
-            if(!multiple)
-                {this.deselectItem();this.enableControlByMultiselect();}
-            if (item) {
-                item.addClass('selected');
-                if(multiple) {        this.disableControlByMultiselect();            
-                    if (rangeselect) {
-		      if (this.selectedItem.length>0) {				
-			var el=this.selectedItem[this.selectedItem.length-1];			
-			var findup=el;var finddown=el;			
-			while (findup.previousSibling || finddown.nextSibling) {
-			  if (findup.previousSibling) findup=findup.previousSibling;
-			  if (finddown.nextSibling) finddown=finddown.nextSibling;
-			  if (findup === item) {
-			    finddown=false;
-			    break;
-			  }  else
-			  if (finddown === item) {
-			    findup=false;
-			    break;
-			  }
-			}			
-			if (finddown===false || findup===false ) {
-			    var selected;if (finddown===false ) selected=findup.nextSibling; else 
-			    if (findup===false)  selected=finddown.previousSibling; 
-			    while (selected!==el) {
-			    selected.addClass('selected');
-			    this.selectedItem.push(selected);this.fireEvent('select', selected);
-			    if (finddown===false) selected=selected.nextSibling; else 
-			    if (findup===false)  selected=selected.previousSibling; 			    
-			    }			    
-			}
-			this.selectedItem.push(item);
-		      } else 
-			this.selectedItem.push(item);
-		    } else 
-		      this.selectedItem.push(item);
-		} else
-                    this.selectedItem = new Elements([item]);
-
-                /**
-                 * Select event.
-                 * @event Grid#select
-                 * @param {Element} item Item element that will be selected.
-                 */
-                this.fireEvent('select', item);
-            }
-        },
-
-        /**
-         * Deselect the selected item.
-         * @function
-         * @public
-         */
-        deselectItem: function () {
-            if (this.selectedItem.length) {
-                this.selectedItem.removeClass('selected');
-            }
-        },
-
-        /**
-         * Return the [selected item]{@link Grid#selectedItem}.
-         *
-         * @function
-         * @public
-         * @returns {Element}
-         */
-        getSelectedItem: function (returnAsArray) {
-            if (!arguments.length)
-                return (this.selectedItem.length) ? this.selectedItem[0] : null;
-            else {
-                return (this.selectedItem.length) ? this.selectedItem : null;
-            }
-        },
-        /**
-         * Sort Record according Headers  name property + hide unused headers        
-         * @function
-         * @public
-         */        
-        sortRecordAsHeadersName: function(record,header) {
-            var sorted=new Object();
-            for (var fieldName in record) { //add hidden fields to object
-                if ((this.metadata[fieldName].type == 'hidden') ^ (this.metadata[fieldName].type == 'custom') )  {
-                    fieldName.sortedByHeadersName=true;
-                    sorted[fieldName]=record[fieldName];                         
+                break;
+            default: {
+                let fieldValue = '';
+                if (record[fieldName] || record[fieldName] == 0) {
+                    fieldValue = Grid.clean(record[fieldName].toString());
                 }
-            }
-         
-            for (var i=0;i<header.length;i++) {
-                var found=false;
-                var colname=$(header[i]).get('name');                
-                for (var fieldName in record) {
-                    if ((fieldName.sortedByHeadersName===undefined)&&(fieldName.toString()==colname)) {
-                        fieldName.sortedByHeadersName=true;
-                        found=true;
-                        sorted[fieldName]=record[fieldName];
-                        break;
-                    }
+                const prevRow = row.previousElementSibling;
+                if ((this.metadata[fieldName].type == 'select') && (row.firstElementChild == cell) && prevRow
+                    && (prevRow.record[fieldName] == record[fieldName])) {
+                    fieldValue = '';
+                    prevRow.firstElementChild.style.fontWeight = 'bold';
                 }
-                if (found===false) {                    
-                    $(header[i]).setStyle('display', 'none');                                        
-                }                
+                cell.textContent = (fieldValue != '') ? fieldValue : ' ';
             }
-            return sorted;
-        },
-        /**
-         * Build Grid. Fill the Grid's table body with data fields.
-         *
-         * @function
-         * @public
-         */
-        build: function () {	  
-            var preiouslySelectedRecordKey = this.getSelectedRecordKey();
+        }
+    }
 
-            this.selectedItem = new Elements();
-
-            /**
-             * Element for Grid's header.
-             * @type {Element}
-             */
-            this.gridHeadContainer = this.element.getElement('.gridHeadContainer');            
-            /**
-             * Element Grid's header tabs.
-             * @type {Element}
-             */
-            this.gridHeadContainerTabs = this.gridHeadContainer.getElements('th');            
-            
-            /**
-             * Main element that holds Grid's toolbar, header and container.
-             * @type {Element}
-             */
-            this.paneContent = this.element.getParent('.e-pane-item');
-
-            /**
-             * Element for Grid's toolbar.
-             * @type {Element}
-             */
-            this.gridToolbar = this.element.getElement('.grid_toolbar');
-
-            /**
-             * Element for Grid's container.
-             * @type {Element}
-             */
-            this.gridContainer = this.element.getElement('.gridContainer');            
-            
-            if (!this.isEmpty()) {
-                if (!this.dataKeyExists(preiouslySelectedRecordKey)) {
-                    preiouslySelectedRecordKey = false;
+    /**
+     * Ширины колонок заголовка — по ячейкам первой строки; заголовок шире своей ячейки — колонка по заголовку,
+     * остальные сужаются пропорционально.
+     */
+    adjustColumns() {
+        const headers = [];
+        // Adjust padding-right for '.gridHeadContainer' element.
+        this.gridHeadContainer.style.paddingRight = Grid.scrollBarWidth() + 'px';
+        if (!this.element.querySelector('table.gridTable').classList.contains('fixed_columns')) {
+            const tds = Array.from(this.tbody.querySelector('tr').querySelectorAll('td')),
+                ths = Array.from(this.gridHeadContainer.querySelectorAll('th')),
+                headCols = Array.from(this.gridHeadContainer.querySelectorAll('col')),
+                bodyCols = Array.from(this.element.querySelectorAll('.gridContainer col'));
+            const setWidth = (n) => {
+                if (headCols[n] !== undefined) {
+                    headCols[n].style.width = Math.round(headers[n]) + 'px';
                 }
-                this.data.each(function (record, id) {                    
-                    //modbysd: addRecord.call(this, record, id, preiouslySelectedRecordKey);
-                    addRecord.call(this, this.sortRecordAsHeadersName(record,this.gridHeadContainerTabs), id, preiouslySelectedRecordKey);		    
-                }, this);
-                if (!this.selectedItem.length && !preiouslySelectedRecordKey) {
-                    this.selectItem(this.tbody.getFirst());
+                if (bodyCols[n] !== undefined) {
+                    bodyCols[n].style.width = Math.round(headers[n]) + 'px';
                 }
-            } else {
-                new Element('tr').inject(this.tbody);
-            }
-
-
-
-            this.adjustColumns();
-
-            // растягиваем gridContainer на высоту родительского элемента минус фильтр и голова грида
-            this.fitGridSize();
-
-            if (!(this.minGridHeight)) {
-                var h = this.gridContainer.getStyle('height');
-                //Если грид запустился внутри вкладки формы
-                if (h) {
-                    /**
-                     * Minimal Grid's height.
-                     * @type {number}
-                     */
-                    this.minGridHeight = h.toInt();
-                } else {
-                    // todo: :)
-                    //отфонарное на самом деле значение
-                    this.minGridHeight = 300;//h.toInt();
-                }
-            }
-
-            /* растягиваем всю форму до высоты видимого окна */
-            if (!(document.getElement('.e-singlemode-layout'))) {
-                this.pane = this.element.getParent('.e-pane');
-                /**
-                 * @deprecated
-                 * @type {Element}
-                 */
-                this.gridBodyContainer = this.element.getElement('.gridBodyContainer');
-                this.fitGridFormSize();
-                /*if (document.getElements('.grid')[0] == this.element) {
-                    new Fx.Scroll(document.getElement('.e-mainframe') ? document.getElement('.e-mainframe') : window).toElement(this.pane);
-                }*/
-            }
-        },
-
-        /**
-         * Iterates over record's fields and inserts them to the [Grid's table body]{@link Grid#tbody}.
-         *
-         * @function
-         * @protected
-         * @param {Object} record Object with fields.
-         * @param {Element} row Table row where the data will be inserted.
-         */
-        iterateFields: function (fieldName, record, row) {
-            // Пропускаем невидимые поля.
-            if (!this.metadata[fieldName].visible || this.metadata[fieldName].type == 'hidden') {
-                return;
-            }
-
-            var cell = new Element('td').setProperty('unselectable', 'on').inject(row);
-	    cell.addClass(fieldName); // добавляем имя поля в класс
-            switch (this.metadata[fieldName].type) {
-                case 'boolean':
-                    var checkbox = new Element('img').setProperties({
-                        'src': 'images/checkbox_' + (record[fieldName] == true ? 'on' : 'off') + '.png',
-                        'width': '13', 'height': '13'
-                    }).inject(cell);
-                    cell.setStyles({'text-align': 'center', 'vertical-align': 'middle'});
-                    break;
-                // значения — текстом: в данных может оказаться разметка посетителя (обратная связь, регистрация)
-                case 'value':
-                    cell.set('text', record[fieldName]['value']);
-                    break;
-                case 'file':
-                    if (record[fieldName]) {
-                        var image = new Element('img').setProperties({
-                            'src': Energine.resizer + 'w40-h40/' + record[fieldName],
-                            'width': 40,
-                            'height': 40
-                        }).inject(cell);
-                        cell.setStyles({'text-align': 'center', 'vertical-align': 'middle'});
-                    }
-                    break;
-                default :
-                    var fieldValue = '';
-                    if (record[fieldName] || record[fieldName] == 0) {
-                        fieldValue = record[fieldName].toString().clean();
-                    }
-                    var prevRow = row.getPrevious();
-                    if ((this.metadata[fieldName].type == 'select')
-                        && (row.getFirst() == cell)
-                        && (row.getPrevious())
-                        && (prevRow.record[fieldName] == record[fieldName])) {
-                        fieldValue = '';
-                        prevRow.getFirst().setStyle('font-weight', 'bold');
-                    }
-                    cell.set('text', (fieldValue != '') ? fieldValue : '\u00a0');
-            }
-        }.protect(),
-
-        /**
-         * Adjust column widths of the table body and table header.
-         *
-         * @function
-         * @protected
-         */
-        adjustColumns: function () {
-            var headers = [];
-
-            // Adjust padding-right for '.gridHeadContainer' element.
-            this.gridHeadContainer.setStyle('padding-right', ScrollBarWidth + 'px');
-
-            if (!(this.element.getElement('table.gridTable').hasClass('fixed_columns'))) {
-                var tds = this.tbody.getElement('tr').getElements('td'),
-                    ths = this.gridHeadContainer.getElements('th'),
-                    headCols = this.gridHeadContainer.getElements('col'),
-                    bodyCols = this.element.getElements('.gridContainer col');
-
-                // Get the col width from the tbody
-                for (var n = 0; n < tds.length; n++) {
-                    headers[n] = tds[n].getDimensions({computeSize: true}).totalWidth;
-                }
-
-                // Set col width
-                for (n = 0; n < tds.length; n++) { 
-                    if (headCols[n]!==undefined)
-		    headCols[n].setStyle('width', headers[n]);
-		    if (bodyCols[n]!==undefined)
-                    bodyCols[n].setStyle('width', headers[n]);
-                }
-
-                var oversizeHead = [];
-                for (n = 0; n < tds.length; n++) {
-		    if (ths[n]!==undefined)
-                    oversizeHead[n] = ths[n].getDimensions({computeSize: true}).totalWidth > headers[n];
-                }
-                if (oversizeHead.length > 0) {
-                    var newWidth = [],
-                        colWidth = [0, 0];
-
-                    for (n = 0; n < tds.length; n++) {
-                        if (oversizeHead[n]) {
-                            newWidth[n] = ths[n].getDimensions({computeSize: true}).totalWidth;
-                            colWidth[1] += newWidth[n] - headers[n];
-                        } else {
-                            colWidth[0] += headers[n];
-                        }
-                    }
-                    colWidth[1] += colWidth[0];
-
-                    var scaleCoef = colWidth[0] / colWidth[1];
-
-                    for (n = 0; n < tds.length; n++) {			
-                        headers[n] = (oversizeHead[n]) ? newWidth[n] : Math.floor(headers[n] * scaleCoef);
-
-                        // Reset col width
-			if (headCols[n]!==undefined)			
-                        headCols[n].setStyle('width', headers[n]);
-			if (bodyCols[n]!==undefined)
-                        bodyCols[n].setStyle('width', headers[n]);
-                    }
-                }
-            } else {
-                this.tbody.getParent().setStyles({
-                    'table-layout': 'fixed'
-                });
-            }
-
-            this.tbody.getParent().setStyles({
-                wordWrap: 'break-word'
-            });
-        }.protect(),
-
-        /**
-         * Fit the height of the Grid's container.
-         */
-        fitGridSize: function () {
-            if (this.paneContent) {
-                var margin = this.element.getStyle('margin-top'),
-                    eBToolbar = $(document.body).getElement('.e-pane-b-toolbar'),
-                    gridHeight = this.paneContent.getSize().y
-                        - this.gridHeadContainer.getSize().y
-                        - ((this.gridToolbar) ? this.gridToolbar.getSize().y : 0)
-                        - ((margin) ? margin.toInt() : 0)
-                        - ((eBToolbar) ? eBToolbar.getSize().y : 0);
-                if (gridHeight > 0) {
-                    this.gridContainer.setStyle('height', gridHeight-9);
-                }
-            }
-        },
-
-        /**
-         * Fit the height of the Grid's container if the container is not new modal frame.
-         */
-        fitGridFormSize: function () {
-            if (this.pane) {
-                var toolbarH = (this.gridToolbar) ? this.gridToolbar.getSize().y : 0,
-                    gridHeadH = this.gridHeadContainer.getComputedSize().totalHeight,
-                    paneToolbarT = this.pane.getElement('.e-pane-t-toolbar'),
-                    paneToolbarTH = (paneToolbarT) ? paneToolbarT.getSize().y : 0,
-                    paneToolbarB = this.pane.getElement('.e-pane-b-toolbar'),
-                    paneToolbarBH = (paneToolbarB) ? paneToolbarB.getSize().y : 0,
-                    paneH = this.pane.getSize().y,
-                    margin = this.element.getStyle('margin-top'),
-
-                    gridBodyContainer = this.element.getElement('.gridBodyContainer'),
-                    gridBodyHeight = gridBodyContainer.getSize().y
-                        + this.gridContainer.getStyle('border-top-width').toInt()
-                        + this.gridContainer.getStyle('border-bottom-width').toInt();
-                if (gridBodyHeight < this.minGridHeight) {
-                    gridBodyHeight = this.minGridHeight;
-                }
-                /*
-                 * +3 at the end is:
-                 *   +2 from e-pane-content border
-                 *   +1 from somewhere, I do not why this should be
-                 */
-                var totalH = toolbarH + gridHeadH + gridBodyHeight + paneToolbarTH + paneToolbarBH
-                    + ((margin) ? margin.toInt() : 0) + 3;
-                /*
-                 * -81 at the end is:
-                 *   -31 from e-topframe height
-                 *   -50 from footer
-                 * they are not visible from grid
-                 */
-                var windowHeight = window.getSize().y;
-                var freespace = windowHeight;
-
-                if ($(document.body).scrollHeight - ScrollBarWidth  < windowHeight) {
-                    freespace -= this.pane.getPosition().y + ScrollBarWidth ;
-                }
-
-                if (totalH > paneH) {
-                    this.pane.setStyle('height', (totalH > freespace) ? freespace : totalH);
-                    var leftCol=$$('div[column=left]');//ugly
-
-                    if (this.pane.parentNode.parentNode.parentNode.hasClass("fitGridHeightToLeftCol") && leftCol.length) {
-                        var fitGridHeightToLeftCol=leftCol.clientHeight-(toolbarH + gridHeadH-30);//ugly
-
-                        this.pane.setStyle('height', fitGridHeightToLeftCol);
-                    }
-                }
-
-                this.fitGridSize();
-            }
-        },
-
-        /**
-         * Return true if no data fields are stored, otherwise - false.
-         *
-         * @function
-         * @public
-         * @returns {boolean}
-         */
-        isEmpty: function () {
-            return !this.data.length;
-        },
-
-        /**
-         * Return the recordset from the selected data field.
-         *
-         * @function
-         * @public
-         * @returns {Object}
-         */
-        getSelectedRecord: function () {
-            if (!this.getSelectedItem()) {
-                return false;
-            }
-            return this.getSelectedItem().record;
-        },
-	 /**
-         * Return the records from the selected data field.
-         *
-         * @function
-         * @public
-         * @returns {Object}
-         */
-	getSelectedRecords: function () {
-            if (!this.getSelectedItem(true)) {
-                return false;
-            }
-            return this.getSelectedItem(true);
-        },
-
-        /**
-         * Returns the value(s) of the key field from the selected(s) item.
-         *
-         * @function
-         * @public
-         * @returns {boolean}
-         */
-        getSelectedRecordKey: function (multiple) {
-	  if (arguments.length<1) {
-	       if (!this.keyFieldName || !this.getSelectedRecord()) {
-		 return false;
-	      }
-	      var id = this.getSelectedRecord()[this.keyFieldName];
-	      return id;
-	  } else {
-	    if (this.selectedItem.length<2) {
-	      if (!this.keyFieldName || !this.getSelectedRecord()) {
-		 return false;
-	      }
-	      var id = this.getSelectedRecord()[this.keyFieldName];
-	      return id;
-	    } else {
-	      var ida=[];
-		if (!this.keyFieldName || !this.getSelectedRecords()) return false;
-		 var sr=this.getSelectedRecords();
-		  for (var l=0;l<sr.length;l++) {
-		      ida.push(sr[l].record[this.keyFieldName]);
-		  }
-	      return ida.join(",");	      
-	    }
-	  }	  
-        },
-
-        /**
-         * Find the <tt>'key'<tt> in the [<tt>'data'</tt>]{@link Grid.data}. If the key exist tru will be returns, otherwise - false.
-         *
-         * @function
-         * @public
-         * @param key
-         * @returns {boolean}
-         */
-        dataKeyExists: function (key) {
-            if (!this.data) return false;
-            if (!this.keyFieldName) return false;
-
-            return this.data.some(function (item, index) {
-                return (item[this.keyFieldName] == key);
-            }.bind(this));
-        },
-
-        /**
-         * Clear the [Grid's table body]{@link Grid#tbody}.
-         *
-         * @function
-         * @public
-         */
-        clear: function () {
-            this.deselectItem();
-            while (this.tbody.hasChildNodes()) {
-                this.tbody.removeChild(this.tbody.firstChild);
-            }
-        },
-
-        /**
-         * Event handler. Change the sorting of the [data fields]{@link Grid#data}.
-         *
-         * @fires Grid#sortChange
-         *
-         * @function
-         * @public
-         * @param {Object} event Default event object.
-         */
-        onChangeSort: function (event) {
-            var getNextDirectionOrderItem = function (current) {
-                var sortDirectionOrder = ['', 'asc', 'desc'],
-                    currentIndex,
-                    result;
-
-                current = current || '';
-
-                if ((currentIndex = sortDirectionOrder.indexOf(current)) != -1) {
-                    if ((++currentIndex) < sortDirectionOrder.length) {
-                        result = sortDirectionOrder[currentIndex];
-                    } else {
-                        result = sortDirectionOrder[0];
-                    }
-                } else {
-                    result = sortDirectionOrder[0];
-                }
-
-                return result;
             };
 
-            var header = $(event.target),
-                sortFieldName = header.getProperty('name'),
-                sortDirection = header.getProperty('class');
+            // Get the col width from the tbody
+            for (let n = 0; n < tds.length; n++) {
+                headers[n] = Grid.totalWidth(tds[n]);
+            }
+            // Set col width
+            for (let n = 0; n < tds.length; n++) {
+                setWidth(n);
+            }
 
-            //проверяем есть ли колонка сортировки в списке колонок
-            if (this.metadata[sortFieldName] && this.metadata[sortFieldName].sort == 1) {
-                this.sort.field = sortFieldName;
-                this.sort.order = getNextDirectionOrderItem(sortDirection);
+            const oversizeHead = [];
+            for (let n = 0; n < tds.length; n++) {
+                if (ths[n] !== undefined) {
+                    oversizeHead[n] = Grid.totalWidth(ths[n]) > headers[n];
+                }
+            }
+            if (oversizeHead.length > 0) {
+                const newWidth = [], colWidth = [0, 0];
+                for (let n = 0; n < tds.length; n++) {
+                    if (oversizeHead[n]) {
+                        newWidth[n] = Grid.totalWidth(ths[n]);
+                        colWidth[1] += newWidth[n] - headers[n];
+                    } else {
+                        colWidth[0] += headers[n];
+                    }
+                }
+                colWidth[1] += colWidth[0];
+                const scaleCoef = colWidth[0] / colWidth[1];
+                for (let n = 0; n < tds.length; n++) {
+                    headers[n] = (oversizeHead[n]) ? newWidth[n] : Math.floor(headers[n] * scaleCoef);
+                    // Reset col width
+                    setWidth(n);
+                }
+            }
+        } else {
+            this.tbody.parentElement.style.tableLayout = 'fixed';
+        }
+        this.tbody.parentElement.style.wordWrap = 'break-word';
+    }
 
-                header.removeProperty('class').addClass(this.sort.order);
-
-                /**
-                 * Change the sorting.
-                 * @event Grid#sortChange
-                 */
-                this.fireEvent('sortChange');
+    /**
+     * Высота списка — высота панели минус голова грида, фильтр, отступ и нижняя панель окна.
+     */
+    fitGridSize() {
+        if (this.paneContent) {
+            const margin = Grid.style(this.element, 'marginTop'),
+                eBToolbar = document.body.querySelector('.e-pane-b-toolbar'),
+                gridHeight = this.paneContent.offsetHeight
+                    - this.gridHeadContainer.offsetHeight
+                    - ((this.gridToolbar) ? this.gridToolbar.offsetHeight : 0)
+                    - ((margin) ? parseInt(margin, 10) : 0)
+                    - ((eBToolbar) ? eBToolbar.offsetHeight : 0);
+            if (gridHeight > 0) {
+                this.gridContainer.style.height = (gridHeight - 9) + 'px';
             }
         }
-    });
-})();
+    }
+
+    /**
+     * Панель грида на странице — по содержимому, но не выше видимой части окна; затем высота списка.
+     */
+    fitGridFormSize() {
+        if (this.pane) {
+            const toolbarH = (this.gridToolbar) ? this.gridToolbar.offsetHeight : 0,
+                gridHeadH = Grid.totalHeight(this.gridHeadContainer),
+                paneToolbarT = this.pane.querySelector('.e-pane-t-toolbar'),
+                paneToolbarTH = (paneToolbarT) ? paneToolbarT.offsetHeight : 0,
+                paneToolbarB = this.pane.querySelector('.e-pane-b-toolbar'),
+                paneToolbarBH = (paneToolbarB) ? paneToolbarB.offsetHeight : 0,
+                paneH = this.pane.offsetHeight,
+                margin = Grid.style(this.element, 'marginTop'),
+                gridBodyContainer = this.element.querySelector('.gridBodyContainer');
+            let gridBodyHeight = gridBodyContainer.offsetHeight
+                + parseInt(Grid.style(this.gridContainer, 'borderTopWidth'), 10)
+                + parseInt(Grid.style(this.gridContainer, 'borderBottomWidth'), 10);
+
+            if (gridBodyHeight < this.minGridHeight) {
+                gridBodyHeight = this.minGridHeight;
+            }
+
+            /*
+             * +3 at the end is:
+             *   +2 from e-pane-content border
+             *   +1 from somewhere, I do not why this should be
+             */
+            const totalH = toolbarH + gridHeadH + gridBodyHeight + paneToolbarTH + paneToolbarBH
+                + ((margin) ? parseInt(margin, 10) : 0) + 3;
+
+            /*
+             * -81 at the end is:
+             *   -31 from e-topframe height
+             *   -50 from footer
+             * they are not visible from grid
+             */
+            const windowHeight = document.documentElement.clientHeight;
+            let freespace = windowHeight;
+
+            if (document.body.scrollHeight - Grid.scrollBarWidth() < windowHeight) {
+                freespace -= Grid.pageY(this.pane) + Grid.scrollBarWidth();
+            }
+
+            if (totalH > paneH) {
+                this.pane.style.height = Math.round((totalH > freespace) ? freespace : totalH) + 'px';
+                const leftCol = document.querySelectorAll('div[column=left]');//ugly
+
+                if (this.pane.parentNode.parentNode.parentNode.classList.contains('fitGridHeightToLeftCol') && leftCol.length) {
+                    const fitGridHeightToLeftCol = leftCol.clientHeight - (toolbarH + gridHeadH - 30);//ugly
+
+                    this.pane.style.height = Math.round(fitGridHeightToLeftCol) + 'px';
+                }
+            }
+
+            this.fitGridSize();
+        }
+    }
+
+    isEmpty() {
+        return !this.data.length;
+    }
+
+    /**
+     * Record of the selected row or false.
+     * @returns {Object|boolean}
+     */
+    getSelectedRecord() {
+        if (!this.getSelectedItem()) {
+            return false;
+        }
+        return this.getSelectedItem().record;
+    }
+
+    /**
+     * Selected rows or false.
+     * @returns {Element[]|boolean}
+     */
+    getSelectedRecords() {
+        if (!this.getSelectedItem(true)) {
+            return false;
+        }
+        return this.getSelectedItem(true);
+    }
+
+    /**
+     * Ключ выбранной записи; с аргументом и несколькими выбранными — ключи через запятую; false — ничего не выбрано.
+     *
+     * @param {boolean} [multiple]
+     * @returns {*}
+     */
+    getSelectedRecordKey(multiple) {
+        if (arguments.length < 1 || this.selectedItem.length < 2) {
+            if (!this.keyFieldName || !this.getSelectedRecord()) {
+                return false;
+            }
+            return this.getSelectedRecord()[this.keyFieldName];
+        }
+        if (!this.keyFieldName || !this.getSelectedRecords()) {
+            return false;
+        }
+        return this.getSelectedRecords().map((row) => row.record[this.keyFieldName]).join(',');
+    }
+
+    /**
+     * Есть ли запись с этим ключом.
+     *
+     * @param {*} key
+     * @returns {boolean}
+     */
+    dataKeyExists(key) {
+        if (!this.data || !this.keyFieldName) {
+            return false;
+        }
+        return this.data.some((item) => item[this.keyFieldName] == key);
+    }
+
+    clear() {
+        this.deselectItem();
+        this.tbody.replaceChildren();
+    }
+
+    /**
+     * Щелчок по заголовку сортируемой колонки: порядок по кругу «нет → по возрастанию → по убыванию».
+     *
+     * @param {Object} event
+     */
+    onChangeSort(event) {
+        const sortDirectionOrder = ['', 'asc', 'desc'],
+            next = (current) => {
+                const index = sortDirectionOrder.indexOf(current || '');
+                return (index != -1 && index + 1 < sortDirectionOrder.length) ? sortDirectionOrder[index + 1] : sortDirectionOrder[0];
+            };
+        const header = event.target,
+            sortFieldName = header.getAttribute('name'),
+            sortDirection = header.getAttribute('class');
+
+        //проверяем есть ли колонка сортировки в списке колонок
+        if (this.metadata[sortFieldName] && this.metadata[sortFieldName].sort == 1) {
+            this.sort.field = sortFieldName;
+            this.sort.order = next(sortDirection);
+            header.className = this.sort.order;
+            this.emit('sortChange');
+        }
+    }
+
+    /**
+     * Строка без лишних пробелов (clean MooTools).
+     *
+     * @param {string} text
+     * @returns {string}
+     */
+    static clean(text) {
+        return String(text).replace(/\s+/g, ' ').trim();
+    }
+
+    /**
+     * Стиль элемента: заданный в атрибуте style, иначе вычисленный (getStyle MooTools).
+     *
+     * @param {Element} element
+     * @param {string} property
+     * @returns {string}
+     */
+    static style(element, property) {
+        return element.style[property] || getComputedStyle(element)[property];
+    }
+
+    /**
+     * Ширина с полями и рамками целыми пикселями (getComputedSize MooTools).
+     *
+     * @param {Element} element
+     * @returns {number}
+     */
+    static totalWidth(element) {
+        const px = (property) => parseInt(Grid.style(element, property), 10) || 0,
+            width = Grid.style(element, 'width');
+        return ((width === 'auto') ? element.offsetWidth : (parseInt(width, 10) || 0))
+            + px('paddingLeft') + px('paddingRight') + px('borderLeftWidth') + px('borderRightWidth');
+    }
+
+    /**
+     * Высота с полями и рамками целыми пикселями (getComputedSize MooTools).
+     *
+     * @param {Element} element
+     * @returns {number}
+     */
+    static totalHeight(element) {
+        const px = (property) => parseInt(Grid.style(element, property), 10) || 0,
+            height = Grid.style(element, 'height');
+        return ((height === 'auto') ? element.offsetHeight : (parseInt(height, 10) || 0))
+            + px('paddingTop') + px('paddingBottom') + px('borderTopWidth') + px('borderBottomWidth');
+    }
+
+    /**
+     * Верх элемента от начала документа (getPosition MooTools).
+     *
+     * @param {Element} element
+     * @returns {number}
+     */
+    static pageY(element) {
+        const html = document.documentElement;
+        return parseInt(element.getBoundingClientRect().top, 10) + (window.pageYOffset || html.scrollTop) - html.clientTop;
+    }
+
+    /**
+     * Ширина полосы прокрутки: у верхнего окна, если оно её уже измерило, иначе — измеряется здесь, один раз.
+     *
+     * @returns {number}
+     */
+    static scrollBarWidth() {
+        if (typeof window.ScrollBarWidth !== 'number') {
+            let width = null;
+            try {
+                width = window.top.ScrollBarWidth;
+            } catch (e) {
+            }
+            if (!width || typeof width !== 'number') {
+                const outer = document.createElement('div'),
+                    inner = document.createElement('div');
+                outer.style.cssText = 'height: 1px; overflow: scroll; visibility: hidden';
+                inner.style.height = '2px';
+                outer.appendChild(inner);
+                document.body.appendChild(outer);
+                width = outer.offsetWidth - inner.offsetWidth;
+                outer.remove();
+            }
+            window.ScrollBarWidth = width;
+        }
+        return window.ScrollBarWidth;
+    }
+};
 
 /**
- * Grid Manager.
+ * Грид с панелью, листалкой, фильтром и вкладками языков: загрузка страниц записей, действия кнопок панели, окна
+ * правки (ответ окна — processAfterCloseAction).
  *
  * @constructor
- * @param {Element} element The main holder element for the Grid Manager.
+ * @param {Element|string} element Элемент компонента (или его id).
  */
-var GridManager = new Class(/** @lends GridManager# */{
-    /**
-     * @see Energine.request
-     * @deprecated Use Energine.request instead.
-     */
-    request: Energine.request,
-
-    /**
-     * Element ID that will be moved.
-     * @type {number}
-     */
-    mvElementId: null,
-
-    /**
-     * Language ID.
-     * @type {number}
-     */
-    langId: 0,
-
-    // constructor
-    initialize: function (element) {
+var GridManager = class GridManager {
+    constructor(element) {
         /**
-         * The main holder element.
-         * @type {Element}
+         * Id of the record that is moved (state /move/).
+         * @type {number|string}
          */
-        this.element = $(element);
-        $(element).GridManager=this;// needed ??
+        this.mvElementId = null;
+        /**
+         * Language ID.
+         * @type {number}
+         */
+        this.langId = 0;
+        this.toolbar = null;
+        this.initialized = false;
+        this.element = (typeof element === 'string') ? document.getElementById(element) : element;
+        this.element.GridManager = this;
+
         // документ родительского окна — без методов MooTools: её может не быть там (страница сайта у администратора)
         if (window.parent.document.querySelector('form.e-grid-form')) {
-            this.element.addClass('inside-form');
+            this.element.classList.add('inside-form');
         }
+
         this.delConfirmCounter = 0;
-        /**
-         * Filter tool.
-         * @type {Filters}
-         */
-
-            this.filter = new Filters(this);
-
-
-        /**
-         * Pages.
-         * @type {PageList}
-         */
-        this.pageList = new PageList({onPageSelect: this.loadPage.bind(this)});
-
-        /**
-         * Grid.
-         * @type {Grid}
-         */
-        this.grid = new Grid(this.element.getElement('.grid'), {
-            onSelect: this.onSelect.bind(this),
-            onSortChange: this.onSortChange.bind(this),
-            onDoubleClick: this.onDoubleClick.bind(this)
+        this.filter = new Filters(this);
+        this.pageList = new PageList({onPageSelect: (pageNum) => this.loadPage(pageNum)});
+        this.grid = this.createGrid(this.element.querySelector('.grid'), {
+            onSelect: (item) => this.onSelect(item),
+            onSortChange: () => this.onSortChange(),
+            onDoubleClick: () => this.onDoubleClick()
         });
+        this.tabPane = new TabPane(this.element, {onTabChange: (data) => this.onTabChange(data)});
 
-        /**
-         * Tabs.
-         * @type {TabPane}
-         */
-        this.tabPane = new TabPane(this.element, {onTabChange: this.onTabChange.bind(this)});
-
-        var toolbarContainer = this.tabPane.element.getElement('.e-pane-b-toolbar');
+        const toolbarContainer = this.tabPane.element.querySelector('.e-pane-b-toolbar');
         if (toolbarContainer) {
-            toolbarContainer.adopt(this.pageList.getElement());
-            this.tabPane.element.removeClass('e-pane-has-b-toolbar1');
-            this.tabPane.element.addClass('e-pane-has-b-toolbar2');
+            toolbarContainer.appendChild(this.pageList.element);
+            this.tabPane.element.classList.remove('e-pane-has-b-toolbar1');
+            this.tabPane.element.classList.add('e-pane-has-b-toolbar2');
         } else {
-            this.tabPane.element.adopt(this.pageList.getElement());
+            this.tabPane.element.appendChild(this.pageList.element);
         }
 
-        /**
-         * Visual imitation of waiting.
-         * @type {Overlay}
-         */
         this.overlay = new Overlay(this.element);
-
-        /**
-         * Property <tt>'single_template'</tt> of the [main holder element]{@link GridManager#element}.
-         * @type {string}
-         */
-        this.singlePath = this.element.getProperty('single_template');
-        /*Checking if opened in modalbox*/
-        var mb = window.parent.ModalBox;
-        if (mb && mb.initialized && mb.getCurrent()) {
-            $(document.body).addEvent('keypress', function (evt) {
-                if (evt.key == 'esc') {
-                    mb.close();
-                }
-            });
-        }
+        this.singlePath = this.element.getAttribute('single_template');
 
         // инициализация id записи, которую будем двигать в стейте /move/
-        var move_from_id = this.element.getProperty('move_from_id');
-        if (move_from_id) {
-            this.setMvElementId(move_from_id);
+        const moveFromId = this.element.getAttribute('move_from_id');
+        if (moveFromId) {
+            this.setMvElementId(moveFromId);
         }
 
         this.reload();
-    },
+    }
 
     /**
-     * Set the element ID that will be moved.
-     * @function
-     * @public
-     * @param {string|number} id Element ID.
+     * Таблица грида; наследник может подставить свою (файловый репозиторий).
+     *
+     * @param {Element} element .grid
+     * @param {Object} options обработчики
+     * @returns {Grid}
      */
-    setMvElementId: function (id) {
+    createGrid(element, options) {
+        return new Grid(element, options);
+    }
+
+    setMvElementId(id) {
         this.mvElementId = id;
-    },
+    }
 
-    /**
-     * Get the moved element ID.
-     * @function
-     * @public
-     * @returns {string|number}
-     */
-    getMvElementId: function () {
+    getMvElementId() {
         return this.mvElementId;
-    },
+    }
 
-    /**
-     * Reset the moved element ID.
-     * @function
-     * @public
-     */
-    clearMvElementId: function () {
+    clearMvElementId() {
         this.mvElementId = null;
-    },
+    }
 
     /**
-     * Attach the <tt>'toolbar'</tt> to the Grid Manager.
+     * Панель — над гридом (в .e-pane-t-toolbar), кнопки выключены до загрузки записей.
      *
-     * @function
-     * @public
-     * @param {Toolbar} toolbar Toolbar that will be attached to this GridManager.
+     * @param {Toolbar} toolbar
      */
-    attachToolbar: function (toolbar) {
-        /**
-         * Toolbar.
-         * @type {}
-         */
+    attachToolbar(toolbar) {
         this.toolbar = toolbar;
-        //modBySD move toolbar up var toolbarContainer = this.tabPane.element.getElement('.e-pane-b-toolbar'); .getStyle('border-bottom-width')
-	//var toolbarContainer = this.tabPane.element.getElement('.grid_toolbar');
-	//var toolbarContainer = this.tabPane.element.getElement('.e-pane-toolbar');
-	var toolbarContainer = this.tabPane.element.getElement('.e-pane-t-toolbar');
-        if (toolbarContainer) {
-            //toolbarContainer.adopt(this.toolbar.getElement());
-	    toolbarContainer.grab(this.toolbar.getElement(),'top');
-        } else {
-            //this.tabPane.element.adopt(this.toolbar.getElement());
-	  this.tabPane.element.grab(this.toolbar.getElement(),'top');
-        }
+        const toolbarContainer = this.tabPane.element.querySelector('.e-pane-t-toolbar');
+        (toolbarContainer || this.tabPane.element).prepend(this.toolbar.element);
         this.toolbar.disableControls();
-        toolbar.bindTo(this);	
-
-        /*
-         * Панель инструментов прикреплена, загружаем первую страницу.
-         *
-         * Делаем секундную задержку для надёжности:
-         * пусть браузер распарсит стили и просчитает размеры элементов.
-         */
-        //this.reload.delay(1000, this);
-    },
+        toolbar.bindTo(this);
+    }
 
     /**
-     * Changing the tab of the Grid Manager.
+     * Другая вкладка языка: фильтр сбрасывается, записи — на её языке.
      *
-     * @function
-     * @public
-     * @param {Object} data Object with language ID.
+     * @param {Object} data {lang}
      */
-    onTabChange: function (data) {
+    onTabChange(data) {
         this.langId = data.lang;
         // Загружаем первую страницу только если панель инструментов уже прикреплена.
         if (this.filter.element) {
             this.filter.remove();
         }
         this.reload();
-    },
+    }
+
+    onSelect() {
+    }
 
     /**
-     * Event handler. Select the item.
-     * @function
-     * @public
+     * Двойной щелчок: правка, если можно, иначе первое действие панели.
      */
-    onSelect: function () {
-    },
-
-    /**
-     * Event handler. Double click.
-     * @function
-     * @public
-     */
-    onDoubleClick: function () {
-        var c;
+    onDoubleClick() {
+        let c;
         if ((c = this.toolbar.getControlById('edit')) && !c.disabled()) {
             this.edit();
+        } else if (this.toolbar.controls.length) {
+            const action = this.toolbar.controls[0].properties.action;
+            if (this[action] && !this.toolbar.controls[0].disabled()) {
+                this[action]();
+            }
         }
-        else if (this.toolbar.controls.length) {
-            var action = this.toolbar.controls[0].properties.action;
-            if (this[action] && !this.toolbar.controls[0].disabled()) this[action]();
-        }
-    },
+    }
 
-    /**
-     * Event handler. Change the sorting of the data.
-     * @function
-     * @public
-     */
-    onSortChange: function () {
+    onSortChange() {
         this.loadPage(1);
-    },
+    }
 
-    /**
-     * Load the first page.
-     * @function
-     * @public
-     */
-    reload: function () {
+    reload() {
         this.loadPage(1);
-    },
+    }
 
     /**
-     * Load the specified page number.
+     * Загрузить страницу записей: листалка и кнопки выключены, грид затемнён и пуст до ответа.
      *
-     * @function
-     * @public
-     * @param {number|string} pageNum Page number.
+     * @param {number} pageNum
      */
-    loadPage: function (pageNum) {
+    loadPage(pageNum) {
         this.pageList.disable();
         // todo: The toolbar is attached later as this function calls.
         if (this.toolbar) {
@@ -1124,410 +857,262 @@ var GridManager = new Class(/** @lends GridManager# */{
         this.overlay.show();
         this.grid.clear();
 
-        /*
-         This delay was created because of some stupid behavior in Firefox.
-         this.paneContent in build() has different height without delay.
-         Firefox 26
-         */
-        (function () {
+        // запрос — после текущего обработчика, как прежде: в Firefox 26 панель иначе мерилась до перерисовки
+        setTimeout(() => {
             Energine.request(
                 this.buildRequestURL(pageNum),
                 this.buildRequestPostBody(),
-                this.processServerResponse.bind(this),
+                (result) => this.processServerResponse(result),
                 null,
-                this.processServerError.bind(this)
+                (responseText) => this.processServerError(responseText)
             );
-        }).delay(0, this);
-    },
+        }, 0);
+    }
 
     /**
-     * Build request URL.
+     * Адрес страницы записей (с сортировкой, если она выбрана).
      *
-     * @abstract
-     * @param {number|string} pageNum Page number.
+     * @param {number|string} pageNum
      * @returns {string}
      */
-    buildRequestURL: function (pageNum) {
-        var url = '';
-
+    buildRequestURL(pageNum) {
         if (this.grid.sort.order) {
-            url = this.singlePath + 'get-data/' + this.grid.sort.field + '-'
-                + this.grid.sort.order + '/page-' + pageNum
-        } else {
-            url = this.singlePath + 'get-data/page-' + pageNum;
+            return this.singlePath + 'get-data/' + this.grid.sort.field + '-' + this.grid.sort.order + '/page-' + pageNum;
         }
-
-        return url;
-    },
+        return this.singlePath + 'get-data/page-' + pageNum;
+    }
 
     /**
-     * Build request post body.
+     * Тело запроса: язык вкладки и фильтр.
      *
-     * @abstract
      * @returns {string}
      */
-    buildRequestPostBody: function () {
-        var postBody = '';
-
+    buildRequestPostBody() {
+        let postBody = '';
         if (this.langId) {
             postBody += 'languageID=' + this.langId + '&';
         }
-        
         if (this.filter) {
             postBody += this.filter.getValue();
         }
         return postBody;
-    },
+    }
 
     /**
-     * Callback function by successful server response.
+     * Ответ со страницей записей: метаданные (один раз), записи, листалка, кнопки; грид строится заново.
      *
-     * @function
-     * @public
-     * @param {Object} result Result data from the server.
+     * @param {Object} result
      */
-    processServerResponse: function (result) {
-        var control = false;
+    processServerResponse(result) {
+        let control = false;
         if (this.toolbar) {
             control = this.toolbar.getControlById('add');
         }
-
         if (!this.initialized) {
             this.grid.setMetadata(result.meta);
             this.initialized = true;
         }
-
         this.grid.setData(result.data || []);
-
         if (result.pager) {
             this.pageList.build(result.pager.count, result.pager.current);
         }
-
         if (!this.grid.isEmpty()) {
-            if (this.toolbar) this.toolbar.enableControls();
+            if (this.toolbar) {
+                this.toolbar.enableControls();
+            }
             this.pageList.enable();
         }
-
         if (control) {
             control.enable();
         }
-
         this.grid.build();
         this.overlay.hide();
-    },
+    }
 
     /**
-     * Callback function by server error.
+     * Ошибка сервера: текст — администратору, затемнение снимается.
      *
-     * @function
-     * @public
-     * @param {string} responseText Server error message.
+     * @param {string} responseText
      */
-    processServerError: function (responseText) {
+    processServerError(responseText) {
         alert(responseText);
         this.overlay.hide();
-    },
+    }
 
     /**
-     * Call the next action after finished action 'close'.
+     * Ответ окна правки: действие, названное в ответе (afterClose), иначе — та же страница заново.
      *
-     * @function
-     * @public
-     * @param {Object} [returnValue] Object, that can contain the next action name.
+     * @param {Object} returnValue
      */
-    processAfterCloseAction: function (returnValue) {
+    processAfterCloseAction(returnValue) {
         if (returnValue) {
             if (returnValue.afterClose && this[returnValue.afterClose]) {
-                this[returnValue.afterClose].attempt(null, this);
+                try {
+                    this[returnValue.afterClose]();
+                } catch (e) {
+                    console.error(e);
+                }
             } else {
                 this.loadPage(this.pageList.currentPage);
             }
-            this.grid.fireEvent('dirty');
         }
-    },
+    }
 
     // Actions:
-    /**
-     * View action.
-     * @function
-     * @public
-     */
-    view: function () {
-        ModalBox.open({
-            url: this.singlePath +
-            this.grid.getSelectedRecordKey()
-        });
-    },
+    view() {
+        ModalBox.open({url: this.singlePath + this.grid.getSelectedRecordKey()});
+    }
 
-    /**
-     * Add action.
-     * @function
-     * @public
-     */
-    add: function () {
+    add() {
         ModalBox.open({
             url: this.singlePath + 'add/',
-            onClose: this.processAfterCloseAction.bind(this)
+            onClose: (returnValue) => this.processAfterCloseAction(returnValue)
         });
-    },
+    }
 
-    /**
-     * Edit action.
-     * @function
-     * @public
-     * @param [id] ID of the data field. If <tt>id</tt> is not specified it will be get from [getSelectedRecordKey()]{@link Grid#getSelectedRecordKey}.
-     */
-    edit: function (id) {
+    edit(id) {
         if (!parseInt(id)) {
             id = this.grid.getSelectedRecordKey();
         }
         ModalBox.open({
             url: this.singlePath + id + '/edit',
-            onClose: this.processAfterCloseAction.bind(this)
+            onClose: (returnValue) => this.processAfterCloseAction(returnValue)
         });
-    },
+    }
 
-    /**
-     * Move action.
-     * @function
-     * @public
-     * @param {string|number} [id] ID of the data field. If <tt>id</tt> is not specified it will be get from [getSelectedRecordKey()]{@link Grid#getSelectedRecordKey}.
-     */
-    move: function (id) {
-        
+    move(id) {
         if (!parseInt(id)) {
             id = this.grid.getSelectedRecordKey();
         }
         this.setMvElementId(id);
         ModalBox.open({
             url: this.singlePath + 'move/' + id,
-            onClose: this.processAfterCloseAction.bind(this)
+            onClose: (returnValue) => this.processAfterCloseAction(returnValue)
         });
-    },
+    }
 
-    /**
-     * Move to the top action.
-     * @function
-     * @public
-     */
-    moveFirst: function () {
-	//modbySD maybeID???
-        //this.moveTo('first', this.getMvElementId());
-	this.moveTo('first', this.grid.getSelectedRecordKey());
-    },
+    moveFirst() {
+        this.moveTo('first', this.grid.getSelectedRecordKey());
+    }
 
-    /**
-     * Move to the bottom action.
-     * @function
-     * @public
-     */
-    moveLast: function () {
-	//modbySD maybeID???
-	//this.moveTo('last', this.getMvElementId());
-	this.moveTo('last', this.grid.getSelectedRecordKey());
-    },
+    moveLast() {
+        this.moveTo('last', this.grid.getSelectedRecordKey());
+    }
 
-    /**
-     * Move above action.
-     * @function
-     * @public
-     * @param {string|number} [id] ID of the data field. If <tt>id</tt> is not specified it will be get from [getSelectedRecordKey()]{@link Grid#getSelectedRecordKey}.
-     */
-    moveAbove: function (id) {
+    moveAbove(id) {
         if (!parseInt(id)) {
             id = this.grid.getSelectedRecordKey();
         }
         this.moveTo('above', this.getMvElementId(), id);
-    },
+    }
 
-    /**
-     * Move below action.
-     * @function
-     * @public
-     * @param {string|number} [id] ID of the data field. If <tt>id</tt> is not specified it will be get from [getSelectedRecordKey()]{@link Grid#getSelectedRecordKey}.
-     */
-    moveBelow: function (id) {
+    moveBelow(id) {
         if (!parseInt(id)) {
             id = this.grid.getSelectedRecordKey();
         }
         this.moveTo('below', this.getMvElementId(), id);
-    },
+    }
 
     /**
-     * Move action.
+     * Передвинуть запись; ответ окну — перезагрузить грид.
      *
-     * @function
-     * @public
-     * @param {string} dir Defines specific item position ('belolw', 'above', 'last', 'first').
-     * @param {string|number} fromId Defines from which ID will the element moved.
-     * @param {string|number} toId Defines to which ID will the element moved.
+     * @param {string} dir first, last, above, below
+     * @param {number|string} fromId
+     * @param {number|string} [toId]
      */
-    moveTo: function (dir, fromId, toId) {
+    moveTo(dir, fromId, toId) {
         toId = toId || '';
         this.overlay.show();
         Energine.request(this.singlePath + 'move/' + fromId + '/' + dir + '/' + toId + '/',
             null,
-            function () {
+            () => {
                 this.overlay.hide();
                 ModalBox.setReturnValue(true); // reload
-                this.reload();//modbySD this.close() to fix GroupEditMove window 
-            }.bind(this),
-            function (responseText) {
-                this.overlay.hide();
-            }.bind(this),
-            function (responseText) {
+                this.reload();
+            },
+            () => this.overlay.hide(),
+            (responseText) => {
                 alert(responseText);
                 this.overlay.hide();
-            }.bind(this)
+            }
         );
-    },
+    }
 
-    /**
-     * Edit previous action.
-     * @function
-     * @public
-     */
-    editPrev: function () {
-        var prevRow;
-        if (this.grid.getSelectedItem() && (prevRow = this.grid.getSelectedItem().getPrevious())) {
+    editPrev() {
+        let prevRow;
+        if (this.grid.getSelectedItem() && (prevRow = this.grid.getSelectedItem().previousElementSibling)) {
             this.grid.selectItem(prevRow);
             this.edit();
         }
-    },
+    }
 
-    /**
-     * Edit next action.
-     * @function
-     * @public
-     */
-    editNext: function () {
-        var nextRow;
-        if (this.grid.getSelectedItem() && (nextRow = this.grid.getSelectedItem().getNext())) {
+    editNext() {
+        let nextRow;
+        if (this.grid.getSelectedItem() && (nextRow = this.grid.getSelectedItem().nextElementSibling)) {
             this.grid.selectItem(nextRow);
             this.edit();
         }
-    },
+    }
 
     /**
-     * Delete action.
-     * @function
-     * @public
+     * Удалить выбранные записи (несколько — одним запросом «1,2,3/delete/»); после двух подтверждений подряд больше
+     * не спрашивает, как прежде.
      */
-    del: function () {
-        var MSG_CONFIRM_DELETE = Energine.translations.get('MSG_CONFIRM_DELETE') ||
+    del() {
+        const MSG_CONFIRM_DELETE = Energine.translations.get('MSG_CONFIRM_DELETE') ||
             'Do you really want to delete selected record?';
         if ((this.delConfirmCounter > 1) || confirm(MSG_CONFIRM_DELETE)) {
             this.delConfirmCounter++;
             this.overlay.show();
-	    var delstr=this.grid.getSelectedRecordKey(true);
-	    if (delstr===false) {this.overlay.hide();this.delConfirmCounter = 0;return;}
-	    delstr+='/delete/';
+            let delstr = this.grid.getSelectedRecordKey(true);
+            if (delstr === false) {
+                this.overlay.hide();
+                this.delConfirmCounter = 0;
+                return;
+            }
+            delstr += '/delete/';
             Energine.request(this.singlePath + delstr, null,
-                function () {
+                () => {
                     this.overlay.hide();
-                    this.grid.fireEvent('dirty');
                     this.loadPage(this.pageList.currentPage);
-                }.bind(this),
-                function (responseText) {
-                    this.overlay.hide();
-                }.bind(this),
-                function (responseText) {
+                },
+                () => this.overlay.hide(),
+                (responseText) => {
                     alert(responseText);
                     this.overlay.hide();
-                }.bind(this)
+                }
             );
-        }
-        else {
+        } else {
             this.delConfirmCounter = 0;
         }
-    },
-    /**
-     * Use action
-     * Return selected record as a result of modal box call
-     *
-     * @function
-     * @public
-     */
-    use: function () {
+    }
+
+    use() {
         ModalBox.setReturnValue(this.grid.getSelectedRecord());
         ModalBox.close();
-    },
-    /**
-     * Close action.
-     * @function
-     * @public
-     */
-    close: function () {
-        ModalBox.close();
-    },
-
-    /**
-     * Up action.
-     * @function
-     * @public
-     */
-    up: function () {
-        Energine.request(this.singlePath + this.grid.getSelectedRecordKey() + '/up/',
-            (this.filter) ? this.filter.getValue() : null, this.loadPage.pass(this.pageList.currentPage, this));
-    },
-
-    /**
-     * Down action.
-     * @function
-     * @public
-     */
-    down: function () {
-        Energine.request(this.singlePath + this.grid.getSelectedRecordKey() + '/down/',
-            (this.filter) ? this.filter.getValue() : null, this.loadPage.pass(this.pageList.currentPage, this));
-    },
-
-    /**
-     * Print action.
-     * @function
-     * @public
-     */
-    print: function () {
-        window.open(this.element.getProperty('single_template') + 'print/');
-    },
-
-    /**
-     * CSV action.
-     * @function
-     * @public
-     */
-    csv: function () {
-        document.location.href = this.element.getProperty('single_template') + 'csv/';
     }
-});
 
-document.addEvent('domready', function () {
-    /**
-     * Scroll bar width of the browser.
-     * @type {number}
-     */
-    ScrollBarWidth = window.top.ScrollBarWidth || (function () {
-            var parent = new Element('div', {
-                styles: {
-                    height: '1px',
-                    overflow: 'scroll',
-                    visibility: 'hidden'
-                }
-            });
-            var child = new Element('div', {
-                styles: {
-                    height: '2px'
-                }
-            });
-            parent.grab(child);
-            $(document.body).grab(parent);
-            var width = parent.offsetWidth - child.offsetWidth;
-            parent.destroy();
+    close() {
+        ModalBox.close();
+    }
 
-            return width;
-        })();
-});
+    up() {
+        const page = this.pageList.currentPage;
+        Energine.request(this.singlePath + this.grid.getSelectedRecordKey() + '/up/',
+            (this.filter) ? this.filter.getValue() : null, () => this.loadPage(page));
+    }
 
+    down() {
+        const page = this.pageList.currentPage;
+        Energine.request(this.singlePath + this.grid.getSelectedRecordKey() + '/down/',
+            (this.filter) ? this.filter.getValue() : null, () => this.loadPage(page));
+    }
 
+    print() {
+        window.open(this.element.getAttribute('single_template') + 'print/');
+    }
 
-
-
+    csv() {
+        document.location.href = this.element.getAttribute('single_template') + 'csv/';
+    }
+};
