@@ -327,7 +327,7 @@ final class Document extends Primitive implements IDocument {
             }
         }
 
-        // MooTools — обычная библиотека в карте зависимостей: её объявляет MooCompat, а его — скрипты на MooTools
+        // скрипты страницы и их зависимости — по карте system.jsmap.php (setup scriptMap)
         $dom_javascript = $this->doc->createElement('javascript');
         // версия в адресе скрипта — время изменения файла: после обновления браузер не возьмёт из кэша прежний файл
         $scriptVersion = function ($path) {

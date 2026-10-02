@@ -159,7 +159,8 @@ class FileRepository extends Grid implements SampleFileRepository {
         $this->addFilterCondition("(upl_internal_type = 'folder' )");
         $folders=$this->loadData();
         $d=new Data();
-        $d->load(array_merge($repos,$folders));
+        // loadData без строк отдаёт false: репозиторий без папок — только хранилища
+        $d->load(array_merge($repos ?: [], $folders ?: []));
         $this->setData($d);
         $this->setBuilder(new JSONRepoBuilder());
 

@@ -11,8 +11,8 @@
 # Этап 7 — ядро: apps (модуль apps: новости, обратная связь, выбор раздела), gallery (галерея и вложения разделов,
 #   картинки вложений в OpenGraph), editors (CodeMirror и свой календарь — поля кода и даты стали обычными),
 #   dead (мёртвый код ядра)
-# Этап 8 — без MooTools: mootools (в файлах, переписанных на чистый JavaScript, нет конструкций MooTools; первая
-#   зависимость каждого скрипта, ещё написанного на MooTools, — MooCompat: по ней документ подключает MooTools)
+# Этап 8 — без MooTools: mootools (в скриптах ядра и сайта, кроме Jodit, нет конструкций MooTools; файлов MooTools
+#   нет)
 # i18n — в справочнике переводов нет ни одной константы из списков удаления в sql/cut/*.sql.
 # mail-core — отправка писем живёт в ядре: класс Energine\share\gears\Mail есть,
 # а оставшийся код не ссылается на Energine\mail\gears\Mail*.
@@ -152,28 +152,9 @@ XMLCLASS[gallery]='Energine\share\components\PageMedia"'
 # этап 7: мёртвый код ядра (спецификация этапа 7, §3.3)
 CODE[dead]='JSqueeze|MODE_COPY|ComponentProxyBuilder|\bEventHandler\b|\bFieldRow\b|\bFormBuilder\b|JSONPCustomBuilder|JSONUploadBuilder|\bPageInfo\b|\bRemover\b|components\\SiteProperties\b|TextBlockSource|GridManagerModal|GridModal|mootools\.ext|\bScrollbar\b|\bbase\.xslt|new\.layout\.xml|default\.content\.xml|moveTo_old|exportCSV|prepareCSVString|downloadFile|array_push_after|dumpLog|dump_log|ddumpLog|simpleLog|simple_log|splitDate|funcExists|procExists|getLastError|site\.compress|xslcache|copy_site_structure'
 FILES[dead]='core/modules/share/scripts/mootools.js core/modules/share/scripts/Scrollbar.js core/modules/share/scripts/mootools.ext.js core/modules/share/scripts/Menu.js core/modules/share/scripts/GridManagerModal.js core/modules/share/stylesheets/errors.css core/modules/share/stylesheets/mootools-colorpicker.css setup/JSqueeze.php cli jambalaya image-cache tests/smoke.sh'
-# этап 8: MooTools уходит файл за файлом (спецификация этапа 8, §3). VANILLA_JS — файлы, уже переписанные на чистый
-# JavaScript: в них нет конструкций MooTools. Остальные скрипты ядра и сайта, кроме сторонних библиотек и самого
-# MooCompat.js, объявляют MooCompat первой зависимостью
-VANILLA_JS=(core/modules/share/scripts/Energine.js core/modules/share/scripts/Validator.js
-            core/modules/share/scripts/ValidForm.js core/modules/user/scripts/LoginForm.js
-            core/modules/user/scripts/Register.js core/modules/user/scripts/UserProfile.js
-            core/modules/share/scripts/Overlay.js core/modules/share/scripts/ModalBox.js
-            core/modules/share/scripts/TabPane.js core/modules/share/scripts/PageList.js
-            core/modules/share/scripts/Toolbar.js core/modules/share/scripts/PageToolbar.js
-            core/modules/share/scripts/Filters.js core/modules/share/scripts/TreeView.js
-            core/modules/share/scripts/EnergineEditor.js core/modules/share/scripts/PageEditor.js
-            core/modules/share/scripts/Form.js core/modules/share/scripts/DivForm.js
-            core/modules/share/scripts/FileRepoForm.js core/modules/share/scripts/ImageManager.js
-            core/modules/user/scripts/GroupForm.js
-            core/modules/share/scripts/GridManager.js core/modules/share/scripts/FileRepository.js
-            core/modules/share/scripts/ActionLogManager.js core/modules/user/scripts/UserManager.js
-            core/modules/share/scripts/DivManager.js core/modules/share/scripts/DivSidebar.js
-            core/modules/share/scripts/DivTree.js core/modules/share/scripts/getDirsTree.js)
+# этап 8: MooTools ушла (шаг 7): ни в одном скрипте ядра и сайта (кроме Jodit) нет её конструкций, файлов нет
+MOOTOOLS_FILES='core/modules/share/scripts/mootools.min.js core/modules/share/scripts/MooCompat.js'
 MOOTOOLS_CODE='new Class\(|\$\$?\(|\.(add|remove)Events?\(|\.fireEvent\(|Request\.JSON|new Request\(|Object\.append|new Element\(|\.getElements?\(|\.getParent\(|\.inject\(|\.grab\(|\.adopt\(|\.pass\(|\.each\(|\.(get|set)Property\(|\.(add|remove|has)Class\(|\.(get|set)\(.(value|html|text|tag|disabled).|Fx\.|\.toInt\(\)|Browser\.|typeOf\(|instanceOf\('
-# первая зависимость скрипта — как её читает setup scriptMap (Setup::parseScriptLoader): первый в файле вызов
-# ScriptLoader.load с именем в кавычках
-first_dep() { grep -o -E "ScriptLoader\.load\([[:space:]]*['\"][^'\"]+['\"]" "$1" | head -1 | sed -E "s/.*['\"]([^'\"]+)['\"]$/\1/"; }
 # содержимое сайта: ссылки на удалённые разделы и слова вырезанных функций в текстовых блоках
 # (новости, где они тоже проверялись, удалены с модулем apps на этапе 7)
 declare -A LINKS WORDS
@@ -261,16 +242,8 @@ for m in "${mods[@]}"; do
   fi
   if [ "$scope" != db ]; then
     if [ "$m" = mootools ]; then
-      found=$(G "$MOOTOOLS_CODE" "${VANILLA_JS[@]}" | cut -c1-160)
-      # скрипт на MooTools с другой первой зависимостью: на его странице документ не подключил бы MooTools
-      n=0
-      while read -r f; do
-        n=$((n + 1))
-        case " ${VANILLA_JS[*]} " in *" $f "*) continue ;; esac
-        [ "$(first_dep "$R/$f")" = MooCompat ] || found+=$'\n'"$f: первая зависимость — не MooCompat"
-      done < <(cd "$R" && find core site -name '*.js' -not -path '*/scripts/jodit/*' -not -name 'mootools*.js' \
-                 -not -name MooCompat.js | sort)
-      [ "$n" -gt 0 ] || found+=$'\n'"__GREPERROR__ скрипты ядра не найдены"
+      found=$(G "$MOOTOOLS_CODE" --include='*.js' --exclude-dir=jodit core site | cut -c1-160)
+      for f in $MOOTOOLS_FILES; do [ -e "$R/$f" ] && found+=$'\n'"file $f"; done
     elif [ "$m" = mail-core ]; then
       found=$(G "${CODE[$m]}" "${KEPT_DIRS[@]}")
       [ -f "$R/core/modules/share/gears/Mail.php" ] || found="$found"$'\n'"нет core/modules/share/gears/Mail.php"
