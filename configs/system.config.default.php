@@ -56,9 +56,6 @@ return array(
         */
         // журнал действий в админке: пишет share_action_log, страница /admin/action-log/
         'action_log' => 'Energine\\share\\components\\ActionLog',
-        /*'js-lib' => [
-            'mootools' => /*$staticURL*//*'scripts/mootools.min.js'
-        ]*/
     ),
     // настройки документа
     'document' => array(

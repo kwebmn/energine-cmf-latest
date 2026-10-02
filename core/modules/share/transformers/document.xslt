@@ -119,8 +119,7 @@
             <meta name="robots" content="{$DOC_PROPS[@name='robots']}"/>
         </xsl:if>
         <xsl:apply-templates select="." mode="og"/>
-        <script type="text/javascript" src="{/document/javascript/@mootools}"></script>
-        <script type="text/javascript" src="{$STATIC_URL}scripts/Energine.js"></script>
+        <script type="text/javascript" src="{$STATIC_URL}scripts/Energine.js?v={/document/javascript/@energine-version}"></script>
         <script type="text/javascript">
             Object.assign(Energine, {
             <xsl:if test="document/@debug=1">'debug' :true,</xsl:if>
@@ -227,7 +226,7 @@
     <xsl:template match="/document//javascript/variable"/>
 
     <xsl:template match="/document/javascript/library" mode="head">
-        <script type="text/javascript" src="{$STATIC_URL}scripts/{@path}.js"/>
+        <script type="text/javascript" src="{$STATIC_URL}scripts/{@path}.js?v={@version}"/>
     </xsl:template>
 
     <xsl:template match="/document//javascript/variable" mode="head">

@@ -327,15 +327,14 @@ final class Document extends Primitive implements IDocument {
             }
         }
 
-        $jsLibs = Primitive::getConfigValue('site.js-lib');
-        if (!isset($jsLibs['mootools'])) {
-            $jsLibs['mootools'] = $staticURL . 'scripts/mootools.min.js';
-        }
+        // MooTools — обычная библиотека в карте зависимостей: её объявляет MooCompat, а его — скрипты на MooTools
         $dom_javascript = $this->doc->createElement('javascript');
-
-        foreach ($jsLibs as $name => $path) {
-            $dom_javascript->setAttribute($name, $path);
-        }
+        // версия в адресе скрипта — время изменения файла: после обновления браузер не возьмёт из кэша прежний файл
+        $scriptVersion = function ($path) {
+            $file = HTDOCS_DIR . '/scripts/' . $path . '.js';
+            return is_file($file) ? (string)filemtime($file) : '';
+        };
+        $dom_javascript->setAttribute('energine-version', $scriptVersion('Energine'));
         $dom_root->appendChild($dom_javascript);
         foreach ($this->js as $behavior) {
             $dom_javascript->appendChild($this->doc->importNode($behavior, true));
@@ -366,6 +365,7 @@ final class Document extends Primitive implements IDocument {
         foreach ($jsIncludes as $js) {
             $dom_js_library = $this->doc->createElement('library');
             $dom_js_library->setAttribute('path', $js);
+            $dom_js_library->setAttribute('version', $scriptVersion($js));
             $onlyName = explode('/', $js);
             $dom_js_library->setAttribute('name', array_pop($onlyName));
             $dom_javascript->appendChild($dom_js_library);
