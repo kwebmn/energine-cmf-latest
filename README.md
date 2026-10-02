@@ -31,6 +31,12 @@ JavaScript; гриды и их окна MooTools не получают. Шаг 7
 на чистом JavaScript; `mootools.min.js` и `MooCompat.js` удалены, MooTools не загружает ни одна страница. Этап 8
 закончен.
 
+Этап 9 (`docs/superpowers/specs/2026-10-03-energine-simple-stage9-es-modules-design.md`): скрипты ядра — ES-модули
+с `import`/`export`; страница подключает их через import map (`<script type="importmap">`: имя модуля → адрес с
+версией файла `?v=`), классы глобально не видны — глобальны только `Energine`, `ModalBox`, экземпляры поведений и
+`componentToolbars`. `ScriptLoader`, карта зависимостей `system.jsmap.php` и `setup scriptMap` удалены, сборщика нет:
+после обновления кода достаточно `setup linker`.
+
 Что вырезано:
 - этапы 1–6: модули shop, blog, comments, calendar, forms, ads и рассылки; теги, виджеты и редактор блоков,
   нелокальные хранилища, водяные знаки, видео и Flash, Lookup и select2, CKEditor и FileAPI; мультисайт;
@@ -73,7 +79,8 @@ JavaScript; гриды и их окна MooTools не получают. Шаг 7
   `docs/superpowers/specs/2026-10-02-energine-simple-stage8-step4-filters-tree-design.md` (этап 8, шаг 4),
   `docs/superpowers/specs/2026-10-02-energine-simple-stage8-step5-forms-editor-design.md` (этап 8, шаг 5),
   `docs/superpowers/specs/2026-10-02-energine-simple-stage8-step6-grids-design.md` (этап 8, шаг 6),
-  `docs/superpowers/specs/2026-10-02-energine-simple-stage8-step7-structure-no-mootools-design.md` (этап 8, шаг 7)
+  `docs/superpowers/specs/2026-10-02-energine-simple-stage8-step7-structure-no-mootools-design.md` (этап 8, шаг 7),
+  `docs/superpowers/specs/2026-10-03-energine-simple-stage9-es-modules-design.md` (этап 9)
 - Установка: `docs/INSTALL.md`
 - Тесты: `tests/README.md`
 
