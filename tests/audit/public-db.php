@@ -3,6 +3,7 @@
 // удаление. В логине — «+»: проверка занятости логина при регистрации должна передать его без искажений.
 //   php8.5 public-db.php user-add       — создать, вывести {"login": …, "password": …}
 //   php8.5 public-db.php user-remove    — удалить всех посетителей теста
+//   php8.5 public-db.php mtime NAME     — время изменения web/scripts/NAME.js
 require dirname(__DIR__) . '/testlib.php';
 
 [, $cmd] = $argv + [null, null];
@@ -15,6 +16,9 @@ switch ($cmd) {
         $uid = pdo()->lastInsertId();
         q('INSERT INTO user_user_groups (u_id, group_id) SELECT ?, group_id FROM user_groups WHERE group_user_default = 1', [$uid]);
         echo json_encode(['login' => $login, 'password' => $password]);
+        break;
+    case 'mtime':
+        echo filemtime(WEB . '/scripts/' . $argv[2] . '.js');
         break;
     case 'user-remove':
         q("DELETE FROM user_users WHERE u_name LIKE 'claude-public+%'");

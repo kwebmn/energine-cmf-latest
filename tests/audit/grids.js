@@ -87,8 +87,8 @@ const inspect = (page) => page.evaluate(() => {
         const p = await ctx.newPage();
         const errors = watch(p);
         await p.goto(BASE + 'admin/structure/', { waitUntil: 'networkidle' });
-        const t = await p.evaluate((payload) => {
-            if (!window.TreeView) return { error: 'no TreeView' };
+        const t = await p.evaluate(async (payload) => {
+            const TreeView = window.TreeView || (await import('TreeView')).TreeView;
             // a stand-in for the tree: the node only binds its listeners
             const tree = { nodeToggleListener() {}, nodeSelectListener() {}, options: { dblClick() {} } };
             const node = new TreeView.Node({ id: 'claude', name: payload, data: { segment: 'claude', icon: '' } }, tree);
@@ -185,6 +185,7 @@ const inspect = (page) => page.evaluate(() => {
                 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
                 const box = document.createElement('div');
                 document.body.appendChild(box);
+                const Overlay = window.Overlay || (await import('Overlay')).Overlay;
                 const overlay = new Overlay(box);
                 overlay.show();
                 overlay.hide();
@@ -462,9 +463,10 @@ const inspect = (page) => page.evaluate(() => {
             const np = await ctx.newPage();
             const nErrors = watch(np);
             await np.goto(BASE + 'admin/structure/', { waitUntil: 'networkidle' });
-            const r = await np.evaluate(() => {
+            const r = await np.evaluate(async () => {
                 const ul = document.createElement('ul');
                 document.body.appendChild(ul);
+                const TreeView = window.TreeView || (await import('TreeView')).TreeView;
                 const tree = new TreeView(ul, {});
                 const make = (id) => new TreeView.Node({ id, name: 'N' + id, data: { segment: 'n' + id, icon: '' } }, tree);
                 const [root, a, b, c, d] = [0, 1, 2, 3, 4].map(make);
@@ -613,10 +615,11 @@ const inspect = (page) => page.evaluate(() => {
             const ap = await ctx.newPage();
             const aErrors = watch(ap);
             await ap.goto(BASE + 'admin/users/', { waitUntil: 'networkidle' });
-            const api = await ap.evaluate(() => {
+            const api = await ap.evaluate(async () => {
                 const calls = [];
                 const box = document.createElement('div');
                 document.body.appendChild(box);
+                const Toolbar = window.Toolbar || (await import('Toolbar')).Toolbar;
                 const tb = new Toolbar('claude_tb');
                 tb.bindTo({ act: (data) => calls.push(data && data.properties ? 'select:' + data.getValue() : 'act') });
                 tb.appendControl(new Toolbar.Button({ id: 'off', title: 'Off', action: 'act', disabled: 'disabled' }),
@@ -1074,6 +1077,21 @@ const inspect = (page) => page.evaluate(() => {
             check('«Очистить» журнал: отказ — запроса нет, согласие — запрос clear и перезагрузка', refused === 0 && clears.length === 1
                 && /\/clear\/$/.test(clears[0]) && !!reload, JSON.stringify({ refused, clears }));
             check('«Очистить» журнал: без ошибок JS и 404', !errors.list().length, errors.list().join(' | '));
+            await p.close();
+        }
+
+        // ===== stage 9: ES modules — the classes are not global, the page contract is
+        {
+            const p = await ctx.newPage();
+            const errors = watch(p);
+            await p.goto(BASE + 'admin/users/', { waitUntil: 'networkidle' });
+            const g = await p.evaluate(() => ({
+                classes: ['Form', 'GridManager', 'Grid', 'Toolbar', 'TabPane', 'TreeView', 'Overlay', 'PageToolbar', 'ScriptLoader']
+                    .filter((n) => n in window),
+                contract: ['Energine', 'ModalBox', 'componentToolbars'].filter((n) => !(n in window)),
+            }));
+            check('админка: классы не глобальны, договор страницы на месте', !g.classes.length && !g.contract.length, JSON.stringify(g));
+            check('админка, модули: без ошибок JS и 404', !errors.list().length, errors.list().join(' | '));
             await p.close();
         }
 

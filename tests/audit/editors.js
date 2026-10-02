@@ -969,7 +969,7 @@ const showTabOf = (page, selector) => page.evaluate((sel) => {
             const p = await ctx.newPage();
             const errors = watch(p);
             await p.goto(BASE + `admin/users/single/userEditor/${formData.user}/edit/`, { waitUntil: 'networkidle' });
-            const qs = await p.evaluate(() => {
+            const qs = await p.evaluate(async () => {
                 const fx = document.createElement('form');
                 fx.innerHTML = '<input name="a[b]" value="x &amp; y+z %"><textarea name="t">1\n2</textarea>'
                     + '<input type="checkbox" name="c1" value="on1" checked><input type="checkbox" name="c2" value="on2">'
@@ -980,7 +980,8 @@ const showTabOf = (page, selector) => page.evaluate((sel) => {
                     + '<input type="file" name="f"><input type="image" name="im"><input type="button" name="bt" value="btn">'
                     + '<input value="noname"><input type="hidden" name="h" value="Привет">';
                 document.body.appendChild(fx);
-                const result = (window.Form && Form.toQueryString) ? Form.toQueryString(fx) : fx.toQueryString();
+                const Form = window.Form || (await import('Form')).Form;
+                const result = Form.toQueryString(fx);
                 fx.remove();
                 return result;
             });

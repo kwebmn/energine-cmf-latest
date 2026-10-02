@@ -25,9 +25,10 @@ function check(label, cond, detail = '') {
 // a page and the log of what a visitor must not get (MooTools, JS errors, 400+ responses) and of the forms it sent
 async function open(ctx, url) {
     const p = await ctx.newPage();
-    const log = { moo: [], errors: [], posts: [] };
+    const log = { moo: [], errors: [], posts: [], scripts: [] };
     p.on('request', (r) => {
         if (/mootools/i.test(r.url())) log.moo.push(r.url());
+        if (/\/scripts\/[^?#]+\.js([?#]|$)/.test(r.url())) log.scripts.push(r.url());
         if (r.method() === 'POST' && r.isNavigationRequest()) log.posts.push(r.url());
     });
     p.on('pageerror', (e) => log.errors.push('pageerror: ' + e.message));
@@ -40,16 +41,25 @@ async function open(ctx, url) {
 const inspect = (p) => p.evaluate(() => {
     const scripts = [...document.querySelectorAll('script[src]')].map((s) => s.src)
         .filter((src) => /\/scripts\/[^?#]+\.js([?#]|$)/.test(src));
+    const mapEl = document.querySelector('script[type="importmap"]');
+    let imports = null;
+    try { imports = mapEl ? JSON.parse(mapEl.textContent).imports : null; } catch (e) { }
+    const map = { present: !!imports, energine: !!(imports && imports.Energine),
+        versioned: !!imports && Object.values(imports).every((u) => /\.js\?v=\d+$/.test(u)),
+        classic: [...document.querySelectorAll('script[src]')].filter((s) => /\/scripts\//.test(s.src)).length,
+        loader: typeof window.ScriptLoader };
     return { moo: typeof window.MooTools !== 'undefined', scripts: scripts.length,
-        unversioned: scripts.filter((src) => !/\.js\?v=\d+$/.test(src)) };
+        unversioned: scripts.filter((src) => !/\.js\?v=\d+$/.test(src)), map };
 });
 async function pageChecks(ctx, who, url) {
     const [p, log] = await open(ctx, url);
     const r = await inspect(p);
     check(`${who} /${url}: MooTools не запрашивается и не определена`, !log.moo.length && !r.moo,
         log.moo.join(' ') || 'MooTools определена');
-    check(`${who} /${url}: скрипты сайта — с версией ?v=`, r.scripts > 0 && !r.unversioned.length,
-        r.unversioned.join(' ') || 'скриптов сайта нет');
+    check(`${who} /${url}: скрипты сайта — с версией ?v=`, log.scripts.length > 0
+        && log.scripts.every((u) => /\.js\?v=\d+$/.test(u)), log.scripts.filter((u) => !/\.js\?v=\d+$/.test(u)).join(' ') || 'скриптов нет');
+    check(`${who} /${url}: скрипты — модули из import map`, r.map.present && r.map.energine && r.map.versioned
+        && r.map.classic === 0 && r.map.loader === 'undefined', JSON.stringify(r.map));
     check(`${who} /${url}: без ошибок JS и 404`, !log.errors.length, log.errors.join(' | '));
     await p.close();
 }
@@ -77,6 +87,18 @@ const fieldError = (p, selector) => p.evaluate((sel) => {
         for (const file of ['scripts/mootools.min.js', 'scripts/MooCompat.js']) {
             const r = await guest.request.get(BASE + file);
             check(`${file}: на сайте нет (404)`, r.status() === 404, r.status());
+        }
+        // 1b. the version of a module in the import map is the time of its file (stage 9)
+        {
+            const p = await guest.newPage();
+            await p.goto(BASE, { waitUntil: 'networkidle' });
+            const url = await p.evaluate(() => {
+                const el = document.querySelector('script[type="importmap"]');
+                try { return el ? JSON.parse(el.textContent).imports.Validator : ''; } catch (e) { return ''; }
+            });
+            const mtime = db('mtime', 'Validator').trim();
+            check('версия модуля в import map — время изменения файла', !!url && url.endsWith('Validator.js?v=' + mtime), `${url} / ${mtime}`);
+            await p.close();
         }
 
         // 2. login: the empty form is not sent, both fields show errors; with the visitor's data — signed in

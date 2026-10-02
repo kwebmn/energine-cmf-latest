@@ -13,6 +13,8 @@
 #   dead (мёртвый код ядра)
 # Этап 8 — без MooTools: mootools (в скриптах ядра и сайта, кроме Jodit, нет конструкций MooTools; файлов MooTools
 #   нет)
+# Этап 9 — ES-модули: modules (нет ScriptLoader и карты зависимостей; скрипты — модули, имена других модулей
+#   импортированы)
 # i18n — в справочнике переводов нет ни одной константы из списков удаления в sql/cut/*.sql.
 # mail-core — отправка писем живёт в ядре: класс Energine\share\gears\Mail есть,
 # а оставшийся код не ссылается на Energine\mail\gears\Mail*.
@@ -24,7 +26,7 @@ mods=("$@")
 [ ${#mods[@]} -eq 0 ] && mods=(mail-core mail calendar comments forms ads blog shop
                                 pageads branding tops vote feed tagcloud similar rss sockets htmlcap
                                 tags widgets storages watermark video flash lookup columns placehold
-                                ckeditor fileapi jsonp theme multisite apps gallery editors dead mootools i18n)
+                                ckeditor fileapi jsonp theme multisite apps gallery editors dead mootools modules i18n)
 
 # код: весь репозиторий, кроме истории (docs), переходного SQL (sql) и инструментов чистки
 CODE_DIRS=(core site htdocs configs setup tests)
@@ -155,6 +157,7 @@ FILES[dead]='core/modules/share/scripts/mootools.js core/modules/share/scripts/S
 # этап 8: MooTools ушла (шаг 7): ни в одном скрипте ядра и сайта (кроме Jodit) нет её конструкций, файлов нет
 MOOTOOLS_FILES='core/modules/share/scripts/mootools.min.js core/modules/share/scripts/MooCompat.js'
 MOOTOOLS_CODE='new Class\(|\$\$?\(|\.(add|remove)Events?\(|\.fireEvent\(|Request\.JSON|new Request\(|Object\.append|new Element\(|\.getElements?\(|\.getParent\(|\.inject\(|\.grab\(|\.adopt\(|\.pass\(|\.each\(|\.(get|set)Property\(|\.(add|remove|has)Class\(|\.(get|set)\(.(value|html|text|tag|disabled).|Fx\.|\.toInt\(\)|Browser\.|typeOf\(|instanceOf\('
+MODULES_CODE='ScriptLoader|system\.jsmap|scriptMap'
 # содержимое сайта: ссылки на удалённые разделы и слова вырезанных функций в текстовых блоках
 # (новости, где они тоже проверялись, удалены с модулем apps на этапе 7)
 declare -A LINKS WORDS
@@ -244,6 +247,12 @@ for m in "${mods[@]}"; do
     if [ "$m" = mootools ]; then
       found=$(G "$MOOTOOLS_CODE" --include='*.js' --exclude-dir=jodit core site | cut -c1-160)
       for f in $MOOTOOLS_FILES; do [ -e "$R/$f" ] && found+=$'\n'"file $f"; done
+    elif [ "$m" = modules ]; then
+      found=$(G "$MODULES_CODE" --include='*.js' --include='*.php' --include='*.xslt' --exclude-dir=jodit core site setup \
+        | cut -c1-160)
+      imports=$(php8.5 "$R/tests/tools/module-imports.php" "$R" 2>&1); rc=$?
+      [ $rc -gt 1 ] && imports="__GREPERROR__ $imports"
+      [ -n "$imports" ] && found+=$'\n'"$imports"
     elif [ "$m" = mail-core ]; then
       found=$(G "${CODE[$m]}" "${KEPT_DIRS[@]}")
       [ -f "$R/core/modules/share/gears/Mail.php" ] || found="$found"$'\n'"нет core/modules/share/gears/Mail.php"
