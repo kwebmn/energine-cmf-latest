@@ -3,70 +3,45 @@
  * <ul>
  *     <li>[ValidForm]{@link ValidForm}</li>
  * </ul>
+ * Чистый JavaScript, без MooTools.
  *
  * @requires Energine
  * @requires Validator
  *
  * @author Pavel Dubenko
  *
- * @version 1.0.0
+ * @version 1.1.0
  */
 
-ScriptLoader.load('MooCompat', 'Validator');
+ScriptLoader.load('Validator');
 
 /**
- * ValidForm
+ * Форма сайта, которая проверяется перед отправкой.
  *
  * @constructor
- * @param {Element|string} element The main element.
+ * @param {Element|string} element Форма или элемент внутри неё (id).
  */
-var ValidForm = new Class(/** @lends ValidForm# */{
-    // constructor
-    initialize: function (element) {
-        /**
-         * The main element.
-         * @type {Element}
-         */
-        this.element = $(element);
-        if (this.element) {
-            /**
-             * Form element.
-             * @type {Element}
-             */
-            this.form = (this.element.get('tag') === 'form')?this.element:this.element.getParent('form');
-
-            if (this.form) {
-                /**
-                 * Single path.
-                 * @type {string}
-                 */
-                this.singlePath = this.element.getProperty('single_template');
-
-                this.form.addClass('form').addEvent('submit', this.validateForm.bind(this));
-
-                /**
-                 * Validator.
-                 * @type {Validator}
-                 */
-                this.validator = new Validator(this.form);
-            }
+var ValidForm = class ValidForm {
+    constructor(element) {
+        this.element = (typeof element === 'string') ? document.getElementById(element) : element;
+        if (!this.element) {
+            return;
         }
-    },
+        this.form = (this.element.tagName === 'FORM') ? this.element : this.element.closest('form');
+        if (!this.form) {
+            return;
+        }
+        this.singlePath = this.element.getAttribute('single_template');
+        this.form.classList.add('form');
+        this.form.addEventListener('submit', (event) => this.validateForm(event));
+        this.validator = new Validator(this.form);
+    }
 
-    /**
-     * Event handler. Validate form.
-     *
-     * @function
-     * @public
-     * @param {Object} event Event.
-     * @returns {boolean} true if the form is valid, otherwise - false.
-     */
-    validateForm: function (event) {
+    validateForm(event) {
         if (!this.validator.validate()) {
             event.preventDefault();
             return false;
-        } else {
-            return true;
         }
+        return true;
     }
-});
+};

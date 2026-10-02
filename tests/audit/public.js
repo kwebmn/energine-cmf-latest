@@ -89,8 +89,10 @@ const fieldError = (p, selector) => p.evaluate((sel) => {
             check('вход: без ошибок JS', !log.errors.length, log.errors.join(' | '));
             // the page after login is the address the form returns to (built from the host: on the stand without its
             // port) — not checked here; the profile below opens only to a signed-in visitor
-            await p.fill('#username', visitor.login);
-            await p.fill('#password', visitor.password);
+            // typed, as a person does: a key in a field with an error removes the error at once (fill() presses no
+            // keys, the error would go only when the field is left — and the button would move under the click)
+            await p.locator('#username').pressSequentially(visitor.login);
+            await p.locator('#password').pressSequentially(visitor.password);
             await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle' }), p.click('button[name="user[login]"]')]);
             await p.close();
         }

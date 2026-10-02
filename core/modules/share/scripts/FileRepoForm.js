@@ -165,15 +165,14 @@ var FileRepoForm = new Class(/** @lends FileRepoForm# */{
     },
 
     /**
-     * Загрузка не состоялась: причина у поля — текстом (Validator вставляет HTML), а форма забывает файл:
+     * Загрузка не состоялась: причина у поля (Validator выводит её текстом), а форма забывает файл:
      * превью и путь прошлой загрузки сбрасываются, тот же файл можно выбрать снова.
      *
      * @param {Element} field поле файла
      * @param {string} message
      */
     uploadFailed: function (field, message) {
-        this.validator.showError(field, String(message)
-            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'));
+        this.validator.showError(field, String(message));
         var isMain = (field.get('id') == 'uploader'),
             preview = isMain ? $('preview') : $(field.getProperty('preview')),
             data = isMain ? $('data') : $(field.getProperty('data'));

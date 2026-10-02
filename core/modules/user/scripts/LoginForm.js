@@ -3,26 +3,19 @@
  * <ul>
  *     <li>[LoginForm]{@link LoginForm}</li>
  * </ul>
+ * Чистый JavaScript, без MooTools.
  *
  * @requires share/Energine
- * @requires share/Form
+ * @requires share/ValidForm
  *
  * @author Pavel Dubenko
  *
- * @version 1.0.0
+ * @version 1.1.0
  */
-ScriptLoader.load('MooCompat', 'ValidForm');
+ScriptLoader.load('ValidForm');
 
 /**
- * Login form.
- *
- * @constructor
- * @param {Element} element Login form element.
+ * Форма входа: поля проверяются перед отправкой.
  */
-var LoginForm = new Class({
-    Extends: ValidForm,
-    // constructor
-    initialize:function(element) {
-        this.parent(element);
-    }
-});
+var LoginForm = class LoginForm extends ValidForm {
+};

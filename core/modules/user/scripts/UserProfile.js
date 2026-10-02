@@ -3,48 +3,34 @@
  * <ul>
  *     <li>[UserProfile]{@link UserProfile}</li>
  * </ul>
+ * Чистый JavaScript, без MooTools.
  *
  * @requires share/Energine
  * @requires share/ValidForm
  *
  * @author Pavel Dubenko
  *
- * @version 1.0.0
+ * @version 1.1.0
  */
 
-ScriptLoader.load('MooCompat', 'ValidForm');
+ScriptLoader.load('ValidForm');
 
 /**
- * User profile.
- *
- * @augments ValidForm
+ * Профиль посетителя: новый пароль и повтор должны совпадать (текст ошибки — nrgn:message2 поля пароля).
  *
  * @constructor
- * @param {Element|string} element The main element.
+ * @param {Element|string} element
  */
-var UserProfile = new Class(/** @lends UserProfile# */{
-    Extends: ValidForm,
-
-    // constructor
-    initialize: function(element){
-        this.parent(element);
-    },
-
-    /**
-     * Extended parent [validateForm]{@link ValidForm#validateForm} method.
-     * @function
-     * @public
-     * @param {Object} event Event.
-     */
-    validateForm: function(event) {
-        var field = $('u_password');
-        var field2 = $('u_password2');
-
-        if (field && field2 && field.value != field2.value) {
-            this.validator.showError(field, field.getProperty('nrgn:message2'));
-            event.stop();
-        } else {
-            this.parent(event);
+var UserProfile = class UserProfile extends ValidForm {
+    validateForm(event) {
+        const field = document.getElementById('u_password');
+        const field2 = document.getElementById('u_password2');
+        if (field && field2 && field.value !== field2.value) {
+            this.validator.showError(field, field.getAttribute('nrgn:message2'));
+            event.preventDefault();
+            event.stopPropagation();
+            return false;
         }
+        return super.validateForm(event);
     }
-});
+};
