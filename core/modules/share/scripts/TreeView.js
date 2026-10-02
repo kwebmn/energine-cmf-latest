@@ -4,716 +4,331 @@
  *     <li>[TreeView]{@link TreeView}</li>
  *     <li>[TreeView.Node]{@link TreeView.Node}</li>
  * </ul>
+ * Чистый JavaScript, без MooTools.
  *
  * @author Pavel Dubenko
  *
- * @version 1.0.0
+ * @version 1.1.0
  */
-
-//todo: Why the tree is always rebuilds after the double click on the node?
 
 /**
- * Simple tree of items.
- * From MooTools it implements: Options, Events.
+ * Дерево разделов: ul с узлами li > a; у папки — вложенный ul. Двойной щелчок по названию — options.dblClick.
  *
  * @constructor
- * @param {Element|string} element The main tree element.
- * @param {Object} [options] Tree options.
+ * @param {Element|string} element
+ * @param {Object} [options]
+ * @param {function} [options.dblClick] Двойной щелчок по названию узла.
  */
-ScriptLoader.load('MooCompat');
+var TreeView = class TreeView {
+    constructor(element, options) {
+        Energine.loadCSS('treeview.css');
+        this.element = (typeof element === 'string') ? document.getElementById(element) : element;
+        this.options = Object.assign({}, options);
+        this.selectedNode = null;
+        this.nodes = [];
+    }
 
-var TreeView = new Class(/** @lends TreeView# */{
-    Implements: [Options, Events],
-
-    //TODO: Why not to use an event?
-    /**
-     * Tree options.
-     * @type {Object}
-     *
-     * @property {Function} dblClick
-     */
-    options: {
-        dblClick: this.nodeToggleListener//function(){}
-    },
-
-    /**
-     * Selected node.
-     * @type {TreeView.Node}
-     */
-    selectedNode: null,
-
-    /**
-     * Array of the tree's nodes.
-     * @type {TreeView.Node[]}
-     */
-    nodes: [],
-
-    // constructor
-    initialize: function(element, options) {
-        Asset.css('treeview.css');
-
-        this.element = $(element);
-        this.setOptions(options);
-
-        /*this.element.getElements('li').each(function(item) {
-            this.nodes.push(new TreeView.Node(item, this));
-        }, this);*/
-
-        //this.nodes[0].select();
-        //this.setupCssClasses();
-    },
-    adopt: function(node){
+    // узел верхнего уровня
+    adopt(node) {
         this.nodes.push(node);
-        this.element.adopt(node.element);
-    },
+        this.element.appendChild(node.element);
+    }
 
-    empty: function(){
+    empty() {
         this.nodes.length = 0;
-        this.element.empty();
-    },
+        this.element.replaceChildren();
+    }
 
-    /**
-     * Setup CSS classes.
-     * @function
-     * @public
-     */
-    setupCssClasses: function() {
-        this.element.getElements('li').each(function(item) {
-            if (item.retrieve('treeNode').childs && item.retrieve('treeNode').childs.childNodes.length) {
-                item.addClass('folder');
-            } else {
-                item.removeClass('folder');
-            }
-
-            if (item.getNext()) {
-                item.removeClass('last');
-            } else {
-                item.addClass('last');
-            }
+    // folder — у узла есть вложенные, last — последний среди соседей
+    setupCssClasses() {
+        this.element.querySelectorAll('li').forEach((item) => {
+            const node = item.treeNode;
+            item.classList.toggle('folder', !!(node && node.childs && node.childs.childNodes.length));
+            item.classList.toggle('last', !item.nextElementSibling);
         });
-        this.setupStyles();
-    },
+    }
 
-    /**
-     * Setup styles.
-     * @function
-     * @public
-     */
-    setupStyles: function() {
-        if (!Browser.ie) {
+    getSelectedNode() {
+        return this.selectedNode;
+    }
+
+    getNodeById(id) {
+        return this.nodes.find((node) => node.id == id) || null;
+    }
+
+    // раскрыть все папки на пути к узлу (узел или его id)
+    expandToNode(nodeId) {
+        const parents = [];
+        let node = (nodeId instanceof TreeView.Node) ? nodeId : this.getNodeById(nodeId);
+        while (node && (node = TreeView.Node.parentOf(node))) {
+            parents.push(node);
+        }
+        parents.reverse().forEach((parent) => parent.expand());
+    }
+
+    expandAllNodes() {
+        this.nodes.forEach((node) => node.expand());
+    }
+
+    // щелчок по строке узла: значок слева от папки (8×8 у верха строки) раскрывает и сворачивает её
+    nodeToggleListener(event, node) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (event.target !== node.element) {
             return;
         }
-
-        this.element.getElements('li.last').each(function(item) {
-            if (item.hasClass('folder')) {
-                if (item.hasClass('opened')) {
-                    item.setStyles({ 'background': '#FFF url(images/treeview/opened_last.gif) left -3px no-repeat' });
-                } else {
-                    item.setStyles({ 'background': '#FFF url(images/treeview/closed_last.gif) left -3px no-repeat' });
-                }
-            } else {
-                item.setStyles({ 'background': '#FFF url(images/treeview/h_line_last.gif) left -7px no-repeat' });
-            }
-        });
-    },
-
-    /**
-     * Get the [selected node]{@link TreeView#selectedNode}.
-     *
-     * @function
-     * @public
-     * @returns {TreeView.Node}
-     */
-    getSelectedNode: function() {
-        return this.selectedNode;
-    },
-
-    /**
-     * Get the node by his ID.
-     *
-     * @function
-     * @public
-     * @param {string|number} id Node ID.
-     * @returns {TreeView.Node}
-     */
-    getNodeById: function(id) {
-        var node = null;
-        for (var i = 0, len = this.nodes.length; i < len; i++) {
-            if (this.nodes[i].id == id) {
-                node = this.nodes[i];
-                break;
-            }
+        const rect = node.element.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+        if (x < 0 || x > 8 || y < 4 || y > 12) {
+            return;
         }
-        return node;
-    },
-
-    /**
-     * Expand the tree to the node ID.
-     *
-     * @function
-     * @public
-     * @param {string|number|TreeView.Node} nodeId Node ID or the real node object.
-     */
-    expandToNode: function(nodeId){
-        var nodes = [];
-        var lambda = function(node){
-            var n;
-            if(node && (n = node.getParent())){
-                nodes.push(n);
-                lambda(n);
-            }
-        };
-        lambda( (!(nodeId instanceof TreeView.Node))
-            ? this.getNodeById(nodeId)
-            : nodeId );
-        nodes.reverse();
-        nodes.each(function(node){
-            node.expand();
-        });
-    },
-
-    //todo: Nowhere used. Delete this?
-    /**
-     * Expand all nodes.
-     * @deprecated
-     * @function
-     * @public
-     */
-    expandAllNodes: function() {
-        for (var i = 0, len = this.nodes.length; i < len; i++) {
-            this.nodes[i].expand();
-        }
-    },
-
-    //todo: Nowhere used. Delete this?
-    /**
-     * Collapse all nodes.
-     * @deprecated
-     * @function
-     * @public
-     */
-    collapseAllNodes: function() {
-        for (var i = 0, len = this.nodes.length; i < len; i++) {
-            this.nodes[i].collapse();
-        }
-    },
-
-    /**
-     * Event handler. Listener of the toggling the node.
-     *
-     * @function
-     * @public
-     * @param {Object} event Default event.
-     */
-    nodeToggleListener: function(event) {
-        event.stop();
-
-        var node = event.target.retrieve('treeNode');
-        if (event.target.get('tag') == 'a') {
-            node = event.target.getParent().retrieve('treeNode');
-            if (!node) {
-                return;
-            }
-        }
-
-        if (event.target.get('tag') == 'li') {
-            var x = event.page.x - node.element.getLeft();
-            var y = event.page.y - node.element.getTop();
-
-            // Fix fo IE.
-            var delta_x = Browser.ie ? $(document.documentElement).getStyle('border-left-width') : 0;
-            var delta_y = Browser.ie ? $(document.documentElement).getStyle('border-top-width') : 0;
-            if (delta_x == 'medium' && delta_y == 'medium') {
-                delta_x = 2; delta_y = 2;
-            }
-
-            var container = $('treeContainer');
-            delta_x -= container.getScroll().x;
-            delta_y -= container.getScroll().y;
-
-            x -= delta_x;
-            y -= delta_y;
-
-            //todo: What is the magic?
-            // a little magic here ))
-            if ( (0 > x || x > 8) || (4 > y || y > 12) ) {
-                return;
-            }
-        }
-        this.fireEvent('toggle', node);
         node.toggle();
-    },
+    }
 
-    /**
-     * Event handler. Listener of the selecting node.
-     *
-     * @function
-     * @public
-     * @param {Object} event Default event.
-     */
-    nodeSelectListener: function(event) {
-        event.stop();
-        var node = event.target.getParent().retrieve('treeNode');
-        this.fireEvent('select', node);
+    // щелчок по названию: узел выбирается (по ссылке не переходим — это делает двойной щелчок владельца дерева)
+    nodeSelectListener(event, node) {
+        event.preventDefault();
+        event.stopPropagation();
         node.select();
     }
-});
+};
 
 /**
- * Node of the tree.
+ * Узел дерева: li > a (название — ссылка на страницу) и, у папки, ul с вложенными узлами. События узла —
+ * addEvent('select', обработчик): обработчик получает узел.
  *
  * @constructor
- * @param {Element|Object} nodeInfo Node info. The following properties are only if the the nodeInfo is an object.
- * @param {string|number} nodeInfo.id Node ID.
- * @param {string} nodeInfo.name Node name.
- * @param {Object} nodeInfo.data Additional data.
- * @param {string} nodeInfo.data.class Node's class.
- * @param {string} nodeInfo.data.icon Node's icon.
- * @param {TreeView} tree Tree object where the node is placed.
+ * @param {Object|Element} nodeInfo Описание {id, name, data: {segment, icon, class}} или готовый li.
+ * @param {TreeView} tree
  */
-TreeView.Node = new Class(/** @lends TreeView.Node# */{
-    Implements: Events,
-
-    /**
-     * Tree object where the node is placed.
-     * @type {TreeView}
-     */
-    tree: null,
-
-    /**
-     * Node element.
-     * @type {Element}
-     */
-    element: null,
-
-    /**
-     * Children.
-     * @type {Elements}
-     */
-    childs: null,
-
-    /**
-     * Defines whether the node is expanded or not.
-     * @type {boolean}
-     */
-    opened: false,
-
-    /**
-     * Defines whether the node is selected or not.
-     * @type {boolean}
-     */
-    selected: false,
-
-    /**
-     * Node ID.
-     * @type {string|number}
-     */
-    id: null,
-
-    /**
-     * Additional data.
-     * @type {Object}
-     */
-    data: null,
-
-    // constructor
-    initialize: function(nodeInfo, tree) {
+TreeView.Node = class TreeViewNode {
+    constructor(nodeInfo, tree) {
         this.tree = tree;
-        if (typeOf(nodeInfo) == 'element') {
-            this.element = $(nodeInfo);
-            this.element.getElement('a').setProperty('href', Energine.base + Energine.lang + '/');
-            this.id = this.element.getProperty('id');
+        this.events = {};
+        this.selected = false;
+        this.id = null;
+        this.data = null;
+        if (nodeInfo && nodeInfo.nodeType === 1) {
+            this.element = nodeInfo;
+            this.element.querySelector('a').setAttribute('href', Energine.base + Energine.lang + '/');
+            this.id = this.element.getAttribute('id');
         } else {
-            this.element = new Element('li').adopt(
-                new Element('a')
-                    .setProperties({
-                        'href': Energine.base + Energine.lang + '/' + nodeInfo['data']['segment']
-                    })
-                    .set('text', nodeInfo['name'])
-            );
-            this.id = nodeInfo['id'];
-            this.data = nodeInfo['data'];
+            this.element = document.createElement('li');
+            const link = document.createElement('a');
+            link.setAttribute('href', Energine.base + Energine.lang + '/' + nodeInfo.data.segment);
+            link.textContent = nodeInfo.name;
+            this.element.appendChild(link);
+            this.id = nodeInfo.id;
+            this.data = nodeInfo.data;
             this.setIcon(nodeInfo.data.icon);
         }
-        this.element.store('treeNode', this);
-        //this.element.treeNode = this;
-
-        var anchor = this.element.getElement('a');
-        if(nodeInfo.data && nodeInfo.data['class']){
-            anchor.addClass(nodeInfo.data['class']);
+        this.element.treeNode = this;
+        const anchor = this.element.querySelector('a');
+        if (nodeInfo.data && nodeInfo.data['class']) {
+            anchor.classList.add(...String(nodeInfo.data['class']).split(/\s+/).filter(Boolean));
         }
-        this.childs = this.element.getElement('ul');
-        this.opened = this.element.hasClass('opened');
+        this.childs = this.element.querySelector('ul');
+        this.opened = this.element.classList.contains('opened');
+        this.element.addEventListener('click', (event) => this.tree.nodeToggleListener(event, this));
+        if (typeof this.tree.options.dblClick === 'function') {
+            anchor.addEventListener('dblclick', this.tree.options.dblClick);
+        }
+        anchor.addEventListener('click', (event) => this.tree.nodeSelectListener(event, this));
+    }
 
-        this.element.addEvent('click', this.tree.nodeToggleListener);
-        anchor.addEvent('dblclick', this.tree.options.dblClick);
-        anchor.addEvent('click', this.tree.nodeSelectListener);
-    },
+    addEvent(type, handler) {
+        (this.events[type] = this.events[type] || []).push(handler);
+        return this;
+    }
 
-    //todo: Why this located here and not in the TreeVew?
-    /**
-     * Adopt the node into this node.
-     *
-     * @function
-     * @public
-     * @param {TreeView.Node} node Node that will be adopted.
-     */
-    adopt: function(node) {
+    emit(type) {
+        (this.events[type] || []).forEach((handler) => handler.call(this, this));
+        return this;
+    }
+
+    static of(element) {
+        return (element && element.treeNode) || null;
+    }
+
+    // вложенный узел — в конец папки (новая папка свёрнута)
+    adopt(node) {
         if (!(node instanceof TreeView.Node)) {
             return;
         }
         if (!this.childs) {
-            this.childs = new Element('ul').addClass('hidden').inject(this.element);
+            this.childs = document.createElement('ul');
+            this.childs.classList.add('hidden');
+            this.element.appendChild(this.childs);
         }
-        this.childs.adopt(node.element);
-        //todo: Why we push the node in the tree's node array? -- try to solve
+        this.childs.appendChild(node.element);
         this.tree.nodes.push(node);
-    },
+    }
 
-    //todo: Why this located here and not in the TreeVew?
-    /**
-     * Place the node before the [element]{@link TreeView.Node#element}.
-     *
-     * @function
-     * @public
-     * @param {TreeView.Node} node Node.
-     */
-    injectBefore: function(node) {
+    // этот узел — перед другим, на его уровне
+    injectBefore(node) {
         if (!(node instanceof TreeView.Node)) {
             return;
         }
-        this.element.inject(node.element, 'before');
-        //todo: Why we push the node in the tree's node array?
-        this.tree.nodes.push(node);
-    },
+        node.element.before(this.element);
+    }
 
-    //todo: Why this located here and not in the TreeVew?
-    /**
-     * Place the node inside the [element]{@link TreeView.Node#element}.
-     *
-     * @function
-     * @public
-     * @param {TreeView.Node} parentNode Node.
-     */
-    injectInside: function(parentNode){
+    // этот узел — первым в папку другого узла; папка раскрывается
+    injectInside(parentNode) {
         if (!(parentNode instanceof TreeView.Node)) {
             return;
         }
         if (!parentNode.childs) {
-            parentNode.childs = new Element('ul').addClass('hidden').inject(parentNode.element);
+            parentNode.childs = document.createElement('ul');
+            parentNode.childs.classList.add('hidden');
+            parentNode.element.appendChild(parentNode.childs);
         }
-        this.element.inject(parentNode.childs, 'top');
+        parentNode.childs.prepend(this.element);
         parentNode.expand();
         this.tree.setupCssClasses();
-    },
+    }
 
-    /**
-     * Remove all child nodes.
-     * @function
-     * @public
-     */
-    removeChilds: function() {
+    removeChilds() {
         if (!this.childs) {
             return;
         }
-        this.childs.getChildren().each(function(child){
-            child.retrieve('treeNode').remove();
-        }, this);
-    },
+        [...this.childs.children].forEach((child) => {
+            if (child.treeNode) {
+                child.treeNode.remove();
+            }
+        });
+    }
 
-    /**
-     * Get the previous node.
-     *
-     * @function
-     * @public
-     * @returns {TreeView.Node}
-     */
-    getPrevious: function() {
-        var prev = this.element.getPrevious();
-        return (prev
-            ? prev.retrieve('treeNode')
-            : null);
-    },
+    getPrevious() {
+        return TreeView.Node.of(this.element.previousElementSibling);
+    }
 
-    /**
-     * Get the next node.
-     *
-     * @function
-     * @public
-     * @returns {TreeView.Node}
-     */
-    getNext: function() {
-        var next = this.element.getNext();
-        return (next
-            ? next.retrieve('treeNode')
-            : null);
-    },
+    getNext() {
+        return TreeView.Node.of(this.element.nextElementSibling);
+    }
 
-    /**
-     * Get the node parent.
-     *
-     * @function
-     * @public
-     * @returns {TreeView.Node}
-     */
-    getParent: function() {
-        var parent = this.element.getParent().getParent(); // li / ul / li
-        return (parent
-            ? parent.retrieve('treeNode')
-            : null);
-    },
+    // родитель узла: li / ul / li
+    static parentOf(node) {
+        const list = node.element.parentElement;
+        return TreeView.Node.of(list && list.parentElement);
+    }
 
-    /**
-     * Get an array of the node parents
-     *
-     * @function
-     * @public
-     * @returns {Element[]}
-     */
-    getParents: function(){
-        var p, node = this, result = [];
-        while(p = node.getParent()){
-            result.push(node = p);
+    getParent() {
+        return TreeView.Node.parentOf(this);
+    }
+
+    getParents() {
+        const result = [];
+        for (let node = TreeView.Node.parentOf(this); node; node = TreeView.Node.parentOf(node)) {
+            result.push(node);
         }
         return result;
-    },
+    }
 
-    /**
-     * Check if this node is a parent of the checked node.
-     *
-     * @function
-     * @public
-     * @param {TreeView.Node} node Node.
-     * @returns {boolean}
-     */
-    isParentOf: function(node) {
-        var items = this.element.getElements('li');
-        for (var i = 0; i < items.length; i++) {
-            if (items[i].retrieve('treeNode') == node) {
-                return true;
-            }
-        }
-        return false;
-    },
+    isParentOf(node) {
+        return [...this.element.querySelectorAll('li')].some((item) => item.treeNode === node);
+    }
 
-    //todo: Why this located here and not in the TreeVew?
-    /**
-     * Swap this node with the node.
-     *
-     * @function
-     * @public
-     * @param {TreeView.Node} node Node that will be moved.
-     */
-    swap: function(node) {
-        if (!(node instanceof TreeView.Node)
-            || this.isParentOf(node)
-            || node.isParentOf(this))
-        {
+    // поменять местами с соседом
+    swap(node) {
+        if (!(node instanceof TreeView.Node) || this.isParentOf(node) || node.isParentOf(this)) {
             return;
         }
-
-        var tmpNode = this.getNext();
-        if (tmpNode) {
-            if (tmpNode == node) {
+        const next = this.getNext();
+        if (next) {
+            if (next === node) {
                 node.swap(this);
             } else {
                 this.injectBefore(node);
-                node.injectBefore(tmpNode);
+                node.injectBefore(next);
             }
         } else {
-            tmpNode = this.getParent();
+            // этот узел — последний: он встаёт на место соседа, сосед — в конец
             this.injectBefore(node);
-            tmpNode.adopt(node);
+            this.element.parentElement.appendChild(node.element);
         }
         this.tree.setupCssClasses();
-    },
+    }
 
-    //todo: Why this located here and not in the TreeVew?
-    /**
-     * Move this node up.
-     * @function
-     * @public
-     */
-    moveUp: function() {
+    moveUp() {
         this.swap(this.getPrevious());
-    },
+    }
 
-    //todo: Why this located here and not in the TreeVew?
-    /**
-     * Move this node down.
-     * @function
-     * @public
-     */
-    moveDown: function() {
+    moveDown() {
         this.swap(this.getNext());
-    },
+    }
 
-    //todo: Why this located here and not in the TreeVew?
-    /**
-     * Remove.
-     * @function
-     * @public
-     */
-    remove: function() {
+    // узел уходит со страницы и из списка дерева
+    remove() {
         this.removeChilds();
-        this.element.dispose();
-        this.tree.nodes.pop(this);
-        this.tree.setupCssClasses();
-    },
-
-    //todo: Why this located here and not in the TreeVew?
-    /**
-     * Toggle (expand/collapse).
-     * @function
-     * @public
-     */
-    toggle: function() {
-        if (this.childs && this.childs.childNodes.length) {
-            this.element.toggleClass('opened');
-            this.opened = this.element.hasClass('opened');
-            this.childs.toggleClass('hidden');
-            this.tree.setupStyles();
+        this.element.remove();
+        const index = this.tree.nodes.indexOf(this);
+        if (index !== -1) {
+            this.tree.nodes.splice(index, 1);
         }
-    },
+        this.tree.setupCssClasses();
+    }
 
-    //todo: Why this located here and not in the TreeVew?
-    /**
-     * Expand.
-     * @function
-     * @public
-     */
-    expand: function() {
+    toggle() {
+        if (this.childs && this.childs.childNodes.length) {
+            this.element.classList.toggle('opened');
+            this.opened = this.element.classList.contains('opened');
+            this.childs.classList.toggle('hidden');
+        }
+    }
+
+    expand() {
         if (!this.opened) {
             this.toggle();
         }
-    },
+    }
 
-    //todo: Why this located here and not in the TreeVew?
-    /**
-     * Collapse.
-     * @function
-     * @public
-     */
-    collapse: function() {
+    collapse() {
         if (this.opened) {
             this.toggle();
         }
-    },
+    }
 
-    /**
-     * Disable.
-     * @deprecated
-     * @function
-     * @public
-     */
-    disable: function() {
-        //TODO
-    },
-
-    /**
-     * Enable.
-     * @deprecated
-     * @function
-     * @public
-     */
-    enable: function() {
-        //TODO
-    },
-
-    //todo: Why this located here and not in the TreeVew?
-    /**
-     * Select.
-     *
-     * @fires TreeView.Node#select
-     * @function
-     * @public
-     */
-    select: function() {
-        if (this == this.tree.selectedNode) {
-            /**
-             * Event by selecting the node.
-             * @event TreeView.Node#select
-             * @param {TreeView.Node} Selected node.
-             */
-            this.fireEvent('select', this);
+    // выбор узла; повторный выбор выбранного сообщает о выборе ещё раз — как прежде
+    select() {
+        if (this === this.tree.selectedNode) {
+            this.emit('select');
         }
         if (this.tree.selectedNode) {
             this.tree.selectedNode.unselect();
         }
         this.tree.selectedNode = this;
-        this.element.addClass('selected');
+        this.element.classList.add('selected');
         this.selected = true;
-        this.fireEvent('select', this);
-    },
+        this.emit('select');
+    }
 
-    //todo: Why this located here and not in the TreeVew?
-    /**
-     * Deselect.
-     * @function
-     * @public
-     */
-    unselect: function() {
-        this.element.removeClass('selected');
+    unselect() {
+        this.element.classList.remove('selected');
         this.selected = false;
-    },
+    }
 
-    /**
-     * Get node ID.
-     *
-     * @function
-     * @public
-     * @returns {string|number} [id]{@link TreeView.Node#id}
-     */
-    getId: function() {
+    getId() {
         return this.id;
-    },
+    }
 
-    /**
-     * Set the node name.
-     *
-     * @function
-     * @public
-     * @param {string} name Name.
-     */
-    setName: function(name) {
-        // имя страницы — текстом, как при создании узла
-        this.element.getElement('a').set('text', name);
-    },
+    // название — текстом
+    setName(name) {
+        this.element.querySelector('a').textContent = name;
+    }
 
-    /**
-     * Set the [additional data]{@link TreeView.Node#data}.
-     *
-     * @function
-     * @public
-     * @param {Object} data Data.
-     */
-    setData: function(data) {
+    setData(data) {
         this.data = data;
-    },
+    }
 
-    /**
-     * Set the node icon.
-     *
-     * @function
-     * @public
-     * @param {string} icon Icon URL.
-     */
-    setIcon: function(icon){
-        this.element.getElement('a').setStyles({
-         'background-image':'url(' + icon + ')', 
-         'background-position': '1px 1px',
-         'background-repeat':'no-repeat'
-         })        
-    },
+    setIcon(icon) {
+        const link = this.element.querySelector('a');
+        link.style.backgroundImage = 'url(' + icon + ')';
+        link.style.backgroundPosition = '1px 1px';
+        link.style.backgroundRepeat = 'no-repeat';
+    }
 
-    /**
-     * Get the [additional data]{@link TreeView.Node#data}.
-     *
-     * @function
-     * @public
-     * @returns {Object}
-     */
-    getData: function() {
+    getData() {
         return this.data;
     }
-});
+};
