@@ -159,6 +159,19 @@ const inspect = (page) => page.evaluate(() => {
             // отказ 422 здесь ожидаем; всё прочее — ошибка
             const other = rErrors.list().filter((e) => !/^http 422: .*\/get-data\//.test(e) && !/status of 422/.test(e));
             check('Energine.request: без других ошибок JS и 404', !other.length, other.join(' | '));
+            // the answer breaks off while its body is read (the connection is lost after the headers): a network
+            // error — onServerError(''), as the spec says; nothing left hanging (an overlay waits for a handler)
+            const broken = await rp.evaluate((url) => new Promise((resolve) => {
+                const text = Response.prototype.text;
+                Response.prototype.text = function () {
+                    Response.prototype.text = text;
+                    return Promise.reject(new TypeError('network error'));
+                };
+                Energine.request(url, null, () => resolve('success'), () => resolve('userError'),
+                    (body) => resolve('serverError:' + JSON.stringify(body)));
+                setTimeout(() => resolve('timeout'), 10000);
+            }), q.url || '');
+            check('Energine.request: ответ оборвался на чтении тела — onServerError(\'\')', broken === 'serverError:""', broken);
             await rp.close();
         }
 

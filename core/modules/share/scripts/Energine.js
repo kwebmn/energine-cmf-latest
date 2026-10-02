@@ -142,6 +142,7 @@ var Energine = /** @lends Energine */{
             headers['Content-Type'] = 'application/x-www-form-urlencoded; charset=utf-8';
             init.body = body;
         }
+        // сетевая ошибка — и до ответа, и на чтении его тела (соединение оборвалось после заголовков)
         return fetch(uri, init).then(function (response) {
             return response.text().then(function (text) {
                 var json = null;
@@ -151,7 +152,7 @@ var Energine = /** @lends Energine */{
                 }
                 return {status: response.status, text: text, json: json};
             });
-        }, function () {
+        }).catch(function () {
             return {status: 0, text: '', json: null};
         });
     },

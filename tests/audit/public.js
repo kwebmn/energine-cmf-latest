@@ -97,8 +97,9 @@ const fieldError = (p, selector) => p.evaluate((sel) => {
             await p.close();
         }
 
-        // 3. the visitor's pages (the profile is open only to a signed-in visitor)
-        for (const url of ['profile/', 'ua/profile/', '', 'sitemap/']) {
+        // 3. the visitor's pages in both languages (the profile is open only to a signed-in visitor)
+        for (const url of ['', 'login/', 'register/', 'restore-password/', 'sitemap/', 'profile/',
+            'ua/', 'ua/login/', 'ua/register/', 'ua/restore-password/', 'ua/sitemap/', 'ua/profile/']) {
             await pageChecks(member, 'посетитель', url);
         }
 
