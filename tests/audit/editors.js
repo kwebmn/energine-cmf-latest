@@ -622,6 +622,378 @@ const showTabOf = (page, selector) => page.evaluate((sel) => {
         await p.close();
     }
 
+    // 17–24. forms and the editor without MooTools (stage 8, step 5): the form windows and the edit mode load no
+    //        MooTools; what the forms do stays as it was
+    const ids = JSON.parse(db('ids'));
+    const formData = JSON.parse(db('form-add'));
+    const PAYLOAD = '<img src="data:," onerror="window.claudeXss=(window.claudeXss||0)+1"><b>claude-form</b>';
+    const SITE_PATH = new URL(BASE).pathname;
+    const waitFrame = async (page, re) => {
+        for (let i = 0; i < 50; i++) {
+            const f = page.frames().find((fr) => re.test(fr.url()));
+            if (f) {
+                await f.waitForLoadState('networkidle').catch(() => null);
+                return f;
+            }
+            await page.waitForTimeout(200);
+        }
+        return null;
+    };
+    const openImageWindow = async (page) => {
+        await page.goto(BASE + `admin/structure/single/divEditor/${pageId}/edit/`, { waitUntil: 'networkidle' });
+        await page.evaluate(() => ModalBox.open({
+            url: document.querySelector('[single_template]').getAttribute('single_template') + 'imagemanager',
+            extraData: { upl_path: 'uploads/public/13662314846.png', upl_width: 90, upl_height: 68, upl_title: 'claude' },
+        }));
+        return waitFrame(page, /imagemanager/);
+    };
+    try {
+        // 17. no MooTools: the forms (user, page, role, file), the image window, the edit mode; Jodit styles — once
+        const mooFree = async (label, open) => {
+            const p = await ctx.newPage();
+            const errors = watch(p);
+            // requests of the checked document only: the sidebar of the edit mode (DivSidebar) keeps MooTools till step 7
+            const requests = [];
+            p.on('request', (r) => { if (/mootools/i.test(r.url())) requests.push(r); });
+            const target = await open(p);
+            const frame = target && (target.mainFrame ? target.mainFrame() : target);
+            const asked = requests.filter((r) => r.frame() === frame).map((r) => r.url());
+            const state = target ? await target.evaluate(() => ({
+                moo: typeof window.MooTools, jodit: document.querySelectorAll('link[href*="jodit.min.css"]').length,
+            })) : { moo: 'no window' };
+            check(`без MooTools: ${label}`, state.moo === 'undefined' && !asked.length, JSON.stringify({ state, asked }));
+            check(`без MooTools: ${label} — без ошибок JS и 404`, !errors.length, errors.join(' | '));
+            await p.close();
+            return state;
+        };
+        await mooFree('форма пользователя', async (p) => {
+            await p.goto(BASE + `admin/users/single/userEditor/${formData.user}/edit/`, { waitUntil: 'networkidle' });
+            return p;
+        });
+        const divState = await mooFree('форма раздела', async (p) => {
+            await p.goto(BASE + `admin/structure/single/divEditor/${pageId}/edit/`, { waitUntil: 'networkidle' });
+            return p;
+        });
+        check('форма раздела: стили Jodit подключены один раз', divState.jodit === 1, JSON.stringify(divState));
+        await mooFree('форма роли', async (p) => {
+            await p.goto(BASE + `admin/users/roles/single/roleEditor/${ids.role}/edit/`, { waitUntil: 'networkidle' });
+            return p;
+        });
+        await mooFree('форма файла', async (p) => {
+            await p.goto(BASE + 'admin/users/single/adminPanel/file-library/1/add/', { waitUntil: 'networkidle' });
+            return p;
+        });
+        await mooFree('окно картинки', openImageWindow);
+        await mooFree('режим правки', async (p) => {
+            await p.goto(BASE, { waitUntil: 'networkidle' });
+            await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle' }), p.click('li.editMode_btn')]);
+            return p;
+        });
+
+        // 18. the user form (Form): Enter in a text field does not send the form; the avatar field — a file chosen in
+        //     the library fills the path, the preview and «очистить», «очистить» clears them; the quick upload finds
+        //     the uploaded file by its id and fills the field the same way. The windows answer at once.
+        {
+            const p = await ctx.newPage();
+            const errors = watch(p);
+            const posts = [];
+            p.on('request', (r) => { if (r.method() === 'POST') posts.push(r.url()); });
+            await p.goto(BASE + `admin/users/single/userEditor/${formData.user}/edit/`, { waitUntil: 'networkidle' });
+            const url = p.url();
+            await showTabOf(p, '#u_fullname');
+            await p.focus('#u_fullname');
+            await p.keyboard.press('Enter');
+            await p.waitForTimeout(700);
+            check('форма пользователя: Enter в текстовом поле форму не отправляет', p.url() === url && !posts.length, posts.join(' '));
+
+            const MEDIA = await p.evaluate(() => Energine.media);
+            await p.evaluate(() => {
+                window.claudeOpened = [];
+                ModalBox.open = function (o) {
+                    window.claudeOpened.push({ url: o.url, extra: o.extraData });
+                    setTimeout(() => o.onClose(window.claudeAnswer), 0);
+                };
+            });
+            const fileState = () => p.evaluate(() => {
+                const btn = document.querySelector('button[onclick*="openFileLib"]');
+                const input = document.getElementById(btn.getAttribute('link'));
+                const preview = document.getElementById(btn.getAttribute('preview'));
+                const clear = input.closest('.with_append').querySelector('.lnk_clear');
+                return { value: input.value, href: preview.getAttribute('href'), src: preview.querySelector('img').getAttribute('src'),
+                    shown: getComputedStyle(preview).display !== 'none', clear: !!clear && getComputedStyle(clear).display !== 'none' };
+            });
+            await showTabOf(p, 'button[onclick*="openFileLib"]');
+            await p.evaluate((path) => { window.claudeAnswer = { upl_path: path, upl_internal_type: 'image' }; }, formData.path);
+            await p.click('button[onclick*="openFileLib"]');
+            await p.waitForTimeout(300);
+            let st = await fileState();
+            const opened = await p.evaluate(() => window.claudeOpened.slice());
+            check('поле файла: «…» открывает библиотеку файлов', opened.length === 1 && /\/file-library\/$/.test(opened[0].url),
+                JSON.stringify(opened));
+            check('поле файла: выбранный файл — путь, превью и ссылка на файл', st.value === formData.path
+                && st.src === MEDIA + formData.path && st.href === MEDIA + formData.path && st.shown, JSON.stringify(st));
+            check('поле файла: после выбора видна ссылка «очистить»', st.clear, JSON.stringify(st));
+            await p.evaluate(() => document.querySelector('button[onclick*="openFileLib"]').closest('.with_append')
+                .querySelector('.lnk_clear').click());
+            st = await fileState();
+            check('поле файла: «очистить» убирает путь, превью и саму ссылку', st.value === '' && st.href === null && !st.shown
+                && !st.clear, JSON.stringify(st));
+
+            await p.evaluate((id) => { window.claudeOpened = []; window.claudeAnswer = { result: true, data: id }; }, formData.upload);
+            const [resp] = await Promise.all([
+                p.waitForResponse((r) => r.url().includes('/get-data/'), { timeout: 15000 }),
+                p.click('button[onclick*="openQuickUpload"]'),
+            ]);
+            await p.waitForTimeout(1200);
+            st = await fileState();
+            const quick = await p.evaluate(() => window.claudeOpened.slice());
+            const overlays = await p.evaluate(() => document.querySelectorAll('.e-overlay').length);
+            check('быстрая загрузка: окно добавления файла в папку быстрой загрузки', quick.length === 1
+                && quick[0].url.endsWith(`/file-library/${formData.pid}/add`), JSON.stringify(quick));
+            check('быстрая загрузка: файл найден по id и подставлен — путь и превью, затемнение снято', resp.ok()
+                && st.value === formData.path && st.src === MEDIA + formData.path && st.shown && !overlays,
+                JSON.stringify({ st, overlays, body: resp.request().postData() }));
+            check('форма пользователя: без ошибок JS и 404', !errors.length, errors.join(' | '));
+            await p.close();   // the form is not saved: the temporary user is removed at the end
+        }
+
+        // 19. saving from a grid (Form.processServerResponse): «after saving» — «edit next»: the window closes, the
+        //     choice is remembered in a cookie for a day with the site path, the grid opens the next template; the
+        //     template saved without edits is unchanged
+        {
+            const was = db('mail-all');
+            await ctx.clearCookies({ name: 'after_add_default_action' });
+            const p = await ctx.newPage();
+            const errors = watch(p);
+            await p.goto(BASE + 'admin/mail-templates/', { waitUntil: 'networkidle' });
+            await p.waitForSelector('tbody tr td', { timeout: 10000 });
+            await p.locator('tbody tr').filter({ has: p.locator('td') }).first().click();
+            await p.click('ul.toolbar li.edit_btn');
+            const frameEl = await p.waitForSelector('.e-modalbox iframe', { timeout: 10000 });
+            const first = await frameEl.evaluate((f) => f.src);
+            const frame = await frameEl.contentFrame();
+            await frame.waitForSelector('li.save_btn', { timeout: 10000 });
+            await frame.selectOption('li.select select', 'editNext');
+            await Promise.all([
+                p.waitForResponse((r) => /\/save\/?(\?|$)/.test(r.url()) && r.request().method() === 'POST', { timeout: 15000 }),
+                frame.click('li.save_btn'),
+            ]);
+            await p.waitForFunction((url) => [...document.querySelectorAll('.e-modalbox iframe')]
+                .some((f) => f.src !== url && /\/edit\/?$/.test(f.src)), first, { timeout: 15000 }).catch(() => null);
+            const next = await p.evaluate(() => [...document.querySelectorAll('.e-modalbox iframe')].map((f) => f.src));
+            const cookie = (await ctx.cookies(BASE)).find((c) => c.name === 'after_add_default_action');
+            const days = cookie ? (cookie.expires - Date.now() / 1000) / 86400 : 0;
+            check('сохранение из грида: «Править следующий» — окно закрыто, открыт следующий шаблон', next.length === 1
+                && next[0] !== first && /\/edit\/?$/.test(next[0]), JSON.stringify({ first, next }));
+            check('сохранение из грида: выбор запомнен в cookie на сутки с путём сайта', !!cookie && cookie.value === 'editNext'
+                && cookie.path === SITE_PATH && days > 0.9 && days < 1.1, JSON.stringify(cookie));
+            check('сохранение из грида: шаблон без правки не изменился', db('mail-all') === was);
+            check('сохранение из грида: без ошибок JS и 404', !errors.length, errors.join(' | '));
+            await p.close();
+            await ctx.clearCookies({ name: 'after_add_default_action' });
+        }
+
+        // 20. the page (division) form (DivForm): a text field folds and unfolds; a content template with its own
+        //     segment and layout sets them and clears the page XML; the parent chosen in the tree window goes to the
+        //     field, its name — as text; an empty name on a language tab stops the saving; a changed template resets
+        {
+            const xmlSnap = db('page-xml-snap', pageId);
+            db('page-xml-set', pageId);
+            try {
+                const p = await ctx.newPage();
+                const errors = watch(p);
+                const posts = [];
+                p.on('request', (r) => { if (r.method() === 'POST') posts.push(r.url()); });
+                const formUrl = BASE + `admin/structure/single/divEditor/${pageId}/edit/`;
+                await p.goto(formUrl, { waitUntil: 'networkidle' });
+
+                const field = '#smap_meta_keywords_1';
+                await showTabOf(p, field);
+                const fold = () => p.evaluate((s) => document.querySelector(s).closest('.field').className, field);
+                const clickIcon = () => p.evaluate((s) => document.querySelector(s).closest('.field').querySelector('.icon_min_max').click(), field);
+                if (/\bmax\b/.test(await fold())) await clickIcon();
+                const f0 = await fold();
+                await p.click(field);
+                const f1 = await fold();
+                await clickIcon();
+                const f2 = await fold();
+                check('текстовое поле формы: свёрнуто, щелчок по нему разворачивает, значок — сворачивает',
+                    /\bmin\b/.test(f0) && /\bmax\b/.test(f1) && /\bmin\b/.test(f2), [f0, f1, f2].join(' | '));
+
+                await showTabOf(p, '#smap_content');
+                const tpl = await p.evaluate(() => {
+                    const select = document.getElementById('smap_content');
+                    const option = [...select.options].find((o) => o.value && !o.disabled && !o.selected);
+                    const layout = [...document.getElementById('smap_layout').options].find((o) => !o.selected).value;
+                    option.setAttribute('data-segment', 'claude-seg');
+                    option.setAttribute('data-layout', layout);
+                    select.value = option.value;
+                    select.dispatchEvent(new Event('change'));
+                    const seg = document.getElementById('smap_segment'), code = document.querySelector('textarea.code');
+                    return { ro: seg.readOnly, seg: seg.value, layout: document.getElementById('smap_layout').value === layout,
+                        code: code ? code.value : null, hidden: code ? code.closest('div.field').classList.contains('hidden') : null };
+                });
+                check('шаблон раздела со своим сегментом и макетом: сегмент закреплён, макет выбран, XML раздела очищен и скрыт',
+                    tpl.ro && tpl.seg === 'claude-seg' && tpl.layout && tpl.code === '' && tpl.hidden === true, JSON.stringify(tpl));
+                const free = await p.evaluate(() => {
+                    const select = document.getElementById('smap_content');
+                    const option = [...select.options].find((o) => o.value && !o.disabled && !o.selected && !o.dataset.segment);
+                    select.value = option.value;
+                    select.dispatchEvent(new Event('change'));
+                    return document.getElementById('smap_segment').readOnly;
+                });
+                check('шаблон без своего сегмента: сегмент снова свободен', free === false, String(free));
+
+                const parent = await p.evaluate((payload) => {
+                    const opened = [];
+                    const open = ModalBox.open;
+                    ModalBox.open = function (o) {
+                        opened.push(o.url);
+                        setTimeout(() => o.onClose({ smap_id: 4242, smap_name: payload, smap_segment: 'claude-parent' }), 0);
+                    };
+                    document.getElementById('sitemap_selector').click();
+                    return new Promise((resolve) => setTimeout(() => {
+                        ModalBox.open = open;
+                        const b = document.getElementById('sitemap_selector');
+                        const span = document.getElementById(b.getAttribute('span_field'));
+                        resolve({ opened, id: document.getElementById(b.getAttribute('hidden_field')).value, text: span.textContent,
+                            img: !!span.querySelector('img'), segment: (document.getElementById('smap_pid_segment') || {}).textContent,
+                            ran: window.claudeXss || 0 });
+                    }, 300));
+                }, PAYLOAD);
+                check('родитель раздела: «…» открывает окно дерева', parent.opened.length === 1 && /\/list\/$/.test(parent.opened[0]),
+                    JSON.stringify(parent.opened));
+                check('родитель раздела: выбранный раздел — в поле, его сегмент — в адресе', parent.id === '4242'
+                    && parent.segment === 'claude-parent', JSON.stringify(parent));
+                check('родитель раздела: имя с разметкой — текстом', parent.text === PAYLOAD && !parent.img && !parent.ran,
+                    JSON.stringify(parent));
+
+                const dialogs = [];
+                p.on('dialog', (d) => { dialogs.push(d.message()); d.accept(); });
+                await p.evaluate(() => { document.querySelector('input[name="share_sitemap_translation[1][smap_name]"]').value = ''; });
+                const before = posts.length;
+                await p.click('li.save_btn');
+                await p.waitForTimeout(800);
+                const noName = await p.evaluate(() => Energine.translations.get('ERR_NO_DIV_NAME'));
+                check('форма раздела: пустое имя на вкладке языка — предупреждение, без сохранения', dialogs.length === 1
+                    && dialogs[0] === noName && !posts.slice(before).length, JSON.stringify({ dialogs, noName, posts: posts.slice(before) }));
+
+                await p.goto(formUrl, { waitUntil: 'networkidle' });
+                await showTabOf(p, '#smap_content');
+                const marked = await p.evaluate(() => { const s = document.getElementById('smap_content'); return s.options[s.selectedIndex].text; });
+                const [rr] = await Promise.all([
+                    p.waitForResponse((r) => r.url().includes('reset-templates'), { timeout: 15000 }),
+                    p.click('button[onclick*="resetPageContentTemplate"]'),
+                ]);
+                await p.waitForTimeout(300);
+                const reset = await p.evaluate(() => {
+                    const s = document.getElementById('smap_content'), code = document.querySelector('textarea.code');
+                    return { text: s.options[s.selectedIndex].text, code: code ? code.value : null,
+                        hidden: code ? code.closest('div.field').classList.contains('hidden') : null };
+                });
+                const xml = JSON.parse(db('page-xml-snap', pageId));
+                check('сброс изменённого шаблона: пометка снята, XML раздела очищен и скрыт, на сервере пусто', rr.ok()
+                    && marked.includes(' - ') && !reset.text.includes(' - ') && reset.text.trim().length > 0 && reset.code === ''
+                    && reset.hidden === true && !xml.smap_content_xml, JSON.stringify({ marked, reset, xml }));
+                check('форма раздела (DivForm): без ошибок JS и 404', !errors.length, errors.join(' | '));
+                await p.close();
+            } finally {
+                db('page-xml-restore', pageId, xmlSnap);
+            }
+        }
+
+        // 21. the role form (GroupForm): the switch in the «all pages» row checks its whole column of rights
+        {
+            const p = await ctx.newPage();
+            const errors = watch(p);
+            await p.goto(BASE + `admin/users/roles/single/roleEditor/${ids.role}/edit/`, { waitUntil: 'networkidle' });
+            await showTabOf(p, '.groupRadio');
+            await p.locator('.groupRadio').nth(1).click();
+            const col = await p.evaluate(() => {
+                const group = document.querySelectorAll('.groupRadio')[1];
+                const cls = group.closest('td').className, body = group.closest('tbody');
+                const radios = [...body.querySelectorAll('td.' + cls + ' input[type=radio]')].filter((r) => !r.classList.contains('groupRadio'));
+                const others = [...body.querySelectorAll('input[type=radio][name^="div_right"]')].filter((r) => r.closest('td').className !== cls);
+                return { cls, n: radios.length, all: radios.every((r) => r.checked), otherChecked: others.filter((r) => r.checked).length };
+            });
+            check('форма роли: «Все разделы» отмечает весь свой столбец', col.n > 0 && col.all && col.otherChecked === 0, JSON.stringify(col));
+            check('форма роли: без ошибок JS и 404', !errors.length, errors.join(' | '));
+            await p.close();   // not saved
+        }
+
+        // 22. the image window (ImageManager): the width changes the height in proportion, the path goes through the
+        //     resizer and the preview follows
+        {
+            const p = await ctx.newPage();
+            const errors = watch(p);
+            const frame = await openImageWindow(p);
+            if (check('окно картинки открыто', !!frame)) {
+                await frame.fill('#width', '45');
+                await frame.dispatchEvent('#width', 'change');
+                const im = await frame.evaluate(() => ({ w: document.getElementById('width').value, h: document.getElementById('height').value,
+                    file: document.getElementById('filename').value, thumb: document.getElementById('thumbnail').getAttribute('src'),
+                    resizer: Energine.resizer }));
+                check('окно картинки: ширина меняет высоту по пропорции, путь — через resizer, превью следом', im.w === '45'
+                    && im.h === '34' && im.file === im.resizer + 'w45-h34/uploads/public/13662314846.png' && im.thumb === im.file,
+                    JSON.stringify(im));
+            }
+            check('окно картинки: без ошибок JS и 404', !errors.length, errors.join(' | '));
+            await p.close();
+        }
+
+        // 23. a form tab with its own page (site settings → additional parameters): an iframe on the first show, once
+        {
+            const p = await ctx.newPage();
+            const errors = watch(p);
+            await p.goto(BASE + `admin/settings/single/settings/${ids.site}/edit/`, { waitUntil: 'networkidle' });
+            const tab = p.locator('li[data-src] a').first();
+            await tab.click();
+            await p.waitForTimeout(800);
+            await p.locator('li:not([data-src]) > a[href^="#"]').first().click();
+            await tab.click();
+            await p.waitForTimeout(500);
+            const fr = await p.evaluate(() => {
+                const li = document.querySelector('li[data-src]'), frames = li.pane ? li.pane.querySelectorAll('iframe') : [];
+                return { n: frames.length, src: frames.length ? frames[0].getAttribute('src') : null, ds: li.getAttribute('data-src') };
+            });
+            check('вкладка формы со своей страницей: iframe при первом показе, один', fr.n === 1 && !!fr.src && fr.src.endsWith(fr.ds),
+                JSON.stringify(fr));
+            check('вкладка формы со своей страницей: без ошибок JS и 404', !errors.length, errors.join(' | '));
+            await p.close();
+        }
+
+        // 24. the form fields as a query string (Form.toQueryString; before — the toQueryString of MooTools): named
+        //     fields, not the disabled, submit, reset, file, image ones; checked boxes only; every selected option;
+        //     a new line stays \n
+        {
+            const p = await ctx.newPage();
+            const errors = watch(p);
+            await p.goto(BASE + `admin/users/single/userEditor/${formData.user}/edit/`, { waitUntil: 'networkidle' });
+            const qs = await p.evaluate(() => {
+                const fx = document.createElement('form');
+                fx.innerHTML = '<input name="a[b]" value="x &amp; y+z %"><textarea name="t">1\n2</textarea>'
+                    + '<input type="checkbox" name="c1" value="on1" checked><input type="checkbox" name="c2" value="on2">'
+                    + '<input type="radio" name="r" value="r1"><input type="radio" name="r" value="r2" checked>'
+                    + '<select name="m" multiple><option value="m1" selected>1</option><option value="m2">2</option><option selected>m3</option></select>'
+                    + '<select name="s"><option value="">-</option><option value="s2" selected>2</option></select>'
+                    + '<input name="d" value="no" disabled><input type="submit" name="sb" value="no"><input type="reset" name="rs" value="no">'
+                    + '<input type="file" name="f"><input type="image" name="im"><input type="button" name="bt" value="btn">'
+                    + '<input value="noname"><input type="hidden" name="h" value="Привет">';
+                document.body.appendChild(fx);
+                const result = (window.Form && Form.toQueryString) ? Form.toQueryString(fx) : fx.toQueryString();
+                fx.remove();
+                return result;
+            });
+            const expected = 'a%5Bb%5D=x%20%26%20y%2Bz%20%25&t=1%0A2&c1=on1&r=r2&m=m1&m=m3&s=s2&bt=btn'
+                + '&h=%D0%9F%D1%80%D0%B8%D0%B2%D0%B5%D1%82';
+            check('поля формы строкой запроса — как прежде', qs === expected, qs);
+            check('строка запроса формы: без ошибок JS и 404', !errors.length, errors.join(' | '));
+            await p.close();
+        }
+    } finally {
+        db('form-remove');
+    }
+
     await browser.close();
     console.log(`== editors failures: ${fail}`);
     process.exit(fail ? 1 : 0);
