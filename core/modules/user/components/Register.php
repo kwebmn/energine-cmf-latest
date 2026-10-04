@@ -178,6 +178,10 @@ class Register extends DBDataSet {
             $mailer->send();
 
         } catch (SystemException | \InvalidArgumentException $error) {
+            if ($error instanceof SystemException && $error->getCode() == SystemException::ERR_DB) {
+                error_log('Register: ' . $error->getMessage());
+                throw new SystemException('ERR_SERVER', SystemException::ERR_WARNING);
+            }
             throw new SystemException($error->getMessage(), SystemException::ERR_WARNING);
         } catch (\Exception $error) {
             // база, почта и т. п.: причина — в журнал, посетителю — общий текст

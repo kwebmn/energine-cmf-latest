@@ -104,8 +104,8 @@ export const EnergineEditor = {
      * @returns {string}
      */
     clean: function (value) {
-        const box = document.createElement('div');
-        box.innerHTML = String(value || '');
+        // разбор — в отдельном документе (DOMParser): разметка текста (onerror картинки) в админке не исполняется
+        const box = new DOMParser().parseFromString('<body>' + String(value || '') + '</body>', 'text/html').body;
         return (box.textContent.replace(/[\s\u00a0\u200b]+/g, '') === ''
             && !box.querySelector('img, iframe, video, audio, object, embed, table, hr, input, svg')) ? '' : String(value);
     },
@@ -172,7 +172,9 @@ export const EnergineEditor = {
         if (range && !range.collapsed) {
             var box = document.createElement('div');
             box.appendChild(range.cloneContents());
-            html = box.innerHTML;
+            // абзацы, списки и ссылки внутри <a> недопустимы: тогда в ссылку идёт только текст выделения
+            html = box.querySelector('p, div, ul, ol, li, table, h1, h2, h3, h4, h5, h6, blockquote, pre, a')
+                ? EnergineEditor.escape(range.toString()) : box.innerHTML;
         }
         var selection = editor.s.save();
         ModalBox.open({

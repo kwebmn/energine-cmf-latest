@@ -355,6 +355,25 @@ const showTabOf = (page, selector) => page.evaluate((sel) => {
             v.includes(`<a href="${BASE}uploads/public/claude.pdf">claude-a <strong>claude-b</strong> claude-c</a>`)
             || v.includes(`<a href="${BASE}uploads/public/claude.pdf">claude-a <b>claude-b</b> claude-c</a>`), v.slice(-400));
 
+        // выделение через два абзаца: в ссылку — только текст, без абзацев внутри <a>
+        await p.evaluate((s) => {
+            const ed = Object.values(Jodit.instances).find((e) => e.element === document.querySelector(s));
+            const texts = [];
+            const walker = document.createTreeWalker(ed.editor, NodeFilter.SHOW_TEXT);
+            for (let n = walker.nextNode(); n; n = walker.nextNode()) texts.push(n);
+            const a = texts.find((n) => n.nodeValue.includes('claude-p1')), b = texts.find((n) => n.nodeValue.includes('claude-p2'));
+            const r = document.createRange();
+            r.setStart(a, 0);
+            r.setEnd(b, b.nodeValue.length);
+            ed.s.focus();
+            ed.s.selectRange(r);
+        }, sel);
+        await pressButton(p, sel, 'energineFile');
+        await p.waitForTimeout(300);
+        v = await editorValue(p, sel);
+        check(`${where}: файл с выделением через абзацы — в ссылке только текст`,
+            v.includes(`<a href="${BASE}uploads/public/claude.pdf">claude-p1`) && !/claude\.pdf"><p/.test(v), v.slice(-400));
+
         await answer(p, null, null);
         const before = await editorValue(p, sel);
         await place(p, sel);
@@ -364,11 +383,24 @@ const showTabOf = (page, selector) => page.evaluate((sel) => {
         check(`${where}: отменённый диалог ничего не вставляет`, (await editorValue(p, sel)) === before);
     };
     {
+        // очистка значения не исполняет разметку текста (onerror картинки) в странице админки
+        const p = await ctx.newPage();
+        await p.goto(BASE + `admin/structure/single/divEditor/${pageId}/edit/`, { waitUntil: 'networkidle' });
+        const ran = await p.evaluate(async () => {
+            const { EnergineEditor } = await import('EnergineEditor');
+            EnergineEditor.clean('<p><img src="claude-none" onerror="window.claudeClean=1"></p>');
+            await new Promise((r) => setTimeout(r, 500));
+            return window.claudeClean || 0;
+        });
+        check('очистка значения редактора не исполняет разметку текста', !ran, String(ran));
+        await p.close();
+    }
+    {
         const p = await ctx.newPage();
         const errors = watch(p);
         await p.goto(BASE + `admin/structure/single/divEditor/${pageId}/edit/`, { waitUntil: 'networkidle' });
         await showTabOf(p, descr);
-        await appendHtml(p, descr, ' claude-sel claude-a <strong>claude-b</strong> claude-c');
+        await appendHtml(p, descr, ' claude-sel claude-a <strong>claude-b</strong> claude-c<p>claude-p1</p><p>claude-p2</p>');
         await insertions(p, descr, 'форма');
         check('вставка в форме: без ошибок JS и 404', !errors.length, errors.join(' | '));
         await p.close();   // the form is not saved: nothing to restore
@@ -380,7 +412,7 @@ const showTabOf = (page, selector) => page.evaluate((sel) => {
             const errors = watch(p);
             await p.goto(BASE, { waitUntil: 'networkidle' });
             await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle' }), p.click('li.editMode_btn')]);
-            await appendHtml(p, block, ' claude-sel claude-a <strong>claude-b</strong> claude-c');
+            await appendHtml(p, block, ' claude-sel claude-a <strong>claude-b</strong> claude-c<p>claude-p1</p><p>claude-p2</p>');
             await insertions(p, block, 'блок на странице');
             check('вставка в блок: без ошибок JS и 404', !errors.length, errors.join(' | '));
             await p.close();

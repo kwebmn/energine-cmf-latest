@@ -295,7 +295,12 @@ final class Setup {
             $pdo->exec('CREATE FUNCTION energine_setup_probe() RETURNS INT DETERMINISTIC RETURN 1');
             $pdo->exec('DROP FUNCTION energine_setup_probe');
         } catch (\PDOException $e) {
-            throw new \Exception('У пользователя базы нет права создавать процедуры (CREATE ROUTINE): схема без них не ставится. '
+            try {
+                $pdo->exec('DROP FUNCTION IF EXISTS energine_setup_probe');
+            } catch (\PDOException $ignored) {
+            }
+            throw new \Exception('У пользователя базы нет права создавать процедуры (CREATE ROUTINE) или удалять их (ALTER ROUTINE): '
+                . 'схема без них не ставится. Если в базе осталась функция energine_setup_probe — удалите её. '
                 . 'Выдайте право в панели хостинга и запустите установку снова.');
         }
 
