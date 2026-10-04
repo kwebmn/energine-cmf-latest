@@ -69,6 +69,36 @@ async function inspect(page) {
     }
     const guest = await browser.newContext({ locale: 'ru-RU' });
 
+    // контраст обеих схем (WCAG AA, 4.5:1): текст, приглушённый текст, ссылка, текст кнопки на её фоне, текст ошибки
+    for (const scheme of ['light', 'dark']) {
+        const ctx = await browser.newContext({ locale: 'ru-RU', colorScheme: scheme });
+        const p = await ctx.newPage();
+        await p.goto(BASE + 'register/', { waitUntil: 'networkidle' });
+        const pairs = await p.evaluate(() => {
+            const rgb = (c) => (c.match(/[\d.]+/g) || []).slice(0, 3).map(Number);
+            const lum = ([r, g, b]) => { const f = (v) => { v /= 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; };
+                return .2126 * f(r) + .7152 * f(g) + .0722 * f(b); };
+            const ratio = (a, b) => { const [x, y] = [lum(rgb(a)), lum(rgb(b))].sort((m, n) => n - m); return (x + .05) / (y + .05); };
+            const bg = getComputedStyle(document.body).backgroundColor;
+            const st = (sel) => { const e = document.querySelector(sel); return e ? getComputedStyle(e) : null; };
+            const out = {};
+            const text = st('main h1'), link = st('header .site-name') && st('nav.breadcrumbs a, main a'), muted = st('.note'),
+                button = st('main form button');
+            if (text) out['текст'] = ratio(text.color, bg);
+            if (link) out['ссылка'] = ratio(link.color, bg);
+            if (muted) out['приглушённый'] = ratio(muted.color, bg);
+            if (button) out['кнопка'] = ratio(button.color, button.backgroundColor);
+            const probe = document.createElement('div'); probe.className = 'bg-danger-bg text-danger'; document.body.append(probe);
+            out['ошибка'] = ratio(getComputedStyle(probe).color, getComputedStyle(probe).backgroundColor);
+            probe.remove();
+            return out;
+        });
+        const low = Object.entries(pairs).filter(([, v]) => v < 4.5).map(([k, v]) => `${k} ${v.toFixed(2)}`);
+        check(`контраст, ${scheme === 'light' ? 'светлая' : 'тёмная'} схема: не ниже 4.5:1`, Object.keys(pairs).length >= 4 && !low.length,
+            JSON.stringify(pairs));
+        await ctx.close();
+    }
+
     // формы сайта на утилитах: у каждого поля подпись, обёртка поля — утилиты, правил старой темы нет; ошибка входа —
     // сообщение role="alert"
     for (const [label, url] of [['вход', 'login/'], ['регистрация', 'register/'], ['восстановление пароля', 'restore-password/']]) {
