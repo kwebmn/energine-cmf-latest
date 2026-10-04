@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- «Услуга»: первый экран (h1), описание — обычный текст страницы (num 1, без блока alfa: второго h1 нет), цены, вопросы, призыв -->
+<content>
+    <container name="hero" section="hero">
+        <component name="section_hero" class="Energine\share\components\TextBlock">
+            <params>
+                <param name="num">11</param>
+                <param name="section_sample">TXT_SECTION_SAMPLE_HERO</param>
+            </params>
+        </component>
+    </container>
+    <container name="textBlockContainer1">
+        <component name="textBlock_1" class="Energine\share\components\TextBlock">
+            <params>
+                <param name="num">1</param>
+            </params>
+        </component>
+    </container>
+    <container name="prices" section="prices">
+        <component name="section_prices" class="Energine\share\components\TextBlock">
+            <params>
+                <param name="num">13</param>
+                <param name="section_sample">TXT_SECTION_SAMPLE_PRICES</param>
+            </params>
+        </component>
+    </container>
+    <container name="faq" section="faq">
+        <component name="section_faq" class="Energine\share\components\TextBlock">
+            <params>
+                <param name="num">16</param>
+                <param name="section_sample">TXT_SECTION_SAMPLE_FAQ</param>
+            </params>
+        </component>
+    </container>
+    <container name="cta" section="cta">
+        <component name="section_cta" class="Energine\share\components\TextBlock">
+            <params>
+                <param name="num">18</param>
+                <param name="section_sample">TXT_SECTION_SAMPLE_CTA</param>
+            </params>
+        </component>
+    </container>
+</content>

@@ -3,7 +3,9 @@
 //  1. непустая секция — одна полоса section[data-section] с текстом;
 //  2. пустая секция гостю не выводится;
 //  3. пустая секция в режиме правки — полоса с редактором и образцом из константы TXT_SECTION_SAMPLE_<ИМЯ>;
-//  4. контейнер с неизвестным именем секции выводится обычным блоком.
+//  4. контейнер с неизвестным именем секции выводится обычным блоком;
+//  5. шаблоны страниц «Лендинг», «Услуга», «Контакты»: файлы связаны в web/templates/content/main/ (setup linker),
+//     названия в редакторе структуры — константы CONTENT_* на всех языках, num секций — числа, не 1 и без повторов.
 require __DIR__ . '/testlib.php';
 
 const SECTIONS = ['hero', 'services', 'prices', 'reviews', 'gallery', 'faq', 'contacts', 'cta'];
@@ -71,5 +73,22 @@ foreach (SECTIONS as $name) {
 // 4
 $x = render(str_replace('section="hero"', 'section="nope" block="beta"', sectionDoc('hero', '<p>Т</p>', false)));
 check('неизвестная секция — обычный блок', $x->query('//section')->length == 0 && $x->query("//div[@class='block']")->length == 1);
+
+// 5
+foreach (['landing' => 'CONTENT_LANDING', 'service' => 'CONTENT_SERVICE', 'contacts' => 'CONTENT_CONTACTS'] as $t => $const) {
+    $file = WEB . "/templates/content/main/$t.content.xml";
+    $xml = is_file($file) ? simplexml_load_file($file) : false;
+    check("шаблон $t: связан в templates/content/main", $xml !== false);
+    $names = (int)scalar('SELECT COUNT(*) FROM share_lang_tags t JOIN share_lang_tags_translation tr USING (ltag_id)
+        WHERE t.ltag_name = ? AND tr.ltag_value_rtf <> ""', [$const]);
+    check("шаблон $t: название $const на всех языках", $names > 0 && $names == (int)scalar('SELECT COUNT(*) FROM share_languages'), "переводов: $names");
+    if (!$xml) continue;
+    $nums = array_map('strval', $xml->xpath('//container[@section]/component/params/param[@name="num"]'));
+    $samples = array_map('strval', $xml->xpath('//container[@section]/component/params/param[@name="section_sample"]'));
+    $all = array_map('strval', $xml->xpath('//component/params/param[@name="num"]'));
+    check("шаблон $t: секции с числовыми num, не 1, без повторов, у каждой образец", $nums
+        && !array_filter($nums, fn($n) => !ctype_digit($n) || $n === '1') && count(array_unique($all)) == count($all)
+        && count($samples) == count($nums), implode(' ', $all));
+}
 
 done('sections');

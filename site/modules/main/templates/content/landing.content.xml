@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- «Лендинг»: секции визитки (sections.xslt) на всю ширину, без боковой колонки; заголовок страницы — h1 первого экрана -->
+<content>
+    <container name="hero" section="hero">
+        <component name="section_hero" class="Energine\share\components\TextBlock">
+            <params>
+                <param name="num">11</param>
+                <param name="section_sample">TXT_SECTION_SAMPLE_HERO</param>
+            </params>
+        </component>
+    </container>
+    <container name="services" section="services">
+        <component name="section_services" class="Energine\share\components\TextBlock">
+            <params>
+                <param name="num">12</param>
+                <param name="section_sample">TXT_SECTION_SAMPLE_SERVICES</param>
+            </params>
+        </component>
+    </container>
+    <container name="reviews" section="reviews">
+        <component name="section_reviews" class="Energine\share\components\TextBlock">
+            <params>
+                <param name="num">14</param>
+                <param name="section_sample">TXT_SECTION_SAMPLE_REVIEWS</param>
+            </params>
+        </component>
+    </container>
+    <container name="cta" section="cta">
+        <component name="section_cta" class="Energine\share\components\TextBlock">
+            <params>
+                <param name="num">18</param>
+                <param name="section_sample">TXT_SECTION_SAMPLE_CTA</param>
+            </params>
+        </component>
+    </container>
+    <container name="contacts" section="contacts">
+        <component name="section_contacts" class="Energine\share\components\TextBlock">
+            <params>
+                <param name="num">17</param>
+                <param name="section_sample">TXT_SECTION_SAMPLE_CONTACTS</param>
+            </params>
+        </component>
+    </container>
+</content>
