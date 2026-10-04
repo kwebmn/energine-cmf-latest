@@ -5,6 +5,10 @@
 //   php8.5 theme-db.php user-remove    — удалить всех посетителей теста
 //   php8.5 theme-db.php attempts-remove ЛОГИН — убрать неудачные попытки входа этого логина
 //   php8.5 theme-db.php menu-child on|off — «Возможности / Структура и тексты» в меню (подпункт меню)
+//   php8.5 theme-db.php sections-add    — стенды секций визиток: claude-sections (все восемь секций с текстом образцов,
+//                                         у первого экрана картинка) и claude-sections-edge (без картинки, одна услуга
+//                                         с длинным словом, таблица в FAQ); скрыты из меню
+//   php8.5 theme-db.php sections-remove — удалить стенды с текстами
 require dirname(__DIR__) . '/testlib.php';
 
 [, $cmd] = $argv + [null, null];
@@ -30,7 +34,59 @@ switch ($cmd) {
         q("UPDATE share_sitemap s JOIN share_sitemap p ON p.smap_id = s.smap_pid SET s.smap_in_menu = ?
            WHERE p.smap_segment = 'features' AND s.smap_segment = 'content'", [($argv[2] ?? '') === 'on' ? 1 : 0]);
         break;
+    case 'sections-add':
+        sectionsRemove();
+        $root = (int)scalar('SELECT smap_id FROM share_sitemap WHERE smap_pid IS NULL');
+        $names = ['hero' => 11, 'services' => 12, 'prices' => 13, 'reviews' => 14, 'gallery' => 15, 'faq' => 16, 'contacts' => 17, 'cta' => 18];
+        $xml = '<content>';
+        foreach ($names as $n => $num) $xml .= "<container name=\"$n\" section=\"$n\"><component name=\"section_$n\" "
+            . "class=\"Energine\\share\\components\\TextBlock\"><params><param name=\"num\">$num</param><param name=\"section_sample\">"
+            . 'TXT_SECTION_SAMPLE_' . strtoupper($n) . '</param></params></component></container>';
+        $xml .= '</content>';
+        $img = scalar("SELECT upl_path FROM share_uploads WHERE upl_mime_type LIKE 'image/%' ORDER BY upl_id LIMIT 1");
+        $sample = fn($n) => scalar("SELECT tr.ltag_value_rtf FROM share_lang_tags t JOIN share_lang_tags_translation tr USING (ltag_id)
+            JOIN share_languages l USING (lang_id) WHERE t.ltag_name = ? AND l.lang_default = 1", ['TXT_SECTION_SAMPLE_' . strtoupper($n)]);
+        $stands = [
+            'claude-sections' => fn($n) => ($n === 'hero' && $img ? '<p><img src="' . $img . '" alt=""></p>' : '')
+                . ($n === 'gallery' && $img ? $sample($n) . str_repeat('<p><img src="' . $img . '" alt="Картинка"></p>', 3) : $sample($n)),
+            'claude-sections-edge' => fn($n) => match ($n) {
+                'services' => '<h2>Услуги</h2><ul><li><strong>Единственная</strong> Сверхдлинноесловобезпробеловпроверкапереносастрокнаузкомэкране</li></ul>',
+                'faq' => $sample($n) . '<table><tr><th>Колонка один</th><th>Колонка два</th><th>Колонка три</th><th>Колонка четыре</th></tr>'
+                    . '<tr><td>значение</td><td>значение</td><td>значение</td><td>значение</td></tr></table>',
+                default => $sample($n),
+            },
+        ];
+        $lang = (int)scalar('SELECT lang_id FROM share_languages WHERE lang_default = 1');
+        foreach ($stands as $segment => $text) {
+            q("INSERT INTO share_sitemap (smap_layout, smap_content, smap_content_xml, smap_pid, smap_segment, smap_in_menu, smap_order_num)
+               VALUES ('default.layout.xml', 'textblock.content.xml', ?, ?, ?, 0, 999)", [$xml, $root, $segment]);
+            $id = (int)pdo()->lastInsertId();
+            foreach (q('SELECT lang_id FROM share_languages')->fetchAll(PDO::FETCH_COLUMN) as $l)
+                q('INSERT INTO share_sitemap_translation (smap_id, lang_id, smap_name, smap_is_disabled) VALUES (?, ?, ?, 0)', [$id, $l, 'Стенд секций']);
+            q('INSERT INTO share_access_level (smap_id, group_id, right_id) SELECT ?, group_id, right_id FROM share_access_level WHERE smap_id = ?',
+                [$id, (int)scalar("SELECT smap_id FROM share_sitemap WHERE smap_segment = 'info' AND smap_pid = ?", [$root])]);
+            foreach ($names as $n => $num) {
+                q('INSERT INTO share_textblocks (smap_id, tb_num) VALUES (?, ?)', [$id, $num]);
+                q('INSERT INTO share_textblocks_translation (tb_id, lang_id, tb_content) VALUES (?, ?, ?)', [pdo()->lastInsertId(), $lang, $text($n)]);
+            }
+        }
+        echo json_encode(array_keys($stands));
+        break;
+    case 'sections-remove':
+        sectionsRemove();
+        break;
     default:
         fwrite(STDERR, "неизвестная команда\n");
         exit(2);
+}
+
+// стенды секций и всё их: тексты, права, переводы
+function sectionsRemove(): void {
+    foreach (q("SELECT smap_id FROM share_sitemap WHERE smap_segment IN ('claude-sections', 'claude-sections-edge')")->fetchAll(PDO::FETCH_COLUMN) as $id) {
+        q('DELETE tt FROM share_textblocks_translation tt JOIN share_textblocks t USING (tb_id) WHERE t.smap_id = ?', [$id]);
+        q('DELETE FROM share_textblocks WHERE smap_id = ?', [$id]);
+        q('DELETE FROM share_access_level WHERE smap_id = ?', [$id]);
+        q('DELETE FROM share_sitemap_translation WHERE smap_id = ?', [$id]);
+        q('DELETE FROM share_sitemap WHERE smap_id = ?', [$id]);
+    }
 }

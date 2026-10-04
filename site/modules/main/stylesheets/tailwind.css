@@ -178,4 +178,77 @@ div.block:where(:not(.e-pane *, .e-topframe *, .e-sideframe *, .e-modalbox-frame
     form button { display: none !important; }
     a { color: #000; }
 }
+
+/* ---------- секции визиток (sections.xslt) ----------
+   Текст секции пишет владелец в редакторе — классов в нём нет, поэтому оформление здесь, под классом секции.
+   Соглашение разметки — образцы TXT_SECTION_SAMPLE_* (sql/cut/stage11.sql). Полоса — на всю ширину окна
+   (UI_SECTION: 100vw), поэтому у страницы с секциями горизонтальная прокрутка обрезается. */
+body:has(.ui-section) { overflow-x: clip; }
+.ui-section :is(h1, h2) { margin: 0 0 1rem; line-height: 1.2; overflow-wrap: anywhere; }
+.ui-section h1 { font-size: clamp(2rem, 6vw, 3rem); }
+.ui-section h2 { font-size: clamp(1.5rem, 4vw, 2rem); }
+.ui-section :is(p, li, h3, td, th) { overflow-wrap: anywhere; }
+.ui-section > div > :last-child { margin-bottom: 0; }
+.ui-section table { display: block; max-width: 100%; overflow-x: auto; border-collapse: collapse; }
+.ui-section :is(td, th) { border: 1px solid var(--border); padding: .4rem .6rem; }
+.ui-section-hero a, .ui-section-prices li a, .ui-section-cta a {
+    display: inline-flex; align-items: center; padding: .65rem 1.25rem; border-radius: var(--radius);
+    background: var(--accent); color: var(--accent-fg); font-weight: 600; text-decoration: none;
+}
+.ui-section-hero a:hover, .ui-section-prices li a:hover { filter: brightness(1.1); }
+.ui-section:nth-of-type(even):not(.ui-section-cta, .ui-section-hero:has(img)) { background: var(--bg-soft); }
+.ui-section:nth-of-type(even) .ui-section-services li { background: var(--bg); }
+
+/* первый экран: картинка из текста — фон полосы с затемнением, текст поверх светлый */
+.ui-section-hero { text-align: center; }
+.ui-section-hero p { max-width: 40rem; margin-inline: auto; font-size: 1.15rem; }
+.ui-section-hero:has(img) { color: #fff; isolation: isolate; padding-block: clamp(4rem, 12vw, 8rem); }
+.ui-section-hero:has(img)::before { content: ""; position: absolute; inset: 0; z-index: -1; background: rgb(0 0 0 / .6); }
+.ui-section-hero img { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; }
+.ui-section-hero p:has(> img:only-child) { margin: 0; }
+
+/* услуги: пункты списка — карточки сеткой */
+.ui-section-services ul, .ui-section-prices > div > ul {
+    display: grid; gap: 1rem; padding: 0; margin: 0; list-style: none;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+}
+.ui-section-services li { list-style: none; padding: 1.25rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-soft); }
+.ui-section-services li strong { display: block; margin-bottom: .35rem; font-size: 1.1rem; }
+
+/* цены: тарифы колонками, кнопка внизу */
+.ui-section-prices > div > ul > li { display: flex; flex-direction: column; padding: 1.5rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg); }
+.ui-section-prices h3 { margin: 0 0 .5rem; font-size: 1.2rem; }
+.ui-section-prices h3 + p { margin: 0 0 1rem; font-size: 1.75rem; font-weight: 700; }
+.ui-section-prices li ul { margin: 0 0 1.25rem; padding-left: 1.2rem; }
+.ui-section-prices li > p:last-child { margin-top: auto; margin-bottom: 0; }
+
+/* отзывы: цитаты карточками */
+.ui-section-reviews > div { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); }
+.ui-section-reviews > div > :not(blockquote) { grid-column: 1 / -1; }
+.ui-section-reviews blockquote { margin: 0; padding: 1.25rem; border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: var(--radius); background: var(--bg); }
+.ui-section-reviews blockquote p { margin: 0 0 .75rem; font-style: italic; }
+.ui-section-reviews cite { color: var(--muted); font-style: normal; font-weight: 600; }
+
+/* галерея: картинки сеткой */
+.ui-section-gallery > div { display: grid; gap: .75rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr)); }
+.ui-section-gallery > div > :not(:has(img)) { grid-column: 1 / -1; }
+.ui-section-gallery p:has(img) { margin: 0; }
+.ui-section-gallery img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; border-radius: var(--radius); }
+
+/* вопросы и ответы: вопрос жирный, пары разделены линией */
+.ui-section-faq > div { max-width: 48rem; }
+.ui-section-faq :is(h3, summary) { margin: 1.25rem 0 .4rem; padding-top: 1.25rem; border-top: 1px solid var(--border); font-size: 1.1rem; font-weight: 700; }
+.ui-section-faq h2 + h3, .ui-section-faq h2 + details > summary { border-top: 0; padding-top: 0; }
+.ui-section-faq summary { cursor: pointer; }
+
+/* контакты: на широком экране — колонками */
+.ui-section-contacts > div { display: grid; gap: .25rem 2rem; }
+@media (min-width: 48rem) { .ui-section-contacts > div { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ui-section-contacts h2 { grid-column: 1 / -1; } }
+.ui-section-contacts p { margin: 0 0 .5rem; }
+
+/* призыв к действию: полоса основного цвета, кнопка — светлая */
+.ui-section-cta { background: var(--accent); color: var(--accent-fg); text-align: center; }
+.ui-section-cta a { background: var(--bg); color: var(--fg); }
+.ui-section-cta p { margin: 0; }
+
 }

@@ -393,6 +393,74 @@ async function inspect(page) {
         db('menu-child', 'off');
     }
 
+    // секции визиток (стенды theme-db.php sections-add): оформление текста владельца, ширина, контраст обеих схем
+    try {
+        db('sections-add');
+        for (const scheme of ['light', 'dark']) {
+            const ctx = await browser.newContext({ locale: 'ru-RU', colorScheme: scheme });
+            for (const [w, h] of [[320, 700], [1280, 900]]) {
+                for (const stand of ['claude-sections', 'claude-sections-edge']) {
+                    const where = `секции ${stand}, ${w}px, ${scheme === 'light' ? 'светлая' : 'тёмная'}`;
+                    const p = await ctx.newPage();
+                    await p.setViewportSize({ width: w, height: h });
+                    await p.goto(BASE + stand + '/', { waitUntil: 'networkidle' });
+                    const r = await p.evaluate(() => {
+                        const rgb = (c) => (c.match(/[\d.]+/g) || []).slice(0, 4).map(Number);
+                        const lum = ([r, g, b]) => { const f = (v) => { v /= 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; };
+                            return .2126 * f(r) + .7152 * f(g) + .0722 * f(b); };
+                        const ratio = (a, b) => { const [x, y] = [lum(rgb(a)), lum(rgb(b))].sort((m, n) => n - m); return (x + .05) / (y + .05); };
+                        // фон под элементом: первый непрозрачный фон предка
+                        const bgOf = (e) => { for (; e; e = e.parentElement) { const c = getComputedStyle(e).backgroundColor; const v = rgb(c);
+                            if (v.length === 3 || v[3] > 0.5) return c; } return getComputedStyle(document.body).backgroundColor; };
+                        const q = (sel) => document.querySelector(sel);
+                        const cs = (e) => e && getComputedStyle(e);
+                        const probe = document.createElement('div'); probe.className = 'bg-primary'; document.body.append(probe);
+                        const primary = getComputedStyle(probe).backgroundColor; probe.remove();
+                        const out = { sections: document.querySelectorAll('section[data-section]').length, overflow: document.documentElement.scrollWidth - innerWidth, low: [] };
+                        const pair = (name, e, bg) => { if (!e) { out.low.push(name + ' нет'); return; } const v = ratio(cs(e).color, bg || bgOf(e)); if (v < 4.5) out.low.push(`${name} ${v.toFixed(2)}`); };
+                        const heroImg = q('[data-section=hero] img');
+                        const heroA = q('[data-section=hero] a');
+                        out.heroButton = !!heroA && cs(heroA).backgroundColor === primary;
+                        if (heroImg) {
+                            out.heroCover = cs(heroImg).objectFit === 'cover' && cs(heroImg).position === 'absolute';
+                            const ov = getComputedStyle(q('[data-section=hero]'), '::before');
+                            out.heroOverlay = (rgb(ov.backgroundColor)[3] || 0) >= 0.55 ? 'ok' : ov.backgroundColor;
+                            pair('первый экран: заголовок на картинке', q('[data-section=hero] h1'), 'rgb(0, 0, 0)');
+                        } else pair('первый экран: заголовок', q('[data-section=hero] h1'));
+                        if (heroA) pair('первый экран: кнопка', heroA, cs(heroA).backgroundColor);
+                        const card = q('[data-section=services] li');
+                        out.card = !!card && cs(card).borderTopWidth !== '0px' && cs(card).listStyleType === 'none';
+                        pair('услуги: текст карточки', card);
+                        const price = q('[data-section=prices] li a');
+                        out.priceButton = !!price && cs(price).backgroundColor === primary;
+                        pair('цены: кнопка', price, price && cs(price).backgroundColor);
+                        out.quote = !!q('[data-section=reviews] blockquote') && cs(q('[data-section=reviews] blockquote')).borderTopWidth !== '0px';
+                        pair('отзывы: цитата', q('[data-section=reviews] blockquote p'));
+                        pair('отзывы: автор', q('[data-section=reviews] cite'));
+                        const gi = q('[data-section=gallery] img');
+                        out.gallery = !gi || cs(gi).objectFit === 'cover';
+                        pair('вопросы: вопрос', q('[data-section=faq] h3'));
+                        pair('контакты: ссылка', q('[data-section=contacts] a'));
+                        const cta = q('[data-section=cta]');
+                        out.cta = !!cta && cs(cta).backgroundColor === primary;
+                        pair('призыв: текст', q('[data-section=cta] h2'));
+                        pair('призыв: кнопка', q('[data-section=cta] a'), q('[data-section=cta] a') && cs(q('[data-section=cta] a')).backgroundColor);
+                        return out;
+                    });
+                    check(`${where}: восемь полос, без прокрутки`, r.sections === 8 && r.overflow <= 0, JSON.stringify({ s: r.sections, o: r.overflow }));
+                    check(`${where}: правила секций применены`, r.heroButton && r.card && r.priceButton && r.quote && r.gallery && r.cta
+                        && (stand !== 'claude-sections' || (r.heroCover && r.heroOverlay === 'ok')), JSON.stringify(r));
+                    check(`${where}: контраст не ниже 4.5:1`, !r.low.length, r.low.join('; '));
+                    if (scheme === 'light') await p.screenshot({ path: path.join(SHOTS, `${stand}-${w}.png`), fullPage: true });
+                    await p.close();
+                }
+            }
+            await ctx.close();
+        }
+    } finally {
+        db('sections-remove');
+    }
+
     await browser.close();
     console.log(`screenshots: ${SHOTS}`);
     console.log(`== theme failures: ${fail}`);
