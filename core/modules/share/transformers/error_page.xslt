@@ -38,18 +38,18 @@
                 <link rel="stylesheet" href="{$BASE}stylesheets/{$FOLDER}/main.css"/>
             </head>
             <body>
-                <a class="skip-link" href="#content">
+                <a class="skip-link sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100] focus:rounded-ui focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-fg" href="#content">
                     <xsl:choose><xsl:when test="$UA">До змісту</xsl:when><xsl:otherwise>К содержимому</xsl:otherwise></xsl:choose>
                 </a>
-                <header class="site-header">
-                    <div class="wrap site-header__inner">
-                        <a class="site-name" href="{$HOME}">
+                <header class="site-header border-b border-border bg-bg">
+                    <div class="site-header__inner mx-auto w-full max-w-(--container-page) px-4 flex flex-wrap items-center gap-x-6 gap-y-2 py-3">
+                        <a class="site-name text-xl font-bold text-fg no-underline hover:text-primary" href="{$HOME}">
                             <xsl:value-of select="substring-before(concat(substring-after($BASE, '://'), '/'), '/')"/>
                         </a>
                     </div>
                 </header>
-                <div class="wrap site-body">
-                    <main id="content" class="site-main error_page" tabindex="-1">
+                <div class="site-body mx-auto w-full max-w-(--container-page) px-4 pt-6 pb-12">
+                    <main id="content" class="site-main error_page min-w-0 outline-none" tabindex="-1">
                         <xsl:apply-templates select="errors/error"/>
                         <p class="error_home mt-6">
                             <a href="{$HOME}">

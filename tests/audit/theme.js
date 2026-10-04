@@ -307,6 +307,14 @@ async function inspect(page) {
         check(`страница ErrorDocument, ${tag}: main#content, один h1, ссылка «к содержимому», без прокрутки`, r.main && r.h1 === 1 && r.skip
             && r.overflow <= 0, JSON.stringify(r));
         check(`страница ErrorDocument, ${tag}: понятный текст и видимая ссылка на главную`, /Форма устарела/.test(e.text) && e.home, JSON.stringify(e));
+        const ed = await p.evaluate(() => {
+            const skip = document.querySelector('a.skip-link');
+            const main = document.querySelector('main');
+            const cs = main && getComputedStyle(main.parentElement);
+            return { skipVisible: !!skip && skip.getBoundingClientRect().width > 2, maxWidth: cs && cs.maxWidth, pad: cs && cs.paddingLeft };
+        });
+        check(`страница ErrorDocument, ${tag}: ссылка «к содержимому» видна только в фокусе, у содержимого ширина и поля`,
+            !ed.skipVisible && ed.maxWidth && ed.maxWidth !== 'none' && ed.pad !== '0px', JSON.stringify(ed));
         check(`страница ErrorDocument, ${tag}: без ошибок JS и 404`, !errors.length, errors.join(' | '));
         await p.screenshot({ path: path.join(SHOTS, `ошибка-errordocument-${w}.png`), fullPage: true });
         await p.close();
@@ -373,10 +381,11 @@ async function inspect(page) {
             const box = t && t.closest('.grid');
             const apply = document.querySelector('button.f_apply');
             const cs = apply && getComputedStyle(apply);
-            return { display: t && getComputedStyle(t).display, fill: t && box ? Math.round(t.getBoundingClientRect().width / box.getBoundingClientRect().width * 100) : 0,
+            return { gridDisplay: t && t.closest('.grid') ? getComputedStyle(t.closest('.grid')).display : '', display: t && getComputedStyle(t).display, fill: t && box ? Math.round(t.getBoundingClientRect().width / box.getBoundingClientRect().width * 100) : 0,
                 apply: !!apply, text: apply && apply.textContent.trim(), color: cs && cs.color, background: cs && cs.backgroundColor };
         });
         check('админка в странице сайта: таблица грида — таблица на всю ширину грида', a.display === 'table' && a.fill >= 95, JSON.stringify(a));
+        check('админка в странице сайта: контейнер грида не стал CSS-сеткой (утилита grid)', a.gridDisplay && a.gridDisplay !== 'grid', JSON.stringify(a));
         check('админка в странице сайта: текст кнопки «Применить» фильтра виден (цвет не совпадает с фоном)', a.apply && !!a.color && a.color !== a.background, JSON.stringify(a));
         await p.screenshot({ path: path.join(SHOTS, 'админка-пользователи-1280.png'), fullPage: true });
         await p.close();

@@ -49,9 +49,9 @@
                 </div>
             </div>
         </header>
-        <div class="{$UI_CONTAINER} site-body grid gap-8 pt-6 pb-12 print:block print:p-0">
+        <div class="{$UI_CONTAINER} site-body ui-grid gap-8 pt-6 pb-12 print:block print:p-0">
             <xsl:if test="content/container[@name='aside']">
-                <xsl:attribute name="class"><xsl:value-of select="$UI_CONTAINER"/> site-body grid gap-8 pt-6 pb-12 print:block print:p-0 min-[60rem]:grid-cols-[minmax(0,1fr)_18rem]</xsl:attribute>
+                <xsl:attribute name="class"><xsl:value-of select="$UI_CONTAINER"/> site-body ui-grid gap-8 pt-6 pb-12 print:block print:p-0 min-[60rem]:grid-cols-[minmax(0,1fr)_18rem]</xsl:attribute>
             </xsl:if>
             <main id="content" class="site-main min-w-0 outline-none" tabindex="-1">
                 <xsl:apply-templates select="$COMPONENTS[@name='breadCrumbs']"/>
@@ -217,9 +217,9 @@
 
     <xsl:template match="recordset[ancestor::component[@class='PageList']]">
         <xsl:if test="not(@empty)">
-            <ul class="menu m-0 mb-6 grid list-none gap-4 p-0">
+            <ul class="menu m-0 mb-6 ui-grid list-none gap-4 p-0">
                 <xsl:if test="parent::record">
-                    <xsl:attribute name="class">menu mt-2 mb-0 ml-4 grid list-none gap-4 p-0</xsl:attribute>
+                    <xsl:attribute name="class">menu mt-2 mb-0 ml-4 ui-grid list-none gap-4 p-0</xsl:attribute>
                 </xsl:if>
                 <xsl:apply-templates/>
             </ul>
@@ -227,7 +227,7 @@
     </xsl:template>
 
     <xsl:template match="record[ancestor::component[@class='PageList']]">
-        <li class="menu_item grid gap-1">
+        <li class="menu_item ui-grid gap-1">
             <div class="menu_name text-[1.05rem] font-semibold">
                 <a>
                     <xsl:if test="$DOC_PROPS[@name='ID'] != field[@name='Id']">

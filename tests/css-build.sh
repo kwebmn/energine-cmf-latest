@@ -1,11 +1,12 @@
 #!/bin/bash
 # Стили сайта собраны из исходников: main.css == сборка Tailwind из tailwind.css (бинарник — tools/get-tailwind.sh).
-# Без бинарника проверка пропускается (сайт от него не зависит). Выход: 0 — совпало или пропуск, 1 — расхождение.
+# Без бинарника — провал с подсказкой (пропуск только явно: CSS_BUILD_SKIP=1). Выход: 0 — совпало или пропуск, 1 — нет.
 R="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CSS=$R/site/modules/main/stylesheets
 fail=0
 if [ ! -x "$R/tools/tailwindcss" ]; then
-  echo "skip: нет tools/tailwindcss — bash tools/get-tailwind.sh"
+  if [ "${CSS_BUILD_SKIP:-}" = 1 ]; then echo "SKIP сборка не проверена (CSS_BUILD_SKIP=1)"
+  else echo "FAIL нет tools/tailwindcss — bash tools/get-tailwind.sh (или CSS_BUILD_SKIP=1)"; fail=1; fi
 else
   out=$(mktemp)
   (cd "$CSS" && "$R/tools/tailwindcss" --input tailwind.css --output "$out" --minify > /dev/null 2>&1) \
