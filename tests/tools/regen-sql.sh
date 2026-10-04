@@ -1,6 +1,6 @@
 #!/bin/bash
 # Файлы установки из перехода базы: нынешние sql/structure.sql, data.sql и demo.sql ставятся во временный экземпляр
-# MariaDB (tempdb.sh), поверх — sql/cut/stage7.sql (его можно запускать повторно), и три файла выгружаются
+# MariaDB (tempdb.sh), поверх — последний по номеру sql/cut/stage*.sql (его разделы можно запускать повторно), и три файла выгружаются
 # заново в прежнем формате:
 #   sql/structure.sql — схема и хранимые процедуры (без DEFINER и счётчиков AUTO_INCREMENT);
 #   sql/data.sql      — базовые данные пустого сайта: корень, служебные страницы и админка и всё, что под ними;
@@ -21,10 +21,11 @@ for f in structure.sql data.sql demo.sql; do
   TM --default-character-set=utf8mb4 g < "$R/sql/$f" || { echo "импорт $f" >&2; exit 2; }
 done
 last=$(ls "$R"/sql/cut/stage*.sql | sed -E 's/.*stage([0-9]+)\.sql$/\1/' | sort -n | tail -1)
-if [ -z "${REGEN_NO_MIGRATION:-}" ] && [ -f "$R/sql/cut/stage7.sql" ]; then
-  TM --default-character-set=utf8mb4 g < "$R/sql/cut/stage7.sql" > /dev/null || { echo "stage7.sql" >&2; exit 2; }
+# последний по номеру переход (его разделы можно запускать повторно; предыдущие уже в файлах установки)
+if [ -z "${REGEN_NO_MIGRATION:-}" ]; then
+  TM --default-character-set=utf8mb4 g < "$R/sql/cut/stage$last.sql" > /dev/null || { echo "stage$last.sql" >&2; exit 2; }
 else
-  last=6
+  last=$(ls "$R"/sql/cut/stage*.sql | sed -E 's/.*stage([0-9]+)\.sql$/\1/' | sort -n | tail -2 | head -1)
 fi
 Q() { TM -N g -e "$1"; }
 # строка «sandbox mode» — команда клиента mariadb, для установщика на PDO это пустой запрос: убирается;

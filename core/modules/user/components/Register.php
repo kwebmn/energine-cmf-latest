@@ -146,6 +146,12 @@ class Register extends DBDataSet {
                 $data[$name] = (string)$posted[$name];
             }
         }
+        // логин — e-mail: проверка браузера обходится, поэтому и на сервере (u_name вмещает 50 символов)
+        $login = trim($data['u_name'] ?? '');
+        if (!filter_var($login, FILTER_VALIDATE_EMAIL) || mb_strlen($login) > 50) {
+            throw new SystemException('MSG_BAD_EMAIL_FORMAT', SystemException::ERR_WARNING);
+        }
+        $data['u_name'] = $login;
         $password = $data['u_password'] = User::generatePassword();
         try {
 
@@ -168,8 +174,12 @@ class Register extends DBDataSet {
             $mailer->addTo($this->user->getValue('u_name'));
             $mailer->send();
 
-        } catch (\Exception $error) {
+        } catch (SystemException | \InvalidArgumentException $error) {
             throw new SystemException($error->getMessage(), SystemException::ERR_WARNING);
+        } catch (\Exception $error) {
+            // база, почта и т. п.: причина — в журнал, посетителю — общий текст
+            error_log('Register: ' . get_class($error) . ': ' . $error->getMessage());
+            throw new SystemException('ERR_SERVER', SystemException::ERR_WARNING);
         }
     }
 

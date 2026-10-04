@@ -114,6 +114,21 @@ check("the same login again is refused (HTTP $c)", $refusal !== '' && str_contai
     && (int)scalar('SELECT COUNT(*) FROM user_users WHERE u_name = ?', [TEST_EMAIL]) === 1 && mboxSize() === $off,
     substr(strip_tags($body), 0, 300));
 
+// не e-mail в логине: отказ на сервере (проверка браузера обходится), пользователя и письма нет
+freshJar('user3');
+[, $html] = http('/register/');
+sleep(3);
+$off = mboxSize();
+$badLogin = 'claude-not-an-email-' . getmypid();
+[$c, $body] = http('/register/save-new-user/', formIn($html, 'register/save-new-user',
+    ['user_users[u_name]' => $badLogin, 'user_users[u_fullname]' => USER_NAME]));
+sleep(2);
+$badText = strip_tags((string)translation('MSG_BAD_EMAIL_FORMAT'));
+check("not an e-mail is refused by the server (HTTP $c)", $badText !== '' && str_contains($body, $badText)
+    && (int)scalar('SELECT COUNT(*) FROM user_users WHERE u_name = ?', [$badLogin]) === 0 && mboxSize() === $off,
+    substr(strip_tags($body), 0, 300));
+q('DELETE FROM user_users WHERE u_name = ?', [$badLogin]);
+
 // =====================================================================================================
 echo "-- restore password\n";
 // ссылка на смену пароля: запрос не меняет пароль, ссылка одноразовая, срок — час, в базе только хэш токена

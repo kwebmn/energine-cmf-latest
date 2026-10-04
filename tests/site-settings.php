@@ -186,6 +186,16 @@ try {
         check('параметр сайта удаляется', !$propId(), "HTTP $code " . substr((string)$body, 0, 200));
     }
 
+    // сохранение без номера записи (подделанный запрос) — отказ, второй записи сайта не бывает
+    // componentAction — состояние без списка полей: тогда сохранение берёт все колонки таблицы
+    [$code, $body] = http($single . 'save/', encode(with(with($pairs, 'share_sites[site_id]', ''), 'componentAction', 'getRawData')),
+        ['X-Request: JSON']);
+    $j = json_decode((string)$body, true);
+    $sites = (int)$pdo->query('SELECT COUNT(*) FROM share_sites')->fetchColumn();
+    check('сохранение без номера записи — отказ, сайт один', is_array($j) && empty($j['result']) && $sites === 1,
+        "HTTP $code, записей $sites " . substr((string)$body, 0, 160));
+    if ($sites > 1) $pdo->exec("DELETE FROM share_sites WHERE site_id <> $id");
+
     // без токена — отказ 422, запись та же
     $restore();
     $noToken = array_values(array_filter(with($pairs, "share_sites_translation[$ru][site_name]", 'Claude без токена'),

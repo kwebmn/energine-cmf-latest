@@ -72,9 +72,17 @@ class ErrorDocument extends Primitive implements IDocument {
         $result->setAttribute('xml:id', 'result');
         $dom_root->appendChild($result);
 
+        // вне отладки посетитель видит только переведённые сообщения (SystemException, кроме ошибок базы);
+        // текст остальных — SQL, пути сервера — уходит в журнал, а на странице — общий текст
+        $message = $this->e->getMessage();
+        if (!$this->getConfigValue('site.debug')
+            && (!($this->e instanceof SystemException) || $this->e->getCode() == SystemException::ERR_DB)) {
+            error_log('Energine: ' . get_class($this->e) . ': ' . $message . ' @ ' . $this->e->getFile() . ':' . $this->e->getLine());
+            $message = E()->Utils->translate('ERR_SERVER');
+        }
         $vm = E()->getController()->getViewMode();
         if ($vm == DocumentController::TRANSFORM_JSON) {
-            $errors = [['message' => $this->e->getMessage()]];
+            $errors = [['message' => $message]];
             $data = [
                 'result' => false,
                 'errors' => $errors
@@ -84,7 +92,7 @@ class ErrorDocument extends Primitive implements IDocument {
             $error = $this->doc->createElement('error');
             $result->appendChild($error);
 
-            $error->appendChild($this->doc->createElement('message', $this->e->getMessage()));
+            $error->appendChild($this->doc->createElement('message', $message));
             $error->setAttribute('file', $this->e->getFile());
             $error->setAttribute('line', $this->e->getLine());
 

@@ -123,10 +123,16 @@ class UserProfile extends DBDataSet {
             // хэширует User::update
             $data['u_password'] = $newPassword;
         }
-        // логин (e-mail) другого пользователя не занимается
-        if (isset($data['u_name']) && $data['u_name'] !== (string)$user->getValue('u_name')
-            && $this->dbh->getScalar('user_users', 'COUNT(*)', ['u_name' => $data['u_name']])) {
-            $this->fail('ERR_USER_EXISTS');
+        if (isset($data['u_name']) && $data['u_name'] !== (string)$user->getValue('u_name')) {
+            // новый логин (e-mail) — только с верным текущим паролем: чужая сессия не уведёт аккаунт
+            // на свой адрес, а затем и пароль через восстановление
+            if (!password_verify((string)($_POST['u_password_current'] ?? ''), (string)$user->getValue('u_password'))) {
+                $this->fail('TXT_USER_PROFILE_WRONG_PWD');
+            }
+            // логин (e-mail) другого пользователя не занимается
+            if ($this->dbh->getScalar('user_users', 'COUNT(*)', ['u_name' => $data['u_name']])) {
+                $this->fail('ERR_USER_EXISTS');
+            }
         }
 
         try {

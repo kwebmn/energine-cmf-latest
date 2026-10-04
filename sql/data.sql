@@ -907,6 +907,7 @@ INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2799,'TAB_SITE_PR
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2800,'ERR_BAD_PROPERTY_NAME');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2805,'ERR_SEGMENT_EXISTS');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2811,'TXT_ALL_DIVISIONS');
+INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2812,'ERR_SERVER');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (14,1,'Значение');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (14,2,'Значення');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (15,1,'Выйти');
@@ -2697,6 +2698,8 @@ INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2805,2,'У цього розділу вже є підрозділ з таким сегментом адреси. Вкажіть інший сегмент.');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2811,1,'Все разделы');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2811,2,'Усі розділи');
+INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2812,1,'Ошибка на сервере. Попробуйте ещё раз позже.');
+INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2812,2,'Помилка на сервері. Спробуйте ще раз пізніше.');
 INSERT INTO `mail_templates` (`template_id`, `template_sysname`, `template_is_active`, `template_hints`) VALUES (1,'user_registration',1,'[user_name] - имя пользователя, [user_login] - логин (e-mail), [user_password] - пароль, [site_name] - название сайта (константа TXT_SITE_NAME), [site_url] - адрес сайта');
 INSERT INTO `mail_templates` (`template_id`, `template_sysname`, `template_is_active`, `template_hints`) VALUES (2,'user_restore_password',1,'[sex_suffix_hello] - окончание обращения по полу пользователя (константы TXT_EMAIL_SUFFIX_SEX_M/F/UNKNOWN), [user_name] - имя, [user_login] - логин (e-mail), [restore_link] - ссылка для смены пароля (действует час), [site_name] - название сайта, [site_url] - адрес сайта');
 INSERT INTO `mail_templates_translation` (`template_id`, `lang_id`, `template_name`, `template_subject`, `template_body`, `template_body_rtf`) VALUES (1,1,'Регистрация пользователя','Регистрация на сайте [site_name]','Здравствуйте, [user_name]!\n\nВы зарегистрированы на сайте [site_name] ([site_url]).\n\nЛогин: [user_login]\nПароль: [user_password]\n\nПисьмо отправлено автоматически, отвечать на него не нужно.','<p>Здравствуйте, [user_name]!</p>\n<p>Вы зарегистрированы на сайте <a href=\"[site_url]\">[site_name]</a>.</p>\n<p>Логин: <strong>[user_login]</strong><br>Пароль: <strong>[user_password]</strong></p>\n<p>Письмо отправлено автоматически, отвечать на него не нужно.</p>');

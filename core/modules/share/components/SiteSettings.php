@@ -12,7 +12,7 @@ class SiteSettings;
  */
 namespace Energine\share\components;
 
-use Energine\share\gears\FieldDescription, Energine\share\gears\Field;
+use Energine\share\gears\FieldDescription, Energine\share\gears\Field, Energine\share\gears\SystemException;
 
 /**
  * «Настройки сайта»: единственная запись share_sites — название, ключевые слова и описание по языкам,
@@ -61,6 +61,10 @@ class SiteSettings extends Grid {
      */
     protected function saveData() {
         $table = $this->getTableName();
+        // сайт один: сохраняется только существующая запись, добавить сайт подделанным запросом нельзя
+        if (empty($_POST[$table][$this->getPK()])) {
+            throw new SystemException('ERR_NO_SITE', SystemException::ERR_WARNING);
+        }
         if (isset($_POST[$table]) && is_array($_POST[$table]) && !isset($_POST[$table]['site_meta_robots'])) {
             $_POST[$table]['site_meta_robots'] = [];
         }

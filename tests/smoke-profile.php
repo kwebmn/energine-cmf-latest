@@ -82,6 +82,25 @@ check('дата рождения в форме — встроенное поле
 saveProfile($html, ['user_users[u_bdate]' => '1990-02-03'] + $noPassword);
 check('дата рождения из встроенного поля сохраняется', $row()['u_bdate'] === '1990-02-03', (string)$row()['u_bdate']);
 
+echo "-- смена логина (e-mail)\n";
+// чужая сессия не уводит аккаунт: новый логин — только с верным текущим паролем
+$loginOf = fn() => (string)scalar('SELECT u_name FROM user_users WHERE u_id = ?', [$uid]);
+$moved = 'claude-profile-moved-' . getmypid() . '@localhost';
+check('логин в форме профиля', str_contains($html, 'name="user_users[u_name]"'));
+saveProfile($html, ['user_users[u_name]' => $moved] + $noPassword);
+[, $body] = http('/profile/error/');
+check('новый логин без текущего пароля: логин тот же', $loginOf() === $login, $loginOf());
+check('новый логин без текущего пароля: сообщение TXT_USER_PROFILE_WRONG_PWD',
+    str_contains($body, (string)translation('TXT_USER_PROFILE_WRONG_PWD')), substr(strip_tags($body), 0, 200));
+saveProfile($html, ['user_users[u_name]' => $moved, 'user_users[u_password]' => '', 'u_password2' => '', 'u_password_current' => $password]);
+check('новый логин с верным текущим паролем: сменён', $loginOf() === $moved, $loginOf());
+logout();
+check('вход с новым логином', signIn($moved, $password));
+[, $html] = http('/profile/');
+saveProfile($html, ['user_users[u_name]' => $login, 'user_users[u_password]' => '', 'u_password2' => '', 'u_password_current' => $password]);
+check('логин возвращён', $loginOf() === $login, $loginOf());
+[, $html] = http('/profile/');
+
 echo "-- смена пароля\n";
 $new = bin2hex(random_bytes(8));
 saveProfile($html, ['user_users[u_password]' => $new, 'u_password2' => $new . 'x', 'u_password_current' => $password]);

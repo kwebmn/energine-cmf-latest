@@ -311,11 +311,12 @@ class Grid extends DBDataSet {
             if ($transactionStarted) {
                 $this->dbh->rollback();
             }
-            $code = $e->getCode();
-            if (!is_numeric($code)) {
-                $code = SystemException::ERR_CRITICAL;
+            // ошибки проверки (SystemException) — как есть; прочие (база и т. п.) — в журнал, наружу — общий текст
+            if ($e instanceof SystemException && $e->getCode() != SystemException::ERR_DB) {
+                throw $e;
             }
-            throw new SystemException($e->getMessage(), $code);
+            error_log('Energine: ' . get_class($e) . ': ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine());
+            throw new SystemException('ERR_SERVER', SystemException::ERR_CRITICAL);
         }
     }
 
