@@ -39,7 +39,8 @@
                 <xsl:attribute name="onclick"><xsl:value-of select="@click"/></xsl:attribute>
             </xsl:if>
             <xsl:if test="$CONTROL_TYPE = 'button' or $CONTROL_TYPE='submit'">
-                <xsl:attribute name="class">btn btn-primary</xsl:attribute>
+                <!-- кнопка формы сайта: компонент ui-button-class (тема сайта, ui.xslt) -->
+                <xsl:attribute name="class"><xsl:call-template name="ui-button-class"/></xsl:attribute>
             </xsl:if>
     		<xsl:value-of select="@title"/>
     	</xsl:element>

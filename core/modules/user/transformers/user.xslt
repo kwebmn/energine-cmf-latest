@@ -7,7 +7,7 @@
     <!-- компонент LoginForm  -->
     <!-- режим гостя -->
     <xsl:template match="component[@sample='LoginForm']">
-        <form method="post" action="{@action}" class="base_form login_form form-horizontal">
+        <form method="post" action="{@action}" class="login_form max-w-[38rem]">
             <input type="hidden" name="componentAction" value="{@componentAction}" />
             <input type="hidden" name="csrf_token" value="{$CSRF}"/>
             <xsl:apply-templates/>
@@ -21,13 +21,13 @@
     </xsl:template>
 
     <xsl:template match="control[(@id='restore') and (@mode!=0)][ancestor::component[@sample='LoginForm']]">
-            <div class="restore_link">
+            <div class="restore_link mt-2 mb-4">
                 <a href="{$BASE}{$LANG_ABBR}{@click}"><xsl:value-of select="@title" /></a>
             </div>
     </xsl:template>
 
     <xsl:template match="field[@name='message'][ancestor::component[@sample='LoginForm']]">
-        <div class="error_message">
+        <div class="error_message mb-4 rounded-ui bg-danger-bg px-4 py-3 text-danger" role="alert">
             <xsl:apply-templates/>
         </div>
     </xsl:template>
@@ -48,7 +48,7 @@
 
     <!-- компонент Register -->
     <xsl:template match="component[@class='Register'][@componentAction='success']">
-        <div class="result_message">
+        <div class="result_message mb-4 rounded-ui bg-ok-bg px-4 py-3">
             <xsl:value-of select="recordset/record/field" disable-output-escaping="yes"/>
         </div>
     </xsl:template>
@@ -59,7 +59,7 @@
             <xsl:apply-templates/>
         </div>
         <xsl:if test="$TRANSLATION[@const='TXT_REQUIRED_FIELDS']">
-            <div class="note">
+            <div class="note mb-4 text-sm text-muted">
                 <xsl:value-of select="$TRANSLATION[@const='TXT_REQUIRED_FIELDS']" disable-output-escaping="yes"/>
             </div>
         </xsl:if>
@@ -68,13 +68,13 @@
 
     <!-- компонент UserProfile -->
     <xsl:template match="component[@class='UserProfile'][@componentAction='success']">
-        <div class="result_message">
+        <div class="result_message mb-4 rounded-ui bg-ok-bg px-4 py-3">
             <xsl:value-of select="recordset/record/field" disable-output-escaping="yes"/>
         </div>
     </xsl:template>
 
     <xsl:template match="component[@class='UserProfile'][@componentAction='error']">
-        <div class="result_message error_message">
+        <div class="result_message error_message mb-4 rounded-ui bg-danger-bg px-4 py-3 text-danger" role="alert">
             <xsl:value-of select="recordset/record/field" disable-output-escaping="yes"/>
         </div>
         <p class="error_back">

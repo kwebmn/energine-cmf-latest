@@ -66,7 +66,7 @@ check('вход без токена не выполнен', !cookie('NRGNSID'));
 $authDiag = "auth.php HTTP $authCode, failed_login в банке: " . var_export(cookie('failed_login'), true);
 [$c, $html] = http('/login/');
 check('страница входа объясняет причину текстом ERR_CSRF', $errCsrf !== '' && str_contains($html, $errCsrf),
-    (preg_match('~<div class="error_message">(.*?)</div>~s', $html, $m) ? $m[1] : '(нет сообщения)') . "; $authDiag, страница HTTP $c");
+    (preg_match('~<div class="error_message[^"]*"[^>]*>(.*?)</div>~s', $html, $m) ? $m[1] : '(нет сообщения)') . "; $authDiag, страница HTTP $c");
 
 login();
 check('вход с токеном выполнен', (bool)cookie('NRGNSID'));

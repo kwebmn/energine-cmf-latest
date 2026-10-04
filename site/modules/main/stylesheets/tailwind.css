@@ -20,6 +20,11 @@
 @custom-variant block-titles (& .block_title);
 @custom-variant last-para (& p:last-child);
 @custom-variant items (& li);
+@custom-variant fields (& :is(input:not([type=checkbox], [type=radio], [type=hidden], [type=submit], [type=button]), select, textarea));
+@custom-variant textareas (& textarea);
+@custom-variant labels (& .name label);
+@custom-variant invalid-fields (& .invalid);
+@custom-variant field-errors (& div.error);
 
 /* переменные дизайна: значения — из переменных темы ниже (светлая и тёмная схемы) */
 @theme {
@@ -132,34 +137,6 @@ hr { border: 0; border-top: 1px solid var(--border); margin: 2rem 0; }
 /* ---------- блоки ядра (container.xslt, общий с админкой): отступ между блоками страницы ---------- */
 div.block:where(:not(.e-pane *, .e-topframe *, .e-sideframe *, .e-modalbox-frame *)) { margin-bottom: 2rem; }
 .block_header .block_title { margin-top: 0; }
-
-/* ---------- формы ---------- */
-.base_form { max-width: 38rem; }
-.form-group, .field { margin-bottom: 1rem; }
-.field .name label, .field > label { display: inline-block; font-weight: 600; margin-bottom: .25rem; }
-.mark { color: var(--danger); margin-left: .15rem; }
-input[type="text"]:where(:not(.e-pane *, .e-topframe *, .e-sideframe *, .e-modalbox-frame *)), input[type="email"]:where(:not(.e-pane *, .e-topframe *, .e-sideframe *, .e-modalbox-frame *)), input[type="password"]:where(:not(.e-pane *, .e-topframe *, .e-sideframe *, .e-modalbox-frame *)), input[type="tel"]:where(:not(.e-pane *, .e-topframe *, .e-sideframe *, .e-modalbox-frame *)), input[type="number"]:where(:not(.e-pane *, .e-topframe *, .e-sideframe *, .e-modalbox-frame *)),
-input[type="date"]:where(:not(.e-pane *, .e-topframe *, .e-sideframe *, .e-modalbox-frame *)), input[type="url"]:where(:not(.e-pane *, .e-topframe *, .e-sideframe *, .e-modalbox-frame *)), input[type="search"]:where(:not(.e-pane *, .e-topframe *, .e-sideframe *, .e-modalbox-frame *)), select:where(:not(.e-pane *, .e-topframe *, .e-sideframe *, .e-modalbox-frame *)), textarea:where(:not(.e-pane *, .e-topframe *, .e-sideframe *, .e-modalbox-frame *)) {
-    width: 100%; max-width: 100%; padding: .55rem .7rem; font: inherit; color: var(--fg);
-    background: var(--field-bg); border: 1px solid var(--border); border-radius: var(--radius);
-}
-textarea:where(:not(.e-pane *, .e-topframe *, .e-sideframe *, .e-modalbox-frame *)) { min-height: 8rem; resize: vertical; }
-input:where(:not(.e-pane *, .e-topframe *, .e-sideframe *, .e-modalbox-frame *)):focus-visible, select:where(:not(.e-pane *, .e-topframe *, .e-sideframe *, .e-modalbox-frame *)):focus-visible, textarea:where(:not(.e-pane *, .e-topframe *, .e-sideframe *, .e-modalbox-frame *)):focus-visible { border-color: var(--accent); }
-button:where(:not(.e-pane *, .e-topframe *, .e-sideframe *, .e-modalbox-frame *)), input[type="submit"]:where(:not(.e-pane *, .e-topframe *, .e-sideframe *, .e-modalbox-frame *)), input[type="button"]:where(:not(.e-pane *, .e-topframe *, .e-sideframe *, .e-modalbox-frame *)), .btn:where(:not(.e-pane *, .e-topframe *, .e-sideframe *, .e-modalbox-frame *)) {
-    display: inline-block; padding: .6rem 1.2rem; font: inherit; font-weight: 600; cursor: pointer;
-    color: var(--accent-fg); background: var(--accent); border: 1px solid var(--accent); border-radius: var(--radius);
-}
-button:where(:not(.e-pane *, .e-topframe *, .e-sideframe *, .e-modalbox-frame *)):hover, input[type="submit"]:where(:not(.e-pane *, .e-topframe *, .e-sideframe *, .e-modalbox-frame *)):hover { filter: brightness(1.08); }
-.invalid, input.invalid, textarea.invalid, select.invalid { border-color: var(--danger) !important; }
-div.error, .error_message, .result_message.error_message {
-    color: var(--danger);
-}
-.error_message, .result_message {
-    padding: .75rem 1rem; border-radius: var(--radius); margin-bottom: 1rem; background: var(--ok-bg);
-}
-.error_message { background: var(--danger-bg); }
-.note { color: var(--muted); font-size: .9rem; }
-.restore_link { margin: .5rem 0 1rem; }
 
 /* ---------- листалка списков ---------- */
 .pager { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1.5rem; }

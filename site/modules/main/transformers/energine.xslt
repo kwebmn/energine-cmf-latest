@@ -191,6 +191,25 @@
     </xsl:template>
     <!-- /BreadCrumbs -->
 
+    <!-- формы сайта (вход, регистрация, профиль, восстановление пароля): обёртка и подпись поля на утилитах;
+         поля админки — fields.xslt ядра, как были -->
+    <xsl:template match="field[not(@name='message')][ancestor::component[@type='form'][@sample='LoginForm' or @class='Register' or @class='UserProfile' or @class='RestorePassword']]" priority="2">
+        <div>
+            <xsl:attribute name="class">form-group field <xsl:value-of select="@name"/><xsl:if test="not(@nullable) and @type!='boolean'"> required</xsl:if><xsl:text> </xsl:text><xsl:value-of select="$UI_FIELD"/></xsl:attribute>
+            <xsl:apply-templates select="." mode="field_name"/>
+            <xsl:apply-templates select="." mode="field_content"/>
+        </div>
+    </xsl:template>
+
+    <xsl:template match="field[not(@name='message')][ancestor::component[@type='form'][@sample='LoginForm' or @class='Register' or @class='UserProfile' or @class='RestorePassword']]" mode="field_name" priority="2">
+        <xsl:if test="@title and @type!='boolean'">
+            <div class="name">
+                <label for="{@name}"><xsl:value-of select="@title" disable-output-escaping="yes"/></label>
+                <xsl:if test="not(@nullable)"><span class="ml-0.5 text-danger" aria-hidden="true">*</span></xsl:if>
+            </div>
+        </xsl:if>
+    </xsl:template>
+
     <!-- PageList: подразделы -->
     <xsl:template match="component[@class='PageList']">
         <xsl:apply-templates/>

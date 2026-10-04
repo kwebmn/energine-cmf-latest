@@ -69,6 +69,41 @@ async function inspect(page) {
     }
     const guest = await browser.newContext({ locale: 'ru-RU' });
 
+    // формы сайта на утилитах: у каждого поля подпись, обёртка поля — утилиты, правил старой темы нет; ошибка входа —
+    // сообщение role="alert"
+    for (const [label, url] of [['вход', 'login/'], ['регистрация', 'register/'], ['восстановление пароля', 'restore-password/']]) {
+        const p = await guest.newPage();
+        await p.goto(BASE + url, { waitUntil: 'networkidle' });
+        const r = await p.evaluate(async () => {
+            const href = [...document.querySelectorAll('link[rel="stylesheet"]')].map((l) => l.href).find((h) => /\/main\.css/.test(h));
+            const css = href ? await (await fetch(href)).text() : '';
+            const old = ['.base_form', '.form-group', '.field', '.mark', '.error_message', '.result_message', '.note', '.restore_link']
+                .filter((c) => new RegExp('\\' + c + '(?![\\w-])[^{]*\\{').test(css));
+            const form = document.querySelector('main form');
+            // ловушка для ботов (FormGuard) скрыта от людей и читалок (aria-hidden): подпись ей не нужна
+            const inputs = form ? [...form.querySelectorAll('input:not([type=hidden]):not([type=checkbox]), select, textarea')]
+                .filter((i) => !i.closest('[aria-hidden="true"]')) : [];
+            const unlabeled = inputs.filter((i) => !i.id || !document.querySelector('label[for="' + i.id + '"]')).map((i) => i.name);
+            const wrapper = form && form.querySelector('.field');
+            return { old, n: inputs.length, unlabeled, wrapper: wrapper ? wrapper.className : '' };
+        });
+        check(`${label}: формы без правил старой темы`, !r.old.length, r.old.join(' '));
+        check(`${label}: у каждого поля подпись`, r.n > 0 && !r.unlabeled.length, JSON.stringify(r));
+        check(`${label}: обёртка поля оформлена утилитами`, /\bmb-4\b/.test(r.wrapper), r.wrapper);
+        await p.close();
+    }
+    {
+        const p = await guest.newPage();
+        await p.goto(BASE + 'login/', { waitUntil: 'networkidle' });
+        await p.fill('main input[name="user[username]"]', 'claude-nobody@example.org');
+        await p.fill('main input[name="user[password]"]', 'wrong-password');
+        await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle' }), p.click('main button[name="user[login]"]')]);
+        const alert = await p.evaluate(() => { const a = document.querySelector('main [role="alert"]'); return a ? a.textContent.trim() : ''; });
+        check('вход: неудача — сообщение role="alert"', alert.length > 0, alert);
+        db('attempts-remove', 'claude-nobody@example.org');
+        await p.close();
+    }
+
     // интерфейс на Tailwind: каркас страницы (шапка, меню, язык, вход, крошки, подвал) — утилиты в разметке,
     // в стилях нет правил старой темы для него
     {

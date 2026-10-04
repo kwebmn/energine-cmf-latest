@@ -25,7 +25,7 @@ function attempt($login, $password, $page = '/login/') {
     // для разбора редкого сбоя (не вошёл, сообщения нет): ответ auth.php и cookie причины в банке
     $diag = "auth.php HTTP $authCode, failed_login: " . var_export(cookie('failed_login'), true);
     [$pageCode, $html] = http($page);
-    $message = preg_match('~<div class="error_message">(.*?)</div>~s', $html, $m) ? trim(strip_tags($m[1])) : '';
+    $message = preg_match('~<div class="error_message[^"]*"[^>]*>(.*?)</div>~s', $html, $m) ? trim(strip_tags($m[1])) : '';
     if (!$in && $message === '') $message = "(нет сообщения; $diag, страница HTTP $pageCode)";
     if ($in) logout();
     return [$in, $message];

@@ -3,6 +3,7 @@
 // регистрации) и его удаление.
 //   php8.5 theme-db.php user-add       — создать, вывести {"login": …, "password": …}
 //   php8.5 theme-db.php user-remove    — удалить всех посетителей теста
+//   php8.5 theme-db.php attempts-remove ЛОГИН — убрать неудачные попытки входа этого логина
 //   php8.5 theme-db.php menu-child on|off — «Возможности / Структура и тексты» в меню (подпункт меню)
 require dirname(__DIR__) . '/testlib.php';
 
@@ -20,6 +21,10 @@ switch ($cmd) {
         break;
     case 'user-remove':
         q("DELETE FROM user_users WHERE u_name LIKE 'claude-theme-%'");
+        break;
+    case 'attempts-remove':
+        // неудачные попытки входа теста (проверка сообщения о неудаче): иначе они остаются в журнале попыток
+        q('DELETE FROM user_login_attempts WHERE la_login = ?', [$argv[2] ?? '']);
         break;
     case 'menu-child':
         q("UPDATE share_sitemap s JOIN share_sitemap p ON p.smap_id = s.smap_pid SET s.smap_in_menu = ?

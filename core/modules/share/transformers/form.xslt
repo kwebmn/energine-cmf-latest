@@ -15,10 +15,10 @@
             	<xsl:attribute name="enctype">multipart/form-data</xsl:attribute>
             </xsl:if>
 			<xsl:choose>
-                <xsl:when test="@class='RestorePassword'"><xsl:attribute name="class">base_form restore_password_form</xsl:attribute></xsl:when>
-                <xsl:when test="@class='Register'"><xsl:attribute name="class">base_form registration_form</xsl:attribute></xsl:when>
-				<xsl:when test="@class='UserProfile'"><xsl:attribute name="class">base_form profile_form</xsl:attribute></xsl:when>
-                <xsl:when test="@class='Form'"><xsl:attribute name="class">form-horizontal base_form forms_form</xsl:attribute></xsl:when>
+                <xsl:when test="@class='RestorePassword'"><xsl:attribute name="class">restore_password_form max-w-[38rem]</xsl:attribute></xsl:when>
+                <xsl:when test="@class='Register'"><xsl:attribute name="class">registration_form max-w-[38rem]</xsl:attribute></xsl:when>
+				<xsl:when test="@class='UserProfile'"><xsl:attribute name="class">profile_form max-w-[38rem]</xsl:attribute></xsl:when>
+                <xsl:when test="@class='Form'"><xsl:attribute name="class">forms_form max-w-[38rem]</xsl:attribute></xsl:when>
 			</xsl:choose>
             <input type="hidden" name="componentAction" value="{@componentAction}" id="componentAction"/>
             <input type="hidden" name="csrf_token" value="{$CSRF}"/>

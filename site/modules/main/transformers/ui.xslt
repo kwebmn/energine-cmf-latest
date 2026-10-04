@@ -15,8 +15,8 @@
         <xsl:param name="variant" select="'primary'"/>
         <xsl:choose>
             <xsl:when test="$variant = 'link'">cursor-pointer border-0 bg-transparent p-0 font-[inherit] text-primary underline underline-offset-2</xsl:when>
-            <xsl:when test="$variant = 'plain'">inline-flex cursor-pointer items-center gap-2 rounded-ui border border-border bg-bg px-4 py-2 font-semibold text-fg hover:border-primary</xsl:when>
-            <xsl:otherwise>inline-flex cursor-pointer items-center gap-2 rounded-ui border border-primary bg-primary px-5 py-2.5 font-semibold text-primary-fg hover:brightness-110</xsl:otherwise>
+            <xsl:when test="$variant = 'plain'">inline-flex cursor-pointer items-center gap-2 rounded-ui border border-border bg-bg px-4 py-2 font-[inherit] text-base font-semibold text-fg hover:border-primary</xsl:when>
+            <xsl:otherwise>inline-flex cursor-pointer items-center gap-2 rounded-ui border border-primary bg-primary px-5 py-2.5 font-[inherit] text-base font-semibold text-primary-fg hover:brightness-110</xsl:otherwise>
         </xsl:choose>
     </xsl:template>
 
@@ -63,6 +63,11 @@
         <xsl:param name="text"/>
         <h2 class="mt-0 mb-4 text-2xl font-bold leading-tight"><xsl:value-of select="$text"/></h2>
     </xsl:template>
+
+    <!-- форма сайта и поле формы: подпись, ввод, ошибка проверки (Validator.js: класс invalid и div.error) -->
+    <xsl:variable name="UI_FORM">max-w-[38rem]</xsl:variable>
+    <xsl:variable name="UI_FIELD">mb-4 labels:mb-1 labels:inline-block labels:font-semibold fields:w-full fields:max-w-full fields:rounded-ui fields:border fields:border-border fields:bg-field fields:px-3 fields:py-2 fields:font-[inherit] fields:text-fg fields:focus-visible:border-primary textareas:min-h-32 textareas:resize-y invalid-fields:border-danger field-errors:mt-1 field-errors:text-sm field-errors:text-danger</xsl:variable>
+    <xsl:variable name="UI_NOTE">text-sm text-muted</xsl:variable>
 
     <!-- класс карточки (обёртка содержимого вызывающего шаблона) -->
     <xsl:variable name="UI_CARD">rounded-ui border border-border bg-bg-soft p-4</xsl:variable>
