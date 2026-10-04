@@ -71,7 +71,7 @@ PageEditor.BlockEditor = class PageEditorBlock {
          * Текст, который уже на сервере.
          * @type {string}
          */
-        this.saved = this.editor.value;
+        this.saved = EnergineEditor.clean(this.editor.value);
         this.editor.events.on('blur', () => this.save());
     }
 
@@ -80,7 +80,7 @@ PageEditor.BlockEditor = class PageEditorBlock {
      * @returns {boolean}
      */
     isDirty() {
-        return this.editor.value !== this.saved;
+        return EnergineEditor.clean(this.editor.value) !== this.saved;
     }
 
     /**
@@ -117,7 +117,7 @@ PageEditor.BlockEditor = class PageEditorBlock {
         if (!this.isDirty()) {
             return;
         }
-        const value = this.editor.value;
+        const value = EnergineEditor.clean(this.editor.value);
         fetch(this.url(), {method: 'POST', body: this.body(value), credentials: 'same-origin'})
             .then((response) => response.text().then((text) => {
                 let result = null;
@@ -153,7 +153,7 @@ PageEditor.BlockEditor = class PageEditorBlock {
      */
     beacon() {
         if (this.isDirty()) {
-            const value = this.editor.value;
+            const value = EnergineEditor.clean(this.editor.value);
             if (navigator.sendBeacon(this.url(), this.body(value))) {
                 this.saved = value;
             }

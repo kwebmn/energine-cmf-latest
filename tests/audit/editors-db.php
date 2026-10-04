@@ -59,7 +59,10 @@ switch ($cmd) {
         echo json_encode(q('SELECT lang_id, tb_content FROM share_textblocks_translation WHERE tb_id = ? ORDER BY lang_id', [(int)$argv[2]])->fetchAll(), JSON_UNESCAPED_UNICODE);
         break;
     case 'tb-restore':
-        // блок мог быть удалён сохранением пустого текста: строки возвращаются заново
+        // блок мог быть удалён сохранением пустого текста, а следующее сохранение — создать на его месте новый
+        // (другой tb_id): новый убирается, строки блока возвращаются заново
+        q("DELETE FROM share_textblocks WHERE tb_id <> ? AND tb_num = '1' AND smap_id = (SELECT smap_id FROM share_sitemap WHERE smap_pid IS NULL)",
+            [(int)$argv[2]]);
         q('INSERT IGNORE INTO share_textblocks (tb_id, smap_id, tb_num) SELECT ?, smap_id, ? FROM share_sitemap WHERE smap_pid IS NULL',
             [(int)$argv[2], '1']);
         q('DELETE FROM share_textblocks_translation WHERE tb_id = ?', [(int)$argv[2]]);

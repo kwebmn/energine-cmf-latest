@@ -439,6 +439,6 @@ Form.RichEditor = class FormRichEditor {
      * Перед отправкой формы текст редактора переносится в textarea — только если его меняли.
      */
     onSaveForm() {
-        this.textarea.value = (this.editor.value === this.opened) ? this.original : this.editor.value;
+        this.textarea.value = (this.editor.value === this.opened) ? this.original : EnergineEditor.clean(this.editor.value);
     }
 };

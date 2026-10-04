@@ -97,6 +97,19 @@ export const EnergineEditor = {
      * @param {string} value
      * @returns {string}
      */
+    /**
+     * Значение для сохранения: пустой текст (Jodit оставляет от стёртого текста абзац <p><br></p>) — пустая строка.
+     * Картинки, вставки и таблицы — не пусто, даже без текста.
+     * @param {string} value
+     * @returns {string}
+     */
+    clean: function (value) {
+        const box = document.createElement('div');
+        box.innerHTML = String(value || '');
+        return (box.textContent.replace(/[\s\u00a0\u200b]+/g, '') === ''
+            && !box.querySelector('img, iframe, video, audio, object, embed, table, hr, input, svg')) ? '' : String(value);
+    },
+
     escape: function (value) {
         return String(value === undefined || value === null ? '' : value)
             .replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -151,11 +164,17 @@ export const EnergineEditor = {
     },
 
     /**
-     * Файл из репозитория: ссылка на выделенный текст или, если выделения нет, ссылка с названием файла.
+     * Файл из репозитория: ссылка на выделенное (с его оформлением) или, если выделения нет, ссылка с названием файла.
      */
     insertFile: function (editor, singlePath) {
-        var selection = editor.s.save(),
-            text = editor.s.sel ? editor.s.sel.toString() : '';
+        // выделение — с оформлением (жирный, курсив): разметка берётся до сохранения выделения маркерами
+        var range = editor.s.range, html = '';
+        if (range && !range.collapsed) {
+            var box = document.createElement('div');
+            box.appendChild(range.cloneContents());
+            html = box.innerHTML;
+        }
+        var selection = editor.s.save();
         ModalBox.open({
             url: singlePath + 'file-library/',
             onClose: function (data) {
@@ -164,7 +183,7 @@ export const EnergineEditor = {
                 }
                 editor.s.restore(selection);
                 editor.s.insertHTML('<a href="' + EnergineEditor.escape(EnergineEditor.mediaUrl(data['upl_path'])) + '">'
-                    + EnergineEditor.escape(text || data['upl_title']) + '</a>');
+                    + (html || EnergineEditor.escape(data['upl_title'])) + '</a>');
             }
         });
     }

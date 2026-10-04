@@ -119,6 +119,21 @@ const showTabOf = (page, selector) => page.evaluate((sel) => {
             await p.goto(BASE + 'features/content/', { waitUntil: 'networkidle' });
             await p.waitForTimeout(1500);
             check('несохранённое уходит на сервер при уходе со страницы', JSON.parse(db('tb-get', tbId)).includes('claude-test-leave'));
+            await p.goto(BASE, { waitUntil: 'networkidle' });
+            await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle' }), p.click('li.editMode_btn')]);
+            // администратор стёр весь текст: Jodit оставляет пустой абзац, а сохраняется пустой блок
+            await p.evaluate((sel) => {
+                const ed = Object.values(Jodit.instances).find((e) => e.element === document.querySelector(sel));
+                ed.s.focus();
+                ed.value = '<p><br></p>';
+            }, block);
+            await Promise.all([
+                p.waitForResponse((r) => r.url().includes('save-text'), { timeout: 15000 }),
+                p.mouse.click(2, 2),
+            ]);
+            // пустой текст сервер не хранит: блок удаляется (строки нет — false) — но не остаётся <p><br></p>
+            const emptied = JSON.parse(db('tb-get', tbId));
+            check('стёртый блок сохраняется пустым, без <p><br></p>', emptied === '' || emptied === false, JSON.stringify(emptied));
         }
         check('режим правки: без ошибок JS и 404', !errors.length, errors.join(' | '));
         await p.close();
@@ -320,6 +335,26 @@ const showTabOf = (page, selector) => page.evaluate((sel) => {
         check(`${where}: файл с выделением — ссылкой становится выделенный текст`,
             v.includes(`<a href="${BASE}uploads/public/claude.pdf">claude-sel</a>`), v.slice(-400));
 
+        // выделение через оформление (текст, жирный, текст): ссылкой становится выделенное вместе с оформлением
+        await p.evaluate((s) => {
+            const ed = Object.values(Jodit.instances).find((e) => e.element === document.querySelector(s));
+            const texts = [];
+            const walker = document.createTreeWalker(ed.editor, NodeFilter.SHOW_TEXT);
+            for (let n = walker.nextNode(); n; n = walker.nextNode()) texts.push(n);
+            const a = texts.find((n) => n.nodeValue.includes('claude-a')), c = texts.find((n) => n.nodeValue.includes('claude-c'));
+            const r = document.createRange();
+            r.setStart(a, a.nodeValue.indexOf('claude-a'));
+            r.setEnd(c, c.nodeValue.indexOf('claude-c') + 'claude-c'.length);
+            ed.s.focus();
+            ed.s.selectRange(r);
+        }, sel);
+        await pressButton(p, sel, 'energineFile');
+        await p.waitForTimeout(300);
+        v = await editorValue(p, sel);
+        check(`${where}: файл с выделением через оформление — жирный остаётся внутри ссылки`,
+            v.includes(`<a href="${BASE}uploads/public/claude.pdf">claude-a <strong>claude-b</strong> claude-c</a>`)
+            || v.includes(`<a href="${BASE}uploads/public/claude.pdf">claude-a <b>claude-b</b> claude-c</a>`), v.slice(-400));
+
         await answer(p, null, null);
         const before = await editorValue(p, sel);
         await place(p, sel);
@@ -333,7 +368,7 @@ const showTabOf = (page, selector) => page.evaluate((sel) => {
         const errors = watch(p);
         await p.goto(BASE + `admin/structure/single/divEditor/${pageId}/edit/`, { waitUntil: 'networkidle' });
         await showTabOf(p, descr);
-        await appendHtml(p, descr, ' claude-sel');
+        await appendHtml(p, descr, ' claude-sel claude-a <strong>claude-b</strong> claude-c');
         await insertions(p, descr, 'форма');
         check('вставка в форме: без ошибок JS и 404', !errors.length, errors.join(' | '));
         await p.close();   // the form is not saved: nothing to restore
@@ -345,7 +380,7 @@ const showTabOf = (page, selector) => page.evaluate((sel) => {
             const errors = watch(p);
             await p.goto(BASE, { waitUntil: 'networkidle' });
             await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle' }), p.click('li.editMode_btn')]);
-            await appendHtml(p, block, ' claude-sel');
+            await appendHtml(p, block, ' claude-sel claude-a <strong>claude-b</strong> claude-c');
             await insertions(p, block, 'блок на странице');
             check('вставка в блок: без ошибок JS и 404', !errors.length, errors.join(' | '));
             await p.close();
