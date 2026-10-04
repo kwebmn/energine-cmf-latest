@@ -98,9 +98,20 @@ $messages = mboxWait($off, 1);
 $m = bySubject($messages, 'Регистрация на сайте ' . translation('TXT_SITE_NAME'));
 check('registration mail delivered', $m && $m['to'] === TEST_EMAIL && count($messages) == 1 && str_contains($m['text'], 'Здравствуйте, ' . USER_NAME . '!'), brief($messages));
 check('registration mail: name escaped in HTML', $m && str_contains($m['html'], 'Здравствуйте, Тестовый пользователь &amp; Co!'), $m['html'] ?? '');
-$password = ($m && preg_match('/Пароль: (\S+)/u', $m['text'], $mm)) ? $mm[1] : null;
-check('HTML part has the password', $m && $password && str_contains($m['html'], "<strong>$password</strong>"), $m['html'] ?? '');
-check('login with the mailed password', $password && loginAs(TEST_EMAIL, $password));
+// в письме нет пароля: посетитель задаёт его сам по одноразовой ссылке (как при восстановлении, срок — час)
+check('registration mail has no password', $m && !preg_match('/Пароль:|Password:/u', $m['text'] . $m['html']), $m['text'] ?? '');
+$regLink = ($m && preg_match('~(https?://\S+/restore-password/reset/[0-9a-f]{64}/)~', $m['text'], $mm)) ? $mm[1] : null;
+check('registration mail: a one-time link to set the password (text and HTML)', $regLink && str_contains($m['html'], 'href="' . $regLink . '"'),
+    $m['text'] ?? '');
+check('the registered password is not usable as mailed: only a hash of the link token is stored',
+    $regLink && scalar('SELECT u_restore_hash FROM user_users WHERE u_name = ?', [TEST_EMAIL]) === hash('sha256', basename($regLink)));
+$password = 'Claude-' . bin2hex(random_bytes(4));
+freshJar('reg');
+[, $html] = http((string)$regLink);
+[$c, $body] = http(str_replace('/reset/', '/change/', (string)$regLink),
+    formIn($html, 'restore-password/change', ['u_password' => $password, 'u_password2' => $password]));
+check('the link sets the password', $c == 200 && str_contains($body, (string)translation('MSG_PASSWORD_CHANGED')), substr(strip_tags($body), 0, 200));
+check('login with the chosen password', loginAs(TEST_EMAIL, $password));
 // тот же логин ещё раз: отказ ERR_USER_EXISTS, второго пользователя и письма нет
 freshJar('user2');
 [, $html] = http('/register/');

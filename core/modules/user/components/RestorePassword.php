@@ -78,11 +78,7 @@ class RestorePassword extends DataSet {
             : $this->dbh->getRow('SELECT u_id, u_restore_until FROM user_users WHERE u_name = %s AND u_is_active = 1', $uName);
         if ($user && (empty($user['u_restore_until'])
                 || strtotime($user['u_restore_until']) <= time() + self::LINK_TTL - self::RESEND_PAUSE)) {
-            $token = bin2hex(random_bytes(32));
-            $this->dbh->modify(QAL::UPDATE, 'user_users', [
-                'u_restore_hash' => hash('sha256', $token),
-                'u_restore_until' => date('Y-m-d H:i:s', time() + self::LINK_TTL),
-            ], ['u_id' => $user['u_id']]);
+            $token = User::issuePasswordToken($user['u_id'], self::LINK_TTL);
             try {
                 $this->mailLink($user['u_id'], $uName, $token);
             } catch (\Exception $e) {

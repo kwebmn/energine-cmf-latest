@@ -244,6 +244,23 @@ class User extends Primitive {
     }
 
     /**
+     * Одноразовая ссылка на установку пароля (восстановление, регистрация): в базе — только хэш токена и срок.
+     *
+     * @param int $UID
+     * @param int $ttl срок, секунд
+     * @return string токен для адреса restore-password/reset/<токен>/
+     */
+    public static function issuePasswordToken($UID, $ttl = 3600) {
+        $token = bin2hex(random_bytes(32));
+        E()->getDB()->modify(QAL::UPDATE, self::USER_TABLE_NAME, [
+            'u_restore_hash' => hash('sha256', $token),
+            'u_restore_until' => date('Y-m-d H:i:s', time() + $ttl),
+        ], ['u_id' => $UID]);
+
+        return $token;
+    }
+
+    /**
      * Generate random password with specific length from numbers and latin characters.
      *
      * @param int $length Password length.

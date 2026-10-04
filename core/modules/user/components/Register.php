@@ -152,16 +152,19 @@ class Register extends DBDataSet {
             throw new SystemException('MSG_BAD_EMAIL_FORMAT', SystemException::ERR_WARNING);
         }
         $data['u_name'] = $login;
-        $password = $data['u_password'] = User::generatePassword();
+        // пароль в письмо не попадает: посетитель задаёт его сам по одноразовой ссылке (как при восстановлении)
+        $data['u_password'] = User::generatePassword(24);
         try {
 
             $result = $this->user->create($data);
+            $token = User::issuePasswordToken($this->user->getID(), RestorePassword::LINK_TTL);
+            $site = E()->getSiteManager()->getCurrentSite();
 
             $template = new MailTemplate('user_registration', [
                     'user_login' => $this->user->getValue('u_name'),
                     'user_name' => $this->user->getValue('u_fullname'),
-                    'user_password' => $password,
-                    'site_url' => E()->getSiteManager()->getCurrentSite()->base,
+                    'password_link' => $site->base . E()->getRequest()->getLangSegment() . 'restore-password/reset/' . $token . '/',
+                    'site_url' => $site->base,
                     'site_name' => $this->translate('TXT_SITE_NAME')
                 ]
             );
