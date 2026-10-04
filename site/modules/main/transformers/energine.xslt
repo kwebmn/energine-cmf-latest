@@ -49,23 +49,23 @@
                 </div>
             </div>
         </header>
-        <div class="wrap site-body">
+        <div class="{$UI_CONTAINER} site-body grid gap-8 pt-6 pb-12 print:block print:p-0">
             <xsl:if test="content/container[@name='aside']">
-                <xsl:attribute name="class">wrap site-body site-body--aside</xsl:attribute>
+                <xsl:attribute name="class"><xsl:value-of select="$UI_CONTAINER"/> site-body grid gap-8 pt-6 pb-12 print:block print:p-0 min-[60rem]:grid-cols-[minmax(0,1fr)_18rem]</xsl:attribute>
             </xsl:if>
-            <main id="content" class="site-main" tabindex="-1">
+            <main id="content" class="site-main min-w-0 outline-none" tabindex="-1">
                 <xsl:apply-templates select="$COMPONENTS[@name='breadCrumbs']"/>
                 <!-- страница ошибки: компонент добавляется в корень документа, а не в content -->
                 <xsl:apply-templates select="$COMPONENTS[@class='ErrorComponent']"/>
                 <xsl:apply-templates select="content/node()[not(self::container[@name='aside'])]"/>
             </main>
             <xsl:if test="content/container[@name='aside']">
-                <aside class="site-aside">
+                <aside class="site-aside min-w-0 print:hidden blocks:rounded-ui blocks:bg-bg-soft blocks:p-4 block-titles:text-lg">
                     <xsl:apply-templates select="content/container[@name='aside']/node()"/>
                 </aside>
             </xsl:if>
         </div>
-        <footer class="site-footer print:border-0 border-t border-border py-6 text-sm text-muted [&amp;_p:last-child]:mb-0">
+        <footer class="site-footer print:border-0 border-t border-border py-6 text-sm text-muted last-para:mb-0">
             <div class="{$UI_CONTAINER}">
                 <xsl:apply-templates select="$COMPONENTS[@name='footerTextBlock']"/>
             </div>
@@ -96,7 +96,7 @@
     <xsl:template match="record[ancestor::component[@name='mainMenu']]" priority="1">
         <li>
             <xsl:attribute name="class">main_menu_item relative<xsl:if test="field[@name='Id'] = $ID"> active</xsl:if></xsl:attribute>
-            <a class="block px-1 py-2 no-underline aria-[current]:font-bold aria-[current]:text-fg md:px-0 md:py-1 in-[.ui-submenu]:md:px-3 in-[.ui-submenu]:md:py-1.5 in-[.ui-submenu]:md:whitespace-nowrap">
+            <a class="flex px-1 py-2 no-underline aria-[current]:font-bold aria-[current]:text-fg md:px-0 md:py-1 in-[.ui-submenu]:md:px-3 in-[.ui-submenu]:md:py-1.5 in-[.ui-submenu]:md:whitespace-nowrap">
                 <xsl:attribute name="href"><xsl:choose>
                     <xsl:when test="field[@name='Redirect'] = ''"><xsl:value-of select="$LANG_ABBR"/><xsl:value-of select="field[@name='Segment']"/></xsl:when>
                     <xsl:otherwise><xsl:value-of select="field[@name='Redirect']"/></xsl:otherwise>
@@ -175,7 +175,7 @@
     </xsl:template>
 
     <xsl:template match="record[ancestor::component[@name='breadCrumbs']]" priority="1">
-        <li class="[li+&amp;]:before:mr-1 [li+&amp;]:before:content-['/']">
+        <li class="crumb-next:before:mr-1 crumb-next:before:content-['/']">
             <xsl:choose>
                 <xsl:when test="position() = last()">
                     <span aria-current="page"><xsl:value-of select="field[@name='Name']"/></span>
@@ -198,15 +198,18 @@
 
     <xsl:template match="recordset[ancestor::component[@class='PageList']]">
         <xsl:if test="not(@empty)">
-            <ul class="menu">
+            <ul class="menu m-0 mb-6 grid list-none gap-4 p-0">
+                <xsl:if test="parent::record">
+                    <xsl:attribute name="class">menu mt-2 mb-0 ml-4 grid list-none gap-4 p-0</xsl:attribute>
+                </xsl:if>
                 <xsl:apply-templates/>
             </ul>
         </xsl:if>
     </xsl:template>
 
     <xsl:template match="record[ancestor::component[@class='PageList']]">
-        <li class="menu_item">
-            <div class="menu_name">
+        <li class="menu_item grid gap-1">
+            <div class="menu_name text-[1.05rem] font-semibold">
                 <a>
                     <xsl:if test="$DOC_PROPS[@name='ID'] != field[@name='Id']">
                         <xsl:attribute name="href">
@@ -220,7 +223,7 @@
                 </a>
             </div>
             <xsl:if test="field[@name='DescriptionRtf'] != ''">
-                <div class="menu_announce">
+                <div class="menu_announce text-muted">
                     <xsl:value-of select="field[@name='DescriptionRtf']" disable-output-escaping="yes"/>
                 </div>
             </xsl:if>
@@ -237,7 +240,7 @@
     </xsl:template>
 
     <xsl:template match="recordset[ancestor::component[@class='SitemapTree']]">
-        <ul class="sitemap_tree">
+        <ul class="sitemap_tree my-1 pl-5">
             <xsl:apply-templates/>
         </ul>
     </xsl:template>

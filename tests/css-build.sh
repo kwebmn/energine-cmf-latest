@@ -15,5 +15,9 @@ else
 fi
 head -c 200 "$CSS/main.css" | grep -q 'tailwindcss v4' && grep -q '@layer components' "$CSS/main.css" \
   && echo "OK   main.css — сборка Tailwind со слоями" || { echo "FAIL main.css — не сборка Tailwind"; fail=$((fail+1)); }
+# «&» в классе XSLT записывается как &amp; — сканер Tailwind такой класс не узнаёт (стили молча не собираются):
+# для вложенных элементов — свои варианты @custom-variant в tailwind.css
+amp=$(grep -rn 'class="[^"]*&amp;' --include=*.xslt "$R/core" "$R/site" | sed "s|$R/||")
+[ -z "$amp" ] && echo "OK   в классах XSLT нет «&amp;»" || { echo "FAIL «&amp;» в классе XSLT: $amp"; fail=$((fail+1)); }
 echo "== css failures: $fail"
 [ $fail -eq 0 ]

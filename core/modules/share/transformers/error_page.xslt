@@ -51,7 +51,7 @@
                 <div class="wrap site-body">
                     <main id="content" class="site-main error_page" tabindex="-1">
                         <xsl:apply-templates select="errors/error"/>
-                        <p class="error_home">
+                        <p class="error_home mt-6">
                             <a href="{$HOME}">
                                 <xsl:choose><xsl:when test="$UA">На головну сторінку</xsl:when><xsl:otherwise>На главную страницу</xsl:otherwise></xsl:choose>
                             </a>
@@ -71,9 +71,9 @@
             <xsl:otherwise><p class="error_title"><xsl:value-of select="message"/></p></xsl:otherwise>
         </xsl:choose>
         <xsl:if test="$IN_DEBUG_MODE = '1'">
-            <p class="error_debug"><code><xsl:value-of select="@file"/>:<xsl:value-of select="@line"/></code></p>
+            <p class="error_debug text-sm text-muted"><code><xsl:value-of select="@file"/>:<xsl:value-of select="@line"/></code></p>
             <xsl:if test="customMessage">
-                <ul class="error_debug">
+                <ul class="error_debug text-sm text-muted items:mb-2">
                     <xsl:apply-templates select="customMessage"/>
                 </ul>
             </xsl:if>
@@ -85,7 +85,7 @@
     </xsl:template>
 
     <xsl:template match="backtrace">
-        <ol class="error_debug">
+        <ol class="error_debug text-sm text-muted items:mb-2">
             <xsl:apply-templates select="call"/>
         </ol>
     </xsl:template>

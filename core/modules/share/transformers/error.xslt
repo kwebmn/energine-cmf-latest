@@ -19,7 +19,7 @@
         <xsl:if test="field[@name='hint'] != ''">
             <p class="error_hint"><xsl:value-of select="field[@name='hint']"/></p>
         </xsl:if>
-        <p class="error_home">
+        <p class="error_home mt-6">
             <a href="{$BASE}{$LANG_ABBR}"><xsl:value-of select="$TRANSLATION[@const='TXT_ERROR_GO_HOME']"/></a>
         </p>
     </xsl:template>

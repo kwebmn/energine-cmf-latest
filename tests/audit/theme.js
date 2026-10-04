@@ -80,10 +80,18 @@ async function inspect(page) {
             const old = ['.site-header', '.site-header__inner', '.site-name', '.site-tools', '.lang_switcher', '.user-menu',
                 '.site-nav', '.main_menu', '.breadcrumbs', '.site-footer', '.skip-link']
                 .filter((c) => new RegExp('\\' + c + '(?![\\w-])[^{]*\\{').test(css));
+            const content = ['.wrap', '.site-body', '.site-body--aside', '.site-main', '.site-aside', '.menu', '.menu_item',
+                '.menu_name', '.menu_announce', '.sitemap_tree', '.error_home', '.error_debug']
+                .filter((c) => new RegExp('\\' + c + '(?![\\w-])[^{]*\\{').test(css));
+            const link = document.querySelector('.main_menu a');
+            const menuGap = link ? getComputedStyle(link).marginBottom : 'нет ссылки';
             const cls = (sel) => (document.querySelector(sel) || { className: '' }).className;
-            return { old, header: cls('header.site-header'), footer: cls('footer.site-footer'), crumbs: cls('nav.breadcrumbs ol') };
+            return { old, content, menuGap, header: cls('header.site-header'), footer: cls('footer.site-footer'), crumbs: cls('nav.breadcrumbs ol') };
         });
         check('каркас страницы: правил старой темы в стилях нет', !r.old.length, r.old.join(' '));
+        check('содержимое: правил старой темы для раскладки, подразделов, карты сайта и страницы ошибки нет',
+            !r.content.length, r.content.join(' '));
+        check('меню: у ссылок нет отступа снизу', r.menuGap === '0px', r.menuGap);
         check('каркас страницы: шапка, подвал и крошки оформлены утилитами',
             /\bborder-b\b/.test(r.header) && /\bborder-t\b/.test(r.footer) && /\bflex\b/.test(r.crumbs), JSON.stringify(r));
         await p.close();
