@@ -354,6 +354,16 @@ class DivisionEditor extends Grid implements SampleDivisionEditor {
 
         $transactionStarted = $this->dbh->beginTransaction();
 
+        // флажки smap_meta_robots — набор (SET): снятые флажки браузер не отправляет. Если поле есть в форме
+        // (по конфигу её состояния), а в запросе его нет — пустой набор; формы без поля его не стирают
+        $table = $this->getTableName();
+        $formState = $this->getConfig()->getStateConfig($this->getPreviousState());
+        // (у главной поля нет вовсе — её флажки не трогаются)
+        if (isset($_POST[$table]) && is_array($_POST[$table]) && !isset($_POST[$table]['smap_meta_robots'])
+            && !empty($_POST[$table]['smap_pid']) && $formState && isset($formState->fields) && $formState->fields->xpath("field[@name='smap_meta_robots']")) {
+            $_POST[$table]['smap_meta_robots'] = [];
+        }
+
         $result = $this->saveData();
         if (is_int($result)) {
             $mode = 'insert';
@@ -501,6 +511,7 @@ class DivisionEditor extends Grid implements SampleDivisionEditor {
             foreach (
                 [
                     'smap_is_disabled',
+                    'smap_in_menu',
                     'smap_segment',
                     //'smap_pid',
                     'smap_redirect_url',

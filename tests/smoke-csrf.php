@@ -133,4 +133,16 @@ $ch = curl_init(BASE . '/auth.php?return=' . rawurlencode('/sitemap/'));
 curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_REFERER => BASE . '/login/', CURLOPT_TIMEOUT => 60]);
 curl_exec($ch);
 check('return=/sitemap/ ведёт на /sitemap/', str_ends_with((string)curl_getinfo($ch, CURLINFO_REDIRECT_URL), '/sitemap/'), curl_getinfo($ch, CURLINFO_REDIRECT_URL));
+// вход без заголовка Referer (его режут настройки приватности): не пустая страница, а возврат на страницу входа
+@unlink($GLOBALS['jar']);
+http('/login/');
+$ch = curl_init(BASE . '/auth.php');
+curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_COOKIEJAR => $GLOBALS['jar'], CURLOPT_COOKIEFILE => $GLOBALS['jar'],
+    CURLOPT_POST => true, CURLOPT_HTTPHEADER => ['X-CSRF-Token: ' . csrfToken()],
+    CURLOPT_POSTFIELDS => http_build_query(['user' => ['login' => 1, 'username' => 'claude-no-referer@example.org', 'password' => 'x']])]);
+curl_exec($ch);
+$code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+$location = (string)curl_getinfo($ch, CURLINFO_REDIRECT_URL);
+check('вход без Referer — переадресация на страницу входа', $code == 302 && str_ends_with($location, '/login/'), "HTTP $code $location");
+q('DELETE FROM user_login_attempts WHERE la_login = ?', ['claude-no-referer@example.org']);
 done('csrf');

@@ -3,13 +3,13 @@ use Energine\share\gears\AuthUser;
 use Energine\share\gears\Csrf;
 use Energine\share\gears\UserSession;
 
-//на всякий пожарный проверяем реферрера
-if (!isset($_SERVER['HTTP_REFERER']) /*&& (!isset($_GET['return']))*/) {
-    //не местных  - в сад
-    exit;
-}
 //подключаем bootstrap
 require_once('bootstrap.php');
+// без Referer (его режут настройки приватности) и без return — назад на страницу входа: там видно сообщение
+// о неудаче. От форм с чужих сайтов защищает токен (Csrf), а не Referer
+if (!isset($_SERVER['HTTP_REFERER']) && !isset($_GET['return'])) {
+    $_GET['return'] = E()->getSiteManager()->getCurrentSite()->root . 'login/';
+}
 
 $response = E()->getResponse();
 $response->disableCache();

@@ -28,6 +28,11 @@ curl -sS -c $J -b $J -o /dev/null -e "$B/login/" --data-urlencode "csrf_token=$T
 grep -q NRGNSID $J && ok "login" || { echo "FAIL login"; exit 1; }
 TOK=$(tok $B/)
 
+# --- главная: флажок «Показывать в меню» ничего не меняет — в форме главной его нет
+ROOT=$(q "SELECT smap_id FROM share_sitemap WHERE smap_pid IS NULL")
+curl -sS -c $J -b $J "$A/structure/single/divEditor/$ROOT/edit/" | grep -q 'name="share_sitemap\[smap_in_menu\]"' \
+  && { : > $R; bad "home form without the menu flag"; } || ok "home form without the menu flag"
+
 # --- page: add, edit with SET column, delete
 S=$A/structure/single/divEditor/
 pagefields() {
@@ -61,6 +66,11 @@ if [ -n "$ID" ]; then
     --data-urlencode "share_sitemap_translation[1][smap_name]=Тест установки (ред.)" --data-urlencode "share_sitemap_translation[2][smap_name]=Тест"
   isok && [ "$(q "SELECT smap_meta_robots FROM share_sitemap WHERE smap_id=$ID")" = "NOINDEX,NOFOLLOW" ] && ok "page edit" || bad "page edit"
   curl -sS $B/claude-test/ | grep -q '<meta name="robots" content="NOINDEX,NOFOLLOW">' && ok "page meta robots" || bad "page meta robots"
+  # все флажки сняты: браузер не отправляет поле набора — флажки страницы снимаются
+  post "${S}save" --data-urlencode "componentAction=edit" --data-urlencode "share_sitemap[smap_id]=$ID" $(pagefields) "${TR[@]}" \
+    --data-urlencode "share_sitemap_translation[1][smap_name]=Тест установки (ред.)" --data-urlencode "share_sitemap_translation[2][smap_name]=Тест"
+  isok && [ -z "$(q "SELECT IFNULL(smap_meta_robots, '') FROM share_sitemap WHERE smap_id=$ID")" ] \
+    && ! curl -sS $B/claude-test/ | grep -q 'content="NOINDEX' && ok "page robots cleared by the form" || bad "page robots cleared by the form"
   # перенос к другому родителю (демо-раздел info): адрес страницы меняется
   INFO=$(q "SELECT s.smap_id FROM share_sitemap s JOIN share_sitemap r ON s.smap_pid = r.smap_id WHERE r.smap_pid IS NULL AND s.smap_segment='info'")
   post "${S}save" --data-urlencode "componentAction=edit" --data-urlencode "share_sitemap[smap_id]=$ID" $(pagefields "$INFO") "${TR[@]}" \

@@ -49,6 +49,8 @@ check "resizer" "$B/resizer/w90-h68/uploads/public/13662314846.png" 200
 check "static" "$B/scripts/Energine.js" 200
 
 # login
+# кнопка входа — без служебной подсказки «Click me»
+curl -sS "$B/login/" | grep -q 'Click me' && { echo "FAIL login button tooltip «Click me»"; fail=$((fail+1)); }
 TOK=$(tok $B/login/)
 curl -sS -c $J -b $J -o /dev/null -e "$B/login/" --data-urlencode "csrf_token=$TOK" --data-urlencode 'user[login]=1' \
   --data-urlencode "user[username]=$ADMIN_EMAIL" --data-urlencode "user[password]=$ADMIN_PASSWORD" $B/auth.php
