@@ -64,6 +64,9 @@
         <h2 class="mt-0 mb-4 text-2xl font-bold leading-tight"><xsl:value-of select="$text"/></h2>
     </xsl:template>
 
+    <!-- полоса секции визитки (sections.xslt): на всю ширину окна внутри ограниченного main, поля сверху и снизу -->
+    <xsl:variable name="UI_SECTION">relative mx-[calc(50%-50vw)] w-screen max-w-[100vw] py-12 md:py-16</xsl:variable>
+
     <!-- форма сайта и поле формы: подпись, ввод, ошибка проверки (Validator.js: класс invalid и div.error) -->
     <xsl:variable name="UI_FORM">max-w-[38rem]</xsl:variable>
     <xsl:variable name="UI_FIELD">mb-4 labels:mb-1 labels:inline-block labels:font-semibold fields:w-full fields:max-w-full fields:rounded-ui fields:border fields:border-border fields:bg-field fields:px-3 fields:py-2 fields:font-[inherit] fields:text-fg fields:focus-visible:border-primary textareas:min-h-32 textareas:resize-y invalid-fields:border-danger field-errors:mt-1 field-errors:text-sm field-errors:text-danger</xsl:variable>

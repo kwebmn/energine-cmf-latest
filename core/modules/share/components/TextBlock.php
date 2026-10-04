@@ -77,7 +77,9 @@ class TextBlock extends DataSet implements SampleTextBlock{
             array(
                 'num' => 1,
                 'active' => true,
-                'text' => false
+                'text' => false,
+                // константа с образцом текста секции визитки: показывается в режиме правки вместо пустого блока
+                'section_sample' => false
             )
         );
     }
@@ -130,6 +132,10 @@ class TextBlock extends DataSet implements SampleTextBlock{
         }
 
         $this->setProperty('num', $this->getParam('num'));
+        if ($this->isEditable && ($sample = $this->getParam('section_sample')) && trim((string)$this->content) === '') {
+            $this->setProperty('section_sample', $sample);
+            $this->document->addTranslation($sample, $this);
+        }
         $this->prepare();
     }
 

@@ -5,6 +5,7 @@
     version="1.0">
     
     <xsl:include href="ui.xslt"/>
+    <xsl:include href="sections.xslt"/>
     <xsl:include href="energine.xslt"/>
 
 </xsl:stylesheet>
