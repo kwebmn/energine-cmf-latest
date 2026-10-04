@@ -51,7 +51,7 @@
     <!-- дополнительные параметры сайта (share_sites_properties) — вкладка формы -->
     <state name="properties" rights="3">
         <uri_patterns>
-            <pattern>/[site_id]/properties/[any]/</pattern>
+            <pattern>/[int]/properties/[any]/</pattern>
         </uri_patterns>
     </state>
 </configuration>

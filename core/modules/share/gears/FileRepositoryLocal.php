@@ -165,11 +165,7 @@ class FileRepositoryLocal extends Primitive implements IFileRepository {
     }
 
     public function analyze($filename) {
-        $fi = E()->FileRepoInfo->analyze($filename, true);
-        if (is_object($fi)) {
-            $fi->ready = true;
-        }
-        return $fi;
+        return E()->FileRepoInfo->analyze($filename, true);
 
     }
 
@@ -216,13 +212,5 @@ class FileRepositoryLocal extends Primitive implements IFileRepository {
      */
     public function prepare(&$data) {
         return $data;
-    }
-
-    /**
-     * @copydoc IFileRepository::setPrepareFunction
-     * @throws SystemException 'ERR_NOT_USED'
-     */
-    public function setPrepareFunction($func) {
-        throw new SystemException('ERR_NOT_USED');
     }
 }

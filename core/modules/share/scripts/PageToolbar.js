@@ -111,8 +111,10 @@ export class PageToolbar extends Toolbar {
         const base = new URL(Energine.base, document.baseURI);
         const root = new URL(Energine.root || Energine.base, document.baseURI);
         const url = base.hostname.includes(root.hostname) ? root : base;
+        // домен cookie — как у сервера (Site::cookieDomainOf): для адреса с портом, IP и имени без точки — без Domain
+        const plain = url.port || !url.hostname.includes('.') || /^[\d.]+$/.test(url.hostname) || url.hostname.includes(':');
         Energine.writeCookie('sidebar', html.classList.contains('e-has-sideframe') ? 1 : 0,
-            {domain: '.' + url.hostname, path: url.pathname.replace(/[^/]*$/, ''), days: 30});
+            {domain: plain ? '' : '.' + url.hostname, path: url.pathname.replace(/[^/]*$/, ''), days: 30});
     }
 
     showTmplEditor() {

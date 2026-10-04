@@ -102,10 +102,6 @@ class User extends Primitive {
     }
 
     /**
-     * @param bool $asArray
-     * @return array
-     */
-    /**
      * Get the field value.
      *
      * @param string $fieldName Field name.
