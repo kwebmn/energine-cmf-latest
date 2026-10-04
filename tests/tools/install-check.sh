@@ -75,13 +75,21 @@ out=$(setup install --config="$S/web/system.config.php" --no-static --url="$URL"
 # сказано очистить базу; затем база пересоздаётся для основной установки
 fresh_site() { TM <<< "DROP DATABASE \`site\`; CREATE DATABASE \`site\` CHARACTER SET $CS COLLATE $CO;
   GRANT ALL PRIVILEGES ON \`site\`.* TO 'energine'@'localhost';"; }
+# нет права создавать процедуры: отказ до первого изменения — база пуста, конфига нет, сказано, какого права нет
 fresh_site && TM <<< "REVOKE CREATE ROUTINE ON \`site\`.* FROM 'energine'@'localhost';" || { bad "подготовка сбоя"; exit 1; }
 out=$(setup "${INSTALL[@]}"); rc=$?
-[ $rc -ne 0 ] && [ ! -e "$S/web/system.config.php" ] && grep -q "прервалась" <<< "$out" && grep -q "очистите" <<< "$out" \
-  && ok "сбой на середине: код 1, конфиг этого запуска удалён, сказано очистить базу" \
-  || bad "сбой на середине" "код $rc, конфиг $([ -e "$S/web/system.config.php" ] && echo остался || echo удалён): $(tail -3 <<< "$out")"
+[ $rc -ne 0 ] && [ ! -e "$S/web/system.config.php" ] && grep -q "CREATE ROUTINE" <<< "$out" \
+  && [ "$(Q 'SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = "site"')" = 0 ] \
+  && ok "нет права на процедуры — отказ до изменений, сказано, какого права нет" \
+  || bad "нет права на процедуры" "код $rc, конфиг $([ -e "$S/web/system.config.php" ] && echo есть || echo нет): $(tail -3 <<< "$out")"
 rm -f "$S/web/system.config.php"
 fresh_site || { bad "пересоздание базы"; exit 1; }
+# запуск от root: файлы достались бы root — отказ до изменений с подсказкой запустить от владельца площадки
+out=$(ENERGINE_DB_PASSWORD="$ENERGINE_DB_PASSWORD" ENERGINE_ADMIN_PASSWORD="$ENERGINE_ADMIN_PASSWORD" php8.5 "$S/web/index.php" setup "${INSTALL[@]}" < /dev/null 2>&1); rc=$?
+[ $rc -ne 0 ] && [ ! -e "$S/web/system.config.php" ] && grep -q "runuser" <<< "$out" \
+  && [ "$(Q 'SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = "site"')" = 0 ] \
+  && ok "запуск от root — отказ до изменений с подсказкой" || bad "запуск от root" "код $rc: $(tail -3 <<< "$out")"
+rm -f "$S/web/system.config.php"
 
 echo "-- установка в пустую базу"
 out=$(setup "${INSTALL[@]}"); rc=$?

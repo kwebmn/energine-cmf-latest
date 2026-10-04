@@ -212,6 +212,7 @@ final class Setup {
         $o = $this->options($args, ['config', 'domain', 'url', 'db-host', 'db-port', 'db-socket', 'db-name', 'db-user',
             'admin-email', 'admin-name'], ['no-static']);
         $this->title('Установка');
+        $this->refuseRoot();
         $this->checkExtensions();
 
         $configFile = $o['config'] ?? implode(DIRECTORY_SEPARATOR, [HTDOCS_DIR, 'system.config.php']);
@@ -285,9 +286,18 @@ final class Setup {
         $routines = (int)$pdo->query('SELECT COUNT(*) FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA = DATABASE()')->fetchColumn();
         if ($tables || $routines) {
             throw new \Exception(sprintf('База «%s» не пуста (таблиц: %d, процедур: %d): установка ставится только в пустую базу. '
-                . 'Для новой установки очистите базу или укажите другую.', $database['db'], $tables, $routines));
+                . 'Укажите другую, пустую базу (база может принадлежать другому сайту — не очищайте её, не проверив).',
+                $database['db'], $tables, $routines));
         }
         $this->text('База «', $database['db'], '» пуста');
+        // схема создаёт и функции: без права CREATE ROUTINE установка оборвалась бы в самом конце — проверка до изменений
+        try {
+            $pdo->exec('CREATE FUNCTION energine_setup_probe() RETURNS INT DETERMINISTIC RETURN 1');
+            $pdo->exec('DROP FUNCTION energine_setup_probe');
+        } catch (\PDOException $e) {
+            throw new \Exception('У пользователя базы нет права создавать процедуры (CREATE ROUTINE): схема без них не ставится. '
+                . 'Выдайте право в панели хостинга и запустите установку снова.');
+        }
 
         // файлы, записанные этим запуском: при сбое они удаляются — повтор начнётся с тех же параметров
         $written = [];
@@ -314,11 +324,17 @@ final class Setup {
             }
             throw new \Exception('установка прервалась: ' . $e->getMessage() . PHP_EOL
                 . ($written ? 'Конфиг, записанный этим запуском, удалён. ' : '')
-                . 'База заполнена частично: очистите её (все таблицы и процедуры) и запустите установку снова.');
+                . 'База заполнена частично: удалите таблицы и процедуры, созданные этим запуском (до установки база была пуста), '
+                . 'и запустите установку снова.');
         }
         if (empty($o['no-static'])) {
             $this->config = include $configFile;
-            $this->linkerAction();
+            try {
+                $this->linkerAction();
+            } catch (\Exception $e) {
+                throw new \Exception('сайт установлен, но статика не разложена: ' . $e->getMessage() . PHP_EOL
+                    . 'Исправьте причину и запустите от владельца площадки: php web/index.php setup linker');
+            }
         }
         $this->text('Готово: ', $address['scheme'], '://', $address['domain'], $address['root']);
     }
@@ -332,6 +348,7 @@ final class Setup {
     private function demoAction(...$args) {
         $o = $this->options($args, ['config'], ['no-static']);
         $this->title('Демо-контент');
+        $this->refuseRoot();
         $configFile = $o['config'] ?? implode(DIRECTORY_SEPARATOR, [HTDOCS_DIR, 'system.config.php']);
         $config = file_exists($configFile) ? include $configFile : null;
         if (!is_array($config) || empty($config['database'])) {
@@ -339,12 +356,13 @@ final class Setup {
         }
         $pdo = $this->connect($config['database']);
         try {
-            $filled = (int)$pdo->query('SELECT COUNT(*) FROM share_textblocks')->fetchColumn();
+            // свежая установка: ни текстов, ни файлов в репозитории (кроме его корня)
+            $filled = (int)$pdo->query('SELECT (SELECT COUNT(*) FROM share_textblocks) + (SELECT COUNT(*) FROM share_uploads WHERE upl_pid IS NOT NULL)')->fetchColumn();
         } catch (\PDOException $e) {
             throw new \Exception('База не установлена: сначала setup install');
         }
         if ($filled) {
-            throw new \Exception('В базе уже есть тексты: демо ставится только на свежую установку');
+            throw new \Exception('В базе уже есть тексты или файлы: демо ставится только на свежую установку');
         }
         $this->text('Демо: ', $this->runSqlFile($pdo, ROOT_DIR . '/sql/demo.sql'), ' запросов');
         if (empty($o['no-static'])) {
@@ -356,7 +374,10 @@ final class Setup {
                 if (!is_dir(dirname($target))) {
                     mkdir(dirname($target), 0755, true);
                 }
-                copy($file->getPathname(), $target);
+                if (!copy($file->getPathname(), $target)) {
+                    throw new \Exception('Файл демо не скопирован: ' . $target . ' (права на web/uploads?). '
+                        . 'Строки демо в базе уже есть: повторите копирование файлов из sql/demo/uploads вручную.');
+                }
                 $n++;
             }
             $this->text('Файлы демо: ', $n, ' в ', HTDOCS_DIR, '/uploads');
@@ -392,8 +413,20 @@ final class Setup {
     /**
      * Расширения PHP, без которых сайт не работает.
      */
+    /**
+     * От root установка не запускается: записанные файлы (конфиг, ссылки статики, загрузки) достались бы root,
+     * а веб-сервер площадки отдаёт только файлы её владельца.
+     */
+    private function refuseRoot() {
+        if (function_exists('posix_geteuid') && posix_geteuid() === 0) {
+            $owner = function_exists('posix_getpwuid') ? (posix_getpwuid(fileowner(HTDOCS_DIR))['name'] ?? 'владелец') : 'владелец';
+            throw new \Exception('Установщик запущен от root: файлы достались бы root, и сайт перестал бы их отдавать. '
+                . 'Запустите от владельца площадки: runuser -u ' . $owner . ' -- php web/index.php setup …');
+        }
+    }
+
     private function checkExtensions() {
-        $missing = array_filter(['pdo_mysql', 'dom', 'xsl', 'simplexml', 'mbstring', 'gd', 'openssl', 'fileinfo'],
+        $missing = array_filter(['pdo_mysql', 'dom', 'xsl', 'simplexml', 'mbstring', 'gd', 'openssl', 'fileinfo', 'ctype'],
             fn($extension) => !extension_loaded($extension));
         if ($missing) {
             throw new \Exception('Нет расширений PHP: ' . implode(', ', $missing));
@@ -436,8 +469,11 @@ final class Setup {
         $dsn = !empty($db['socket']) ? 'mysql:unix_socket=' . $db['socket']
             : 'mysql:host=' . ($db['host'] ?? 'localhost') . ';port=' . (($db['port'] ?? '') ?: 3306);
         try {
-            return new \PDO($dsn . ';dbname=' . $db['db'] . ';charset=utf8mb4', (string)$db['username'], (string)$db['password'],
+            $pdo = new \PDO($dsn . ';dbname=' . $db['db'] . ';charset=utf8mb4', (string)$db['username'], (string)$db['password'],
                 [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]);
+            // файлы SQL написаны под обычный режим: NO_BACKSLASH_ESCAPES и т. п. из настроек сервера их бы испортили
+            $pdo->exec("SET SESSION sql_mode = 'NO_ENGINE_SUBSTITUTION'");
+            return $pdo;
         } catch (\PDOException $e) {
             throw new \Exception('Нет соединения с базой «' . $db['db'] . '»: ' . $e->getMessage());
         }
