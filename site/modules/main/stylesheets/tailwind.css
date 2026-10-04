@@ -122,57 +122,12 @@ hr { border: 0; border-top: 1px solid var(--border); margin: 2rem 0; }
 
 .wrap { width: 100%; max-width: var(--wrap); margin-inline: auto; padding-inline: var(--gap); }
 
-/* ссылка «к содержимому»: видна только в фокусе */
-.skip-link {
-    position: absolute; left: -10000px; top: auto; width: 1px; height: 1px; overflow: hidden;
-}
-.skip-link:focus {
-    position: fixed; left: var(--gap); top: var(--gap); width: auto; height: auto; z-index: 100;
-    padding: .5rem 1rem; background: var(--accent); color: var(--accent-fg); border-radius: var(--radius);
-}
-
-/* ---------- шапка ---------- */
-.site-header { border-bottom: 1px solid var(--border); background: var(--bg); }
-.site-header__inner {
-    display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1.5rem; padding-block: .75rem;
-}
-.site-name { font-size: 1.25rem; font-weight: 700; color: var(--fg); text-decoration: none; margin-right: auto; }
-a.site-name:hover { color: var(--accent); }
-
-.site-tools { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; }
-
-.lang_switcher { display: flex; gap: .75rem; list-style: none; margin: 0; padding: 0; }
-.lang_switcher a[aria-current] { color: var(--fg); font-weight: 600; text-decoration: none; }
-
-.user-menu { display: flex; align-items: center; gap: .5rem; }
-.user-menu__name { color: var(--muted); }
-.user-menu__logout { margin: 0; }
-.user-menu__logout button {
-    padding: 0; border: 0; background: none; color: var(--accent); font: inherit; text-decoration: underline;
-    text-underline-offset: .15em; cursor: pointer;
-}
-
-/* меню: на телефоне — кнопка и список под ней */
-.site-nav { order: 3; flex-basis: 100%; }
-.site-menu > summary {
-    display: inline-flex; align-items: center; gap: .5rem; padding: .4rem .9rem; cursor: pointer;
-    border: 1px solid var(--border); border-radius: var(--radius); list-style: none; user-select: none;
-}
-.site-menu > summary::-webkit-details-marker { display: none; }
-.site-menu > summary::before { content: "☰"; }
-.site-menu[open] > summary::before { content: "✕"; }
-.main_menu { list-style: none; margin: .5rem 0 0; padding: 0; }
-.main_menu a { display: block; padding: .5rem .25rem; text-decoration: none; }
-.main_menu a[aria-current] { font-weight: 700; color: var(--fg); }
-.main_menu--sub { margin: 0 0 0 1rem; }
 
 /* ---------- страница ---------- */
 .site-body { display: grid; gap: 2rem; padding-block: 1.5rem 3rem; }
 .site-main { min-width: 0; outline: none; }
 .site-aside { min-width: 0; }
 
-.breadcrumbs ol { display: flex; flex-wrap: wrap; gap: .25rem; list-style: none; margin: 0 0 1rem; padding: 0; font-size: .9rem; color: var(--muted); }
-.breadcrumbs li + li::before { content: "/"; margin-right: .25rem; color: var(--muted); }
 
 .block { margin-bottom: 2rem; }
 .block_header .block_title { margin-top: 0; }
@@ -226,32 +181,20 @@ div.error, .error_message, .result_message.error_message {
 .error_debug { font-size: .85rem; color: var(--muted); }
 .error_debug li { margin-bottom: .5rem; }
 
-/* ---------- подвал ---------- */
-.site-footer { border-top: 1px solid var(--border); color: var(--muted); font-size: .9rem; padding-block: 1.5rem; }
-.site-footer p:last-child { margin-bottom: 0; }
-
 /* ---------- широкий экран ---------- */
+/* меню-<details> (утилитами не выразить): значок кнопки, подпункт по наведению и фокусу на широком экране */
+.ui-menu > summary::-webkit-details-marker { display: none; }
+.ui-menu > summary::before { content: "☰"; }
+.ui-menu[open] > summary::before { content: "✕"; }
 @media (min-width: 48rem) {
-    /* название и язык со входом — строкой, меню — своей строкой под ними: выдерживает длинное меню */
-    .site-tools { order: 2; }
-    .site-nav { order: 3; }
-    .main_menu { display: flex; flex-wrap: wrap; gap: 0 1.5rem; margin: 0; }
-    .main_menu a { padding: .25rem 0; }
-    /* подпункты — списком под пунктом при наведении и при фокусе с клавиатуры */
-    .main_menu > li { position: relative; }
-    .main_menu--sub {
-        display: none; position: absolute; top: 100%; left: -.75rem; z-index: 20; min-width: 14rem; margin: 0; padding: .35rem 0;
-        background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: 0 .5rem 1.5rem rgb(0 0 0 / .12);
-    }
-    .main_menu > li:hover > .main_menu--sub, .main_menu > li:focus-within > .main_menu--sub { display: block; }
-    .main_menu--sub a { padding: .35rem .75rem; white-space: nowrap; }
+    .ui-submenu { display: none; }
+    .ui-menu li:hover > .ui-submenu, .ui-menu li:focus-within > .ui-submenu { display: block; }
 }
 /* меню раскрыто без кнопки там, где браузер умеет ::details-content (без него правило отброшено бы целиком,
    а спрятанная кнопка оставила бы посетителя без меню): иначе на широком экране остаётся кнопка «Меню» */
 @supports selector(::details-content) {
     @media (min-width: 48rem) {
-        .site-menu > summary { display: none; }
-        .site-menu::details-content { content-visibility: visible; display: block; }
+        .ui-menu::details-content { content-visibility: visible; display: block; }
     }
 }
 
@@ -266,8 +209,7 @@ div.error, .error_message, .result_message.error_message {
 /* ---------- печать ---------- */
 @media print {
     :root { --bg: #fff; --fg: #000; --muted: #333; }
-    .skip-link, .site-nav, .site-tools, .site-aside, .breadcrumbs, form button { display: none !important; }
-    .site-header, .site-footer { border: 0; }
+    .site-aside, form button { display: none !important; }
     a { color: #000; }
     .site-body { display: block; padding: 0; }
 }

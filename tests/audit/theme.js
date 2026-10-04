@@ -69,6 +69,26 @@ async function inspect(page) {
     }
     const guest = await browser.newContext({ locale: 'ru-RU' });
 
+    // интерфейс на Tailwind: каркас страницы (шапка, меню, язык, вход, крошки, подвал) — утилиты в разметке,
+    // в стилях нет правил старой темы для него
+    {
+        const p = await guest.newPage();
+        await p.goto(BASE + 'features/content/', { waitUntil: 'networkidle' });
+        const r = await p.evaluate(async () => {
+            const href = [...document.querySelectorAll('link[rel="stylesheet"]')].map((l) => l.href).find((h) => /\/main\.css/.test(h));
+            const css = href ? await (await fetch(href)).text() : '';
+            const old = ['.site-header', '.site-header__inner', '.site-name', '.site-tools', '.lang_switcher', '.user-menu',
+                '.site-nav', '.main_menu', '.breadcrumbs', '.site-footer', '.skip-link']
+                .filter((c) => new RegExp('\\' + c + '(?![\\w-])[^{]*\\{').test(css));
+            const cls = (sel) => (document.querySelector(sel) || { className: '' }).className;
+            return { old, header: cls('header.site-header'), footer: cls('footer.site-footer'), crumbs: cls('nav.breadcrumbs ol') };
+        });
+        check('каркас страницы: правил старой темы в стилях нет', !r.old.length, r.old.join(' '));
+        check('каркас страницы: шапка, подвал и крошки оформлены утилитами',
+            /\bborder-b\b/.test(r.header) && /\bborder-t\b/.test(r.footer) && /\bflex\b/.test(r.crumbs), JSON.stringify(r));
+        await p.close();
+    }
+
     for (const [label, url, who, status] of PAGES) {
         for (const [w, h, tag] of [[390, 844, 'телефон'], [1280, 900, 'десктоп']]) {
             const ctx = who === 'user' ? user : guest;

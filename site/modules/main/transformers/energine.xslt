@@ -33,17 +33,17 @@
 
     <!-- страница -->
     <xsl:template match="document">
-        <a class="skip-link" href="#content"><xsl:value-of select="$TRANSLATION[@const='TXT_SKIP_TO_CONTENT']"/></a>
-        <header class="site-header">
-            <div class="wrap site-header__inner">
-                <a class="site-name">
+        <a class="skip-link print:hidden sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100] focus:rounded-ui focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-fg" href="#content"><xsl:value-of select="$TRANSLATION[@const='TXT_SKIP_TO_CONTENT']"/></a>
+        <header class="site-header print:border-0 border-b border-border bg-bg">
+            <div class="{$UI_CONTAINER} site-header__inner flex flex-wrap items-center gap-x-6 gap-y-2 py-3">
+                <a class="site-name mr-auto text-xl font-bold text-fg no-underline hover:text-primary">
                     <xsl:if test="$DOC_PROPS[@name='default'] != 1">
                         <xsl:attribute name="href"><xsl:value-of select="$BASE"/><xsl:value-of select="$LANG_ABBR"/></xsl:attribute>
                     </xsl:if>
                     <xsl:value-of select="$SITE_NAME"/>
                 </a>
                 <xsl:apply-templates select="$COMPONENTS[@name='mainMenu']"/>
-                <div class="site-tools">
+                <div class="site-tools print:hidden flex flex-wrap items-center gap-x-4 gap-y-2 md:order-2">
                     <xsl:apply-templates select="$COMPONENTS[@class='LangSwitcher']"/>
                     <xsl:apply-templates select="$COMPONENTS[@name='userMenu']"/>
                 </div>
@@ -65,8 +65,8 @@
                 </aside>
             </xsl:if>
         </div>
-        <footer class="site-footer">
-            <div class="wrap">
+        <footer class="site-footer print:border-0 border-t border-border py-6 text-sm text-muted [&amp;_p:last-child]:mb-0">
+            <div class="{$UI_CONTAINER}">
                 <xsl:apply-templates select="$COMPONENTS[@name='footerTextBlock']"/>
             </div>
         </footer>
@@ -74,9 +74,9 @@
 
     <!-- главное меню: на телефоне сворачивается -->
     <xsl:template match="component[@name='mainMenu']" priority="1">
-        <nav class="site-nav" aria-label="{$TRANSLATION[@const='TXT_MAIN_MENU']}">
-            <details class="site-menu">
-                <summary><xsl:value-of select="$TRANSLATION[@const='TXT_MENU']"/></summary>
+        <nav class="site-nav print:hidden order-3 basis-full" aria-label="{$TRANSLATION[@const='TXT_MAIN_MENU']}">
+            <details class="site-menu ui-menu">
+                <summary class="supports-[selector(::details-content)]:md:hidden inline-flex cursor-pointer list-none items-center gap-2 rounded-ui border border-border px-3.5 py-1.5 select-none"><xsl:value-of select="$TRANSLATION[@const='TXT_MENU']"/></summary>
                 <xsl:apply-templates select="recordset"/>
             </details>
         </nav>
@@ -84,9 +84,9 @@
 
     <xsl:template match="recordset[ancestor::component[@name='mainMenu']]" priority="1">
         <xsl:if test="not(@empty) and record">
-            <ul class="main_menu">
+            <ul class="main_menu mt-2 mb-0 list-none p-0 md:mt-0 md:flex md:flex-wrap md:gap-x-6">
                 <xsl:if test="parent::record">
-                    <xsl:attribute name="class">main_menu main_menu--sub</xsl:attribute>
+                    <xsl:attribute name="class">main_menu main_menu--sub ui-submenu my-0 ml-4 list-none p-0 md:absolute md:top-full md:-left-3 md:z-20 md:ml-0 md:min-w-56 md:rounded-ui md:border md:border-border md:bg-bg md:py-1.5 md:shadow-lg</xsl:attribute>
                 </xsl:if>
                 <xsl:apply-templates select="record"/>
             </ul>
@@ -95,8 +95,8 @@
 
     <xsl:template match="record[ancestor::component[@name='mainMenu']]" priority="1">
         <li>
-            <xsl:attribute name="class">main_menu_item<xsl:if test="field[@name='Id'] = $ID"> active</xsl:if></xsl:attribute>
-            <a>
+            <xsl:attribute name="class">main_menu_item relative<xsl:if test="field[@name='Id'] = $ID"> active</xsl:if></xsl:attribute>
+            <a class="block px-1 py-2 no-underline aria-[current]:font-bold aria-[current]:text-fg md:px-0 md:py-1 in-[.ui-submenu]:md:px-3 in-[.ui-submenu]:md:py-1.5 in-[.ui-submenu]:md:whitespace-nowrap">
                 <xsl:attribute name="href"><xsl:choose>
                     <xsl:when test="field[@name='Redirect'] = ''"><xsl:value-of select="$LANG_ABBR"/><xsl:value-of select="field[@name='Segment']"/></xsl:when>
                     <xsl:otherwise><xsl:value-of select="field[@name='Redirect']"/></xsl:otherwise>
@@ -112,13 +112,18 @@
 
     <!-- вход в шапке: ссылка для гостя, имя и выход (POST с токеном) для вошедшего -->
     <xsl:template match="component[@name='userMenu']" priority="1">
-        <div class="user-menu">
+        <div class="user-menu flex items-center gap-2">
             <xsl:choose>
                 <xsl:when test="@componentAction = 'showLogoutForm'">
-                    <span class="user-menu__name"><xsl:value-of select="recordset/record/field[@name='u_fullname']"/></span>
-                    <form method="post" action="{@action}" class="user-menu__logout">
+                    <span class="user-menu__name text-muted"><xsl:value-of select="recordset/record/field[@name='u_fullname']"/></span>
+                    <form method="post" action="{@action}" class="user-menu__logout m-0">
                         <input type="hidden" name="csrf_token" value="{$CSRF}"/>
-                        <button type="submit" name="user[logout]" value="1"><xsl:value-of select="$TRANSLATION[@const='BTN_LOGOUT']"/></button>
+                        <xsl:call-template name="ui-button">
+                            <xsl:with-param name="variant" select="'link'"/>
+                            <xsl:with-param name="name" select="'user[logout]'"/>
+                            <xsl:with-param name="value" select="'1'"/>
+                            <xsl:with-param name="text" select="$TRANSLATION[@const='BTN_LOGOUT']"/>
+                        </xsl:call-template>
                     </form>
                 </xsl:when>
                 <xsl:otherwise>
@@ -135,7 +140,7 @@
 
     <xsl:template match="recordset[parent::component[@class='LangSwitcher']]" priority="1">
         <xsl:if test="count(record) &gt; 1">
-            <ul class="lang_switcher">
+            <ul class="lang_switcher m-0 flex flex-wrap list-none gap-3 p-0">
                 <xsl:apply-templates/>
             </ul>
         </xsl:if>
@@ -143,7 +148,7 @@
 
     <xsl:template match="record[ancestor::component[@class='LangSwitcher']]" priority="1">
         <li class="lang_switcher_item">
-            <a>
+            <a class="aria-[current]:font-semibold aria-[current]:text-fg aria-[current]:no-underline">
                 <xsl:choose>
                     <xsl:when test="$LANG_ID != field[@name='lang_id']">
                         <xsl:attribute name="href"><xsl:value-of select="field[@name='lang_url']"/></xsl:attribute>
@@ -161,8 +166,8 @@
     <!-- BreadCrumbs -->
     <xsl:template match="component[@name='breadCrumbs']" priority="1">
         <xsl:if test="count(recordset/record) &gt; 1">
-            <nav class="breadcrumbs" aria-label="{$TRANSLATION[@const='TXT_BREADCRUMBS']}">
-                <ol>
+            <nav class="breadcrumbs print:hidden" aria-label="{$TRANSLATION[@const='TXT_BREADCRUMBS']}">
+                <ol class="m-0 mb-4 flex flex-wrap list-none gap-1 p-0 text-sm text-muted">
                     <xsl:apply-templates select="recordset/record"/>
                 </ol>
             </nav>
@@ -170,7 +175,7 @@
     </xsl:template>
 
     <xsl:template match="record[ancestor::component[@name='breadCrumbs']]" priority="1">
-        <li>
+        <li class="[li+&amp;]:before:mr-1 [li+&amp;]:before:content-['/']">
             <xsl:choose>
                 <xsl:when test="position() = last()">
                     <span aria-current="page"><xsl:value-of select="field[@name='Name']"/></span>
