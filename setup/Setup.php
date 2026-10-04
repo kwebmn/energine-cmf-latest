@@ -1006,6 +1006,25 @@ final class Setup {
      * @throws Exception 'Не существует: ' . $module_path — до любых изменений
      * @throws Exception 'Нет доступа на запись: ' . $modules_dir
      */
+    /**
+     * Стили сайта: сборка site/modules/main/stylesheets/main.css из tailwind.css бинарником Tailwind
+     * (tools/tailwindcss, скачивается tools/get-tailwind.sh). Собранный файл лежит в git: сайту бинарник не нужен.
+     */
+    private function cssAction() {
+        $this->title('Стили сайта (Tailwind)');
+        $bin = ROOT_DIR . '/tools/tailwindcss';
+        if (!is_executable($bin)) {
+            throw new \Exception('Нет бинарника Tailwind: bash tools/get-tailwind.sh');
+        }
+        $dir = SITE_DIR . '/modules/main/stylesheets';
+        $cmd = 'cd ' . escapeshellarg($dir) . ' && ' . escapeshellarg($bin) . ' --input tailwind.css --output main.css --minify 2>&1';
+        exec($cmd, $out, $rc);
+        if ($rc !== 0) {
+            throw new \Exception('Сборка стилей не удалась: ' . implode(PHP_EOL, array_slice($out, -5)));
+        }
+        $this->text('Собрано: ', $dir, '/main.css');
+    }
+
     private function linkerAction() {
 
         $this->title('Связывание данных модулей ');

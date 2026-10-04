@@ -3,7 +3,8 @@
 // ни на странице ошибки. Переведённые сообщения (404, проверки форм) остаются как есть.
 require __DIR__ . '/testlib.php';
 
-$leak = '/SQLSTATE|Duplicate entry|PDOException|Integrity constraint|\.php\b|\/var\/www/i';
+// утечка — текст SQL и пути сервера (ссылка формы входа на auth.php — не утечка)
+$leak = '/SQLSTATE|Duplicate entry|PDOException|Integrity constraint|\/var\/www|\/private\/energine/i';
 login();
 // повтор существующей константы в редакторе переводов упирается в уникальный ключ ltag_name
 [$code, $j, $body] = json('/admin/translations/single/transEditor/save', http_build_query([

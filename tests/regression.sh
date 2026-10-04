@@ -23,6 +23,7 @@ echo "### field-dates"; php8.5 field-dates.php
 echo "### site-settings"; php8.5 site-settings.php
 echo "### rights"; php8.5 smoke-rights.php
 echo "### errors"; php8.5 smoke-errors.php
+echo "### css"; bash css-build.sh
 echo "### menu"; php8.5 menu.php
 
 echo "### mail"
