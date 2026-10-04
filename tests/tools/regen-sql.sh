@@ -7,6 +7,8 @@
 #   sql/demo.sql      — демо-контент поверх базовых данных.
 # Так изменение базы пишется один раз — в переходе, — а новая установка получает то же (fresh-check.sh сверяет).
 # Каждая строка базы попадает в data.sql или demo.sql, иначе — отказ (таблица, которой нет в списках ниже).
+# Переход демо площадки — sql/cut/stage<N>-demo.sql того же номера (если есть): применяется после stage<N>.sql, его
+# строки уходят в demo.sql; шаблон главной, заданный им, — строкой UPDATE в конце demo.sql (в data.sql — прежний).
 # sql/demo/uploads не трогается.
 #   bash tests/tools/regen-sql.sh            — с переходом
 #   REGEN_NO_MIGRATION=1 bash …/regen-sql.sh — без него (проверка генератора: файлы выходят те же)
@@ -19,13 +21,19 @@ trap tempdb_stop EXIT
 tempdb_create g || exit 2
 for f in structure.sql data.sql demo.sql; do
   TM --default-character-set=utf8mb4 g < "$R/sql/$f" || { echo "импорт $f" >&2; exit 2; }
+  # время правки главной из базовых данных: демо меняет её шаблон, а в data.sql она остаётся прежней
+  [ $f = data.sql ] && HOME_MOD=$(TM -N g -e "SELECT smap_last_mod FROM share_sitemap WHERE smap_pid IS NULL")
 done
-last=$(ls "$R"/sql/cut/stage*.sql | sed -E 's/.*stage([0-9]+)\.sql$/\1/' | sort -n | tail -1)
+stages() { ls "$R"/sql/cut/stage*.sql | grep -E '/stage[0-9]+\.sql$' | sed -E 's/.*stage([0-9]+)\.sql$/\1/' | sort -n; }
+last=$(stages | tail -1)
 # последний по номеру переход (его разделы можно запускать повторно; предыдущие уже в файлах установки)
 if [ -z "${REGEN_NO_MIGRATION:-}" ]; then
   TM --default-character-set=utf8mb4 g < "$R/sql/cut/stage$last.sql" > /dev/null || { echo "stage$last.sql" >&2; exit 2; }
+  if [ -f "$R/sql/cut/stage$last-demo.sql" ]; then
+    TM --default-character-set=utf8mb4 g < "$R/sql/cut/stage$last-demo.sql" > /dev/null || { echo "stage$last-demo.sql" >&2; exit 2; }
+  fi
 else
-  last=$(ls "$R"/sql/cut/stage*.sql | sed -E 's/.*stage([0-9]+)\.sql$/\1/' | sort -n | tail -2 | head -1)
+  last=$(stages | tail -2 | head -1)
 fi
 Q() { TM -N g -e "$1"; }
 # строка «sandbox mode» — команда клиента mariadb, для установщика на PDO это пустой запрос: убирается;
@@ -35,6 +43,10 @@ D() { mariadb-dump --no-defaults --socket="$SOCK" -u root --default-character-se
 exists() { [ "$(Q "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = 'g' AND TABLE_NAME = '$1'")" = 1 ]; }
 
 # страницы базы: корень, его служебные разделы и всё, что под ними (админка целиком)
+# шаблон главной: в базовых данных — main.content.xml (пустой сайт), другой — заданный демо — строкой в demo.sql
+HOME_CONTENT=$(Q "SELECT smap_content FROM share_sitemap WHERE smap_pid IS NULL")
+[ "$HOME_CONTENT" = main.content.xml ] \
+  || Q "UPDATE share_sitemap SET smap_content = 'main.content.xml', smap_last_mod = '$HOME_MOD' WHERE smap_pid IS NULL"
 BASE=$(Q "WITH RECURSIVE b AS (
   SELECT smap_id FROM share_sitemap WHERE smap_pid IS NULL
   UNION ALL
@@ -95,6 +107,8 @@ cd "$R/sql" || exit 2
   rows share_uploads "NOT ($REPO)"
   rows user_users "u_id NOT IN ($ADMINS)"
   rows user_user_groups "u_id NOT IN ($ADMINS)"
+  [ "$HOME_CONTENT" = main.content.xml ] \
+    || echo "UPDATE \`share_sitemap\` SET \`smap_content\` = '$HOME_CONTENT' WHERE \`smap_pid\` IS NULL;"
   echo "SET FOREIGN_KEY_CHECKS = 1;"
 } > demo.sql.new
 

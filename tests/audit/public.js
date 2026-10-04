@@ -83,6 +83,22 @@ const fieldError = (p, selector) => p.evaluate((sel) => {
             'ua/', 'ua/login/', 'ua/register/', 'ua/restore-password/', 'ua/sitemap/']) {
             await pageChecks(guest, 'гость', url);
         }
+        // 1c. демо на шаблонах страниц (UI-подпроект 2): главная — лендинг, «Услуга» и «Контакты» — свои секции,
+        //     на обоих языках; один h1, пустых полос нет
+        for (const [url, want] of [['', ['hero', 'services', 'reviews', 'cta', 'contacts']], ['service/', ['hero', 'prices', 'faq', 'cta']],
+                                   ['contacts/', ['contacts']], ['ua/', ['hero', 'services', 'reviews', 'cta', 'contacts']],
+                                   ['ua/service/', ['hero', 'prices', 'faq', 'cta']], ['ua/contacts/', ['contacts']]]) {
+            const p = await guest.newPage();
+            const resp = await p.goto(BASE + url, { waitUntil: 'networkidle' });
+            const r = await p.evaluate(() => ({
+                sections: [...document.querySelectorAll('section[data-section]')].map((s) => s.dataset.section),
+                empty: [...document.querySelectorAll('section[data-section]')].filter((s) => !s.textContent.trim()).length,
+                h1: document.querySelectorAll('h1').length,
+            }));
+            check(`демо /${url}: секции ${want.join(' ')}, один h1, пустых нет`, resp.status() === 200
+                && JSON.stringify(r.sections) === JSON.stringify(want) && !r.empty && r.h1 === 1, JSON.stringify(r));
+            await p.close();
+        }
         // 1a. the MooTools files are gone from the site (stage 8, step 7)
         for (const file of ['scripts/mootools.min.js', 'scripts/MooCompat.js']) {
             const r = await guest.request.get(BASE + file);
