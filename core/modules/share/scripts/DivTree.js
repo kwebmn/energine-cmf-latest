@@ -14,6 +14,8 @@
 
 import {DivManager} from 'DivManager';
 
+/** @typedef {InstanceType<typeof import('TreeView').TreeView.Node>} TreeNode */
+
 /**
  * Окно выбора раздела (родитель раздела): раздел формы, из которой окно открыто, и его потомков выбрать нельзя.
  *
@@ -38,7 +40,7 @@ export class DivTree extends DivManager {
         });
         for (let i = 0; i < srcWindows.length; i++) {
             try {
-                const result = srcWindows[i].document.getElementById('smap_id');
+                const result = /** @type {HTMLInputElement|null} */ (srcWindows[i].document.getElementById('smap_id'));
                 if (result) {
                     this.currentID = parseInt(result.value, 10);
                     break;
@@ -55,7 +57,7 @@ export class DivTree extends DivManager {
     /**
      * «Выбрать» выключена у раздела формы и у его потомков.
      *
-     * @param {TreeView.Node} node
+     * @param {TreeNode} node
      */
     onSelectNode(node) {
         super.onSelectNode(node);

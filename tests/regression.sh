@@ -43,6 +43,7 @@ echo "### perimeter"; php8.5 perimeter.php
 echo "### delete-guards"; php8.5 delete-guards.php
 echo "### phpstan"; bash phpstan.sh
 echo "### js-dead"; php8.5 js-dead.php
+echo "### jscheck"; bash jscheck.sh
 
 echo "### mail"
 php8.5 smoke-mail.php

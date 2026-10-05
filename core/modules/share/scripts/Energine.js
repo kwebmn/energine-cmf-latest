@@ -105,6 +105,7 @@ export const Energine = /** @lends Energine */{
         if (Energine.csrf) {
             headers['X-CSRF-Token'] = Energine.csrf;
         }
+        /** @type {RequestInit} */
         var init = {method: method, headers: headers, credentials: 'same-origin'};
         if (method === 'GET') {
             if (body) {
@@ -215,7 +216,7 @@ Energine.loadCSS = function (name) {
     var href = new URL((Energine['static'] || '') + 'stylesheets/' + name, document.baseURI).href;
     var links = document.querySelectorAll('link[rel="stylesheet"]');
     for (var i = 0; i < links.length; i++) {
-        if (links[i].href === href) {
+        if (/** @type {HTMLLinkElement} */ (links[i]).href === href) {
             return;
         }
     }
@@ -255,7 +256,7 @@ Energine.readCookie = function (name) {
  * Записать cookie (значение — через encodeURIComponent, как у Cookie MooTools).
  * @param {string} name
  * @param {*} value
- * @param {{path: string, domain: string, days: number}} [options] путь (по умолчанию «/»), домен, срок в днях
+ * @param {{path?: string, domain?: string, days?: number}} [options] путь (по умолчанию «/»), домен, срок в днях
  */
 Energine.writeCookie = function (name, value, options) {
     options = options || {};

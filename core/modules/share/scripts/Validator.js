@@ -10,6 +10,8 @@
  * @version 1.1.0
  */
 
+/** @typedef {import('TabPane').TabPane} TabPane */
+
 /**
  * Validator: правило поля — атрибуты nrgn:pattern (выражение /…/флаги) и nrgn:message (текст ошибки).
  *

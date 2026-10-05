@@ -1,0 +1,26 @@
+{
+  "_comment": "Проверка типов JS без сборки: tests/jscheck.sh (tsc --noEmit, checkJs + JSDoc). Имена модулей — как в import map (document.xslt: scripts/<имя>.js); Jodit и глобальные имена описаны в tests/types/*.d.ts.",
+  "compilerOptions": {
+    "checkJs": true,
+    "allowJs": true,
+    "noEmit": true,
+    "target": "es2022",
+    "module": "es2022",
+    "moduleResolution": "bundler",
+    "strict": false,
+    "noImplicitAny": false,
+    "lib": ["es2022", "dom", "dom.iterable"],
+    "types": [],
+    "baseUrl": ".",
+    "paths": {
+      "jodit/*": ["tests/types/jodit.d.ts"],
+      "*": ["core/modules/share/scripts/*.js", "core/modules/user/scripts/*.js"]
+    }
+  },
+  "include": [
+    "core/modules/share/scripts/*.js",
+    "core/modules/user/scripts/*.js",
+    "tests/types/*.d.ts"
+  ],
+  "exclude": ["core/modules/share/scripts/jodit/**"]
+}

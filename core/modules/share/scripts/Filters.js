@@ -30,6 +30,8 @@ class FiltersFabric {
     }
 };
 
+/** @typedef {import('GridManager').GridManager} GridManager */
+
 /**
  * Панель фильтров грида: один или несколько фильтров «поле — условие — значение», объединённых «и/или».
  *

@@ -60,10 +60,10 @@ export class ImageManager extends Form {
      * Поле окна по id.
      *
      * @param {string} id
-     * @returns {Element}
+     * @returns {HTMLInputElement}
      */
     field(id) {
-        return document.getElementById(id);
+        return /** @type {HTMLInputElement} */ (document.getElementById(id));
     }
 
     /**
@@ -85,8 +85,8 @@ export class ImageManager extends Form {
             } else {
                 width = Math.round((oldWidth * height) / oldHeight);
             }
-            this.field('width').value = width;
-            this.field('height').value = height;
+            this.field('width').value = String(width);
+            this.field('height').value = String(height);
             this.field('filename').value = src = Energine.resizer + 'w' + width + '-h' + height + '/' + this.image['upl_path'];
             this.field('thumbnail').setAttribute('src', src);
         }

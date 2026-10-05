@@ -22,6 +22,8 @@ import {TabPane} from 'TabPane';
 import {ModalBox} from 'ModalBox';
 import {TreeView} from 'TreeView';
 
+/** @typedef {import('Toolbar').Toolbar} Toolbar */
+
 /**
  * Структура сайта: дерево разделов с панелью — добавить, править, удалить, переставить, выбрать (в окне), перейти на
  * страницу раздела (двойной щелчок).
@@ -98,7 +100,7 @@ export class DivManager {
                 this.buildTree(response.data, (response.current) ? response.current : null);
                 /* растягиваем всю форму до высоты видимого окна */
                 if (!document.querySelector('.e-singlemode-layout')) {
-                    this.pane = this.element;
+                    this.pane = /** @type {HTMLElement} */ (this.element);
                     this.paneContent = this.pane.querySelector('.e-pane-item');
                     this.treeContainer = this.pane.querySelector('.e-divtree-select');
                     this.minPaneHeight = 300;

@@ -89,7 +89,7 @@ export const EnergineEditor = {
                 '|', 'undo', 'redo'
             ]
         }, options.jodit || {});
-        return Jodit.make(element, config);
+        return Jodit.make(/** @type {HTMLElement|string} */ (element), config);
     },
 
     /**

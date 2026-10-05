@@ -16,6 +16,8 @@ import {Energine} from 'Energine';
 import {DivManager} from 'DivManager';
 import {TreeView} from 'TreeView';
 
+/** @typedef {import('Toolbar').Toolbar} Toolbar */
+
 /**
  * Дерево разделов в боковой панели администратора: без вкладок и подгонки под окно, панель сверху, у html — класс
  * e-divtree-panel.

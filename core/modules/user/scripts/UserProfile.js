@@ -23,8 +23,8 @@ import {ValidForm} from 'ValidForm';
  */
 export class UserProfile extends ValidForm {
     validateForm(event) {
-        const field = document.getElementById('u_password');
-        const field2 = document.getElementById('u_password2');
+        const field = /** @type {HTMLInputElement|null} */ (document.getElementById('u_password'));
+        const field2 = /** @type {HTMLInputElement|null} */ (document.getElementById('u_password2'));
         if (field && field2 && field.value !== field2.value) {
             this.validator.showError(field, field.getAttribute('nrgn:message2'));
             event.preventDefault();

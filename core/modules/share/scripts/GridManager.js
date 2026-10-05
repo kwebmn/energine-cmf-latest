@@ -30,6 +30,9 @@ import {Overlay} from 'Overlay';
 import {ModalBox} from 'ModalBox';
 import {Filters} from 'Filters';
 
+/** @typedef {import('Toolbar').Toolbar} Toolbar */
+/** @typedef {HTMLTableRowElement & {record?: Object}} GridRow строка грида с записью */
+
 /**
  * Таблица грида: строки записей, выбор (Ctrl — ещё строка, Shift — диапазон), сортировка по заголовку, ширины колонок
  * и высота под панель и окно.
@@ -54,7 +57,7 @@ export class Grid {
         this.metadata = null;
         /**
          * Selected rows.
-         * @type {Element[]}
+         * @type {GridRow[]}
          */
         this.selectedItem = [];
         /**
@@ -64,7 +67,7 @@ export class Grid {
         this.sort = {field: null, order: null};
 
         this.tbody = this.element.querySelector('.gridContainer tbody');
-        this.headers = Array.from(this.element.querySelectorAll('.gridHeadContainer table.gridTable th'));
+        this.headers = /** @type {HTMLElement[]} */ (Array.from(this.element.querySelectorAll('.gridHeadContainer table.gridTable th')));
         this.headers.forEach((header) => header.addEventListener('click', (event) => this.onChangeSort(event)));
 
         // добавляем к контейнеру класс, который указывает, что в нем есть грид
@@ -145,7 +148,7 @@ export class Grid {
      * Выбрать строку: без multiple — только её; multiple — добавить к выбранным; rangeselect — ещё и строки между ней
      * и последней выбранной.
      *
-     * @param {Element} item
+     * @param {GridRow} item
      * @param {boolean} [multiple]
      * @param {boolean} [rangeselect]
      */
@@ -160,29 +163,33 @@ export class Grid {
                 this.disableControlByMultiselect();
                 if (rangeselect && this.selectedItem.length > 0) {
                     const el = this.selectedItem[this.selectedItem.length - 1];
-                    let findup = el, finddown = el;
-                    while (findup.previousSibling || finddown.nextSibling) {
-                        if (findup.previousSibling) {
-                            findup = findup.previousSibling;
+                    // строки tbody — только tr, созданные здесь же: соседи по элементам и есть соседние строки
+                    /** @type {Element|null} */
+                    let findup = el;
+                    /** @type {Element|null} */
+                    let finddown = el;
+                    while (findup.previousElementSibling || finddown.nextElementSibling) {
+                        if (findup.previousElementSibling) {
+                            findup = findup.previousElementSibling;
                         }
-                        if (finddown.nextSibling) {
-                            finddown = finddown.nextSibling;
+                        if (finddown.nextElementSibling) {
+                            finddown = finddown.nextElementSibling;
                         }
                         if (findup === item) {
-                            finddown = false;
+                            finddown = null;
                             break;
                         } else if (finddown === item) {
-                            findup = false;
+                            findup = null;
                             break;
                         }
                     }
-                    if (finddown === false || findup === false) {
-                        let selected = (finddown === false) ? findup.nextSibling : finddown.previousSibling;
+                    if (finddown === null || findup === null) {
+                        let selected = (finddown === null) ? findup.nextElementSibling : finddown.previousElementSibling;
                         while (selected !== el) {
                             selected.classList.add('selected');
-                            this.selectedItem.push(selected);
+                            this.selectedItem.push(/** @type {GridRow} */ (selected));
                             this.emit('select', selected);
-                            selected = (finddown === false) ? selected.nextSibling : selected.previousSibling;
+                            selected = (finddown === null) ? selected.nextElementSibling : selected.previousElementSibling;
                         }
                     }
                 }
@@ -202,7 +209,7 @@ export class Grid {
      * Выбранная строка (первая) или, с аргументом, все выбранные; null — ничего не выбрано.
      *
      * @param {boolean} [returnAsArray]
-     * @returns {Element|Element[]|null}
+     * @returns {GridRow|GridRow[]|null}
      */
     getSelectedItem(returnAsArray) {
         if (!arguments.length) {
@@ -215,13 +222,13 @@ export class Grid {
      * Поля записи в порядке заголовков: скрытые и особые (custom) — первыми; заголовок без поля в записи прячется.
      *
      * @param {Object} record
-     * @param {Element[]} header
+     * @param {HTMLElement[]} header
      * @returns {Object}
      */
     sortRecordAsHeadersName(record, header) {
         const sorted = {};
         for (const fieldName in record) {
-            if ((this.metadata[fieldName].type == 'hidden') ^ (this.metadata[fieldName].type == 'custom')) {
+            if ((this.metadata[fieldName].type == 'hidden') !== (this.metadata[fieldName].type == 'custom')) {
                 sorted[fieldName] = record[fieldName];
             }
         }
@@ -243,11 +250,11 @@ export class Grid {
     build() {
         let previouslySelectedRecordKey = this.getSelectedRecordKey();
         this.selectedItem = [];
-        this.gridHeadContainer = this.element.querySelector('.gridHeadContainer');
+        this.gridHeadContainer = /** @type {HTMLElement} */ (this.element.querySelector('.gridHeadContainer'));
         this.gridHeadContainerTabs = Array.from(this.gridHeadContainer.querySelectorAll('th'));
-        this.paneContent = this.element.closest('.e-pane-item');
-        this.gridToolbar = this.element.querySelector('.grid_toolbar');
-        this.gridContainer = this.element.querySelector('.gridContainer');
+        this.paneContent = /** @type {HTMLElement} */ (this.element.closest('.e-pane-item'));
+        this.gridToolbar = /** @type {HTMLElement} */ (this.element.querySelector('.grid_toolbar'));
+        this.gridContainer = /** @type {HTMLElement} */ (this.element.querySelector('.gridContainer'));
 
         if (!this.isEmpty()) {
             if (!this.dataKeyExists(previouslySelectedRecordKey)) {
@@ -274,8 +281,8 @@ export class Grid {
 
         /* растягиваем всю форму до высоты видимого окна */
         if (!document.querySelector('.e-singlemode-layout')) {
-            this.pane = this.element.closest('.e-pane');
-            this.gridBodyContainer = this.element.querySelector('.gridBodyContainer');
+            this.pane = /** @type {HTMLElement} */ (this.element.closest('.e-pane'));
+            this.gridBodyContainer = /** @type {HTMLElement} */ (this.element.querySelector('.gridBodyContainer'));
             this.fitGridFormSize();
         }
     }
@@ -297,7 +304,7 @@ export class Grid {
             }
         }
         // Создаем новую строку в таблице.
-        const row = document.createElement('tr');
+        const row = /** @type {GridRow} */ (document.createElement('tr'));
         row.className = (id % 2 == 0) ? 'odd' : 'even';
         row.setAttribute('unselectable', 'on');
         this.tbody.appendChild(row);
@@ -376,8 +383,8 @@ export class Grid {
                 if (record[fieldName]) {
                     const image = document.createElement('img');
                     image.setAttribute('src', Energine.resizer + 'w40-h40/' + record[fieldName]);
-                    image.setAttribute('width', 40);
-                    image.setAttribute('height', 40);
+                    image.setAttribute('width', '40');
+                    image.setAttribute('height', '40');
                     cell.appendChild(image);
                     cell.style.textAlign = 'center';
                     cell.style.verticalAlign = 'middle';
@@ -388,11 +395,11 @@ export class Grid {
                 if (record[fieldName] || record[fieldName] == 0) {
                     fieldValue = Grid.clean(record[fieldName].toString());
                 }
-                const prevRow = row.previousElementSibling;
+                const prevRow = /** @type {GridRow|null} */ (row.previousElementSibling);
                 if ((this.metadata[fieldName].type == 'select') && (row.firstElementChild == cell) && prevRow
                     && (prevRow.record[fieldName] == record[fieldName])) {
                     fieldValue = '';
-                    prevRow.firstElementChild.style.fontWeight = 'bold';
+                    /** @type {HTMLElement} */ (prevRow.firstElementChild).style.fontWeight = 'bold';
                 }
                 cell.textContent = (fieldValue != '') ? fieldValue : ' ';
             }
@@ -466,7 +473,7 @@ export class Grid {
     fitGridSize() {
         if (this.paneContent) {
             const margin = Grid.style(this.element, 'marginTop'),
-                eBToolbar = document.body.querySelector('.e-pane-b-toolbar'),
+                eBToolbar = /** @type {HTMLElement|null} */ (document.body.querySelector('.e-pane-b-toolbar')),
                 gridHeight = this.paneContent.offsetHeight
                     - this.gridHeadContainer.offsetHeight
                     - ((this.gridToolbar) ? this.gridToolbar.offsetHeight : 0)
@@ -485,9 +492,9 @@ export class Grid {
         if (this.pane) {
             const toolbarH = (this.gridToolbar) ? this.gridToolbar.offsetHeight : 0,
                 gridHeadH = Grid.totalHeight(this.gridHeadContainer),
-                paneToolbarT = this.pane.querySelector('.e-pane-t-toolbar'),
+                paneToolbarT = /** @type {HTMLElement|null} */ (this.pane.querySelector('.e-pane-t-toolbar')),
                 paneToolbarTH = (paneToolbarT) ? paneToolbarT.offsetHeight : 0,
-                paneToolbarB = this.pane.querySelector('.e-pane-b-toolbar'),
+                paneToolbarB = /** @type {HTMLElement|null} */ (this.pane.querySelector('.e-pane-b-toolbar')),
                 paneToolbarBH = (paneToolbarB) ? paneToolbarB.offsetHeight : 0,
                 paneH = this.pane.offsetHeight,
                 margin = Grid.style(this.element, 'marginTop'),
@@ -541,18 +548,18 @@ export class Grid {
         if (!this.getSelectedItem()) {
             return false;
         }
-        return this.getSelectedItem().record;
+        return /** @type {GridRow} */ (this.getSelectedItem()).record;
     }
 
     /**
      * Selected rows or false.
-     * @returns {Element[]|boolean}
+     * @returns {GridRow[]|false}
      */
     getSelectedRecords() {
         if (!this.getSelectedItem(true)) {
             return false;
         }
-        return this.getSelectedItem(true);
+        return /** @type {GridRow[]} */ (this.getSelectedItem(true));
     }
 
     /**
@@ -568,10 +575,11 @@ export class Grid {
             }
             return this.getSelectedRecord()[this.keyFieldName];
         }
-        if (!this.keyFieldName || !this.getSelectedRecords()) {
+        const rows = this.getSelectedRecords();
+        if (!this.keyFieldName || !rows) {
             return false;
         }
-        return this.getSelectedRecords().map((row) => row.record[this.keyFieldName]).join(',');
+        return rows.map((row) => row.record[this.keyFieldName]).join(',');
     }
 
     /**
@@ -629,7 +637,7 @@ export class Grid {
     /**
      * Стиль элемента: заданный в атрибуте style, иначе вычисленный (getStyle MooTools).
      *
-     * @param {Element} element
+     * @param {HTMLElement} element
      * @param {string} property
      * @returns {string}
      */
@@ -640,7 +648,7 @@ export class Grid {
     /**
      * Ширина с полями и рамками целыми пикселями (getComputedSize MooTools).
      *
-     * @param {Element} element
+     * @param {HTMLElement} element
      * @returns {number}
      */
     static totalWidth(element) {
@@ -653,7 +661,7 @@ export class Grid {
     /**
      * Высота с полями и рамками целыми пикселями (getComputedSize MooTools).
      *
-     * @param {Element} element
+     * @param {HTMLElement} element
      * @returns {number}
      */
     static totalHeight(element) {
@@ -671,7 +679,7 @@ export class Grid {
      */
     static pageY(element) {
         const html = document.documentElement;
-        return parseInt(element.getBoundingClientRect().top, 10) + (window.pageYOffset || html.scrollTop) - html.clientTop;
+        return Math.trunc(element.getBoundingClientRect().top) + (window.pageYOffset || html.scrollTop) - html.clientTop;
     }
 
     /**
@@ -735,7 +743,7 @@ export class GridManager {
         this.filter = new Filters(this);
         this.pageList = new PageList({onPageSelect: (pageNum) => this.loadPage(pageNum)});
         this.grid = this.createGrid(this.element.querySelector('.grid'), {
-            onSelect: (item) => this.onSelect(item),
+            onSelect: () => this.onSelect(),
             onSortChange: () => this.onSortChange(),
             onDoubleClick: () => this.onDoubleClick()
         });
@@ -899,7 +907,7 @@ export class GridManager {
      * @param {Object} result
      */
     processServerResponse(result) {
-        let control = false;
+        let control = null;
         if (this.toolbar) {
             control = this.toolbar.getControlById('add');
         }
@@ -1036,16 +1044,18 @@ export class GridManager {
     }
 
     editPrev() {
-        let prevRow;
-        if (this.grid.getSelectedItem() && (prevRow = this.grid.getSelectedItem().previousElementSibling)) {
+        const current = /** @type {GridRow|null} */ (this.grid.getSelectedItem()),
+            prevRow = current && /** @type {GridRow|null} */ (current.previousElementSibling);
+        if (prevRow) {
             this.grid.selectItem(prevRow);
             this.edit();
         }
     }
 
     editNext() {
-        let nextRow;
-        if (this.grid.getSelectedItem() && (nextRow = this.grid.getSelectedItem().nextElementSibling)) {
+        const current = /** @type {GridRow|null} */ (this.grid.getSelectedItem()),
+            nextRow = current && /** @type {GridRow|null} */ (current.nextElementSibling);
+        if (nextRow) {
             this.grid.selectItem(nextRow);
             this.edit();
         }

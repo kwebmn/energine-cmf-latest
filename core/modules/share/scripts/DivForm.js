@@ -28,11 +28,11 @@ import {Form} from 'Form';
 export class DivForm extends Form {
     constructor(element) {
         super(element);
-        this.prepareLabel('list/');
+        Form.Label.prepareLabel.call(this, 'list/'); // метод подмешан в прототип (Object.assign ниже)
 
-        const contentSelector = this.element.querySelector('#smap_content'),
-            layoutSelector = this.element.querySelector('#smap_layout'),
-            segmentInput = this.element.querySelector('#smap_segment');
+        const contentSelector = /** @type {HTMLSelectElement} */ (this.element.querySelector('#smap_content')),
+            layoutSelector = /** @type {HTMLSelectElement} */ (this.element.querySelector('#smap_layout')),
+            segmentInput = /** @type {HTMLInputElement} */ (this.element.querySelector('#smap_segment'));
 
         // шаблон со своим сегментом закрепляет сегмент, со своим макетом — выбирает макет; XML раздела сбрасывается
         contentSelector.addEventListener('change', () => {
@@ -58,11 +58,11 @@ export class DivForm extends Form {
      */
     resetPageContentTemplate() {
         Energine.request(
-            this.singlePath + 'reset-templates/' + this.element.querySelector('#smap_id').value + '/',
+            this.singlePath + 'reset-templates/' + /** @type {HTMLInputElement} */ (this.element.querySelector('#smap_id')).value + '/',
             null,
             (response) => {
                 if (response.result) {
-                    const select = this.element.querySelector('#smap_content'),
+                    const select = /** @type {HTMLSelectElement} */ (this.element.querySelector('#smap_content')),
                         option = select.children[select.selectedIndex],
                         optionText = option.textContent;
                     option.textContent = optionText.substring(0, optionText.lastIndexOf('-'));
@@ -77,7 +77,7 @@ export class DivForm extends Form {
      */
     clearContentXML() {
         // поле типа «код» на форме раздела одно — XML раздела
-        const code = this.form.querySelector('textarea.code');
+        const code = /** @type {HTMLTextAreaElement} */ (this.form.querySelector('textarea.code'));
         if (code) {
             code.value = '';
             code.closest('div.field').classList.add('hidden');

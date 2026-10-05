@@ -16,6 +16,9 @@
 import {Energine} from 'Energine';
 import {Overlay} from 'Overlay';
 
+/** @typedef {{url?: string, onClose?: Function, extraData?: *, post?: string, code?: Element}} ModalBoxOptions */
+/** @typedef {HTMLDivElement & {options?: ModalBoxOptions, iframe?: HTMLIFrameElement}} ModalBoxElement окно: div с настройками и iframe */
+
 /**
  * Окна админки: страница в iframe поверх текущей. Объект общий для вложенных окон: внутри окна работает объект
  * верхнего окна (window.top.ModalBox), и окна открываются друг над другом в одном документе. Щелчок по затемнению и
@@ -26,7 +29,7 @@ import {Overlay} from 'Overlay';
 export const ModalBox = window.top.ModalBox || /** @lends ModalBox */{
     /**
      * Открытые окна, последнее — верхнее.
-     * @type {Element[]}
+     * @type {ModalBoxElement[]}
      */
     boxes: [],
 
@@ -52,7 +55,7 @@ export const ModalBox = window.top.ModalBox || /** @lends ModalBox */{
      * @param {*} [options.extraData] Данные для страницы окна (getExtraData).
      */
     open: function (options) {
-        var box = document.createElement('div');
+        var box = /** @type {ModalBoxElement} */ (document.createElement('div'));
         // окно поверх страницы: по высоте 90% экрана, по ширине — от 95% на узком экране до 60% на широком
         box.className = 'e-modalbox a:fixed a:top-[5%] a:left-1/2 a:z-[1001] a:h-[90%] a:w-[95%] a:-translate-x-1/2 a:overflow-hidden'
             + ' a:rounded-lg a:bg-white a:shadow-2xl a:min-[900px]:w-[90%] a:min-[1200px]:w-[80%] a:min-[1400px]:w-[64rem]';

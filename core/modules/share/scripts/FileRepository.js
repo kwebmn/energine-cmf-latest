@@ -40,7 +40,7 @@ export class FileRepository extends GridManager {
          * @type {PathList}
          */
         this.pathBreadCrumbs = new PathList(this.element.querySelector('#breadcrumbs'));
-        document.querySelectorAll('.e-pane-toolbar.e-tabs.clearfix .current').forEach((tab) => {
+        document.querySelectorAll('.e-pane-toolbar.e-tabs.clearfix .current').forEach((/** @type {HTMLElement} */ tab) => {
             tab.style.padding = '0px';
             tab.style.width = '100%';
             tab.appendChild(this.element.querySelector('#breadcrumbs'));
@@ -283,8 +283,8 @@ FileRepository.Grid = class FileRepositoryGrid extends Grid {
     popImage(path, tmplElement) {
         const popUpImg = document.createElement('img');
         popUpImg.setAttribute('src', Energine.resizer + 'w298-h224/' + path);
-        popUpImg.setAttribute('width', 60);
-        popUpImg.setAttribute('height', 45);
+        popUpImg.setAttribute('width', '60');
+        popUpImg.setAttribute('height', '45');
         Object.assign(popUpImg.style, {
             border: '1px solid gray',
             borderRadius: '10px',
@@ -370,7 +370,7 @@ FileRepository.Grid = class FileRepositoryGrid extends Grid {
      * Значок строки: папка, хранилище, «наверх», файл; у картинки — превью 60×45 (наведение на 0,7 с — увеличенная,
      * ошибка загрузки — заглушка без увеличения) и размер файла в свойствах (запрос HEAD).
      *
-     * @param {Element} cell
+     * @param {HTMLTableCellElement} cell
      * @param {Object} record
      * @param {string} fieldName
      */
@@ -435,21 +435,21 @@ FileRepository.Grid = class FileRepositoryGrid extends Grid {
                 image.setAttribute('src', 'images/icons/icon_undefined.gif');
                 break;
         }
-        image.setAttribute('width', dimensions.width);
-        image.setAttribute('height', dimensions.height);
+        image.setAttribute('width', String(dimensions.width));
+        image.setAttribute('height', String(dimensions.height));
         container.appendChild(image);
     }
 
     /**
      * Размер файла (заголовок Content-Length ответа на HEAD) — строкой в таблицу свойств строки.
      *
-     * @param {Element} cell ячейка строки файла
+     * @param {HTMLTableCellElement} cell ячейка строки файла
      * @param {string} path путь файла
      */
     fileSize(cell, path) {
         fetch(path, {method: 'HEAD', credentials: 'same-origin'}).then((response) => {
             const length = response.headers.get('Content-Length'),
-                props = cell.parentNode && cell.parentNode.getElementsByClassName('properties');
+                props = cell.parentElement && cell.parentElement.getElementsByClassName('properties');
             if (response.status != 200 || length === null || !props || !props.length) {
                 return;
             }

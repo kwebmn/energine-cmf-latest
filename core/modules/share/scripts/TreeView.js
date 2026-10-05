@@ -95,6 +95,8 @@ export class TreeView {
     }
 };
 
+/** @typedef {HTMLLIElement & {treeNode?: InstanceType<typeof TreeView.Node>}} TreeNodeElement li узла со ссылкой на объект узла */
+
 /**
  * Узел дерева: li > a (название — ссылка на страницу) и, у папки, ul с вложенными узлами. События узла —
  * on('select', обработчик): обработчик получает узел.
@@ -110,7 +112,7 @@ TreeView.Node = class TreeViewNode {
         this.selected = false;
         this.id = null;
         this.data = null;
-        this.element = document.createElement('li');
+        this.element = /** @type {TreeNodeElement} */ (document.createElement('li'));
         const link = document.createElement('a');
         link.setAttribute('href', Energine.base + Energine.lang + '/' + nodeInfo.data.segment);
         link.textContent = nodeInfo.name;
@@ -194,7 +196,7 @@ TreeView.Node = class TreeViewNode {
         if (!this.childs) {
             return;
         }
-        [...this.childs.children].forEach((child) => {
+        [...this.childs.children].forEach((/** @type {TreeNodeElement} */ child) => {
             if (child.treeNode) {
                 child.treeNode.remove();
             }
@@ -228,7 +230,7 @@ TreeView.Node = class TreeViewNode {
     }
 
     isParentOf(node) {
-        return [...this.element.querySelectorAll('li')].some((item) => item.treeNode === node);
+        return [...this.element.querySelectorAll('li')].some((/** @type {TreeNodeElement} */ item) => item.treeNode === node);
     }
 
     // поменять местами с соседом

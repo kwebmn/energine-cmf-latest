@@ -94,7 +94,7 @@ export class PageToolbar extends Toolbar {
         if (control && control.getState() == 0) {
             this._reloadWindowInEditMode();
         } else {
-            window.location = window.location;
+            window.location.assign(window.location.href);
         }
     }
 

@@ -45,7 +45,7 @@ export class FileRepoForm extends Form {
             input.addEventListener('change', (evt) => this.showAltPreview(evt));
         });
 
-        const data = this.element.querySelector('#data');
+        const data = /** @type {HTMLInputElement|null} */ (this.element.querySelector('#data'));
         if (data && !data.value) {
             this.tabPane.disableTab(1);
         }
@@ -73,7 +73,7 @@ export class FileRepoForm extends Form {
             if (files[i].type.match('image.*')) {
                 this.xhrFileUpload(el.id, files, (response) => {
                     const previewElement = document.getElementById(el.getAttribute('preview')),
-                        dataElement = document.getElementById(el.getAttribute('data'));
+                        dataElement = /** @type {HTMLInputElement|null} */ (document.getElementById(el.getAttribute('data')));
                     if (previewElement) {
                         previewElement.classList.remove('hidden');
                         previewElement.setAttribute('src', Energine.base + 'resizer/' + 'w0-h0/' + response.tmp_name);
@@ -109,10 +109,10 @@ export class FileRepoForm extends Form {
      */
     xhrFileUpload(field_name, files, response_callback) {
         const body = new FormData(),
-            field = this.element.querySelector('#' + CSS.escape(field_name));
+            field = /** @type {HTMLInputElement} */ (this.element.querySelector('#' + CSS.escape(field_name)));
         body.append('csrf_token', Energine.csrf || '');
         body.append('key', field_name);
-        body.append('pid', document.getElementById('upl_pid').value);
+        body.append('pid', /** @type {HTMLInputElement} */ (document.getElementById('upl_pid')).value);
         body.append(field_name, files[0]);
 
         this.validator.removeError(field);
@@ -152,14 +152,14 @@ export class FileRepoForm extends Form {
     /**
      * Загрузка не удалась: причина у поля, превью и путь временного файла убраны, поле файла пусто.
      *
-     * @param {Element} field
+     * @param {HTMLInputElement} field
      * @param {string} message
      */
     uploadFailed(field, message) {
         this.validator.showError(field, String(message));
         const isMain = (field.id == 'uploader'),
             preview = isMain ? document.getElementById('preview') : document.getElementById(field.getAttribute('preview')),
-            data = isMain ? document.getElementById('data') : document.getElementById(field.getAttribute('data'));
+            data = /** @type {HTMLInputElement|null} */ (isMain ? document.getElementById('data') : document.getElementById(field.getAttribute('data')));
         if (preview) {
             preview.removeAttribute('src');
             preview.classList.add('hidden');
@@ -187,10 +187,10 @@ export class FileRepoForm extends Form {
         const files = Array.from(evt.target.files || []);
         for (let i = 0; i < files.length; i++) {
             this.xhrFileUpload('uploader', files, (response) => {
-                document.getElementById('upl_name').value = response.name;
-                document.getElementById('upl_filename').value = response.name;
-                document.getElementById('data').value = response.tmp_name;
-                document.getElementById('upl_title').value = response.name.split('.')[0];
+                /** @type {HTMLInputElement} */ (document.getElementById('upl_name')).value = response.name;
+                /** @type {HTMLInputElement} */ (document.getElementById('upl_filename')).value = response.name;
+                /** @type {HTMLInputElement} */ (document.getElementById('data')).value = response.tmp_name;
+                /** @type {HTMLInputElement} */ (document.getElementById('upl_title')).value = response.name.split('.')[0];
 
                 if (response.type.match('image.*')) {
                     previewElement.removeAttribute('src');

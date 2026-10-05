@@ -27,6 +27,8 @@ import {Validator} from 'Validator';
 import {ModalBox} from 'ModalBox';
 import {Overlay} from 'Overlay';
 
+/** @typedef {import('Toolbar').Toolbar} Toolbar */
+
 /**
  * Форма админки: вкладки, проверка полей, визуальные поля, поля файлов. «Сохранить» отправляет поля формы и
  * отдаёт ответ окну, из которого форму открыли.
@@ -60,13 +62,14 @@ export class Form {
         // Enter в текстовом поле не отправляет форму
         if (this.form.querySelector('input[type=text], select, textarea')) {
             this.form.addEventListener('keypress', (event) => {
-                if (event.key === 'Enter' && event.target.tagName === 'INPUT' && event.target.type === 'text') {
+                const target = /** @type {HTMLInputElement} */ (event.target);
+                if (event.key === 'Enter' && target.tagName === 'INPUT' && target.type === 'text') {
                     event.preventDefault();
                 }
             });
         }
 
-        const action = this.form.querySelector('#componentAction');
+        const action = /** @type {HTMLInputElement} */ (this.form.querySelector('#componentAction'));
         /**
          * State of the form.
          * @type {string}
@@ -96,7 +99,7 @@ export class Form {
 
         // поля даты — встроенные поля браузера; обязательное пустое поле сразу получает сегодняшнюю дату (поле
         // даты и времени — и текущее время), как раньше при открытии формы
-        this.element.querySelectorAll('input.inp_date, input.inp_datetime').forEach((dateControl) => {
+        this.element.querySelectorAll('input.inp_date, input.inp_datetime').forEach((/** @type {HTMLInputElement} */ dateControl) => {
             const field = dateControl.closest('.field');
             if (dateControl.value === '' && field && field.classList.contains('required')) {
                 const now = new Date(),
@@ -116,7 +119,7 @@ export class Form {
         if (currentTab.getAttribute('data-src') && !currentTab.loaded) {
             const iframe = document.createElement('iframe');
             iframe.src = Energine['base'] + currentTab.getAttribute('data-src');
-            iframe.frameBorder = 0;
+            iframe.frameBorder = '0';
             iframe.scrolling = 'no';
             iframe.style.width = '99%';
             iframe.style.height = '99%';
@@ -222,11 +225,11 @@ export class Form {
      * «Очистить» у поля файла: путь пуст, превью и сама ссылка скрыты.
      *
      * @param {string} fieldId id поля пути
-     * @param {Element} lnk ссылка «очистить»
+     * @param {HTMLElement} lnk ссылка «очистить»
      */
     clearFileField(fieldId, lnk) {
-        this.form.querySelector('#' + CSS.escape(fieldId)).value = '';
-        const preview = this.form.querySelector('#' + CSS.escape(fieldId + '_preview'));
+        /** @type {HTMLInputElement} */ (this.form.querySelector('#' + CSS.escape(fieldId))).value = '';
+        const preview = /** @type {HTMLElement} */ (this.form.querySelector('#' + CSS.escape(fieldId + '_preview')));
         if (preview) {
             preview.removeAttribute('href');
             preview.style.display = 'none';
@@ -245,7 +248,7 @@ export class Form {
             return;
         }
         button = Form.element(button);
-        document.getElementById(button.getAttribute('link')).value = result['upl_path'];
+        /** @type {HTMLInputElement} */ (document.getElementById(button.getAttribute('link'))).value = result['upl_path'];
         const preview = document.getElementById(button.getAttribute('preview')),
             image = (preview.tagName === 'IMG') ? preview : preview.querySelector('img');
         if (image) {
@@ -257,7 +260,7 @@ export class Form {
         }
         // ссылка «очистить» — рядом с полем, уровнем выше кнопки
         const append = button.closest('.with_append'),
-            clear = append && append.querySelector('.lnk_clear');
+            clear = /** @type {HTMLElement|null} */ (append && append.querySelector('.lnk_clear'));
         if (clear) {
             clear.style.display = 'inline';
         }
@@ -270,7 +273,7 @@ export class Form {
      */
     openFileLib(button) {
         button = Form.element(button);
-        let path = document.getElementById(button.getAttribute('link')).value;
+        let path = /** @type {HTMLInputElement} */ (document.getElementById(button.getAttribute('link'))).value;
         if (path === '') {
             path = null;
         }
@@ -289,7 +292,7 @@ export class Form {
      */
     openQuickUpload(button) {
         button = Form.element(button);
-        let path = document.getElementById(button.getAttribute('link')).value;
+        let path = /** @type {HTMLInputElement} */ (document.getElementById(button.getAttribute('link'))).value;
         if (path === '') {
             path = null;
         }
@@ -330,15 +333,15 @@ export class Form {
      */
     static toQueryString(form) {
         const query = [];
-        form.querySelectorAll('input, select, textarea').forEach((el) => {
+        form.querySelectorAll('input, select, textarea').forEach((/** @type {HTMLInputElement|HTMLSelectElement|HTMLTextAreaElement} */ el) => {
             const type = el.type;
             if (!el.name || el.disabled || ['submit', 'reset', 'file', 'image'].includes(type)) {
                 return;
             }
             let values = [el.value];
             if (el.tagName === 'SELECT') {
-                values = Array.from(el.options).filter((option) => option.selected).map((option) => option.value);
-            } else if ((type === 'radio' || type === 'checkbox') && !el.checked) {
+                values = Array.from(/** @type {HTMLSelectElement} */ (el).options).filter((option) => option.selected).map((option) => option.value);
+            } else if ((type === 'radio' || type === 'checkbox') && !/** @type {HTMLInputElement} */ (el).checked) {
                 values = [];
             }
             values.forEach((value) => query.push(encodeURIComponent(el.name) + '=' + encodeURIComponent(value)));
@@ -404,7 +407,7 @@ Form.Label = {
             name = result.smap_name;
             segment = result.smap_segment;
         }
-        document.getElementById(this.obj.getAttribute('hidden_field')).value = id;
+        /** @type {HTMLInputElement} */ (document.getElementById(this.obj.getAttribute('hidden_field'))).value = id;
         document.getElementById(this.obj.getAttribute('span_field')).textContent = name;
         const segmentObject = document.getElementById('smap_pid_segment');
         if (segmentObject) {
@@ -424,9 +427,9 @@ Form.RichEditor = class FormRichEditor {
     constructor(textarea, form) {
         /**
          * The text area element.
-         * @type {Element}
+         * @type {HTMLTextAreaElement}
          */
-        this.textarea = textarea;
+        this.textarea = /** @type {HTMLTextAreaElement} */ (textarea);
         /**
          * The main form.
          * @type {Form}

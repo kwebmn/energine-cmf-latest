@@ -66,7 +66,7 @@ export class getDirsTree extends DivManager {
                     }
                 }, this.tree);
                 newNode.setData(child);
-                newNode.on('select', (node) => this.onSelectNode(node));
+                newNode.on('select', () => this.onSelectNode());
                 parentNode.appendNode(newNode);
                 if (treeInfo[childId]) {
                     lambda(childId, newNode);
