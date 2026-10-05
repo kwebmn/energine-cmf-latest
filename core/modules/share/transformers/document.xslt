@@ -7,7 +7,6 @@
     exclude-result-prefixes="og nrgn"
     >
     <xsl:variable name="DOC_PROPS" select="/document/properties/property"/>
-    <xsl:variable name="VARS" select="/document/variables/var"/>
     <xsl:variable name="COMPONENTS" select="//component[@name]"/>
     <xsl:variable name="TRANSLATION" select="/document/translations/translation"/>
     <xsl:variable name="ID" select="$DOC_PROPS[@name='ID']"/>

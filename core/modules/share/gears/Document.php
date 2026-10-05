@@ -271,15 +271,6 @@ final class Document extends Primitive implements IDocument {
         $prop->setAttribute('name', 'csrf');
         $dom_documentProperties->appendChild($prop);
 
-        if (($docVars = $this->getConfigValue('site.vars')) && is_array($docVars)) {
-            $dom_documentVars = $this->doc->createElement('variables');
-            foreach ($docVars as $varName => $varValue) {
-                $var = $this->doc->createElement('var', $varValue);
-                $var->setAttribute('name', strtoupper($varName));
-                $dom_documentVars->appendChild($var);
-            }
-            $dom_root->appendChild($dom_documentVars);
-        }
         unset($prop);
         foreach ($this->componentManager as $component) {
             $componentResult = false;

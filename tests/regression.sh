@@ -30,6 +30,7 @@ echo "### escaping"; php8.5 xslt-escaping.php
 echo "### xslt-lint"; php8.5 xslt-lint.php
 echo "### new-site-doc"; bash new-site-doc.sh
 echo "### unused-constants"; php8.5 unused-constants.php
+echo "### config-template"; php8.5 config-template.php
 
 echo "### mail"
 php8.5 smoke-mail.php

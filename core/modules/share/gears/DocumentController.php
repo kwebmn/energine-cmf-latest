@@ -316,10 +316,8 @@ class DocumentController extends Primitive {
     public function getViewMode() {
         $result = self::TRANSFORM_HTML;
 
-        if (isset($_GET[self::TRANSFORM_DEBUG_XML]) &&
-            $this->getConfigValue('site.debug') ||
-            $this->getConfigValue('site.asXML')
-        ) {
+        // XML документа (?debug) — только при включённой отладке
+        if (isset($_GET[self::TRANSFORM_DEBUG_XML]) && $this->getConfigValue('site.debug')) {
             $result = self::TRANSFORM_DEBUG_XML;
         } elseif (isset($_GET[self::TRANSFORM_HTML])) {
             $result = self::TRANSFORM_HTML;

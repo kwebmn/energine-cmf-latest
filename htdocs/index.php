@@ -10,23 +10,9 @@
 try {
     require_once('bootstrap.php');
 
-    if ($use_timer = E()->getConfigValue('site.useTimer')) {
-
-        class Timer Extends Energine\share\gears\Primitive {
-
-        }
-
-        $timer = new Timer();
-        $timer->startTimer();
-    }
     E()->UserSession->init();
 
     E()->getController()->run();
-
-    if ($use_timer) {
-        $timer->stopTimer();
-        E()->getResponse()->setHeader('X-Timer', $timer->getTimer());
-    }
 
     E()->getResponse()->commit();
 } catch (\LogicException $bootstrapException) {

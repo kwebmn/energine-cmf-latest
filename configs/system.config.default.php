@@ -7,9 +7,6 @@
  */
 return array(
 
-    // название проекта
-    'project' => 'Energine 2.12.85.06',
-
     // путь к директории setup; ядро лежит в том же репозитории, что и проект
     'setup_dir' => ($energine_release = ROOT_DIR) . '/setup',
 
@@ -41,19 +38,8 @@ return array(
         // отладочный режим: 1 - включено, 0 - выключено. На рабочем сайте — 0: с отладкой посетитель видит
         // пути сервера и цепочку вызовов на странице ошибки (установщик пишет конфиг из этого шаблона)
         'debug' => 0,
-        // делать ли замеры времени рендеринга страниц и выводить их в header X-Timer
-        'useTimer' => 1,
-        // выводить для отладки сразу в XML
-        'asXML' => 0,
         // использовать Tidy для очистки кода текстового блока от лишних тегов (если модяль Tidy не подключен  - работать не будет )
         'aggressive_cleanup' => 1,
-        // перечень глобальных переменных, которые будут доступны в XML документе на всех страницах
-        /*
-        'vars' => array(
-            'SOME_GLOBAL_XML_VARIABLE' => 'some constant value',
-            'ANOTHER_GLOBAL_XML_VARIABLE' => 'another value',
-        ),
-        */
         // журнал действий в админке: пишет share_action_log, страница /admin/action-log/
         'action_log' => 'Energine\\share\\components\\ActionLog',
     ),
@@ -63,42 +49,10 @@ return array(
         'transformer' => 'main.xslt',
     ),
 
-    // перечень дополнительнх полей с превьюшками в виде отдельной вкладки в файловом менеджере
-    'thumbnails' => array(
-        'auxmiddle' => array(
-            'width' => 190,
-            'height' => 132,
-        ),
-        'middle' => array(
-            'width' => 184,
-            'height' => 138,
-        ),
-        'anchormiddle' => array(
-            'width' => 190,
-            'height' => 192,
-        ),
-        'anchorxsmall' => array(
-            'width' => 48,
-            'height' => 48,
-        ),
-        'small' => array(
-            'width' => 140,
-            'height' => 107,
-        ),
-        'xsmall' => array(
-            'width' => 75,
-            'height' => 56,
-        ),
-        'xxsmall' => array(
-            'width' => 60,
-            'height' => 45,
-        ),
-        'big' => array(
-            'width' => 650,
-            'height' => 367,
-        ),
-    ),
-    // натройка сессий
+    // размеры превью картинок: вкладка «Превью» в форме файла репозитория, каждое — отдельный файл рядом с
+    // картинкой. По умолчанию нет; пример: 'small' => ['width' => 140, 'height' => 107]
+    'thumbnails' => [],
+    // настройка сессий
     'session' => array(
         'timeout' => 6000,
         'lifespan' => 108000,
