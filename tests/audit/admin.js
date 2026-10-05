@@ -15,10 +15,12 @@ const BASE = process.env.BASE.replace(/\/$/, '') + '/';
 const SHOTS = process.env.SHOTS || fs.mkdtempSync(path.join(os.tmpdir(), 'admin-'));
 const BASELINE = process.env.BASELINE === '1';
 // старые файлы стилей и картинок админки, удалённые подпроектом: страница их не запрашивает
-const GONE_CSS = ['modalbox.css', 'form.css', 'controls.css', 'tabpane.css', 'grid.css', 'pagelist.css', 'toolbar.css'];
+const GONE_CSS = ['modalbox.css', 'form.css', 'controls.css', 'tabpane.css', 'grid.css', 'pagelist.css', 'toolbar.css',
+    'pagetoolbar.css', 'singlemode.css', 'energine.css'];
 const GONE_IMAGES = ['images/asc.gif', 'images/desc.gif', 'images/pagelist.gif', 'images/prev_page.gif', 'images/next_page.gif',
     'images/checkbox_on.png', 'images/checkbox_off.png', 'images/toolbar/separator.gif', 'images/toolbar/add.png', 'images/toolbar/edit.png',
-    'images/toolbar/delete.png', 'images/toolbar/up.png', 'images/toolbar/down.png'];
+    'images/toolbar/delete.png', 'images/toolbar/up.png', 'images/toolbar/down.png', 'images/toolbar/nrgnptb.png',
+    'images/toolbar/nrgnptbdbg.png', 'images/overlay_loading.gif'];
 const ICONS = ['add', 'edit', 'delete', 'up', 'down', 'save', 'close', 'list', 'search', 'filter', 'sort-asc', 'sort-desc',
     'prev', 'next', 'folder', 'file', 'image', 'upload', 'eye', 'gear', 'check'];
 let fail = 0;
@@ -218,6 +220,59 @@ const SCREENS = [
                 imgs: document.querySelectorAll('td img[src*="checkbox_"]').length }));
             check('грид пользователей: флажок активности — значок, не картинка', cb.on > 0 && !cb.imgs, JSON.stringify(cb));
             await up.close();
+        }
+
+        // панель страницы и режим правки; стили сайта у администратора те же, что у гостя
+        {
+            const props = ['fontFamily', 'fontSize', 'color', 'backgroundColor', 'lineHeight', 'maxWidth'];
+            const look = (page) => page.evaluate((ps) => Object.fromEntries(['header', 'main', 'footer', 'h1', 'nav.site-nav a']
+                .map((sel) => { const e = document.querySelector(sel); const cs = e && getComputedStyle(e);
+                    return [sel, cs ? ps.map((k) => cs[k]).join('|') : null]; })), props);
+            const guest = await browser.newContext({ locale: 'ru-RU' });
+            const gp = await guest.newPage();
+            await gp.setViewportSize({ width: 1280, height: 900 });
+            await gp.goto(BASE + 'info/quick-start/', { waitUntil: 'networkidle' });
+            const g = await look(gp);
+            await guest.close();
+            const p = await ctx.newPage();
+            await p.setViewportSize({ width: 1280, height: 900 });
+            await p.goto(BASE + 'info/quick-start/', { waitUntil: 'networkidle' });
+            const a = await look(p);
+            const diff = Object.keys(g).filter((k) => g[k] !== a[k]);
+            check('страница у администратора: шапка, содержимое, подвал, заголовок и меню выглядят как у гостя', !diff.length,
+                diff.map((k) => `${k}: ${g[k]} / ${a[k]}`).join('; '));
+            const gear = await p.evaluate(() => {
+                const b = document.querySelector('.e-topframe .pagetb_logo');
+                return b && { tag: b.tagName, name: b.getAttribute('aria-label'), svg: !!b.querySelector('svg use[href$="#gear"]'),
+                    bar: getComputedStyle(document.querySelector('ul.docked_toolbar')).backgroundColor };
+            });
+            check('панель страницы: шестерёнка — кнопка со значком и доступным именем', !!gear && gear.tag === 'BUTTON' && !!gear.name && gear.svg,
+                JSON.stringify(gear));
+            const side0 = await p.evaluate(() => document.documentElement.classList.contains('e-has-sideframe'));
+            await p.focus('.e-topframe .pagetb_logo');
+            await p.keyboard.press('Enter');
+            await p.waitForTimeout(500);
+            const side1 = await p.evaluate(() => document.documentElement.classList.contains('e-has-sideframe'));
+            await p.keyboard.press('Enter');
+            await p.waitForTimeout(500);
+            const side2 = await p.evaluate(() => document.documentElement.classList.contains('e-has-sideframe'));
+            check('панель страницы: шестерёнка с клавиатуры открывает и закрывает боковую панель', side1 !== side0 && side2 === side0,
+                JSON.stringify({ side0, side1, side2 }));
+            await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle' }), p.click('li.editMode_btn')]);
+            const ed = await p.evaluate(() => {
+                const e = document.querySelector('.nrgnEditor'); const cs = getComputedStyle(e);
+                e.classList.add('nrgnEditorError'); const err = getComputedStyle(e).outlineColor; e.classList.remove('nrgnEditorError');
+                return { style: cs.outlineStyle, width: cs.outlineWidth, err };
+            });
+            check('режим правки: рамка блока видна, у несохранённого блока — цвет ошибки', ed.style !== 'none' && parseFloat(ed.width) >= 1
+                && ed.err === 'rgb(179, 38, 30)', JSON.stringify(ed));
+            await shot(p, 'режим-правки-после');
+            await p.close();
+            const sp = await ctx.newPage();
+            await sp.goto(BASE + 'admin/users/single/userEditor/add/', { waitUntil: 'networkidle' });
+            const single = await sp.evaluate(() => ({ font: getComputedStyle(document.body).fontFamily, bg: getComputedStyle(document.body).backgroundColor }));
+            check('окно single: фон и шрифт админки', /system-ui/.test(single.font) && single.bg === 'rgb(255, 255, 255)', JSON.stringify(single));
+            await sp.close();
         }
 
         // значки: спрайт и Energine.icon

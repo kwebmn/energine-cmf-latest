@@ -21,7 +21,7 @@
             <html>
                 <head>
                     <base href="{$BASE}"/>
-                    <link rel="stylesheet" type="text/css" href="{$STATIC_URL}/stylesheets/energine.css"/>
+                    <link rel="stylesheet" type="text/css" href="{$STATIC_URL}stylesheets/admin.css"/>
                 </head>
                 <body style="padding: 0; margin: 0;">
                     <xsl:apply-templates select="document"/>

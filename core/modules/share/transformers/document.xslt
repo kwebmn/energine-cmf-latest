@@ -96,7 +96,6 @@
 
         <!-- стили админки: панель администратора, режим правки, окна; гостю не нужны -->
         <xsl:if test="$COMPONENTS[@componentAction='showPageToolbar'] or $DOC_PROPS[@name='single']">
-            <link rel="stylesheet" type="text/css" href="{$STATIC_URL}stylesheets/energine.css"/>
             <link rel="stylesheet" type="text/css" href="{$STATIC_URL}stylesheets/admin.css"/>
         </xsl:if>
         <xsl:choose>
@@ -104,7 +103,6 @@
                 <xsl:apply-templates select="." mode="stylesheets"/>
             </xsl:when>
             <xsl:otherwise>
-                <link rel="stylesheet" type="text/css" href="{$STATIC_URL}stylesheets/singlemode.css"/>
                 <!--<script type="text/javascript">window.singleMode = true;</script>-->
             </xsl:otherwise>
         </xsl:choose>

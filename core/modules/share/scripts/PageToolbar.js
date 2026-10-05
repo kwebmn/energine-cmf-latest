@@ -31,7 +31,6 @@ import {ModalBox} from 'ModalBox';
 export class PageToolbar extends Toolbar {
     constructor(componentPath, documentId, toolbarName, controlsDesc, props) {
         super(toolbarName, props);
-        Energine.loadCSS('pagetoolbar.css');
         this.componentPath = componentPath;
         this.documentId = documentId;
         this.dock();
@@ -58,9 +57,13 @@ export class PageToolbar extends Toolbar {
         mainFrame.append(...currentBody);
         topFrame.appendChild(this.element);
 
-        const gear = document.createElement('img');
-        gear.src = Energine['static'] + (Energine.debug ? 'images/toolbar/nrgnptbdbg.png' : 'images/toolbar/nrgnptb.png');
-        gear.className = 'pagetb_logo';
+        // шестерёнка: кнопка (Tab, Enter) открывает боковую панель разделов; в режиме отладки — другого цвета
+        const gear = document.createElement('button');
+        gear.type = 'button';
+        gear.className = 'pagetb_logo' + (Energine.debug ? ' debug' : '');
+        gear.setAttribute('aria-label', 'Energine');
+        gear.title = 'Energine';
+        gear.innerHTML = Energine.icon('gear');
         topFrame.prepend(gear);
 
         if (!this.properties.noSideFrame) {

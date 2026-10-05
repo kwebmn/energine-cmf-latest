@@ -518,7 +518,7 @@ const inspect = (page) => page.evaluate(() => {
                 html: document.documentElement.className,
                 top: !!document.querySelector('body > .e-topframe ul.toolbar.docked_toolbar li.editMode_btn'),
                 main: !!document.querySelector('body > .e-mainframe'),
-                logo: !!document.querySelector('.e-topframe img.pagetb_logo'),
+                logo: !!document.querySelector('.e-topframe .pagetb_logo'),
                 side: ((document.querySelector('.e-sideframe .e-sideframe-content iframe') || {}).src || ''),
                 css: [...document.querySelectorAll('link[rel="stylesheet"]')].map((l) => l.href).filter((h, i, a) => a.indexOf(h) !== i).length,
                 moo: typeof window.MooTools !== 'undefined',
@@ -530,9 +530,9 @@ const inspect = (page) => page.evaluate(() => {
             check('панель страницы: MooTools у администратора на главной не запрашивается и не определена', !moo.length && !s.moo,
                 moo.join(' ') || 'MooTools определена');
             const sidebar = async () => ((await ctx.cookies(BASE)).find((c) => c.name === 'sidebar') || {}).value;
-            await hp.click('.e-topframe img.pagetb_logo');
+            await hp.click('.e-topframe .pagetb_logo');
             const open = { html: (await st()).html, cookie: await sidebar() };
-            await hp.click('.e-topframe img.pagetb_logo');
+            await hp.click('.e-topframe .pagetb_logo');
             const closed = { html: (await st()).html, cookie: await sidebar() };
             check('панель страницы: значок открывает боковую панель и запоминает это, второй щелчок закрывает',
                 /\be-has-sideframe\b/.test(open.html) && open.cookie === '1' && !/\be-has-sideframe\b/.test(closed.html) && closed.cookie === '0',
@@ -550,7 +550,7 @@ const inspect = (page) => page.evaluate(() => {
             }
             // боковая панель: скрипты разделов на MooTools в iframe над страницей без MooTools — дерево и панель
             // строятся, щелчок по разделу включает «Редактировать», оно открывает окно формы раздела через окна страницы
-            await hp.click('.e-topframe img.pagetb_logo');
+            await hp.click('.e-topframe .pagetb_logo');
             const sideEl = await hp.$('.e-sideframe iframe');
             const side = sideEl && await sideEl.contentFrame();
             let tree = { nodes: 0, buttons: 0 }, editOn = false, opened = false;
@@ -575,7 +575,7 @@ const inspect = (page) => page.evaluate(() => {
             }
             check('панель страницы: боковая панель — дерево разделов и панель, «Редактировать» открывает окно раздела',
                 tree.nodes > 1 && tree.buttons > 0 && editOn && opened, JSON.stringify({ tree, editOn, opened }));
-            await hp.click('.e-topframe img.pagetb_logo');
+            await hp.click('.e-topframe .pagetb_logo');
             check('панель страницы: без ошибок JS и 404', !hErrors.list().length, hErrors.list().join(' | '));
             await hp.close();
         }
