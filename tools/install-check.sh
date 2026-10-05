@@ -21,6 +21,8 @@ chmod 755 "$T"
 WEBPORT=$(python3 -c 'import socket;s=socket.socket();s.bind(("127.0.0.1",0));print(s.getsockname()[1])')
 DBPORT=$(python3 -c 'import socket;s=socket.socket();s.bind(("127.0.0.1",0));print(s.getsockname()[1])')
 cleanup() {
+  # KEEP=1 leaves the installation, its database and the web server running, for debugging
+  if [ -n "${KEEP:-}" ]; then echo "kept: $T  web http://127.0.0.1:$WEBPORT/  db socket $T/db/s  (stop: pkill -f -- \"-S 127.0.0.1:$WEBPORT \"; kill \$(cat $T/db/pid); rm -rf $T)"; return; fi
   pkill -f -- "-S 127.0.0.1:$WEBPORT " 2>/dev/null
   [ -s "$T/db/pid" ] && kill "$(cat "$T/db/pid")" 2>/dev/null
   sleep 1
