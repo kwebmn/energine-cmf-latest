@@ -2,8 +2,8 @@
 -- переводы, почтовые шаблоны, корень файлового репозитория. Администратора создаёт установщик, адрес сайта — в конфиге.
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
-INSERT INTO `share_languages` (`lang_id`, `lang_locale`, `lang_abbr`, `lang_name`, `lang_default`, `lang_order_num`) VALUES (1,'ru_UA.UTF8','ru','Русский',1,1);
-INSERT INTO `share_languages` (`lang_id`, `lang_locale`, `lang_abbr`, `lang_name`, `lang_default`, `lang_order_num`) VALUES (2,'uk_UA.UTF8','ua','Українська',0,2);
+INSERT INTO `share_languages` (`lang_id`, `lang_locale`, `lang_abbr`, `lang_name`, `lang_default`, `lang_is_active`, `lang_order_num`) VALUES (1,'ru_UA.UTF8','ru','Русский',1,1,1);
+INSERT INTO `share_languages` (`lang_id`, `lang_locale`, `lang_abbr`, `lang_name`, `lang_default`, `lang_is_active`, `lang_order_num`) VALUES (2,'uk_UA.UTF8','ua','Українська',0,1,2);
 INSERT INTO `share_sites` (`site_id`, `site_meta_robots`) VALUES (1,NULL);
 INSERT INTO `share_sites_translation` (`site_id`, `lang_id`, `site_name`, `site_meta_keywords`, `site_meta_description`) VALUES (1,1,'Energine Platform',NULL,NULL);
 INSERT INTO `share_sites_translation` (`site_id`, `lang_id`, `site_name`, `site_meta_keywords`, `site_meta_description`) VALUES (1,2,'Energine Platform',NULL,NULL);
@@ -464,6 +464,10 @@ INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2872,'FIELD_TBH_E
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2873,'CLASS_ENERGINE_SHARE_COMPONENTS_TEXTBLOCK');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2874,'CLASS_ENERGINE_SHARE_COMPONENTS_TEXTBLOCKHISTORY');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2875,'HELP_TEXTBLOCKHISTORY_MAIN');
+INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2886,'FIELD_LANG_IS_ACTIVE');
+INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2887,'TXT_LANG_INACTIVE');
+INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2888,'ERR_LANG_DEFAULT_INACTIVE');
+INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2889,'HELP_LANGUAGEEDITOR_MAIN');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (15,1,'Выйти');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (15,2,'Вийти');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (42,1,'Сохранить');
@@ -1370,6 +1374,14 @@ INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2874,2,'Історія тексту');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2875,1,'Прежние версии этого текста на этом языке, новые сверху. «Посмотреть» показывает версию целиком, «Вернуть» делает её текущей — нынешний текст тоже остаётся в истории. Хранится до 20 версий.');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2875,2,'Прежні версії цього тексту цією мовою, нові зверху. «Переглянути» показує версію цілком, «Повернути» робить її поточною — нинішній текст теж залишається в історії. Зберігається до 20 версій.');
+INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2886,1,'Открыт посетителям');
+INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2886,2,'Відкритий відвідувачам');
+INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2887,1,'в подготовке');
+INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2887,2,'у підготовці');
+INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2888,1,'Язык по умолчанию нельзя закрыть от посетителей: сначала назначьте другой язык по умолчанию.');
+INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2888,2,'Мову за замовчуванням не можна закрити від відвідувачів: спочатку призначте іншу мову за замовчуванням.');
+INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2889,1,'Языки сайта. Новый язык можно готовить незаметно для посетителей: снимите отметку «Открыт посетителям» — его страницы увидят только редакторы, в переключателе языков его не будет. Когда тексты готовы, поставьте отметку снова.');
+INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2889,2,'Мови сайту. Нову мову можна готувати непомітно для відвідувачів: зніміть позначку «Відкритий відвідувачам» — її сторінки побачать лише редактори, у перемикачі мов її не буде. Коли тексти готові, поставте позначку знову.');
 INSERT INTO `mail_templates` (`template_id`, `template_sysname`, `template_is_active`, `template_hints`) VALUES (1,'user_registration',1,'[user_name] - имя пользователя, [user_login] - логин (e-mail), [password_link] - ссылка установки пароля (действует час), [site_name] - название сайта, [site_url] - адрес сайта');
 INSERT INTO `mail_templates` (`template_id`, `template_sysname`, `template_is_active`, `template_hints`) VALUES (2,'user_restore_password',1,'[sex_suffix_hello] - окончание обращения по полу пользователя (константы TXT_EMAIL_SUFFIX_SEX_M/F/UNKNOWN), [user_name] - имя, [user_login] - логин (e-mail), [restore_link] - ссылка для смены пароля (действует час), [site_name] - название сайта, [site_url] - адрес сайта');
 INSERT INTO `mail_templates_translation` (`template_id`, `lang_id`, `template_name`, `template_subject`, `template_body`, `template_body_rtf`) VALUES (1,1,'Регистрация пользователя','Регистрация на сайте [site_name]','Здравствуйте, [user_name]!\n\nВы зарегистрированы на сайте [site_name] ([site_url]). Логин: [user_login]\n\nЗадайте пароль по ссылке (действует час): [password_link]\nЕсли ссылка устарела, воспользуйтесь «Забыли пароль?» на странице входа.\n\nПисьмо отправлено автоматически, отвечать на него не нужно.','<p>Здравствуйте, [user_name]!</p>\n<p>Вы зарегистрированы на сайте <a href=\"[site_url]\">[site_name]</a>. Логин: <strong>[user_login]</strong></p>\n<p><a href=\"[password_link]\">Задайте пароль</a> — ссылка действует час. Если она устарела, воспользуйтесь «Забыли пароль?» на странице входа.</p>\n<p>Письмо отправлено автоматически, отвечать на него не нужно.</p>');

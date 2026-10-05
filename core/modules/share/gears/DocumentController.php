@@ -130,6 +130,10 @@ class DocumentController extends Primitive {
         try {
             $language = E()->getLanguage();
             $language->setCurrent($language->getIDByAbbr(E()->getRequest()->getLang(), true));
+            // язык «в подготовке» (lang_is_active = 0) виден только редакторам: остальным его адресов нет
+            if (!$language->isActive($language->getCurrent()) && !$language->isEditor()) {
+                throw new SystemException('ERR_404', SystemException::ERR_404);
+            }
             unset($language);
 
             // POST без токена посетителя или с чужим Origin (Csrf) — до компонентов: ничего не сохраняется.

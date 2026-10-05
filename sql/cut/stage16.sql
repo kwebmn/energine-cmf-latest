@@ -42,3 +42,22 @@ INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_va
      WHERE t.`ltag_name` IN ('BTN_HISTORY', 'BTN_RESTORE', 'BTN_VIEW', 'TXT_TEXT_HISTORY', 'FIELD_TBH_DATE', 'FIELD_TBH_AUTHOR',
         'FIELD_TBH_EXCERPT', 'CLASS_ENERGINE_SHARE_COMPONENTS_TEXTBLOCK',
         'CLASS_ENERGINE_SHARE_COMPONENTS_TEXTBLOCKHISTORY', 'HELP_TEXTBLOCKHISTORY_MAIN');
+
+-- 2. Язык «в подготовке»: lang_is_active = 0 — язык виден только редакторам (гостю его адреса дают 404, в переключателе
+--    его нет), язык по умолчанию выключить нельзя (LanguageEditor, ERR_LANG_DEFAULT_INACTIVE).
+ALTER TABLE `share_languages` ADD COLUMN IF NOT EXISTS `lang_is_active` tinyint(1) NOT NULL DEFAULT 1 AFTER `lang_default`;
+INSERT IGNORE INTO `share_lang_tags` (`ltag_name`) VALUES ('FIELD_LANG_IS_ACTIVE'), ('TXT_LANG_INACTIVE'), ('ERR_LANG_DEFAULT_INACTIVE'),
+    ('HELP_LANGUAGEEDITOR_MAIN');
+INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`)
+    SELECT t.`ltag_id`, l.`lang_id`, CASE t.`ltag_name`
+        WHEN 'FIELD_LANG_IS_ACTIVE' THEN IF(l.`lang_abbr` = 'ua', 'Відкритий відвідувачам', 'Открыт посетителям')
+        WHEN 'TXT_LANG_INACTIVE' THEN IF(l.`lang_abbr` = 'ua', 'у підготовці', 'в подготовке')
+        WHEN 'ERR_LANG_DEFAULT_INACTIVE' THEN IF(l.`lang_abbr` = 'ua',
+            'Мову за замовчуванням не можна закрити від відвідувачів: спочатку призначте іншу мову за замовчуванням.',
+            'Язык по умолчанию нельзя закрыть от посетителей: сначала назначьте другой язык по умолчанию.')
+        WHEN 'HELP_LANGUAGEEDITOR_MAIN' THEN IF(l.`lang_abbr` = 'ua',
+            'Мови сайту. Нову мову можна готувати непомітно для відвідувачів: зніміть позначку «Відкритий відвідувачам» — її сторінки побачать лише редактори, у перемикачі мов її не буде. Коли тексти готові, поставте позначку знову.',
+            'Языки сайта. Новый язык можно готовить незаметно для посетителей: снимите отметку «Открыт посетителям» — его страницы увидят только редакторы, в переключателе языков его не будет. Когда тексты готовы, поставьте отметку снова.')
+        END
+      FROM `share_lang_tags` t JOIN `share_languages` l
+     WHERE t.`ltag_name` IN ('FIELD_LANG_IS_ACTIVE', 'TXT_LANG_INACTIVE', 'ERR_LANG_DEFAULT_INACTIVE', 'HELP_LANGUAGEEDITOR_MAIN');

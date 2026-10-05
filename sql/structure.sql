@@ -94,6 +94,7 @@ CREATE TABLE `share_languages` (
   `lang_abbr` char(2) NOT NULL,
   `lang_name` char(20) NOT NULL,
   `lang_default` tinyint(1) NOT NULL DEFAULT 0,
+  `lang_is_active` tinyint(1) NOT NULL DEFAULT 1,
   `lang_order_num` int(10) unsigned NOT NULL DEFAULT 1,
   PRIMARY KEY (`lang_id`),
   KEY `idx_abbr` (`lang_abbr`)

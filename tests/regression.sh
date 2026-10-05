@@ -46,6 +46,7 @@ echo "### js-dead"; php8.5 js-dead.php
 echo "### jscheck"; bash jscheck.sh
 echo "### wrappers-selftest"; bash wrappers-selftest.sh
 echo "### text-history"; php8.5 text-history.php
+echo "### lang-inactive"; php8.5 lang-inactive.php
 
 echo "### mail"
 php8.5 smoke-mail.php

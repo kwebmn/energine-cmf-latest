@@ -43,6 +43,12 @@ final class Language extends Primitive{
      *
      * @throws SystemException 'ERR_NO_LANG_INFO'
      */
+    /**
+     * Редактор ли зритель (считается один раз).
+     * @var bool|null
+     */
+    private $editor = null;
+
     public function __construct() {
         parent::__construct();
 
@@ -56,6 +62,35 @@ final class Language extends Primitive{
             $this->languages[$langInfo['lang_id']] = $langInfo;
             unset($this->languages[$langInfo['lang_id']]['lang_id']);
         }
+    }
+
+    /**
+     * Редактор ли зритель: вошедший, чья группа имеет полные права на корень сайта. Только редакторы видят языки
+     * «в подготовке» (lang_is_active = 0) — остальным их адреса дают 404, в переключателе их нет.
+     */
+    public function isEditor(): bool {
+        if ($this->editor === null) {
+            $this->editor = false;
+            try {
+                $user = E()->getUser();
+                $groups = $user->isAuthenticated() ? array_map('intval', (array)$user->getGroups()) : [];
+                if ($groups) {
+                    $this->editor = (bool)$this->dbh->getScalar('SELECT COUNT(*) FROM share_access_level a JOIN share_sitemap s USING (smap_id) '
+                        . 'WHERE s.smap_pid IS NULL AND a.right_id = ' . (int)ACCESS_FULL . ' AND a.group_id IN (' . implode(',', $groups) . ')');
+                }
+            } catch (\Throwable $e) {
+                $this->editor = false;
+            }
+        }
+        return $this->editor;
+    }
+
+    /**
+     * Открыт ли язык посетителям (lang_is_active).
+     */
+    public function isActive($langId): bool {
+        $info = $this->languages[(int)$langId] ?? null;
+        return $info === null || !isset($info['lang_is_active']) || (bool)$info['lang_is_active'];
     }
 
     /**
@@ -193,7 +228,11 @@ final class Language extends Primitive{
      * @return array
      */
     public function getLanguages() {
-        return $this->languages;
+        // язык «в подготовке» виден только редакторам
+        if ($this->isEditor()) {
+            return $this->languages;
+        }
+        return array_filter($this->languages, fn($info) => !isset($info['lang_is_active']) || $info['lang_is_active']);
     }
 
     /**

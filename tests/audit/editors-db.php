@@ -74,6 +74,8 @@ switch ($cmd) {
         q('INSERT IGNORE INTO share_textblocks (tb_id, smap_id, tb_num) SELECT ?, ' . TEXT_PAGE . ', ?',
             [(int)$argv[2], '1']);
         q('DELETE FROM share_textblocks_translation WHERE tb_id = ?', [(int)$argv[2]]);
+        // снимок возвращает блок целиком — версии, накопленные аудитом, тоже убираются
+        q('DELETE FROM share_textblocks_history WHERE tb_id = ?', [(int)$argv[2]]);
         foreach (json_decode($argv[3], true) as $r) {
             q('INSERT INTO share_textblocks_translation (tb_id, lang_id, tb_content) VALUES (?, ?, ?)', [(int)$argv[2], $r['lang_id'], $r['tb_content']]);
         }

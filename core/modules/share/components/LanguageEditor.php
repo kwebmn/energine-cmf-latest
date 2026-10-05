@@ -113,6 +113,13 @@ class LanguageEditor extends Grid {
      */
     // При добавлении нового языка создаем задизейбленые разделы
     protected function saveData() {
+        // язык по умолчанию нельзя закрыть от посетителей: сайт без открытого языка
+        $row = $_POST[$this->getTableName()] ?? [];
+        $isDefault = !empty($row['lang_default'])
+            || (!empty($row[$this->getPK()]) && (int)$row[$this->getPK()] === (int)E()->getLanguage()->getDefault());
+        if ($isDefault && isset($row['lang_is_active']) && !(int)$row['lang_is_active']) {
+            throw new SystemException('ERR_LANG_DEFAULT_INACTIVE', SystemException::ERR_CRITICAL);
+        }
         if (isset($_POST[$this->getTableName()][$this->getPK()]) &&
             empty($_POST[$this->getTableName()][$this->getPK()])
         ) {

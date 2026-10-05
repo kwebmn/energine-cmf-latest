@@ -159,6 +159,11 @@
                 </xsl:choose>
                 <xsl:value-of select="field[@name='lang_name']"/>
             </a>
+            <!-- язык «в подготовке»: его видит только редактор — с пометкой -->
+            <xsl:if test="field[@name='lang_is_active'] = '0'">
+                <xsl:text> </xsl:text>
+                <span class="lang_switcher_note text-sm text-muted">(<xsl:value-of select="$TRANSLATION[@const='TXT_LANG_INACTIVE']"/>)</span>
+            </xsl:if>
         </li>
     </xsl:template>
     <!-- /LangSwitcher -->

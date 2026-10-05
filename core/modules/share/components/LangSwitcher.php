@@ -47,18 +47,21 @@ class LangSwitcher extends DataSet {
         $lang = E()->getLanguage();
         $data = $lang->getLanguages();
         $result = [];
+        // Language отдаёт языки «в подготовке» только редакторам — здесь они помечаются (lang_is_active = 0)
         foreach ($data as $langID => $langInfo) {
-            if (!isset($langInfo['lang_is_active']) || $langInfo['lang_is_active']) {
-                $abbr = $langInfo['lang_abbr'];
-                if ($langInfo['lang_default']) {
-                    $langInfo['lang_abbr'] = '';
-                }
-                $result[$langID] = $langInfo;
-                $result[$langID]['lang_real_abbr'] = $abbr;
-                $result[$langID]['lang_id'] = $langID;
-                $result[$langID]['lang_url'] = $result[$langID]['lang_abbr'] . (($result[$langID]['lang_abbr']) ? '/' : '') .
-                    E()->getRequest()->getPath(Request::PATH_WHOLE, true);
+            $abbr = $langInfo['lang_abbr'];
+            if ($langInfo['lang_default']) {
+                $langInfo['lang_abbr'] = '';
             }
+            $result[$langID] = $langInfo;
+            $result[$langID]['lang_real_abbr'] = $abbr;
+            $result[$langID]['lang_id'] = $langID;
+            $result[$langID]['lang_is_active'] = (!isset($langInfo['lang_is_active']) || $langInfo['lang_is_active']) ? 1 : 0;
+            if (!$result[$langID]['lang_is_active']) {
+                $this->document->addTranslation('TXT_LANG_INACTIVE', $this);
+            }
+            $result[$langID]['lang_url'] = $result[$langID]['lang_abbr'] . (($result[$langID]['lang_abbr']) ? '/' : '') .
+                E()->getRequest()->getPath(Request::PATH_WHOLE, true);
         }
         return $result;
     }
@@ -89,6 +92,11 @@ class LangSwitcher extends DataSet {
 
             $f = new FieldDescription('lang_real_abbr');
             $f->setType(FieldDescription::FIELD_TYPE_STRING);
+            $result->addFieldDescription($f);
+
+            // 0 — язык «в подготовке» (виден только редактору, с пометкой)
+            $f = new FieldDescription('lang_is_active');
+            $f->setType(FieldDescription::FIELD_TYPE_INT);
             $result->addFieldDescription($f);
         }
         else {
