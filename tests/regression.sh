@@ -28,6 +28,7 @@ echo "### menu"; php8.5 menu.php
 echo "### sections"; php8.5 sections.php
 echo "### escaping"; php8.5 xslt-escaping.php
 echo "### xslt-lint"; php8.5 xslt-lint.php
+echo "### new-site-doc"; bash new-site-doc.sh
 
 echo "### mail"
 php8.5 smoke-mail.php
