@@ -183,16 +183,24 @@ for needle in 'composer install --no-dev' 'index.php setup install' 'index.php s
   grep -qF -- "$needle" "$E/INSTALL.md" 2>/dev/null || bad "INSTALL.md does not mention: $needle"
 done
 
-# published files are clean
+# published files are clean (git runs as root in a clone owned by RUN_AS: allow it explicitly, and a git
+# error must fail the check instead of reading as "nothing found")
 cd "$E"
-leak=$(git grep -lI -e 'new\.energine\.org' -e 'pavka\.eggmen' -e '/var/www/clients' -- . ':!tools/install-check.sh' 2>/dev/null)
-[ -z "$leak" ] && ok "no demo-server names or paths" || bad "demo-server names or paths in: $leak"
-conf=$(git ls-files | grep -E 'system\.config\.[^/]*\.php$' | grep -v 'system\.config\.default\.php')
+G() { git -c safe.directory="$E" -C "$E" "$@"; }
+leak=$(G grep -lI -e 'new\.energine\.org' -e 'pavka\.eggmen' -e '/var/www/clients' -- . ':!tools/install-check.sh'); rc=$?
+if [ $rc -gt 1 ]; then bad "git grep failed ($rc)"
+elif [ -z "$leak" ]; then ok "no demo-server names or paths"
+else bad "demo-server names or paths in: $(echo $leak)"; fi
+files=$(G ls-files) || bad "git ls-files failed"
+conf=$(echo "$files" | grep -E 'system\.config\.[^/]*\.php$' | grep -v 'system\.config\.default\.php')
 [ -z "$conf" ] && ok "only the default config is published" || bad "configs published: $conf"
-hashes=$(awk '/INSERT INTO `user_users`/{f=1} f{print FILENAME": "$0} /;[[:space:]]*$/{f=0}' starter/sql/*.sql starter/sql/demo/*.sql 2>/dev/null \
+# hashes in user_users rows (INSERT … VALUES) and in u_password assignments (UPDATE … SET u_password = …)
+hashes=$( { awk '/INSERT INTO `user_users`|INSERT IGNORE INTO `user_users`/{f=1} f{print FILENAME": "$0} /;[[:space:]]*$/{f=0}' starter/sql/*.sql starter/sql/demo/*.sql
+            grep -H 'u_password' starter/sql/*.sql starter/sql/demo/*.sql; } 2>/dev/null \
   | grep -E "'[0-9a-f]{40}'|\\\$2[aby]\\\$" | cut -d: -f1 | sort -u)
-[ -z "$hashes" ] && ok "no password hashes in user_users data" || bad "password hashes in: $hashes"
-git grep -qiI -e 'recaptcha' -- starter/configs && bad "reCAPTCHA settings in the starter config" || ok "no reCAPTCHA keys"
+[ -z "$hashes" ] && ok "no password hashes in user_users data" || bad "password hashes in: $(echo $hashes)"
+G grep -qiI -e 'recaptcha' -- starter/configs; rc=$?
+[ $rc -eq 1 ] && ok "no reCAPTCHA keys" || bad "reCAPTCHA settings in the starter config (git grep rc=$rc)"
 [ ! -e starter/tests ] && ok "no demo-server tests" || bad "starter/tests is published"
 cd /
 
