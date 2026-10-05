@@ -31,4 +31,22 @@ check('наследование работает без исключений', $
 $e = null;
 try { ComponentConfig::loadXml("$dir/L1.xml", $resolve); } catch (\Throwable $x) { $e = $x; }
 check('цикл extends — ERR_DEV_CONFIG_EXTENDS_LOOP', $e && str_contains($e->getMessage(), 'ERR_DEV_CONFIG_EXTENDS_LOOP'), $e ? $e->getMessage() : 'исключения нет');
+
+// переведённые на extends конфиги ядра: объединённый результат совпадает с прежним полным файлом (ревизия 343ec644):
+// те же состояния в том же порядке и с тем же содержимым (C14N); файл — не больше 3/4 прежнего
+$coreResolve = fn($name) => is_file($f = ROOT . '/core/modules/share/config/' . $name) ? $f : false;
+$canon = function (\SimpleXMLElement $x) {
+    $out = [];
+    foreach ($x->state as $st) { $d = dom_import_simplexml($st); $out[] = (string)$st['name'] . '=' . preg_replace('~>\s+<~', '><', $d->C14N()); }
+    return $out;
+};
+foreach (['FileRepositorySelect', 'SiteDivisionEditor'] as $n) {
+    $file = ROOT . "/core/modules/share/config/$n.component.xml";
+    $old = shell_exec('cd ' . escapeshellarg(ROOT) . " && git show 343ec644:core/modules/share/config/$n.component.xml");
+    $merged = ComponentConfig::loadXml($file, $coreResolve);
+    $orig = simplexml_load_string($old);
+    check("$n: extends, результат = прежний полный конфиг (состояния, порядок, содержимое)", str_contains(file_get_contents($file), 'extends=')
+        && $canon($merged) === $canon($orig), implode(' ', array_map(fn($x) => strtok($x, '='), $canon($merged))));
+    check("$n: файл заметно короче прежнего (не больше 3/4)", strlen(file_get_contents($file)) * 4 <= strlen($old) * 3, strlen(file_get_contents($file)) . ' / ' . strlen($old));
+}
 done('config-extends');

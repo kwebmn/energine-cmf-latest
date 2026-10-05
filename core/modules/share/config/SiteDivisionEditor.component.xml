@@ -1,5 +1,13 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<configuration>
+<configuration extends="DivisionEditor.component.xml">
+    <!-- отличия от DivisionEditor.component.xml: остальные состояния — как там -->
+    <state name="showTransEditor" remove="1"/>
+    <state name="showUserEditor" remove="1"/>
+    <state name="showRoleEditor" remove="1"/>
+    <state name="showLangEditor" remove="1"/>
+    <state name="showSiteSettings" remove="1"/>
+    <state name="showPageToolbar" remove="1"/>
+
     <state name="main" rights="3">
         <uri_patterns>
             <pattern>/show/</pattern>
@@ -25,42 +33,7 @@
                    <control id="close" title="BTN_ClOSE" type="button" onclick="close"/>-->
         </toolbar>
     </state>
-    <state name="selector" rights="3">
-        <uri_patterns>
-            <pattern>/list/</pattern>
-            <pattern>/list/[int]/</pattern>
-        </uri_patterns>
-        <javascript>
-            <behavior name="DivTree"/>
-        </javascript>
-        <fields>
-            <field name="smap_id"/>
-            <field name="smap_pid"/>
-            <field name="lang_id"/>
-            <field name="smap_name"/>
-        </fields>
-        <toolbar>
-            <control id="select" title="BTN_SELECT" type="button" onclick="select"/>
-            <control id="close" title="BTN_CLOSE" type="button" onclick="close"/>
-        </toolbar>
-    </state>
-    <state name="getRawData" rights="3">
-        <uri_patterns>
-            <pattern>/get-data/</pattern>
-            <pattern>/get-data/[string]/</pattern>
-        </uri_patterns>
-    </state>
-    <state name="resetTemplates" rights="3">
-        <uri_patterns>
-            <pattern>/reset-templates/[smap_id]/</pattern>
-            <pattern>/reset-templates/</pattern>
-        </uri_patterns>
-    </state>
-    <state name="getProperties" rights="3">
-        <uri_patterns>
-            <pattern>/get-node-data/</pattern>
-        </uri_patterns>
-    </state>
+
     <state name="add" rights="3">
         <uri_patterns>
             <pattern>/add/[pid]/</pattern>
@@ -99,56 +72,5 @@
             <control id="sep1" type="separator"/>
             <control id="list" title="BTN_CANCEL" type="button" onclick="close"/>
         </toolbar>
-    </state>
-    <state name="edit" rights="3">
-        <uri_patterns>
-            <pattern>/[int]/edit/</pattern>
-        </uri_patterns>
-        <fields>
-            <field name="smap_id"/>
-            <field name="smap_pid"/>
-            <field name="lang_id"/>
-            <field name="smap_content"/>
-            <field name="smap_layout"/>
-            <field name="smap_segment" pattern="/^[a-z0-9\-\.]*$/" message="TXT_BAD_SEGMENT_FORMAT"/>
-            <field name="smap_redirect_url"/>
-            <field name="smap_meta_robots"/>
-            <field name="smap_in_menu"/>
-            <field name="smap_is_disabled"/>
-            <field name="smap_name"/>
-            <field name="smap_title"/>
-            <field name="smap_description_rtf"/>
-            <field name="smap_html_title"/>
-            <field name="smap_meta_keywords"/>
-            <field name="smap_meta_description"/>
-            <field name="page_rights" type="custom" tabName="trans(TAB_PAGE_RIGHTS)"/>
-        </fields>
-        <javascript>
-            <behavior name="DivForm"/>
-        </javascript>
-        <toolbar>
-            <control id="save" title="BTN_SAVE" type="button" onclick="save"/>
-            <control id="list" title="BTN_CLOSE" type="button" onclick="close"/>
-        </toolbar>
-    </state>
-    <state name="save" rights="3">
-        <uri_patterns>
-            <pattern>/save/</pattern>
-        </uri_patterns>
-    </state>
-    <state name="delete" rights="3">
-        <uri_patterns>
-            <pattern>/[int]/delete/</pattern>
-        </uri_patterns>
-    </state>
-    <state name="up" rights="3">
-        <uri_patterns>
-            <pattern>/[int]/up/</pattern>
-        </uri_patterns>
-    </state>
-    <state name="down" rights="3">
-        <uri_patterns>
-            <pattern>/[int]/down/</pattern>
-        </uri_patterns>
     </state>
 </configuration>
