@@ -109,6 +109,9 @@ grep -q "'debug' => 0" "$CFG" && ! grep -q "PATH TO CORE\|DB PASSWORD\|PROJECT D
 ( cd "$P/htdocs" && runuser -u "$RUN_AS" -- "$PHP" index.php setup install ) > "$T/setup.log" 2>&1 \
   || { tail -10 "$T/setup.log"; die "6. setup install"; }
 ok "6. setup install"
+# a failed setup says so through its exit status (scripts that follow INSTALL.md rely on it)
+( cd "$P/htdocs" && runuser -u "$RUN_AS" -- "$PHP" index.php setup noSuchAction ) > "$T/setup-error.log" 2>&1 \
+  && bad "setup exits 0 when it fails" || ok "setup exits non-zero when it fails"
 
 # 7. Your administrator (the starter's account cannot sign in until this step)
 HASH=$(ADMIN_PW="$ADMIN_PW" "$PHP" -r 'echo password_hash(getenv("ADMIN_PW"), PASSWORD_DEFAULT);')
@@ -133,7 +136,7 @@ if [ "$VARIANT" = demo ]; then
     && ok "9. demo images" || bad "9. demo images"
 fi
 
-# serve
+# 10. Web server (here: PHP's built-in server, running as the site's user with display_errors off)
 touch "$T/php-error.log"; chown "$RUN_AS:" "$T/php-error.log"
 runuser -u "$RUN_AS" -- "$PHP" -d log_errors=1 -d error_log="$T/php-error.log" -d display_errors=0 \
   -S "127.0.0.1:$WEBPORT" -t "$P/htdocs" "$E/tools/php-server-router.php" > "$T/web.log" 2>&1 &
@@ -141,45 +144,86 @@ for _ in $(seq 50); do curl -s -o /dev/null "http://127.0.0.1:$WEBPORT/" && brea
 B="http://127.0.0.1:$WEBPORT"
 get() { curl -s -o "$T/body" -w '%{http_code}' -b "$T/jar" -c "$T/jar" "$B$1"; }
 clean() { ! grep -qiE 'Fatal error|Warning:|Notice:|Deprecated:|Uncaught' "$T/body"; }
+# a page is a whole HTML document: a bootstrap failure answers 200 text/plain, an escaped exception an empty 200
+html() { grep -qi '</html>' "$T/body"; }
 
 # pages
-[ "$(get /)" = 200 ] && clean && ok "home page" || bad "home page: $(head -c 200 "$T/body" | tr '\n' ' ')"
-[ "$(get /login/)" = 200 ] && clean && ok "login page" || bad "login page"
+[ "$(get /)" = 200 ] && html && clean && ok "home page" || bad "home page: $(head -c 200 "$T/body" | tr '\n' ' ')"
+[ "$(get /login/)" = 200 ] && html && clean && ok "login page" || bad "login page"
 [ "$(get /no-such-page-$$/)" = 404 ] && ok "404 for an unknown address" || bad "404 for an unknown address"
 [ "$(get /google-sitemap/)" = 200 ] && grep -q '<sitemapindex' "$T/body" \
   && [ "$(get /google-sitemap/map)" = 200 ] && grep -q '<urlset' "$T/body" && ok "google sitemap (index and map)" || bad "google sitemap"
 [ "$(get /templates/content/main.content.xml)" = 403 ] && ok "page XML not served" || bad "page XML is served"
 
-# sign in: the administrator from step 7; the starter's login no longer exists
+# sign in: the administrator from step 7
 code=$(curl -s -o /dev/null -w '%{http_code}' -b "$T/jar" -c "$T/jar" -e "$B/login/" -d 'user[login]=1' \
   --data-urlencode "user[username]=$ADMIN_EMAIL" --data-urlencode "user[password]@$T/admin.pw" "$B/auth.php")
-[ "$(get /admin/)" = 200 ] && clean && grep -qi 'logout' "$T/body" \
+[ "$(get /admin/)" = 200 ] && html && clean && grep -qi 'logout' "$T/body" \
   && ok "administrator signs in ($code), /admin/ opens" || bad "administrator sign-in (auth $code, admin $(get /admin/))"
-[ "$(DB -N -e "SELECT COUNT(*) FROM user_users WHERE u_name <> '$ADMIN_EMAIL' AND u_password LIKE '\$2%'")" = 0 ] \
-  && ok "only the administrator has a usable password" || bad "other users have usable passwords"
-grep -rqs 'demo@energine.org' "$T/body" && bad "starter login shown on a page" || true
+[ "$(get /admin/structure/)" = 200 ] && html && clean && grep -q 'id="treeContainer"' "$T/body" \
+  && ok "the sections editor opens" || bad "the sections editor (/admin/structure/)"
 
-# every top-level page a guest may read answers (pages without guest rights answer 404 by design)
-DB -N -e "SELECT s.smap_segment FROM share_sitemap s JOIN share_sitemap r ON s.smap_pid = r.smap_id
+# nobody else signs in: no other usable password in the database, and the login form turns the others away
+# (the starter's login included) — with an empty and with a random password
+[ "$(DB -N -e "SELECT COUNT(*) FROM user_users WHERE u_name <> '$ADMIN_EMAIL' AND u_password LIKE '\$%'")" = 0 ] \
+  && ok "only the administrator has a usable password" || bad "other users have usable passwords"
+f0=$FAILS
+DB -N -e "SELECT u_name FROM user_users WHERE u_name <> '$ADMIN_EMAIL' UNION SELECT 'demo@energine.org'" > "$T/others"
+while read -r u; do
+  for pw in '' "$(randpw)"; do
+    : > "$T/jar-other"
+    curl -s -o /dev/null -b "$T/jar-other" -c "$T/jar-other" -e "$B/login/" -d 'user[login]=1' \
+      --data-urlencode "user[username]=$u" --data-urlencode "user[password]=$pw" "$B/auth.php"
+    curl -s -o "$T/body" -b "$T/jar-other" "$B/"
+    grep -qi 'logout' "$T/body" && bad "$u signs in"
+  done
+done < "$T/others"
+[ "$FAILS" = "$f0" ] && ok "the login form turns away $(wc -l < "$T/others") other logins"
+
+# every top-level page and every administration page opens for the administrator
+f0=$FAILS
+DB -N -e "SELECT CONCAT('/', s.smap_segment, '/') FROM share_sitemap s JOIN share_sitemap r ON s.smap_pid = r.smap_id
+  WHERE r.smap_pid IS NULL AND s.smap_segment NOT IN ('admin', 'google-sitemap', 'robots.txt')
+  UNION ALL
+  SELECT CONCAT('/admin/', s.smap_segment, '/') FROM share_sitemap s JOIN share_sitemap a ON s.smap_pid = a.smap_id
+  JOIN share_sitemap r ON a.smap_pid = r.smap_id WHERE r.smap_pid IS NULL AND a.smap_segment = 'admin'" > "$T/pages"
+while read -r u; do
+  c=$(get "$u")
+  [ "$c" = 200 ] && html && clean || bad "$u answers $c to the administrator$(clean || echo ' with a PHP error')"
+  grep -q 'demo@energine.org' "$T/body" && bad "$u shows the starter login"
+done < "$T/pages"
+[ "$FAILS" = "$f0" ] && ok "$(wc -l < "$T/pages") pages open for the administrator"
+
+# every top-level page a guest may read opens for a guest
+f0=$FAILS; : > "$T/jar-guest"
+DB -N -e "SELECT DISTINCT s.smap_segment FROM share_sitemap s JOIN share_sitemap r ON s.smap_pid = r.smap_id
   JOIN share_access_level a ON a.smap_id = s.smap_id AND a.right_id > 0
   JOIN user_groups g ON g.group_id = a.group_id AND g.group_default = 1
-  WHERE r.smap_pid IS NULL AND s.smap_segment NOT IN ('admin', 'login')" > "$T/segments"
+  WHERE r.smap_pid IS NULL AND s.smap_segment NOT IN ('admin', 'google-sitemap', 'robots.txt')" > "$T/segments"
 while read -r seg; do
-  c=$(get "/$seg/")
-  case "$c" in 200|403) clean || bad "/$seg/ shows a PHP error";; *) bad "/$seg/ answers $c";; esac
+  c=$(curl -s -o "$T/body" -w '%{http_code}' -b "$T/jar-guest" -c "$T/jar-guest" "$B/$seg/")
+  [ "$c" = 200 ] && html && clean || bad "/$seg/ answers $c to a guest$(clean || echo ' with a PHP error')"
 done < "$T/segments"
-ok "$(wc -l < "$T/segments") top-level pages checked"
+[ "$FAILS" = "$f0" ] && ok "$(wc -l < "$T/segments") pages open for a guest"
 
-# setup linker again (after a move the links must be rebuilt) keeps the site working
+# setup linker again (after updating or moving the core): it rebuilds htdocs/images, scripts, stylesheets and
+# templates — the site's own files come from site/modules/*/, anything put straight into those folders is removed
+printf 'site file' | runuser -u "$RUN_AS" -- tee "$P/site/modules/main/images/install-check.txt" > /dev/null
+printf 'stray file' | runuser -u "$RUN_AS" -- tee "$P/htdocs/images/install-check.txt" > /dev/null
 ( cd "$P/htdocs" && runuser -u "$RUN_AS" -- "$PHP" index.php setup linker ) > "$T/linker.log" 2>&1 \
-  && [ "$(get /)" = 200 ] && ok "setup linker again" || bad "setup linker again"
+  && [ "$(get /)" = 200 ] && html && ok "setup linker again" || bad "setup linker again"
+[ "$(get /images/main/install-check.txt)" = 200 ] && grep -q 'site file' "$T/body" \
+  && [ ! -e "$P/htdocs/images/install-check.txt" ] \
+  && ok "setup links site/modules/main/images/ into htdocs/images/main/ and clears htdocs/images/" \
+  || bad "site files after setup linker"
 
 # PHP error log
 [ ! -s "$T/php-error.log" ] && ok "PHP error log is empty" || bad "PHP error log: $(tail -3 "$T/php-error.log" | tr '\n' ' ')"
 
 # INSTALL.md describes what this check did
 for needle in 'composer install --no-dev' 'index.php setup install' 'index.php setup linker' 'share_domains' \
-              'password_hash' $FILES; do
+              'password_hash' 'php_admin_flag[display_errors] = off' 'AllowOverride All' 'site/modules/main/images' \
+              $FILES; do
   grep -qF -- "$needle" "$E/INSTALL.md" 2>/dev/null || bad "INSTALL.md does not mention: $needle"
 done
 
@@ -202,6 +246,15 @@ hashes=$( { awk '/INSERT INTO `user_users`|INSERT IGNORE INTO `user_users`/{f=1}
 G grep -qiI -e 'recaptcha' -- starter/configs; rc=$?
 [ $rc -eq 1 ] && ok "no reCAPTCHA keys" || bad "reCAPTCHA settings in the starter config (git grep rc=$rc)"
 [ ! -e starter/tests ] && ok "no demo-server tests" || bad "starter/tests is published"
+stale=$(G grep -lI -i -e 'svn checkout' -e 'googlecode' -e 'ISPConfig' -e 'private/project' -- . ':!tools/install-check.sh'); rc=$?
+if [ $rc -gt 1 ]; then bad "git grep failed ($rc)"
+elif [ -z "$stale" ]; then ok "no stale install instructions or demo-stand notes"
+else bad "stale install instructions or demo-stand notes in: $(echo $stale)"; fi
+# mariadb-dump's sandbox line stops MariaDB clients older than 10.11.8 / 10.6.18 ("Unknown command '\-'")
+sandbox=$(G grep -lI -F '/*M!999999' -- starter/sql); rc=$?
+if [ $rc -gt 1 ]; then bad "git grep failed ($rc)"
+elif [ -z "$sandbox" ]; then ok "no mariadb-dump sandbox line in the SQL"
+else bad "mariadb-dump sandbox line in: $(echo $sandbox)"; fi
 cd /
 
 echo "== install-check $VARIANT failures: $FAILS"

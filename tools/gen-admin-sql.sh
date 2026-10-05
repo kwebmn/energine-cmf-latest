@@ -22,6 +22,6 @@ ROOT=$(Q -N e -e "SELECT smap_id FROM share_sitemap WHERE smap_pid IS NULL LIMIT
   echo "SET @root := (SELECT smap_id FROM share_sitemap WHERE smap_pid IS NULL LIMIT 1);"
   mariadb-dump --no-defaults --socket="$T/s" -u root --no-create-info --skip-triggers --compact --complete-insert \
     --where="smap_id IN ($IDS)" e share_sitemap share_sitemap_translation share_access_level \
-    | sed "s/,$ROOT,/,@root,/g"
+    | grep -v "^/\*M!999999" | sed "s/,$ROOT,/,@root,/g"   # no sandbox line: older MariaDB clients stop at it
 } > "$S/starter.data.admin.sql"
 echo "written: $(grep -c 'INSERT INTO' "$S/starter.data.admin.sql") INSERT statements"
