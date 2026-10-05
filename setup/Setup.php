@@ -321,6 +321,7 @@ final class Setup {
         try {
             $this->text('Схема: ', $this->runSqlFile($pdo, ROOT_DIR . '/sql/structure.sql'), ' запросов');
             $this->text('Базовые данные: ', $this->runSqlFile($pdo, ROOT_DIR . '/sql/data.sql'), ' запросов');
+            $this->text('Переводы сайта: ', $this->installTranslations($pdo, SITE_DIR . '/modules/main/translations.php'));
             $this->createAdmin($pdo, $email, $name, $password);
             $this->text('Администратор: ', $email);
         } catch (\Exception $e) {
@@ -612,6 +613,52 @@ final class Setup {
         $pdo->prepare('INSERT INTO user_users (u_name, u_password, u_fullname, u_is_active) VALUES (?, ?, ?, 1)')
             ->execute([$email, password_hash($password, PASSWORD_DEFAULT), $name]);
         $pdo->prepare('INSERT INTO user_user_groups (u_id, group_id) VALUES (?, ?)')->execute([$pdo->lastInsertId(), $group]);
+    }
+
+    /**
+     * Переводы сайта из файла site/modules/<сайт>/translations.php (константа => [сокращение языка => текст]):
+     * добавляет недостающие константы и переводы; существующие, в том числе правленые в админке, не меняет.
+     *   php web/index.php setup translations [--file=ПУТЬ]
+     */
+    private function translationsAction(...$args) {
+        $o = $this->options($args, ['file'], []);
+        $this->title('Переводы сайта');
+        $this->checkDBConnection();
+        $file = $o['file'] ?? SITE_DIR . '/modules/main/translations.php';
+        $this->text('Добавлено: ', $this->installTranslations($this->dbConnect, $file), ' (', $file, ')');
+    }
+
+    /**
+     * @return int число добавленных переводов (с новыми константами)
+     */
+    private function installTranslations(PDO $pdo, string $file): int {
+        if (!is_file($file)) {
+            throw new \Exception('Нет файла переводов: ' . $file);
+        }
+        $data = include $file;
+        if (!is_array($data)) {
+            throw new \Exception('Файл переводов должен возвращать массив: ' . $file);
+        }
+        $langs = $pdo->query('SELECT lang_abbr, lang_id FROM share_languages')->fetchAll(PDO::FETCH_KEY_PAIR);
+        $tag = $pdo->prepare('INSERT IGNORE INTO share_lang_tags (ltag_name) VALUES (?)');
+        $id = $pdo->prepare('SELECT ltag_id FROM share_lang_tags WHERE ltag_name = ?');
+        $tr = $pdo->prepare('INSERT IGNORE INTO share_lang_tags_translation (ltag_id, lang_id, ltag_value_rtf) VALUES (?, ?, ?)');
+        $added = 0;
+        foreach ($data as $const => $values) {
+            if (!preg_match('/^[A-Z][A-Z0-9_]*$/', (string)$const) || !is_array($values)) {
+                throw new \Exception('Неверная строка файла переводов: ' . $const);
+            }
+            $tag->execute([$const]);
+            $id->execute([$const]);
+            $ltagId = $id->fetchColumn();
+            foreach ($values as $abbr => $text) {
+                if (isset($langs[$abbr])) {
+                    $tr->execute([$ltagId, $langs[$abbr], (string)$text]);
+                    $added += $tr->rowCount();
+                }
+            }
+        }
+        return $added;
     }
 
     /**

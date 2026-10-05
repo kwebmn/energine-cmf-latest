@@ -47,4 +47,28 @@ check('секция по имени: section=hero → номер 11', $short && 
 check('неизвестное короткое имя — ошибка разработчика с этим именем (в отладке)', str_contains($body, 'NoSuchThing')
     && str_contains($body, 'ERR_DEV_NO_COMPONENT_CLASS'), "HTTP $code " . substr(strip_tags($body), 0, 200));
 logout();
+
+// 3. setup translations: недостающие константы из файла добавляются, повторный запуск ничего не меняет, правленый в
+//    базе перевод не перезаписывается
+$owner = posix_getpwuid(fileowner(WEB))['name'];
+$setup = fn(string ...$a) => shell_exec('cd ' . escapeshellarg(WEB) . ' && runuser -u ' . escapeshellarg($owner) . ' -- php8.5 index.php setup '
+    . implode(' ', array_map('escapeshellarg', $a)) . ' 2>&1');
+$tmp = sys_get_temp_dir() . '/claude-translations-' . getmypid() . '.php';
+file_put_contents($tmp, "<?php return ['CLAUDE_TEST_CONST' => ['ru' => 'Проба', 'ua' => 'Проба ua']];\n");
+chmod($tmp, 0644);
+$tr = fn() => q("SELECT l.lang_abbr, tr.ltag_value_rtf FROM share_lang_tags t JOIN share_lang_tags_translation tr USING (ltag_id)
+    JOIN share_languages l USING (lang_id) WHERE t.ltag_name = 'CLAUDE_TEST_CONST' ORDER BY 1")->fetchAll(PDO::FETCH_KEY_PAIR);
+register_shutdown_function(function () use ($tmp) {
+    @unlink($tmp);
+    q("DELETE tr FROM share_lang_tags_translation tr JOIN share_lang_tags t USING (ltag_id) WHERE t.ltag_name = 'CLAUDE_TEST_CONST'");
+    q("DELETE FROM share_lang_tags WHERE ltag_name = 'CLAUDE_TEST_CONST'");
+});
+$out1 = $setup('translations', "--file=$tmp");
+check('setup translations добавляет константу из файла на всех языках', $tr() == ['ru' => 'Проба', 'ua' => 'Проба ua'], $out1);
+q("UPDATE share_lang_tags_translation tr JOIN share_lang_tags t USING (ltag_id) SET tr.ltag_value_rtf = 'Правка' WHERE t.ltag_name = 'CLAUDE_TEST_CONST' AND tr.lang_id = 1");
+$out2 = $setup('translations', "--file=$tmp");
+check('повторный запуск не перезаписывает правленый перевод', ($tr()['ru'] ?? '') === 'Правка' && preg_match('~добавлено: 0~iu', (string)$out2), $out2);
+$site = include ROOT . '/site/modules/main/translations.php';
+check('переводы сайта в site/modules/main/translations.php: шаблоны страниц и образцы секций',
+    is_array($site) && isset($site['CONTENT_LANDING']['ru'], $site['TXT_SECTION_SAMPLE_HERO']['ua']));
 done('dev-tools');
