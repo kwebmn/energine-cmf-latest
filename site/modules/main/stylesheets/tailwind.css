@@ -10,6 +10,8 @@
 @layer theme, base, components, admin, utilities;
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/utilities.css" layer(utilities);
+/* тема визитки: цвета светлой и тёмной схем, шрифт, радиус, ширина страницы — меняется только этот файл */
+@import "./theme.css" layer(components);
 
 /* разметка сайта: тема и только те шаблоны ядра, что выводят страницы сайта. Шаблоны админки (list.xslt,
    divisionEditor.xslt, file.xslt …) не сканируются: их классы (grid, filter …) совпадают с именами утилит,
@@ -37,7 +39,7 @@
 @custom-variant invalid-fields (& .invalid);
 @custom-variant field-errors (& div.error);
 
-/* переменные дизайна: значения — из переменных темы ниже (светлая и тёмная схемы) */
+/* переменные дизайна: значения — из переменных темы в theme.css (светлая и тёмная схемы) */
 @theme {
     --color-bg: var(--bg);
     --color-bg-soft: var(--bg-soft);
@@ -55,7 +57,7 @@
     --container-page: var(--wrap);
 }
 
-/* база темы: переменные схем, элементы текста из редактора (в нём классов нет) и классы ядра, общие с админкой
+/* база темы: элементы текста из редактора (в нём классов нет) и классы ядра, общие с админкой
    (container.xslt, листалка); всё остальное — утилиты в разметке (ui.xslt, energine.xslt). Правила базы обходят
    контейнеры админки (:where(:not(.e-pane *, …))) и стоят в слое components — утилиты сильнее них. */
 @layer components {
@@ -66,41 +68,7 @@
     Печать — в конце файла.
 */
 
-/* ---------- переменные ---------- */
-:root {
-    color-scheme: light dark;
-    --bg: #ffffff;
-    --bg-soft: #f4f5f7;
-    --fg: #1d2128;
-    --muted: #5d6573;
-    --border: #d9dde3;
-    --accent: #1f5fae;
-    --accent-fg: #ffffff;
-    --danger: #b3261e;
-    --danger-bg: #fdecea;
-    --ok-bg: #e8f4ea;
-    --field-bg: #ffffff;
-    --radius: .5rem;
-    --gap: 1rem;
-    --wrap: 72rem;
-    --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-}
-
-@media (prefers-color-scheme: dark) {
-    :root {
-        --bg: #14171c;
-        --bg-soft: #1d2229;
-        --fg: #e6e9ee;
-        --muted: #a2abb8;
-        --border: #343b46;
-        --accent: #7fb2f0;
-        --accent-fg: #0d1117;
-        --danger: #ff8a80;
-        --danger-bg: #3a1d1b;
-        --ok-bg: #1c3222;
-        --field-bg: #11151a;
-    }
-}
+/* ---------- переменные: theme.css (подключён выше) ---------- */
 
 /* ---------- основа ---------- */
 *, *::before, *::after { box-sizing: border-box; }

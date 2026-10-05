@@ -30,5 +30,10 @@ bare=$(sed 's/.*@layer utilities{//' "$ADM" 2>/dev/null | grep -o '}\.[a-z][a-z0
 [ -z "$bare" ] && echo "OK   в admin.css нет утилит без префикса a:" || { echo "FAIL правила без префикса в admin.css: $bare"; fail=$((fail+1)); }
 amp=$(grep -rn 'class="[^"]*&amp;' --include=*.xslt "$R/core" "$R/site" | sed "s|$R/||")
 [ -z "$amp" ] && echo "OK   в классах XSLT нет «&amp;»" || { echo "FAIL «&amp;» в классе XSLT: $amp"; fail=$((fail+1)); }
+# тема визитки: цвета, шрифт, радиус и ширина — в theme.css (светлая и тёмная схемы); в tailwind.css значений нет
+THEME=$R/site/modules/main/stylesheets/theme.css
+grep -q 'prefers-color-scheme: dark' "$THEME" 2>/dev/null && grep -q -- '--accent:' "$THEME" \
+  && ! grep -qE '^\s*--[a-z-]+:\s*#' "$R/site/modules/main/stylesheets/tailwind.css" \
+  && echo "OK   переменные темы — в theme.css (обе схемы)" || { echo "FAIL переменные темы не в theme.css"; fail=$((fail+1)); }
 echo "== css failures: $fail"
 [ $fail -eq 0 ]

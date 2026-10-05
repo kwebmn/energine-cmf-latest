@@ -1,0 +1,41 @@
+/*
+    Тема визитки Energine Simple: переменные дизайна. Чтобы перекрасить сайт, меняется только этот файл, затем
+    пересборка стилей: php web/index.php setup css (docs/NEW-SITE.md). Имена переменных не меняются — на них
+    опираются @theme в tailwind.css (утилиты bg-primary, text-muted …) и правила темы.
+    Контраст текста и кнопок — не ниже 4.5:1 в обеих схемах (проверка: tests/audit/theme.js).
+*/
+:root {
+    color-scheme: light dark;
+    --bg: #ffffff;
+    --bg-soft: #f4f5f7;
+    --fg: #1d2128;
+    --muted: #5d6573;
+    --border: #d9dde3;
+    --accent: #1f5fae;
+    --accent-fg: #ffffff;
+    --danger: #b3261e;
+    --danger-bg: #fdecea;
+    --ok-bg: #e8f4ea;
+    --field-bg: #ffffff;
+    --radius: .5rem;
+    --gap: 1rem;
+    --wrap: 72rem;
+    --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg: #14171c;
+        --bg-soft: #1d2229;
+        --fg: #e6e9ee;
+        --muted: #a2abb8;
+        --border: #343b46;
+        --accent: #7fb2f0;
+        --accent-fg: #0d1117;
+        --danger: #ff8a80;
+        --danger-bg: #3a1d1b;
+        --ok-bg: #1c3222;
+        --field-bg: #11151a;
+    }
+}
+
