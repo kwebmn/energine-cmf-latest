@@ -20,8 +20,8 @@ if (isset($_SERVER['SCRIPT_FILENAME'])) {
 //error_reporting(E_ALL | E_STRICT);
 //С 5.4 вроде как E_STRICT стал частью E_ALL
 error_reporting(E_ALL);
-// включаем вывод ошибок и отключаем вывод в HTML
-@ini_set('display_errors', 1);
+// вывод ошибок в ответ — только при отладке: иначе посетитель увидел бы пути сервера; без HTML-разметки
+@ini_set('display_errors', (defined('DEBUG') && DEBUG) ? 1 : 0);
 @ini_set('html_errors', 0);
 @ini_set('session.auto_start', 0);
 @ini_set('session.use_trans_sid', 0);

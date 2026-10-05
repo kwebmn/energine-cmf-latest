@@ -669,9 +669,9 @@ class DivisionEditor extends Grid implements SampleDivisionEditor {
      */
     protected function getProperties() {
 
-        $id = $_POST['id'];
-        $langID = $_POST['languageID'];
-        if (!$this->recordExists($id)) {
+        $id = (int)($_POST['id'] ?? 0);
+        $langID = (int)($_POST['languageID'] ?? 0);
+        if (!$id || !$langID || !$this->recordExists($id)) {
             throw new SystemException('ERR_404', SystemException::ERR_404);
         }
 
@@ -680,7 +680,7 @@ class DivisionEditor extends Grid implements SampleDivisionEditor {
             'SELECT smap_name, smap_pid, smap_order_num ' .
             ' FROM share_sitemap s' .
             ' LEFT JOIN share_sitemap_translation st ON s.smap_id = st.smap_id' .
-            ' WHERE s.smap_id = ' . $id . ' AND lang_id = ' . $langID
+            ' WHERE s.smap_id = %s AND lang_id = %s', $id, $langID
         );
         list($result) = $result;
         $b = new JSONCustomBuilder();

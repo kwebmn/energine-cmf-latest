@@ -870,9 +870,12 @@ class Grid extends DBDataSet {
         $actionParams = $this->getStateParams(true);
         if (isset($actionParams['sortField']) &&
             isset($actionParams['sortDir'])
-        ) { 
-            //подразумевается что sortDir - тоже существует
-            $this->setOrder([$actionParams['sortField'] => $actionParams['sortDir']]);
+        ) {
+            // поле — только из описания данных, направление — только asc|desc; иное молча пропускается (не в SQL)
+            $dir = strtolower((string)$actionParams['sortDir']);
+            if ($this->getDataDescription()->getFieldDescriptionByName($actionParams['sortField']) && in_array($dir, ['asc', 'desc'], true)) {
+                $this->setOrder([$actionParams['sortField'] => $dir]);
+            }
         }
     }
 

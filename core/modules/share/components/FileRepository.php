@@ -228,8 +228,7 @@ class FileRepository extends Grid implements SampleFileRepository {
      */
     protected function copyFile($uplID,$root_path=null,$root_upl_pid=null) {
         $db_key=$this->getPK();
-        $sql= "SELECT * FROM ".$this->getTableName()." WHERE ".$db_key."=". $uplID. " LIMIT 1";
-        $file_info=$this->dbh->select($sql)[0];
+        $file_info=$this->dbh->select($this->getTableName(), true, array($db_key => (int)$uplID))[0];
         $file_path=pathinfo($file_info['upl_path']);
         $extension=$file_path['extension'];
         if ($root_path==null) { //same or other location
@@ -261,8 +260,7 @@ class FileRepository extends Grid implements SampleFileRepository {
      */
     protected function copyDir($uplID,$root_path=null,$root_upl_pid=null) {
         $db_key=$this->getPK();
-        $sql= "SELECT * FROM ".$this->getTableName()." WHERE ".$db_key."=". $uplID. " LIMIT 1";
-        $file_info=$this->dbh->select($sql)[0];
+        $file_info=$this->dbh->select($this->getTableName(), true, array($db_key => (int)$uplID))[0];
 
         $new_dirname="copy_".basename($file_info['upl_path']);
         $old_path=$file_info['upl_path'];
@@ -308,8 +306,7 @@ class FileRepository extends Grid implements SampleFileRepository {
         $sp = $this->getStateParams();
         $uplID = $sp[0];
         $db_key=$this->getPK();
-        $sql= "SELECT * FROM ".$this->getTableName()." WHERE ".$db_key."=". $uplID. " LIMIT 1";
-        $file_info=$this->dbh->select($sql)[0];
+        $file_info=$this->dbh->select($this->getTableName(), true, array($db_key => (int)$uplID))[0];
         parent::delete();
         if ($file_info['upl_internal_type'] == FileRepoInfo::META_TYPE_FOLDER) {
             $this->rmdir_recursive($file_info['upl_path']);

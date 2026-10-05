@@ -41,7 +41,7 @@ class ErrorDocument extends Primitive implements IDocument {
      * @see ErrorDocument::$e
      * @return ErrorDocument
      */
-    public function attachException(\Exception $e) {
+    public function attachException(\Throwable $e) {
         $this->e = $e;
         return $this;
     }

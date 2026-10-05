@@ -85,5 +85,14 @@ foreach (['/admin/users/', "/admin/structure/single/divEditor/$page/edit/"] as $
         && !str_contains($html, '<b>t9</b>') && !str_contains($html, '<div class="e-translations"')
         && preg_match('~<template class="e-translations">~', $html), substr($scripts, 0, 200));
 }
+// 5. подписи кнопок панели грида попадают в код скрипта строками: апостроф и обратная косая экранированы
+$d = page('/admin/users/');
+foreach ((new DOMXPath($d))->query('//component[@exttype="grid"]/toolbar/control[@type="button"]') as $i => $ctl) {
+    if ($i === 0) { $ctl->setAttribute('title', "Ім'я \\ test"); }
+}
+$html = render($d);
+$scripts = preg_match_all('~<script\b[^>]*>(.*?)</script>~s', $html, $m) ? implode("\n", $m[1]) : '';
+check('панель грида: апостроф и «\\» в подписи кнопки экранированы в коде скрипта', str_contains($scripts, "Ім\\'я \\\\ test") && !str_contains($scripts, "'Ім'я"),
+    substr($scripts, strpos($scripts, 'Ім') - 40 ?: 0, 120));
 logout();
 done('escaping');

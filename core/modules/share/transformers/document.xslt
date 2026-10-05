@@ -150,14 +150,14 @@
                     <xsl:for-each select="$PAGE_TOOLBAR/toolbar/control">
                         {
                         <xsl:for-each select="@*[name()!='mode']">
-                            '<xsl:value-of select="name()"/>':'<xsl:value-of select="."/>'<xsl:if test="position()!=last()">,</xsl:if>
+                            '<xsl:value-of select="name()"/>':'<xsl:call-template name="js-string"><xsl:with-param name="s" select="."/></xsl:call-template>'<xsl:if test="position()!=last()">,</xsl:if>
                         </xsl:for-each><xsl:if test="options">, 'options':{
-                            <xsl:for-each select="options/option">'<xsl:value-of select="@id"/>':'<xsl:value-of select="."/>'<xsl:if test="position()!=last()">,</xsl:if>
+                            <xsl:for-each select="options/option">'<xsl:value-of select="@id"/>':'<xsl:call-template name="js-string"><xsl:with-param name="s" select="."/></xsl:call-template>'<xsl:if test="position()!=last()">,</xsl:if>
                             </xsl:for-each>},
                         'initialValue':'<xsl:value-of select="options/option[@selected]/@id"/>'
                         </xsl:if>
                         }<xsl:if test="position()!=last()">,</xsl:if></xsl:for-each>
-                    ]<xsl:if test="$PAGE_TOOLBAR/toolbar/properties/property">, <xsl:for-each select="$PAGE_TOOLBAR/toolbar/properties/property">{'<xsl:value-of select="@name"/>':'<xsl:value-of select="."/>'<xsl:if test="position()!=last()">,</xsl:if>}</xsl:for-each></xsl:if>);
+                    ]<xsl:if test="$PAGE_TOOLBAR/toolbar/properties/property">, <xsl:for-each select="$PAGE_TOOLBAR/toolbar/properties/property">{'<xsl:value-of select="@name"/>':'<xsl:call-template name="js-string"><xsl:with-param name="s" select="."/></xsl:call-template>'<xsl:if test="position()!=last()">,</xsl:if>}</xsl:for-each></xsl:if>);
                     }
                     catch (e) {
                         console.error(e);
@@ -225,6 +225,33 @@
             document.querySelectorAll('template.e-translations').forEach((t) => t.content.querySelectorAll('[data-const]')
                 .forEach((s) => Energine.translations.set(s.dataset.const, s.textContent)));
         </script>
+    </xsl:template>
+
+    <!-- строка для кода JS в одинарных кавычках: экранируются «\», «'», переводы строк и «</» (подписи кнопок —
+         переводы, в украинских есть апостроф: «Повне iм'я») -->
+    <xsl:template name="str-replace">
+        <xsl:param name="s"/>
+        <xsl:param name="from"/>
+        <xsl:param name="to"/>
+        <xsl:choose>
+            <xsl:when test="contains($s, $from)">
+                <xsl:value-of select="substring-before($s, $from)"/><xsl:value-of select="$to"/>
+                <xsl:call-template name="str-replace">
+                    <xsl:with-param name="s" select="substring-after($s, $from)"/>
+                    <xsl:with-param name="from" select="$from"/>
+                    <xsl:with-param name="to" select="$to"/>
+                </xsl:call-template>
+            </xsl:when>
+            <xsl:otherwise><xsl:value-of select="$s"/></xsl:otherwise>
+        </xsl:choose>
+    </xsl:template>
+    <xsl:template name="js-string">
+        <xsl:param name="s"/>
+        <xsl:variable name="a"><xsl:call-template name="str-replace"><xsl:with-param name="s" select="string($s)"/><xsl:with-param name="from" select="'\'"/><xsl:with-param name="to" select="'\\'"/></xsl:call-template></xsl:variable>
+        <xsl:variable name="b"><xsl:call-template name="str-replace"><xsl:with-param name="s" select="$a"/><xsl:with-param name="from">'</xsl:with-param><xsl:with-param name="to">\'</xsl:with-param></xsl:call-template></xsl:variable>
+        <xsl:variable name="c"><xsl:call-template name="str-replace"><xsl:with-param name="s" select="$b"/><xsl:with-param name="from" select="'&#13;'"/><xsl:with-param name="to" select="''"/></xsl:call-template></xsl:variable>
+        <xsl:variable name="d"><xsl:call-template name="str-replace"><xsl:with-param name="s" select="$c"/><xsl:with-param name="from" select="'&#10;'"/><xsl:with-param name="to" select="'\n'"/></xsl:call-template></xsl:variable>
+        <xsl:call-template name="str-replace"><xsl:with-param name="s" select="$d"/><xsl:with-param name="from" select="'&lt;/'"/><xsl:with-param name="to" select="'&lt;\/'"/></xsl:call-template>
     </xsl:template>
 
     <!-- Выводим переводы для WYSIWYG -->

@@ -306,9 +306,13 @@ class ComponentConfig {
         foreach ($patterns as $pattern => $methodInfo) {
             $methodName = $methodInfo['method'];
             try {
+                // заполнители по типам: числовые — цифры (или список чисел через запятую: грид удаляет несколько строк
+                // адресом 12,15/delete/), направление сортировки — asc|desc, имя поля и направление перемещения —
+                // идентификатор, токен — его знаки; остальные ([any], [string], [login] …) — как были
                 $resPattern = preg_replace(
-                    array('/\[any\]\//', '/\//', '/\[[a-zA-Z_]+\]/'),
-                    array('(.*)', '\/', '([^\/]+)'),
+                    array('/\[any\]\//', '/\//', '/\[(?:int|pid|pageNumber|fromId|toId|smap_id)\]/', '/\[sortDir\]/',
+                        '/\[(?:sortField|direction)\]/', '/\[token\]/', '/\[[a-zA-Z_]+\]/'),
+                    array('(.*)', '\/', '(\d+(?:,\d+)*)', '(asc|desc)', '([a-zA-Z_][a-zA-Z0-9_]*)', '([A-Za-z0-9_-]+)', '([^\/]+)'),
                     $pattern
                 );
             } catch (\Exception $e) {
@@ -327,10 +331,9 @@ class ComponentConfig {
                 array_shift($matches);
                 $actionName = $methodName;
                 if (!empty($matches)) {
-                    preg_match($resPattern, $pattern, $varNames);
-                    array_shift($varNames);
-                    $varNames = str_replace(array('[', ']'), '', $varNames);
-                    $actionParams = array_combine($varNames, $matches);
+                    // имена параметров — заполнители шаблона по порядку (каждый — одна группа выражения)
+                    preg_match_all('/\[([a-zA-Z_]+)\]/', $pattern, $varNames);
+                    $actionParams = array_combine($varNames[1], $matches);
                 }
 
                 break;

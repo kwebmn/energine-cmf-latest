@@ -172,6 +172,11 @@ class DocumentController extends Primitive {
                 if (!in_array($e->getCode(), [SystemException::ERR_403, SystemException::ERR_404])) {
                     throw $e;
                 }
+                // JSON-запрос (гриды, формы админки): 403/404 — ответом {result: false, errors} через ErrorDocument,
+                // а не HTML-страницей ошибки, на которой JSONTransformer падал уже после этого обработчика
+                if ($this->getViewMode() == self::TRANSFORM_JSON) {
+                    throw $e;
+                }
                 /**
                  * Errors 404 & 403 goes here
                  */
@@ -220,7 +225,8 @@ class DocumentController extends Primitive {
                 $this->getTransformer()->setFileName($this->getConfigValue('document.errorTransformer', $this->getConfigValue('document.transformer')));
                 $document->build();
             }
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            // и ошибки PHP (TypeError …) — на страницу ошибки, а не посетителю с путями сервера
             $document = E()->ErrorDocument;
             $document->attachException($e)->build();
         }
@@ -229,7 +235,15 @@ class DocumentController extends Primitive {
         if ($csrfRefused || Csrf::refused()) {
             E()->getResponse()->setStatus(422);
         }
-        E()->getResponse()->write($this->transform($document));
+        try {
+            $output = $this->transform($document);
+        } catch (\Throwable $e) {
+            // сбой самого преобразования (нет результата для JSON, битый XSLT) — тоже страница ошибки, а не пустой ответ
+            $document = E()->ErrorDocument;
+            $document->attachException($e)->build();
+            $output = $this->transform($document);
+        }
+        E()->getResponse()->write($output);
     }
 
     public function getXMLStructure($documentID) {
@@ -321,7 +335,8 @@ class DocumentController extends Primitive {
             $result = self::TRANSFORM_DEBUG_XML;
         } elseif (isset($_GET[self::TRANSFORM_HTML])) {
             $result = self::TRANSFORM_HTML;
-        } elseif (isset($_GET[self::TRANSFORM_STRUCTURE_XML])) {
+        } elseif (isset($_GET[self::TRANSFORM_STRUCTURE_XML]) && $this->getConfigValue('site.debug')) {
+            // XML структуры страницы (имена классов компонентов) — только при отладке
             $result = self::TRANSFORM_STRUCTURE_XML;
         } elseif (isset($_GET[self::TRANSFORM_JSON]) ||
             (isset($_SERVER['HTTP_X_REQUEST']) &&

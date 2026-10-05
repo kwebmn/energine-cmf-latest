@@ -65,8 +65,7 @@
             import {Toolbar} from 'Toolbar';
             document.addEventListener('DOMContentLoaded', function(){
                     componentToolbars['<xsl:value-of select="generate-id(../recordset)"/>'] = new Toolbar('<xsl:value-of select="@name"/>'<xsl:if
-                test="properties/property">, <xsl:for-each select="properties/property">{'<xsl:value-of select="@name"/>':'<xsl:value-of
-                select="."/>'<xsl:if test="position()!=last()">,</xsl:if>}</xsl:for-each></xsl:if>);
+                test="properties/property">, <xsl:for-each select="properties/property">{'<xsl:value-of select="@name"/>':'<xsl:call-template name="js-string"><xsl:with-param name="s" select="."/></xsl:call-template>'<xsl:if test="position()!=last()">,</xsl:if>}</xsl:for-each></xsl:if>);
                 <xsl:apply-templates />
                 if(<xsl:value-of select="generate-id(../recordset)"/>)<xsl:value-of select="generate-id(../recordset)"/>.attachToolbar(componentToolbars['<xsl:value-of select="generate-id(../recordset)"/>']);
             });
@@ -77,7 +76,7 @@
     	componentToolbars['<xsl:value-of select="generate-id(../../recordset)"/>'].appendControl(    	
             new Toolbar.Button({
                 id: '<xsl:value-of select="@id"/>',
-                title: '<xsl:value-of select="@title"/>',
+                title: '<xsl:call-template name="js-string"><xsl:with-param name="s" select="@title"/></xsl:call-template>',
                 action: '<xsl:value-of select="@onclick"/>',
                 icon: '<xsl:value-of select="@icon"/>',
                 class: '<xsl:value-of select="@class"/>',
@@ -91,7 +90,7 @@
         componentToolbars['<xsl:value-of select="generate-id(../../recordset)"/>'].appendControl(
         new Toolbar.Switcher({
         id: '<xsl:value-of select="@id"/>',
-        title: '<xsl:value-of select="@title"/>',
+        title: '<xsl:call-template name="js-string"><xsl:with-param name="s" select="@title"/></xsl:call-template>',
         action: '<xsl:value-of select="@onclick"/>',
         icon: '<xsl:value-of select="@icon"/>'
         })
@@ -102,7 +101,7 @@
     	componentToolbars['<xsl:value-of select="generate-id(../../recordset)"/>'].appendControl(
             new Toolbar.File({
                 id: '<xsl:value-of select="@id"/>',
-                title: '<xsl:value-of select="@title"/>',
+                title: '<xsl:call-template name="js-string"><xsl:with-param name="s" select="@title"/></xsl:call-template>',
                 action: '<xsl:value-of select="@onclick"/>',
                 icon: '<xsl:value-of select="@icon"/>'
             })
@@ -113,13 +112,13 @@
         componentToolbars['<xsl:value-of select="generate-id(../../recordset)"/>'].appendControl(
             new Toolbar.Select({
                 id: '<xsl:value-of select="@id"/>',
-                title: '<xsl:value-of select="@title"/>',
+                title: '<xsl:call-template name="js-string"><xsl:with-param name="s" select="@title"/></xsl:call-template>',
                 action: '<xsl:value-of select="@action"/>'
             },
             {
                 <xsl:if test="options">
                     <xsl:for-each select="options/option">
-                        '<xsl:value-of select="@id"/>':'<xsl:value-of select="."/>'<xsl:if test="position()!=last()">,</xsl:if>
+                        '<xsl:value-of select="@id"/>':'<xsl:call-template name="js-string"><xsl:with-param name="s" select="."/></xsl:call-template>'<xsl:if test="position()!=last()">,</xsl:if>
                     </xsl:for-each>
                 </xsl:if>
             })

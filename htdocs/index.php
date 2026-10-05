@@ -21,21 +21,20 @@ try {
     //Поэтому выводим как есть
     header('Content-Type: text/plain; charset=utf-8');
     echo $bootstrapException->getMessage();
-} catch (\Exception $generalException) {
-    //Если отрабатывает этот кетчер, значит дела пошли совсем плохо
+} catch (\Throwable $generalException) {
+    // сюда попадают и ошибки PHP (TypeError и подобные): без отладки посетитель не видит ничего, кроме кода ответа
     if (defined('DEBUG') && DEBUG) {
         header('Content-Type: text/plain; charset=utf-8');
         try {
             var_dump($generalException);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             echo (string)$e->getMessage();
         }
     }
-    //TODO В лог что ли писать?
-    /*
-     else{
-
-      }
-     */
+    else {
+        error_log('Energine: ' . get_class($generalException) . ': ' . $generalException->getMessage() . ' @ '
+            . $generalException->getFile() . ':' . $generalException->getLine());
+        http_response_code(500);
+    }
     exit;
 }

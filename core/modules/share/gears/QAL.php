@@ -766,7 +766,7 @@ final class QAL extends Primitive {
                         } elseif (is_array($value)) {
                             $value = array_filter($value);
 
-                            $value = implode(',', array_map(function ($row) { return '"' . $row . '"'; }, $value));
+                            $value = implode(',', array_map(fn($row) => $this->quote($row), $value));
 
                             if (!empty($value))
                                 $cond[] = $fieldName . ' IN (' . $value . ')';
@@ -866,8 +866,12 @@ final class QAL extends Primitive {
             if (is_array($clause)) {
                 $cls = [];
                 foreach ($clause as $fieldName => $direction) {
-                    $direction = strtoupper($direction);
-                    $cls[] = "$fieldName " . constant("self::$direction");
+                    $direction = strtoupper((string)$direction);
+                    // имя поля — идентификатор (с таблицей), направление — ASC|DESC; иное — ошибка разработчика, не Error
+                    if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)?$/', (string)$fieldName) || !in_array($direction, [self::ASC, self::DESC], true)) {
+                        throw new SystemException('ERR_DEV_BAD_ORDER', SystemException::ERR_DEVELOPER, [$fieldName, $direction]);
+                    }
+                    $cls[] = "$fieldName $direction";
                 }
                 $orderClause .= implode(', ', $cls);
             } else {

@@ -257,10 +257,19 @@ class FilterField extends Primitive {
 		$tableName = $this->getAttribute( 'tableName' );
 		$fieldName = $this->name;
 
+		// значения из запроса администратора попадают в SQL строкой (шаблоны условий — '%s'): экранируются как в
+		// quote(), без внешних кавычек; оператор — только AND|OR, условие — только из таблицы условий
+		if ( ! in_array( strtoupper( trim( (string) $this->operator ) ), [ '', 'AND', 'OR' ], true ) ) {
+			throw new SystemException( 'ERR_BAD_FILTER_DATA', SystemException::ERR_CRITICAL, $this->operator );
+		}
+		if ( ! isset( FilterConditionConverter::getInstance()[ $this->condition ] ) ) {
+			throw new SystemException( 'ERR_BAD_FILTER_DATA', SystemException::ERR_CRITICAL, $this->condition );
+		}
 		$values = $this->value;
 		if ( ! is_array( $values ) ) {
 			$values = [ $values ];
 		}
+		$values = array_map( fn( $v ) => substr( $dbh->quote( (string) $v ), 1, - 1 ), $values );
 
 		if (
 			! $dbh->tableExists( $tableName )
@@ -324,8 +333,8 @@ class FilterField extends Primitive {
 				}  );
 
 				if(!empty($values)){
-					return $this->operator . ' ' . $tableName . '.' . $fieldName . ' IN (' .implode(',', array_map(function($value){
-						return '"'.$value.'"';
+					return $this->operator . ' ' . $tableName . '.' . $fieldName . ' IN (' .implode(',', array_map(function($value) use ($dbh){
+						return $dbh->quote((string)$value);
 					}, $values)).') ';
 				}
 				else {

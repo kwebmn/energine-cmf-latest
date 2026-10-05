@@ -75,7 +75,7 @@
     
     <xsl:template match="control[ancestor::component[@class='ImageManager']]">
         componentToolbars['<xsl:value-of select="generate-id(../../recordset)"/>'].appendControl(
-            new Toolbar.Button({ id: '<xsl:value-of select="@id"/>', title: '<xsl:value-of select="@title"/>', action: '<xsl:value-of select="@onclick"/>' }));
+            new Toolbar.Button({ id: '<xsl:value-of select="@id"/>', title: '<xsl:call-template name="js-string"><xsl:with-param name="s" select="@title"/></xsl:call-template>', action: '<xsl:value-of select="@onclick"/>' }));
     </xsl:template>
     <!-- /компонент ImageManager -->
 
