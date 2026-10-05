@@ -146,7 +146,8 @@ clean() { ! grep -qiE 'Fatal error|Warning:|Notice:|Deprecated:|Uncaught' "$T/bo
 [ "$(get /)" = 200 ] && clean && ok "home page" || bad "home page: $(head -c 200 "$T/body" | tr '\n' ' ')"
 [ "$(get /login/)" = 200 ] && clean && ok "login page" || bad "login page"
 [ "$(get /no-such-page-$$/)" = 404 ] && ok "404 for an unknown address" || bad "404 for an unknown address"
-[ "$(get /google-sitemap/)" = 200 ] && grep -q '<urlset' "$T/body" && ok "google sitemap" || bad "google sitemap"
+[ "$(get /google-sitemap/)" = 200 ] && grep -q '<sitemapindex' "$T/body" \
+  && [ "$(get /google-sitemap/map)" = 200 ] && grep -q '<urlset' "$T/body" && ok "google sitemap (index and map)" || bad "google sitemap"
 [ "$(get /templates/content/main.content.xml)" = 403 ] && ok "page XML not served" || bad "page XML is served"
 
 # sign in: the administrator from step 7; the starter's login no longer exists
