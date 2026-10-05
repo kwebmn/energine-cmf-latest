@@ -19,6 +19,7 @@
     </xsl:template>
 
     <xsl:template match="component[@sample='TextBlock']/recordset/record">
+        <!-- d-o-e: текст блока — HTML владельца из визуального редактора -->
         <xsl:value-of select="." disable-output-escaping="yes"/>
     </xsl:template>
 
@@ -28,8 +29,9 @@
                 <xsl:attribute name="eID"><xsl:value-of select="$ID"/></xsl:attribute>
             </xsl:if>            
             <xsl:if test=". = ''">
-                <p>--<xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text></p>
+                <p>--&#160;</p>
             </xsl:if>
+            <!-- d-o-e: текст блока — HTML владельца из визуального редактора -->
             <xsl:value-of select="." disable-output-escaping="yes"/>
         </div>
     </xsl:template>

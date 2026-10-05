@@ -204,7 +204,7 @@
     <xsl:template match="field[not(@name='message')][ancestor::component[@type='form'][@sample='LoginForm' or @class='Register' or @class='UserProfile' or @class='RestorePassword']]" mode="field_name" priority="2">
         <xsl:if test="@title and @type!='boolean'">
             <div class="name">
-                <label for="{@name}"><xsl:value-of select="@title" disable-output-escaping="yes"/></label>
+                <label for="{@name}"><xsl:value-of select="@title"/></label>
                 <xsl:if test="not(@nullable)"><span class="ml-0.5 text-danger" aria-hidden="true">*</span></xsl:if>
             </div>
         </xsl:if>
@@ -243,6 +243,7 @@
             </div>
             <xsl:if test="field[@name='DescriptionRtf'] != ''">
                 <div class="menu_announce text-muted">
+                    <!-- d-o-e: описание раздела — HTML владельца из визуального редактора -->
                     <xsl:value-of select="field[@name='DescriptionRtf']" disable-output-escaping="yes"/>
                 </div>
             </xsl:if>

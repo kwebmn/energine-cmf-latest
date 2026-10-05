@@ -15,7 +15,7 @@
     <xsl:variable name="FOLDER" select="$DOC_PROPS[@name='base']/@folder"/>
 	<xsl:variable name="LANG_ID" select="$DOC_PROPS[@name='lang']"/>
 	<xsl:variable name="LANG_ABBR" select="$DOC_PROPS[@name='lang']/@abbr"/>
-	<xsl:variable name="NBSP"><xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text></xsl:variable>
+	<xsl:variable name="NBSP">&#160;</xsl:variable>
     <xsl:variable name="STATIC_URL"><xsl:value-of select="$BASE/@static"/></xsl:variable>
     <xsl:variable name="MEDIA_URL"><xsl:value-of select="$BASE/@media"/></xsl:variable>
     <xsl:variable name="RESIZER_URL"><xsl:value-of select="$BASE/@resizer"/></xsl:variable>

@@ -23,7 +23,7 @@
     <xsl:template match="field[ancestor::component[@type='form']]" mode="field_name">
         <xsl:if test="@title and @type!='boolean'">
             <div class="name">
-                <label for="{@name}"><xsl:value-of select="@title" disable-output-escaping="yes"/></label>
+                <label for="{@name}"><xsl:value-of select="@title"/></label>
                 <xsl:if test="not(@nullable) and not(ancestor::component/@exttype='grid')"><span class="mark">*</span></xsl:if>
             </div>
         </xsl:if>
@@ -77,7 +77,7 @@
     <xsl:template match="field[@type='text' or @type='code'][ancestor::component[@type='form' and @exttype='grid']]" mode="field_name">
         <xsl:if test="@title">
             <div class="name">
-                <label for="{@name}"><xsl:value-of select="@title" disable-output-escaping="yes"/></label>
+                <label for="{@name}"><xsl:value-of select="@title"/></label>
                 <a href="#" class="icon_min_max"></a>
             </div>
         </xsl:if>
@@ -195,7 +195,7 @@
             </xsl:if>
         </input>
         <label for="{@name}{@language}">
-            <xsl:value-of select="concat(' ', @title)" disable-output-escaping="yes"/>
+            <xsl:value-of select="concat(' ', @title)"/>
         </label>
     </xsl:template>
 
@@ -434,7 +434,7 @@
     <xsl:template match="field[@mode='1'][ancestor::component[@type='form']]" mode="field_name_readonly">
         <xsl:if test="@title">
                 <div class="name"><label for="{@name}">
-                    <xsl:value-of select="@title" disable-output-escaping="yes"/>
+                    <xsl:value-of select="@title"/>
                 </label></div>
         </xsl:if>
     </xsl:template>
@@ -482,6 +482,7 @@
 
     <!-- для полей HTMLBLOCK на которые права только чтение: HTML из редактора показывается разметкой -->
     <xsl:template match="field[@type='htmlblock'][@mode='1'][ancestor::component[@type='form']]" mode="field_input_readonly">
+        <!-- d-o-e: поле HTMLBLOCK — HTML из визуального редактора, показывается разметкой -->
         <div class="read control"><xsl:value-of select="." disable-output-escaping="yes"/></div>
         <input>
             <xsl:call-template name="FORM_ELEMENT_ATTRIBUTES_READONLY"/>
@@ -587,15 +588,6 @@
         </div>
     </xsl:template>
 
-    <!-- read-only поле типа date и datetime -->
-<!--    <xsl:template match="field[@type='date' or @type='datetime'][@mode='1'][ancestor::component[@type='form']]" mode="field_input_readonly">
-
-        <div class="read"><xsl:value-of select="." disable-output-escaping="yes"/></div>
-        <input>
-            <xsl:call-template name="FORM_ELEMENT_ATTRIBUTES_READONLY"/>
-        </input>
-    </xsl:template>-->
-
 
     <!--
         Секция 4. Остальные поля формы.
@@ -623,6 +615,7 @@
 
     <!-- поле error -->
     <xsl:template match="field[@name='error_message'][ancestor::component[@type='form']]">
+        <!-- d-o-e: текст ошибки сервера — константа перевода, в константах бывает разметка (ERR_NOT_UNIQUE_DATA) -->
         <div class="error"><xsl:value-of select="." disable-output-escaping="yes"/></div>
     </xsl:template>
 
@@ -658,7 +651,7 @@
         <div class="field">
             <div class="name">
                 <label for="{@name}">
-                    <xsl:value-of select="@title" disable-output-escaping="yes"/>
+                    <xsl:value-of select="@title"/>
                 </label>
             </div>
             <div class="control" >

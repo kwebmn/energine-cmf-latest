@@ -323,9 +323,9 @@
     <xsl:template match="component[@type='list']/recordset/record/field">
         <span>
             <xsl:if test=". = ''">
-                <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
+                &#160;
             </xsl:if>
-            <xsl:value-of select="." disable-output-escaping="yes"/>
+            <xsl:value-of select="."/>
         </span>
     </xsl:template>
 
@@ -338,7 +338,7 @@
     <xsl:template match="component[@type='list']/recordset/record/field[@type='select']">
         <span>
             <xsl:if test=". = ''">
-                <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
+                &#160;
             </xsl:if>
             <xsl:value-of select="options/option[@selected='selected']"/>
         </span>

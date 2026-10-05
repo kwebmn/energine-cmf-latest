@@ -5,11 +5,15 @@
     >
 
     <xsl:template match="document/translations[translation[@component=//component[@sample='DivisionEditor']/@name]]">
+            <!-- переводы формы раздела — данными в разметке, а не строками в коде скрипта (апостроф, </script>) -->
+            <div class="e-translations" hidden="hidden">
+                <xsl:for-each select="translation[@component=$COMPONENTS[@sample='DivisionEditor']/@name]">
+                    <span data-const="{@const}"><xsl:value-of select="."/></span>
+                </xsl:for-each>
+            </div>
             <script type="module">
                 import {Energine} from 'Energine';
-                <xsl:for-each select="translation[@component=$COMPONENTS[@sample='DivisionEditor']/@name]">
-                    Energine.translations.set('<xsl:value-of select="@const"/>', '<xsl:value-of select="." disable-output-escaping="yes"/>');
-                </xsl:for-each>
+                document.querySelectorAll('.e-translations [data-const]').forEach((s) => Energine.translations.set(s.dataset.const, s.textContent));
             </script>
     </xsl:template>
     
@@ -52,7 +56,7 @@
             <table width="100%" border="0">
                 <thead>
                     <tr>
-                        <td><xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text></td>
+                        <td>&#160;</td>
                         <xsl:for-each select="$RECORDS[position()=1]/field[@name='right_id']/options/option">
                             <td><xsl:value-of select="."/></td>
                         </xsl:for-each>
@@ -90,13 +94,13 @@
             </xsl:if>
     		<xsl:if test="@title">
     		    <div class="name">
-        			<label for="{@name}"><xsl:value-of select="@title" disable-output-escaping="yes"/>:</label>
+        			<label for="{@name}"><xsl:value-of select="@title"/>:</label>
     			</div>
     		</xsl:if>
     		<div class="control">
                 <xsl:variable name="FIELD_ID"><xsl:value-of select="generate-id()"/></xsl:variable>
                 <div class="with_append">
-                    <span class="read" id="s_{$FIELD_ID}" style="margin-right: 5px;"><xsl:value-of select="@data_name" disable-output-escaping="yes" /></span>
+                    <span class="read" id="s_{$FIELD_ID}" style="margin-right: 5px;"><xsl:value-of select="@data_name"/></span>
                     <input type="hidden" id="h_{$FIELD_ID}" value="{.}">
                         <xsl:attribute name="name"><xsl:choose>
                             <xsl:when test="@tableName"><xsl:value-of select="@tableName"/><xsl:if test="@language">[<xsl:value-of select="@language"/>]</xsl:if>[<xsl:value-of select="@name" />]</xsl:when>
@@ -115,10 +119,10 @@
         <div class="field">
             <xsl:if test="@title">
                 <div class="name">
-                    <label for="{@name}"><xsl:value-of select="@title" disable-output-escaping="yes"/>:</label>
+                    <label for="{@name}"><xsl:value-of select="@title"/>:</label>
                 </div>
             </xsl:if>
-            <span class="read"><xsl:value-of select="@data_name" disable-output-escaping="yes" /></span>
+            <span class="read"><xsl:value-of select="@data_name"/></span>
             <input type="hidden" value="{.}">
                 <xsl:attribute name="name">
                     <xsl:choose>
@@ -141,7 +145,7 @@
                     </input>
                 </xsl:when>
                 <xsl:otherwise>
-                    <span class="read current_segment"><xsl:value-of select="." disable-output-escaping="yes"/></span>
+                    <span class="read current_segment"><xsl:value-of select="."/></span>
                     <input type="hidden" value="{.}">
                         <xsl:attribute name="name"><xsl:choose>
                             <xsl:when test="@tableName"><xsl:value-of select="@tableName"/>[<xsl:value-of select="@name" />]</xsl:when>

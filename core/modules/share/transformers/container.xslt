@@ -68,7 +68,7 @@
         <xsl:variable name="MAIN_COMPONENT" select="component[1]"/>
         <xsl:if test="$MAIN_COMPONENT/@title">
             <div class="block_header clearfix">                
-                <h2 class="block_title"><xsl:value-of select="$MAIN_COMPONENT/@title" disable-output-escaping="yes"/></h2>
+                <h2 class="block_title"><xsl:value-of select="$MAIN_COMPONENT/@title"/></h2>
             </div>
         </xsl:if>
     </xsl:template>
@@ -84,7 +84,7 @@
     <xsl:template match="container[@block='alfa']" mode="block_header">
         <xsl:if test="$DOC_PROPS[@name='default'] != 1 and not(.//component[@exttype='feed'][@type='form'])">
             <div class="block_header clearfix">
-                <h1 class="block_title"><xsl:value-of select="$DOC_PROPS[@name='title']" disable-output-escaping="yes"/></h1>
+                <h1 class="block_title"><xsl:value-of select="$DOC_PROPS[@name='title']"/></h1>
             </div>
         </xsl:if>
     </xsl:template>

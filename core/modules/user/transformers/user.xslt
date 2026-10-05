@@ -40,26 +40,29 @@
     </xsl:template>
 
     <xsl:template match="record[ancestor::component[@sample='LoginForm'][@componentAction='showLogoutForm']]">
-        <span class="user_greeting"><xsl:value-of select="$TRANSLATION[@const='TXT_USER_GREETING']"/><xsl:value-of select="$NBSP" disable-output-escaping="yes" /><strong><xsl:value-of select="field[@name='u_fullname']"/></strong></span><br/>
-        <span class="user_name"><xsl:value-of select="$TRANSLATION[@const='TXT_USER_NAME']"/>:<xsl:value-of select="$NBSP" disable-output-escaping="yes" /><strong><xsl:value-of select="field[@name='u_name']"/></strong></span><br/>
-        <span class="user_role"><xsl:value-of select="$TRANSLATION[@const='TXT_ROLE_TEXT']"/>:<xsl:value-of select="$NBSP" disable-output-escaping="yes" /><strong><xsl:value-of select="field[@name='role_name']"/></strong></span>
+        <span class="user_greeting"><xsl:value-of select="$TRANSLATION[@const='TXT_USER_GREETING']"/><xsl:value-of select="$NBSP"/><strong><xsl:value-of select="field[@name='u_fullname']"/></strong></span><br/>
+        <span class="user_name"><xsl:value-of select="$TRANSLATION[@const='TXT_USER_NAME']"/>:<xsl:value-of select="$NBSP"/><strong><xsl:value-of select="field[@name='u_name']"/></strong></span><br/>
+        <span class="user_role"><xsl:value-of select="$TRANSLATION[@const='TXT_ROLE_TEXT']"/>:<xsl:value-of select="$NBSP"/><strong><xsl:value-of select="field[@name='role_name']"/></strong></span>
     </xsl:template>
     <!-- /компонент LoginForm  -->
 
     <!-- компонент Register -->
     <xsl:template match="component[@class='Register'][@componentAction='success']">
         <div class="result_message mb-4 rounded-ui bg-ok-bg px-4 py-3">
+            <!-- d-o-e: сообщение компонента — константа перевода, бывает с разметкой (<p>…</p>) -->
             <xsl:value-of select="recordset/record/field" disable-output-escaping="yes"/>
         </div>
     </xsl:template>
 
     <xsl:template match="recordset[parent::component[@class='Register']]">
+        <!-- d-o-e: TXT_REGISTRATION_TEXT — константа, администратор может писать её разметкой -->
         <div><xsl:value-of select="$TRANSLATION[@const='TXT_REGISTRATION_TEXT']" disable-output-escaping="yes"/></div>
         <div id="{generate-id(.)}" single_template="{$BASE}{$LANG_ABBR}{../@single_template}">
             <xsl:apply-templates/>
         </div>
         <xsl:if test="$TRANSLATION[@const='TXT_REQUIRED_FIELDS']">
             <div class="note mb-4 text-sm text-muted">
+                <!-- d-o-e: TXT_REQUIRED_FIELDS — константа с разметкой (<span class="mark">*</span>) -->
                 <xsl:value-of select="$TRANSLATION[@const='TXT_REQUIRED_FIELDS']" disable-output-escaping="yes"/>
             </div>
         </xsl:if>
@@ -69,12 +72,14 @@
     <!-- компонент UserProfile -->
     <xsl:template match="component[@class='UserProfile'][@componentAction='success']">
         <div class="result_message mb-4 rounded-ui bg-ok-bg px-4 py-3">
+            <!-- d-o-e: сообщение компонента — константа перевода, бывает с разметкой (<p>…</p>) -->
             <xsl:value-of select="recordset/record/field" disable-output-escaping="yes"/>
         </div>
     </xsl:template>
 
     <xsl:template match="component[@class='UserProfile'][@componentAction='error']">
         <div class="result_message error_message mb-4 rounded-ui bg-danger-bg px-4 py-3 text-danger" role="alert">
+            <!-- d-o-e: сообщение компонента — константа перевода, бывает с разметкой (<p>…</p>) -->
             <xsl:value-of select="recordset/record/field" disable-output-escaping="yes"/>
         </div>
         <p class="error_back">
@@ -89,7 +94,7 @@
                 <table width="100%" border="1">
                     <thead>
                         <tr>
-                            <td><xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text></td>
+                            <td>&#160;</td>
                             <xsl:for-each select="recordset/record[1]/field[@name='RightsId']/options/option">
                                 <td><xsl:value-of select="."/></td>
                             </xsl:for-each>
@@ -109,9 +114,30 @@
         <xsl:param name="DATA"/>
         <xsl:param name="LEVEL"/>
         <xsl:for-each select="$DATA/record">
-            <xsl:if test="$DATA/parent::field">
-                <xsl:text disable-output-escaping="yes">&lt;tbody&gt;</xsl:text>
-            </xsl:if>
+            <!-- раздел верхнего уровня со всеми вложенными — своя группа строк tbody -->
+            <xsl:choose>
+                <xsl:when test="$DATA/parent::field">
+                    <tbody>
+                        <xsl:call-template name="DIV_TREE_ROWS">
+                            <xsl:with-param name="DATA" select="$DATA"/>
+                            <xsl:with-param name="LEVEL" select="$LEVEL"/>
+                        </xsl:call-template>
+                    </tbody>
+                </xsl:when>
+                <xsl:otherwise>
+                    <xsl:call-template name="DIV_TREE_ROWS">
+                        <xsl:with-param name="DATA" select="$DATA"/>
+                        <xsl:with-param name="LEVEL" select="$LEVEL"/>
+                    </xsl:call-template>
+                </xsl:otherwise>
+            </xsl:choose>
+        </xsl:for-each>
+    </xsl:template>
+
+    <!-- строки раздела (текущий record) и его вложенных -->
+    <xsl:template name="DIV_TREE_ROWS">
+        <xsl:param name="DATA"/>
+        <xsl:param name="LEVEL"/>
             <xsl:if test="$LEVEL=0">
                 <tr class="section_name">
                     <td><xsl:value-of select="$TRANSLATION[@const='TXT_ALL_DIVISIONS']"/></td>
@@ -143,10 +169,6 @@
                     <xsl:with-param name="LEVEL" select="$LEVEL+1"/>
                 </xsl:call-template>
             </xsl:if>
-                 <xsl:if test="$DATA/parent::field">
-                    <xsl:text disable-output-escaping="yes">&lt;/tbody&gt;</xsl:text>
-                </xsl:if>
-        </xsl:for-each>
     </xsl:template>
     <!-- /компонент RoleEditor -->
 

@@ -47,7 +47,8 @@
     	</div>
 		<xsl:if test="$TRANSLATION[@const='TXT_REQUIRED_FIELDS']">
 			<div class="note">
-				<xsl:value-of select="$TRANSLATION[@const='TXT_REQUIRED_FIELDS']" disable-output-escaping="yes"/>
+				<!-- d-o-e: TXT_REQUIRED_FIELDS — константа с разметкой (<span class="mark">*</span>) -->
+                <xsl:value-of select="$TRANSLATION[@const='TXT_REQUIRED_FIELDS']" disable-output-escaping="yes"/>
 			</div>
 		</xsl:if>
     </xsl:template>
@@ -109,6 +110,7 @@
             </xsl:when>
             <xsl:otherwise>
                 <div class="result_message">
+                    <!-- d-o-e: сообщение компонента — константа перевода, бывает с разметкой (<p>…</p>) -->
                     <xsl:value-of select="recordset/record/field" disable-output-escaping="yes"/>
                 </div>
             </xsl:otherwise>
