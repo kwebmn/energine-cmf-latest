@@ -37,7 +37,6 @@ export const ModalBox = window.top.ModalBox || /** @lends ModalBox */{
 
     // стили окон и общее затемнение (без знака загрузки)
     init: function () {
-        Energine.loadCSS('modalbox.css');
         this.overlay = new Overlay(null, {indicator: false});
         this.initialized = true;
     },
@@ -54,7 +53,9 @@ export const ModalBox = window.top.ModalBox || /** @lends ModalBox */{
      */
     open: function (options) {
         var box = document.createElement('div');
-        box.className = 'e-modalbox';
+        // окно поверх страницы: по высоте 90% экрана, по ширине — от 95% на узком экране до 60% на широком
+        box.className = 'e-modalbox a:fixed a:top-[5%] a:left-1/2 a:z-[1001] a:h-[90%] a:w-[95%] a:-translate-x-1/2 a:overflow-hidden'
+            + ' a:rounded-lg a:bg-white a:shadow-2xl a:min-[900px]:w-[90%] a:min-[1200px]:w-[80%] a:min-[1400px]:w-[64rem]';
         document.body.appendChild(box);
         box.options = Object.assign({url: null, onClose: function () {}, extraData: null, post: null}, options);
 
@@ -80,7 +81,7 @@ export const ModalBox = window.top.ModalBox || /** @lends ModalBox */{
             iframe.src = src;
             iframe.frameBorder = '0';
             iframe.scrolling = 'no';
-            iframe.className = 'e-modalbox-frame';
+            iframe.className = 'e-modalbox-frame a:block a:size-full a:border-0';
             box.iframe = iframe;
             box.appendChild(iframe);
             if (form) {

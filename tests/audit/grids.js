@@ -227,13 +227,13 @@ const inspect = (page) => page.evaluate(() => {
                     first: ((document.querySelector('tbody tr') || {}).textContent || '').trim(),
                     overlays: [...document.querySelectorAll('.e-overlay')].map((o) => +getComputedStyle(o).opacity),
                     tab: ((document.querySelector('ul.e-tabs li.current a')) || {}).textContent || '',
-                    css: ['tabpane.css', 'pagelist.css'].map((name) => [...document.querySelectorAll('link[rel="stylesheet"]')]
-                        .filter((l) => l.href.endsWith('/stylesheets/' + name)).length),
+                    // каждый файл стилей подключён один раз (повторов ссылок нет)
+                    css: [...document.querySelectorAll('link[rel="stylesheet"]')].map((l) => l.href).filter((h, i, a) => a.indexOf(h) !== i).length,
                 };
             });
             const s1 = await state();
             check('грид переводов: листалка видна, текущая — 1, стрелки «назад» нет; стили вкладок и листалки — по разу',
-                s1.visible && s1.current === '1' && !s1.prev && s1.next && s1.css.join() === '1,1', JSON.stringify(s1));
+                s1.visible && s1.current === '1' && !s1.prev && s1.next && s1.css === 0, JSON.stringify(s1));
             // ответ сервера задерживается: видно затемнение и выключенную листалку
             await gp.route('**/transEditor/get-data/**', async (route) => {
                 await new Promise((resolve) => setTimeout(resolve, 1500));
@@ -520,13 +520,12 @@ const inspect = (page) => page.evaluate(() => {
                 main: !!document.querySelector('body > .e-mainframe'),
                 logo: !!document.querySelector('.e-topframe img.pagetb_logo'),
                 side: ((document.querySelector('.e-sideframe .e-sideframe-content iframe') || {}).src || ''),
-                css: ['toolbar.css', 'pagetoolbar.css'].map((name) => [...document.querySelectorAll('link[rel="stylesheet"]')]
-                    .filter((l) => l.href.endsWith('/stylesheets/' + name)).length),
+                css: [...document.querySelectorAll('link[rel="stylesheet"]')].map((l) => l.href).filter((h, i, a) => a.indexOf(h) !== i).length,
                 moo: typeof window.MooTools !== 'undefined',
             }));
             const s = await st();
             check('панель страницы: верхняя рамка с панелью, страница — в основной рамке, значок, боковая панель; стили — по разу',
-                /\be-has-topframe1\b/.test(s.html) && s.top && s.main && s.logo && /\/show\/$/.test(s.side) && s.css.join() === '1,1',
+                /\be-has-topframe1\b/.test(s.html) && s.top && s.main && s.logo && /\/show\/$/.test(s.side) && s.css === 0,
                 JSON.stringify(s));
             check('панель страницы: MooTools у администратора на главной не запрашивается и не определена', !moo.length && !s.moo,
                 moo.join(' ') || 'MooTools определена');
@@ -680,7 +679,7 @@ const inspect = (page) => page.evaluate(() => {
             const boxes = () => sp.evaluate(() => ({
                 boxes: document.querySelectorAll('.e-modalbox').length,
                 overlays: [...document.querySelectorAll('.e-overlay')].map((o) => +getComputedStyle(o).opacity),
-                css: [...document.querySelectorAll('link[rel="stylesheet"]')].filter((l) => l.href.endsWith('/stylesheets/modalbox.css')).length,
+                css: [...document.querySelectorAll('link[rel="stylesheet"]')].map((l) => l.href).filter((h, i, a) => a.indexOf(h) !== i).length,
             }));
             if (frame) {
                 await sp.waitForTimeout(700);
@@ -704,7 +703,7 @@ const inspect = (page) => page.evaluate(() => {
                 await sp.waitForTimeout(900);
                 const none = await boxes();
                 check('окно: «Закрыть» убирает окно и затемнение; стили окон подключены один раз',
-                    none.boxes === 0 && !none.overlays.length && none.css === 1, JSON.stringify(none));
+                    none.boxes === 0 && !none.overlays.length && none.css === 0, JSON.stringify(none));
             }
         }
         check('панель страницы, «Настройки сайта»: без ошибок JS и 404', !spErrors.list().length, spErrors.list().join(' | '));

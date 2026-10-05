@@ -23,7 +23,6 @@ import {Energine} from 'Energine';
  */
 export class TabPane {
     constructor(element, options) {
-        Energine.loadCSS('tabpane.css');
         this.options = Object.assign({}, options);
         this.element = (typeof element === 'string') ? document.getElementById(element) : element;
 

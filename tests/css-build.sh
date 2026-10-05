@@ -23,10 +23,10 @@ head -c 200 "$CSS/main.css" | grep -q 'tailwindcss v4' && grep -q '@layer compon
 # «&» в классе XSLT записывается как &amp; — сканер Tailwind такой класс не узнаёт (стили молча не собираются):
 # для вложенных элементов — свои варианты @custom-variant в tailwind.css и admin.tailwind.css
 ADM=$R/core/modules/share/stylesheets/admin.css
-head -c 200 "$ADM" 2>/dev/null | grep -q 'tailwindcss v4' && grep -q 'base,admin' "$ADM" \
+head -c 200 "$ADM" 2>/dev/null | grep -q 'tailwindcss v4' && grep -q '@layer admin' "$ADM" \
   && echo "OK   admin.css — сборка Tailwind со слоями" || { echo "FAIL admin.css — не сборка Tailwind"; fail=$((fail+1)); }
-# утилиты админки — только с префиксом a: (иначе совпали бы с классами ядра и утилитами сайта)
-bare=$(grep -o '}\.[a-z][a-z0-9-]*{' "$ADM" 2>/dev/null | grep -v '^}\.a\\:' | head -5 | tr '\n' ' ')
+# утилиты админки (слой utilities) — только с префиксом a: (иначе совпали бы с классами ядра и утилитами сайта)
+bare=$(sed 's/.*@layer utilities{//' "$ADM" 2>/dev/null | grep -o '}\.[a-z][a-z0-9-]*{' | grep -v '^}\.a\\:' | head -5 | tr '\n' ' ')
 [ -z "$bare" ] && echo "OK   в admin.css нет утилит без префикса a:" || { echo "FAIL правила без префикса в admin.css: $bare"; fail=$((fail+1)); }
 amp=$(grep -rn 'class="[^"]*&amp;' --include=*.xslt "$R/core" "$R/site" | sed "s|$R/||")
 [ -z "$amp" ] && echo "OK   в классах XSLT нет «&amp;»" || { echo "FAIL «&amp;» в классе XSLT: $amp"; fail=$((fail+1)); }

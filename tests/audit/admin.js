@@ -14,6 +14,8 @@ if (!process.env.BASE || !process.env.ADMIN_PASSWORD) {
 const BASE = process.env.BASE.replace(/\/$/, '') + '/';
 const SHOTS = process.env.SHOTS || fs.mkdtempSync(path.join(os.tmpdir(), 'admin-'));
 const BASELINE = process.env.BASELINE === '1';
+// старые файлы стилей и картинок админки, удалённые подпроектом: страница их не запрашивает
+const GONE_CSS = ['modalbox.css', 'form.css', 'controls.css', 'tabpane.css'];
 const ICONS = ['add', 'edit', 'delete', 'up', 'down', 'save', 'close', 'list', 'search', 'filter', 'sort-asc', 'sort-desc',
     'prev', 'next', 'folder', 'file', 'image', 'upload', 'eye', 'gear', 'check'];
 let fail = 0;
@@ -79,6 +81,10 @@ const SCREENS = [
             if (!BASELINE) {
                 check(`${name}, ${w}px: admin.css загружен`, log.css.includes('admin.css'), log.css.join(' '));
                 check(`${name}, ${w}px: без ошибок JS и 404`, !log.errors.length, log.errors.join(' | '));
+                const old = log.css.filter((f) => GONE_CSS.includes(f));
+                check(`${name}, ${w}px: удалённые стили не запрашиваются`, !old.length, old.join(' '));
+                const over = await p.evaluate(() => document.documentElement.scrollWidth - innerWidth).catch(() => 0);
+                check(`${name}, ${w}px: без горизонтальной прокрутки страницы`, over <= 0, `лишние ${over} px`);
             }
             await p.close();
         }
@@ -92,6 +98,65 @@ const SCREENS = [
         await gp.goto(BASE + 'info/quick-start/', { waitUntil: 'networkidle' });
         check('гость: admin.css не загружается', !glog.css.includes('admin.css'), glog.css.join(' '));
         await guest.close();
+
+        // окна и формы: окно формы поверх грида, вкладки, поле с ошибкой проверки, окно в окне
+        for (const w of [1280, 800]) {
+            const p = await ctx.newPage();
+            await p.setViewportSize({ width: w, height: 900 });
+            await p.goto(BASE + 'admin/users/', { waitUntil: 'networkidle' });
+            const open = (url) => p.evaluate((u) => window.top.ModalBox.open({ url: u }), url);
+            await open(BASE + 'admin/users/single/userEditor/add/');
+            await p.waitForTimeout(2500);
+            const box = await p.evaluate(() => {
+                const b = document.querySelector('.e-modalbox'); const cs = b && getComputedStyle(b);
+                const r = b && b.getBoundingClientRect();
+                return b && { position: cs.position, z: +cs.zIndex, shadow: cs.boxShadow !== 'none', radius: parseFloat(cs.borderTopLeftRadius),
+                    inView: r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight, frame: getComputedStyle(b.querySelector('iframe')).borderTopWidth };
+            });
+            check(`окно формы, ${w}px: поверх страницы, в пределах окна, рамка и тень`, !!box && box.position === 'fixed' && box.z > 1000 && box.shadow
+                && box.radius > 0 && box.inView && box.frame === '0px', JSON.stringify(box));
+            const f = p.frameLocator('.e-modalbox iframe').first();
+            const tabs = await f.locator('ul.e-tabs').evaluate((ul) => {
+                const cur = ul.querySelector('li.current'); const other = ul.querySelector('li:not(.current)');
+                const cs = (e) => e && getComputedStyle(e);
+                return { cur: !!cur, curBorder: cur && cs(cur).borderBottomWidth, curWeight: cur && cs(cur).fontWeight,
+                    otherBorder: other ? cs(other).borderBottomColor : 'нет', curColor: cur && cs(cur).borderBottomColor, link: cur && cs(cur.querySelector('a')).color };
+            }).catch((e) => ({ error: e.message }));
+            check(`окно формы, ${w}px: текущая вкладка выделена линией снизу`, tabs.cur && parseFloat(tabs.curBorder) >= 2
+                && (tabs.otherBorder === 'нет' || tabs.otherBorder !== tabs.curColor), JSON.stringify(tabs));
+            // Tab доходит до вкладки, фокус виден
+            const tabFocus = await f.locator('ul.e-tabs li a').first().evaluate((a) => {
+                a.focus(); const cs = getComputedStyle(a); return { focused: document.activeElement === a, outline: cs.outlineStyle !== 'none' || cs.boxShadow !== 'none' };
+            }).catch((e) => ({ error: e.message }));
+            check(`окно формы, ${w}px: вкладка получает фокус, фокус виден`, tabFocus.focused && tabFocus.outline, JSON.stringify(tabFocus));
+            // поле: подпись над/слева, рамка поля, ошибка проверки — цвет --danger
+            const field = await f.locator('form').evaluate((form) => {
+                const input = form.querySelector('.field input[type=text], .field input[type=email], .field input:not([type])');
+                const cs = getComputedStyle(input);
+                input.classList.add('invalid');
+                const inv = getComputedStyle(input).borderBottomColor;
+                input.classList.remove('invalid');
+                return { border: cs.borderBottomWidth, radius: parseFloat(cs.borderTopLeftRadius), font: cs.fontFamily, invalid: inv };
+            }).catch((e) => ({ error: e.message }));
+            check(`окно формы, ${w}px: поле в рамке со скруглением, шрифт системный, ошибка — красная рамка`,
+                parseFloat(field.border) >= 1 && field.radius > 0 && /system-ui/.test(field.font) && field.invalid === 'rgb(179, 38, 30)', JSON.stringify(field));
+            // окно в окне: второе окно поверх первого, закрытие верхнего оставляет нижнее
+            await open(BASE + 'admin/users/single/adminPanel/file-library/');
+            await p.waitForTimeout(2500);
+            const stack = await p.evaluate(() => {
+                const boxes = [...document.querySelectorAll('.e-modalbox')];
+                const r = boxes[1] && boxes[1].getBoundingClientRect();
+                const top = r && document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+                return { n: boxes.length, topIsSecond: !!top && boxes[1].contains(top) };
+            });
+            await p.evaluate(() => window.top.ModalBox.close());
+            await p.waitForTimeout(500);
+            const left = await p.evaluate(() => document.querySelectorAll('.e-modalbox').length);
+            check(`окно в окне, ${w}px: верхнее окно выше нижнего, закрытие верхнего оставляет нижнее`, stack.n === 2 && stack.topIsSecond && left === 1,
+                JSON.stringify({ ...stack, left }));
+            await shot(p, `окно-формы-${w}`);
+            await p.close();
+        }
 
         // значки: спрайт и Energine.icon
         const p = await ctx.newPage();

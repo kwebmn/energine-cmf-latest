@@ -36,7 +36,6 @@ import {Overlay} from 'Overlay';
  */
 export class Form {
     constructor(element) {
-        Energine.loadCSS('form.css');
 
         /**
          * The overlay.
