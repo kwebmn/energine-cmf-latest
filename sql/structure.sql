@@ -1,5 +1,5 @@
--- Energine Simple: схема базы — 21 таблица и хранимые процедуры. Ставится в пустую базу установщиком:
--- php web/index.php setup install (docs/INSTALL.md). Получена из установки полной системы и sql/cut/stage1–15.sql.
+-- Energine Simple: схема базы — 22 таблицы и хранимые процедуры. Ставится в пустую базу установщиком:
+-- php web/index.php setup install (docs/INSTALL.md). Получена из установки полной системы и sql/cut/stage1–16.sql.
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -198,6 +198,22 @@ CREATE TABLE `share_textblocks` (
   PRIMARY KEY (`tb_id`),
   UNIQUE KEY `smap_id` (`smap_id`,`tb_num`),
   CONSTRAINT `share_textblocks_ibfk_1` FOREIGN KEY (`smap_id`) REFERENCES `share_sitemap` (`smap_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `share_textblocks_history` (
+  `tbh_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `tb_id` int(10) unsigned NOT NULL,
+  `lang_id` int(10) unsigned NOT NULL,
+  `tbh_date` datetime NOT NULL DEFAULT current_timestamp(),
+  `u_id` int(10) unsigned DEFAULT NULL,
+  `tbh_content` text NOT NULL,
+  PRIMARY KEY (`tbh_id`),
+  KEY `tb_lang` (`tb_id`,`lang_id`),
+  KEY `lang_id` (`lang_id`),
+  CONSTRAINT `share_textblocks_history_ibfk_1` FOREIGN KEY (`tb_id`) REFERENCES `share_textblocks` (`tb_id`) ON DELETE CASCADE,
+  CONSTRAINT `share_textblocks_history_ibfk_2` FOREIGN KEY (`lang_id`) REFERENCES `share_languages` (`lang_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;

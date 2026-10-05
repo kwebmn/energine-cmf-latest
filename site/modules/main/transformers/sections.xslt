@@ -25,7 +25,7 @@
     <!-- пустая секция в режиме правки: редактор с образцом вместо прочерка -->
     <xsl:template match="container[@section]/component[@sample='TextBlock' and @editable]/recordset/record[not(field != '')]" priority="2">
         <xsl:variable name="TB" select="../.."/>
-        <div id="{generate-id(.)}" class="nrgnEditor" single_template="{$BASE}{$LANG_ABBR}{$TB/@single_template}" num="{$TB/@num}" eID="{$ID}">
+        <div id="{generate-id(.)}" class="nrgnEditor" single_template="{$BASE}{$LANG_ABBR}{$TB/@single_template}" num="{$TB/@num}" eID="{$ID}" tb_id="{$TB/@tb_id}">
             <!-- d-o-e: образец секции — константа с разметкой (только администратору) -->
             <xsl:value-of select="$TRANSLATION[@const = $TB/@section_sample]" disable-output-escaping="yes"/>
         </div>

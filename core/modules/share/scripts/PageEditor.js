@@ -20,6 +20,7 @@
 
 import {Energine} from 'Energine';
 import {EnergineEditor} from 'EnergineEditor';
+import {ModalBox} from 'ModalBox';
 
 /**
  * Правка текстовых блоков прямо на странице: каждый элемент .nrgnEditor —
@@ -62,10 +63,21 @@ PageEditor.BlockEditor = class PageEditorBlock {
         this.singlePath = area.getAttribute('single_template');
         this.ID = area.getAttribute('eID') || '';
         this.num = area.getAttribute('num') || '';
+        /**
+         * Номер записи блока (share_textblocks) — есть, если текст хоть раз сохраняли: тогда есть и история.
+         * @type {string}
+         */
+        this.tbId = area.getAttribute('tb_id') || '';
 
         this.editor = EnergineEditor.make(this.area, {
             singlePath: this.singlePath,
-            jodit: {inline: true, toolbarInline: true, toolbarInlineForSelection: false, showPlaceholder: false}
+            jodit: {inline: true, toolbarInline: true, toolbarInlineForSelection: false, showPlaceholder: false},
+            extraButtons: [{
+                name: 'energineHistory', text: Energine.translations.get('BTN_HISTORY') || EnergineEditor.label('history'),
+                tooltip: Energine.translations.get('TXT_TEXT_HISTORY') || EnergineEditor.label('historyTip'),
+                isDisabled: () => !this.tbId,
+                exec: () => this.history()
+            }]
         });
         /**
          * Текст, который уже на сервере.
@@ -127,6 +139,9 @@ PageEditor.BlockEditor = class PageEditorBlock {
                 }
                 if (response.ok && result && result.result) {
                     this.saved = value;
+                    if (result.tb_id) {
+                        this.tbId = String(result.tb_id);
+                    }
                     this.area.classList.remove('nrgnEditorError');
                 } else {
                     this.fail(result, response.status);
@@ -146,6 +161,22 @@ PageEditor.BlockEditor = class PageEditorBlock {
         this.area.classList.add('nrgnEditorError');
         alert((result && result.errors && result.errors[0] && result.errors[0].message)
             || ((Energine.translations.get('ERR_TEXT_NOT_SAVED') || 'Error') + (status ? ' (HTTP ' + status + ')' : '')));
+    }
+
+    /**
+     * Окно истории блока: выбранная версия приходит текстом ({text}) — в редактор, как сохранённая.
+     */
+    history() {
+        ModalBox.open({
+            url: this.singlePath + 'history/',
+            onClose: (data) => {
+                if (data && typeof data.text === 'string') {
+                    this.editor.value = data.text;
+                    this.saved = EnergineEditor.clean(this.editor.value);
+                    this.area.classList.remove('nrgnEditorError');
+                }
+            }
+        });
     }
 
     /**

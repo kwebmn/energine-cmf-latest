@@ -24,7 +24,7 @@
     </xsl:template>
 
     <xsl:template match="component[@sample='TextBlock' and @editable]/recordset/record">
-        <div id="{generate-id(.)}" class="nrgnEditor" single_template="{$BASE}{$LANG_ABBR}{../../@single_template}" num="{../../@num}">
+        <div id="{generate-id(.)}" class="nrgnEditor" single_template="{$BASE}{$LANG_ABBR}{../../@single_template}" num="{../../@num}" tb_id="{../../@tb_id}">
             <xsl:if test="not(../../@global)">
                 <xsl:attribute name="eID"><xsl:value-of select="$ID"/></xsl:attribute>
             </xsl:if>            

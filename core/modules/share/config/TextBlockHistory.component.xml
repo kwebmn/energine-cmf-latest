@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Окно истории текстового блока (встраивается состоянием TextBlock::history): версии, просмотр, откат -->
+<configuration>
+    <state name="main">
+        <uri_patterns>
+            <pattern>/</pattern>
+        </uri_patterns>
+        <javascript>
+            <behavior name="TextBlockHistory"/>
+        </javascript>
+        <fields>
+            <field name="tbh_id"/>
+            <field name="tbh_date" title="FIELD_TBH_DATE"/>
+            <field name="tbh_author" title="FIELD_TBH_AUTHOR" type="string"/>
+            <field name="tbh_excerpt" title="FIELD_TBH_EXCERPT" type="string"/>
+        </fields>
+        <toolbar>
+            <control id="showVersion" title="BTN_VIEW" type="button" onclick="showVersion"/>
+            <control id="restore" title="BTN_RESTORE" type="button" onclick="restore"/>
+            <control id="sep1" type="separator"/>
+            <control id="close" title="BTN_CLOSE" type="button" onclick="close"/>
+        </toolbar>
+    </state>
+    <state name="getRawData">
+        <uri_patterns>
+            <pattern>/get-data/</pattern>
+            <pattern>/get-data/page-[pageNumber]/</pattern>
+            <pattern>/get-data/[sortField]-[sortDir]/</pattern>
+            <pattern>/get-data/[sortField]-[sortDir]/page-[pageNumber]/</pattern>
+        </uri_patterns>
+    </state>
+    <state name="showVersion">
+        <uri_patterns>
+            <pattern>/show/[int]/</pattern>
+        </uri_patterns>
+    </state>
+    <state name="restore">
+        <uri_patterns>
+            <pattern>/restore/[int]/</pattern>
+        </uri_patterns>
+    </state>
+</configuration>

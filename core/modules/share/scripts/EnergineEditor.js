@@ -18,9 +18,21 @@ export const EnergineEditor = {
      * Подписи своих кнопок (те же, что были у прежних кнопок вставки из медиа-библиотеки).
      */
     labels: {
-        ru: {image: 'Вставка изображения из медиа-библиотеки', file: 'Вставка файла из медиа-библиотеки'},
-        ua: {image: 'Додати зображення з медіа-бібліотеки', file: 'Додати файл з медіа-бібліотеки'},
-        en: {image: 'Insert an image from the media library', file: 'Insert a file from the media library'}
+        ru: {image: 'Вставка изображения из медиа-библиотеки', file: 'Вставка файла из медиа-библиотеки',
+            history: 'История', historyTip: 'История текста: прежние версии и возврат любой из них'},
+        ua: {image: 'Додати зображення з медіа-бібліотеки', file: 'Додати файл з медіа-бібліотеки',
+            history: 'Історія', historyTip: 'Історія тексту: попередні версії та повернення будь-якої з них'},
+        en: {image: 'Insert an image from the media library', file: 'Insert a file from the media library',
+            history: 'History', historyTip: 'Text history: previous versions and restoring any of them'}
+    },
+
+    /**
+     * Подпись кнопки на языке страницы.
+     * @param {string} name
+     * @returns {string}
+     */
+    label: function (name) {
+        return (EnergineEditor.labels[Energine.lang] || EnergineEditor.labels.en)[name] || EnergineEditor.labels.en[name] || name;
     },
 
     /**
@@ -50,7 +62,8 @@ export const EnergineEditor = {
      *
      * @param {Element|string} element textarea формы или элемент для правки на странице
      * @param {Object} options singlePath — адрес компонента для окон репозитория; jodit — дополнительные
-     *                         настройки Jodit (например, inline для правки на странице)
+     *                         настройки Jodit (например, inline для правки на странице); extraButtons — свои кнопки
+     *                         в конец панели (например, «История» у правки на странице)
      * @returns {Jodit}
      */
     make: function (element, options) {
@@ -87,7 +100,7 @@ export const EnergineEditor = {
                     exec: function (editor) { EnergineEditor.insertFile(editor, singlePath); }
                 },
                 '|', 'undo', 'redo'
-            ]
+            ].concat(options.extraButtons || [])
         }, options.jodit || {});
         return Jodit.make(/** @type {HTMLElement|string} */ (element), config);
     },

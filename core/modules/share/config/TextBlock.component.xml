@@ -6,6 +6,8 @@
 			</javascript>
 			<translations>
 				<translation const="ERR_TEXT_NOT_SAVED"/>
+				<translation const="BTN_HISTORY"/>
+				<translation const="TXT_TEXT_HISTORY"/>
 			</translations>
 	    </state>
 		<state name="save" rights="3">
@@ -27,6 +29,13 @@
 		<state name="fileLibrary" rights="3">
 			<uri_patterns>
 				<pattern>/file-library/[any]/</pattern>
+			</uri_patterns>
+		</state>
+		<!-- окно истории текста: грид версий (TextBlockHistory), его get-data, view и restore — под history/ -->
+		<state name="history" rights="3">
+			<uri_patterns>
+				<pattern>/history/</pattern>
+				<pattern>/history/[any]/</pattern>
 			</uri_patterns>
 		</state>
 

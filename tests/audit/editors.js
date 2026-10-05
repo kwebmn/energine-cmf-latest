@@ -143,6 +143,57 @@ const showTabOf = (page, selector) => page.evaluate((sel) => {
         db('tb-restore', tbId, tbSnap);
     }
 
+    // 2b. история текста (надёжность, этап 3): сохранение кладёт прежний текст в историю; в панели встроенного
+    //     редактора есть «История»; окно показывает версии, «Вернуть» делает прежний текст текущим — в редакторе,
+    //     на сервере и у гостя
+    try {
+        const p = await ctx.newPage();
+        const errors = watch(p);
+        await p.goto(BASE + TEXT_PAGE, { waitUntil: 'networkidle' });
+        await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle' }), p.click('li.editMode_btn')]);
+        const before = JSON.parse(db('tb-get', tbId));
+        await appendHtml(p, block, ' claude-history-new');
+        await Promise.all([
+            p.waitForResponse((r) => r.url().includes('save-text'), { timeout: 15000 }),
+            p.mouse.click(2, 2),
+        ]);
+        check('история: правка сохранена', JSON.parse(db('tb-get', tbId)).includes('claude-history-new'));
+        await p.click(block);
+        const histBtn = p.locator('.jodit-toolbar-button_energineHistory button').first();
+        if (check('в панели редактора блока есть «История»', await histBtn.count() > 0 && await histBtn.isVisible())) {
+            await histBtn.click();
+            const frameEl = await p.waitForSelector('.e-modalbox iframe', { timeout: 10000 }).catch(() => null);
+            const frame = frameEl ? await frameEl.contentFrame() : null;
+            const row = frame ? await frame.waitForSelector('.gridContainer tbody tr', { timeout: 15000 }).catch(() => null) : null;
+            if (check('окно истории: есть прежняя версия', !!row)) {
+                const excerpt = await frame.evaluate(() => document.querySelector('.gridContainer tbody tr').textContent);
+                check('в строке версии — начало прежнего текста, без новой правки', !excerpt.includes('claude-history-new') && excerpt.trim() !== '', excerpt);
+                await row.click();
+                await Promise.all([
+                    p.waitForResponse((r) => r.url().includes('/history/restore/'), { timeout: 15000 }),
+                    frame.click('ul.toolbar li.restore_btn'),
+                ]);
+                await p.waitForSelector('.e-modalbox iframe', { state: 'detached', timeout: 10000 }).catch(() => null);
+                const now = JSON.parse(db('tb-get', tbId));
+                check('«Вернуть»: прежний текст снова текущий на сервере', now === before, JSON.stringify([now, before]).slice(0, 200));
+                const inEditor = await p.evaluate((sel) => document.querySelector(sel).innerHTML, block);
+                check('«Вернуть»: текст в редакторе на странице обновлён', !inEditor.includes('claude-history-new'), inEditor.slice(0, 160));
+                const g = await browser.newContext();
+                const gp = await g.newPage();
+                await gp.goto(BASE + TEXT_PAGE, { waitUntil: 'networkidle' });
+                const guestSees = await gp.evaluate(() => document.body.textContent);
+                check('гость видит возвращённый текст', !guestSees.includes('claude-history-new'));
+                await g.close();
+            }
+        }
+        check('история: без ошибок JS и 404', !errors.length, errors.join(' | '));
+        await p.close();
+    } finally {
+        db('tb-restore', tbId, tbSnap);
+        db('tb-history-clear', tbId);
+    }
+
+
     // 2a. пустая секция визитки (UI-подпроект 2): администратору — образец в редакторе, гостю её нет; правка образца
     //     сохраняется и видна гостю; стёртая секция снова пустая. Стенд — theme-db.php sections-add, секция cta (num 18)
     {

@@ -9,6 +9,7 @@
 //                                                   (главная демо — лендинг из секций, блока num 1 на ней нет)
 //   php8.5 editors-db.php tb-get ID               — текстовый блок (русский), JSON-строка
 //   php8.5 editors-db.php tb-set ID JSON          — текстовый блок (русский) — эта разметка
+//   php8.5 editors-db.php tb-history-clear ID      — удалить версии блока (история текста)
 //   php8.5 editors-db.php tb-snap ID              — блок на всех языках, JSON
 //   php8.5 editors-db.php tb-restore ID JSON      — вернуть блок из tb-snap
 //   php8.5 editors-db.php mail-snap ID            — переводы шаблона письма (все языки и поля), JSON
@@ -57,6 +58,10 @@ switch ($cmd) {
         break;
     case 'tb-set':
         q('UPDATE share_textblocks_translation SET tb_content = ? WHERE tb_id = ? AND lang_id = 1', [json_decode($argv[3]), (int)$argv[2]]);
+        break;
+    case 'tb-history-clear':
+        // версии блока, накопленные аудитом (история текста)
+        q('DELETE FROM share_textblocks_history WHERE tb_id = ?', [(int)$argv[2]]);
         break;
     case 'tb-snap':
         echo json_encode(q('SELECT lang_id, tb_content FROM share_textblocks_translation WHERE tb_id = ? ORDER BY lang_id', [(int)$argv[2]])->fetchAll(), JSON_UNESCAPED_UNICODE);

@@ -14,7 +14,7 @@ final class TextBlock;
  * @version 1.0.0
  */
 namespace Energine\share\components;
-use Energine\share\gears\DataDescription, Energine\share\gears\FieldDescription, Energine\share\gears\Data, Energine\share\gears\Field, Energine\share\gears\SystemException, Energine\share\gears\QAL;
+use Energine\share\gears\DataDescription, Energine\share\gears\FieldDescription, Energine\share\gears\Data, Energine\share\gears\Field, Energine\share\gears\SystemException, Energine\share\gears\QAL, Energine\share\gears\TextHistory;
 /**
  * Text block.
  *
@@ -90,6 +90,12 @@ class TextBlock extends DataSet implements SampleTextBlock{
      * Секции визиток: имя → номер текстового блока на странице (номер — число, чтобы блок был свой у страницы;
      * нечисловой num — общий блок всех страниц). Номера не меняются: по ним в базе лежат тексты.
      */
+    /**
+     * Окно истории (состояние history).
+     * @var TextBlockHistory|null
+     */
+    private $historyWindow = null;
+
     const SECTIONS = ['hero' => 11, 'services' => 12, 'prices' => 13, 'reviews' => 14, 'gallery' => 15, 'faq' => 16,
         'contacts' => 17, 'cta' => 18];
 
@@ -159,6 +165,9 @@ class TextBlock extends DataSet implements SampleTextBlock{
         }
 
         $this->setProperty('num', $this->getParam('num'));
+        if ($this->id) {
+            $this->setProperty('tb_id', $this->id); // окно истории блока (PageEditor): есть, что показывать
+        }
         if ($this->getParam('section')) {
             $this->setProperty('section', $this->getParam('section'));
         }
@@ -234,6 +243,28 @@ class TextBlock extends DataSet implements SampleTextBlock{
     }
 
     /**
+     * Окно истории текста блока (TextBlockHistory): версии текущего языка, просмотр и откат.
+     */
+    protected function history() {
+        $this->request->shiftPath(1);
+        $docID = (intval($this->getParam('num')) !== 0) ? $this->document->getID() : '';
+        $tbID = $this->getTextBlockID($docID, $this->getParam('num'));
+        $this->historyWindow = $this->document->componentManager->createComponent('history',
+            'Energine\\share\\components\\TextBlockHistory', ['tb_id' => (int)$tbID, 'lang_id' => (int)$this->document->getLang()]);
+        $this->historyWindow->run();
+    }
+
+    /**
+     * @copydoc DataSet::build
+     */
+    public function build() {
+        if ($this->getState() === 'history') {
+            return $this->historyWindow->build();
+        }
+        return parent::build();
+    }
+
+    /**
      * Save data.
      */
     protected function save() {
@@ -249,34 +280,16 @@ class TextBlock extends DataSet implements SampleTextBlock{
 
             $tbID = $this->getTextBlockID($docID, $_POST['num']);
             $result = DataSet::cleanupHTML($_POST['data']);
-            //$result = $_POST['data'];
-            if (trim($result)) {
-                if (!$tbID) {
-                    $tbID = $this->dbh->modify(QAL::INSERT, $this->tableName, array('smap_id' => $docID, 'tb_num' => $_POST['num']));
-                }
-                $tableName = $this->tableName . '_translation';
-
-                $res = $this->dbh->select($tableName, array('tb_id'), array('tb_id' => $tbID, 'lang_id' => $langID));
-                //если есть запись в таблице переводов - апдейтим
-                if (!empty($res)) {
-                    $this->dbh->modify(QAL::UPDATE, $tableName, array('tb_content' => $result), array('tb_id' => $tbID, 'lang_id' => $langID));
-                } else {
-                    //если нет - вставляем
-                    $this->dbh->modify(QAL::INSERT, $tableName, array('tb_content' => $result, 'tb_id' => $tbID, 'lang_id' => $langID));
-                }
-            } elseif ($tbID) {
-                // стёртый текст — удаляется только перевод этого языка; строка блока уходит, когда переводов не осталось
-                // (раньше удалялась вся строка, и каскад сносил тексты на других языках)
-                $tableName = $this->tableName . '_translation';
-                $this->dbh->modify(QAL::DELETE, $tableName, null, array('tb_id' => $tbID, 'lang_id' => $langID));
-                if (!$this->dbh->select($tableName, array('tb_id'), array('tb_id' => $tbID))) {
-                    $this->dbh->modify(QAL::DELETE, $this->tableName, null, array('tb_id' => $tbID));
-                }
+            if (trim($result) && !$tbID) {
+                $tbID = $this->dbh->modify(QAL::INSERT, $this->tableName, array('smap_id' => $docID, 'tb_num' => $_POST['num']));
             }
-
-
+            if ($tbID) {
+                // прежний текст языка — в историю, текст — в перевод (пустой — удаление перевода и, если переводов не
+                // осталось, блока); сохранение — событие журнала и дата страницы
+                (new TextHistory())->store((int)$tbID, (int)$langID, trim($result) ? $result : '');
+            }
             $this->dbh->commit();
-            $response = ['result' => true, 'data' => $result];
+            $response = ['result' => true, 'data' => $result, 'tb_id' => $tbID ? (int)$tbID : null];
         } catch (\Exception $e) {
             $this->dbh->rollback();
             $response = ['result' => false, 'errors' => [['message' => $e->getMessage()]]];
