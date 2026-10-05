@@ -29,15 +29,14 @@ trait DBWorker {
      * @param $args
      * @return mixed
      *
-     * @throws \OutOfBoundsException
+     * @throws \BadMethodCallException
      */
     public function __call($name, $args) {
         if (in_array($name, ['translate', 'dateToString'])) {
             return call_user_func_array($name, $args);
         }
-        // bad idea
-        //throw new \OutOfBoundsException(__CLASS__ . " $name does not exists");
-        return false;
+        // несуществующий метод — ошибка, а не тихий false: опечатка в имени метода видна сразу
+        throw new \BadMethodCallException(static::class . '::' . $name . '() не существует');
     }
 
     /**
