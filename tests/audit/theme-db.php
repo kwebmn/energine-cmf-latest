@@ -9,6 +9,8 @@
 //                                         у первого экрана картинка) и claude-sections-edge (без картинки, одна услуга
 //                                         с длинным словом, таблица в FAQ); скрыты из меню
 //   php8.5 theme-db.php sections-remove — удалить стенды с текстами
+//   php8.5 theme-db.php sections-empty NUM — у стенда claude-sections убрать текст секции NUM (пустая секция)
+//   php8.5 theme-db.php sections-get NUM   — текст секции NUM стенда claude-sections (JSON; false — блока нет)
 require dirname(__DIR__) . '/testlib.php';
 
 [, $cmd] = $argv + [null, null];
@@ -71,6 +73,15 @@ switch ($cmd) {
             }
         }
         echo json_encode(array_keys($stands));
+        break;
+    case 'sections-empty':
+        q("DELETE t FROM share_textblocks t JOIN share_sitemap s USING (smap_id) WHERE s.smap_segment = 'claude-sections' AND t.tb_num = ?",
+            [(string)(int)($argv[2] ?? 0)]);
+        break;
+    case 'sections-get':
+        echo json_encode(scalar("SELECT tt.tb_content FROM share_textblocks t JOIN share_sitemap s USING (smap_id)
+            JOIN share_textblocks_translation tt ON tt.tb_id = t.tb_id AND tt.lang_id = 1
+            WHERE s.smap_segment = 'claude-sections' AND t.tb_num = ?", [(string)(int)($argv[2] ?? 0)]), JSON_UNESCAPED_UNICODE);
         break;
     case 'sections-remove':
         sectionsRemove();

@@ -5,7 +5,8 @@
 //   php8.5 editors-db.php page-snap ID            — все переводы раздела (все языки и поля), JSON
 //   php8.5 editors-db.php page-restore ID JSON    — вернуть переводы из page-snap
 //   php8.5 editors-db.php page-rtf ID JSON        — описание раздела на всех языках — эта разметка
-//   php8.5 editors-db.php tb-home                 — id текстового блока textBlock_1 главной
+//   php8.5 editors-db.php tb-home                 — id текстового блока textBlock_1 текстовой страницы info/quick-start
+//                                                   (главная демо — лендинг из секций, блока num 1 на ней нет)
 //   php8.5 editors-db.php tb-get ID               — текстовый блок (русский), JSON-строка
 //   php8.5 editors-db.php tb-set ID JSON          — текстовый блок (русский) — эта разметка
 //   php8.5 editors-db.php tb-snap ID              — блок на всех языках, JSON
@@ -20,6 +21,8 @@
 //   php8.5 editors-db.php page-xml-restore ID JSON — вернуть XML раздела из page-xml-snap
 require dirname(__DIR__) . '/testlib.php';
 
+// раздел с текстовым блоком num 1, на котором проверяется правка на странице
+const TEXT_PAGE = "(SELECT q.smap_id FROM share_sitemap q JOIN share_sitemap i ON i.smap_id = q.smap_pid WHERE q.smap_segment = 'quick-start' AND i.smap_segment = 'info')";
 const FORM_FILE = 'uploads/public/claude-form-file.png';
 
 [, $cmd] = $argv + [null, null];
@@ -47,7 +50,7 @@ switch ($cmd) {
         q('UPDATE share_sitemap_translation SET smap_description_rtf = ? WHERE smap_id = ?', [json_decode($argv[3]), (int)$argv[2]]);
         break;
     case 'tb-home':
-        echo scalar("SELECT tb_id FROM share_textblocks WHERE smap_id = (SELECT smap_id FROM share_sitemap WHERE smap_pid IS NULL) AND tb_num = '1'");
+        echo scalar("SELECT tb_id FROM share_textblocks WHERE smap_id = " . TEXT_PAGE . " AND tb_num = '1'");
         break;
     case 'tb-get':
         echo json_encode(scalar('SELECT tb_content FROM share_textblocks_translation WHERE tb_id = ? AND lang_id = 1', [(int)$argv[2]]), JSON_UNESCAPED_UNICODE);
@@ -61,9 +64,9 @@ switch ($cmd) {
     case 'tb-restore':
         // блок мог быть удалён сохранением пустого текста, а следующее сохранение — создать на его месте новый
         // (другой tb_id): новый убирается, строки блока возвращаются заново
-        q("DELETE FROM share_textblocks WHERE tb_id <> ? AND tb_num = '1' AND smap_id = (SELECT smap_id FROM share_sitemap WHERE smap_pid IS NULL)",
+        q("DELETE FROM share_textblocks WHERE tb_id <> ? AND tb_num = '1' AND smap_id = " . TEXT_PAGE,
             [(int)$argv[2]]);
-        q('INSERT IGNORE INTO share_textblocks (tb_id, smap_id, tb_num) SELECT ?, smap_id, ? FROM share_sitemap WHERE smap_pid IS NULL',
+        q('INSERT IGNORE INTO share_textblocks (tb_id, smap_id, tb_num) SELECT ?, ' . TEXT_PAGE . ', ?',
             [(int)$argv[2], '1']);
         q('DELETE FROM share_textblocks_translation WHERE tb_id = ?', [(int)$argv[2]]);
         foreach (json_decode($argv[3], true) as $r) {

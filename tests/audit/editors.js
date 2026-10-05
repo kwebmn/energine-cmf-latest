@@ -15,6 +15,8 @@ if (!process.env.BASE || !process.env.ADMIN_PASSWORD || !process.env.WEB) {
     process.exit(2);
 }
 const BASE = process.env.BASE.replace(/\/$/, '') + '/';
+// страница правки текста на месте: текстовый раздел (главная демо — лендинг из секций, блока num 1 на ней нет)
+const TEXT_PAGE = 'info/quick-start/';
 const db = (...args) => execFileSync('php8.5', [path.join(__dirname, 'editors-db.php'), ...args], { encoding: 'utf8' });
 let fail = 0;
 function check(label, cond, detail = '') {
@@ -106,9 +108,9 @@ const showTabOf = (page, selector) => page.evaluate((sel) => {
     try {
         const p = await ctx.newPage();
         const errors = watch(p);
-        await p.goto(BASE, { waitUntil: 'networkidle' });
+        await p.goto(BASE + TEXT_PAGE, { waitUntil: 'networkidle' });
         await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle' }), p.click('li.editMode_btn')]);
-        if (check('главная в режиме правки: текстовый блок — редактор Jodit', await isJodit(p, block))) {
+        if (check('текстовая страница в режиме правки: блок — редактор Jodit', await isJodit(p, block))) {
             await appendHtml(p, block, ' claude-test-inline');
             await Promise.all([
                 p.waitForResponse((r) => r.url().includes('save-text'), { timeout: 15000 }),
@@ -119,7 +121,7 @@ const showTabOf = (page, selector) => page.evaluate((sel) => {
             await p.goto(BASE + 'features/content/', { waitUntil: 'networkidle' });
             await p.waitForTimeout(1500);
             check('несохранённое уходит на сервер при уходе со страницы', JSON.parse(db('tb-get', tbId)).includes('claude-test-leave'));
-            await p.goto(BASE, { waitUntil: 'networkidle' });
+            await p.goto(BASE + TEXT_PAGE, { waitUntil: 'networkidle' });
             await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle' }), p.click('li.editMode_btn')]);
             // администратор стёр весь текст: Jodit оставляет пустой абзац, а сохраняется пустой блок
             await p.evaluate((sel) => {
@@ -139,6 +141,62 @@ const showTabOf = (page, selector) => page.evaluate((sel) => {
         await p.close();
     } finally {
         db('tb-restore', tbId, tbSnap);
+    }
+
+    // 2a. пустая секция визитки (UI-подпроект 2): администратору — образец в редакторе, гостю её нет; правка образца
+    //     сохраняется и видна гостю; стёртая секция снова пустая. Стенд — theme-db.php sections-add, секция cta (num 18)
+    {
+        const tdb = (...args) => execFileSync('php8.5', [path.join(__dirname, 'theme-db.php'), ...args], { encoding: 'utf8' });
+        const sec = '.nrgnEditor[num="18"]';
+        const guestSees = async () => {
+            const g = await browser.newContext();
+            const gp = await g.newPage();
+            await gp.goto(BASE + 'claude-sections/', { waitUntil: 'networkidle' });
+            const t = await gp.evaluate(() => { const s = document.querySelector('section[data-section=cta]'); return s ? s.textContent : null; });
+            await g.close();
+            return t;
+        };
+        try {
+            tdb('sections-add');
+            tdb('sections-empty', '18');
+            check('пустая секция: гостю не выводится', await guestSees() === null);
+            const p = await ctx.newPage();
+            const errors = watch(p);
+            await p.goto(BASE + 'claude-sections/', { waitUntil: 'networkidle' });
+            await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle' }), p.click('li.editMode_btn')]);
+            const sample = await p.evaluate((sel) => { const e = document.querySelector(sel); return e ? e.innerHTML : ''; }, sec);
+            if (check('пустая секция в режиме правки: редактор с образцом', await isJodit(p, sec) && /<h2>/.test(sample) && !/--/.test(sample), sample)) {
+                await appendHtml(p, sec, ' claude-section-saved');
+                await Promise.all([
+                    p.waitForResponse((r) => r.url().includes('save-text'), { timeout: 15000 }),
+                    p.mouse.click(2, 2),
+                ]);
+                const saved = JSON.parse(tdb('sections-get', '18'));
+                check('образец с правкой сохранён', typeof saved === 'string' && saved.includes('claude-section-saved') && /<h2>/.test(saved), JSON.stringify(saved));
+                const seen = await guestSees();
+                check('сохранённая секция видна гостю', !!seen && seen.includes('claude-section-saved'), seen);
+                await p.goto(BASE + 'claude-sections/', { waitUntil: 'networkidle' });
+                await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle' }), p.click('li.editMode_btn')]);
+                await p.evaluate((sel) => {
+                    const ed = Object.values(Jodit.instances).find((e) => e.element === document.querySelector(sel));
+                    ed.s.focus();
+                    ed.value = '<p><br></p>';
+                }, sec);
+                await Promise.all([
+                    p.waitForResponse((r) => r.url().includes('save-text'), { timeout: 15000 }),
+                    p.mouse.click(2, 2),
+                ]);
+                check('стёртая секция гостю снова не выводится', await guestSees() === null);
+                await p.goto(BASE + 'claude-sections/', { waitUntil: 'networkidle' });
+                await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle' }), p.click('li.editMode_btn')]);
+                const again = await p.evaluate((sel) => { const e = document.querySelector(sel); return e ? e.innerHTML : ''; }, sec);
+                check('стёртая секция у администратора — снова образец', /<h2>/.test(again) && !again.includes('claude-section-saved'), again);
+            }
+            check('секции в режиме правки: без ошибок JS и 404', !errors.length, errors.join(' | '));
+            await p.close();
+        } finally {
+            tdb('sections-remove');
+        }
     }
 
     // 3. «image from the repository» opens the file library
@@ -227,7 +285,7 @@ const showTabOf = (page, selector) => page.evaluate((sel) => {
             const p = await ctx.newPage();
             const saves = [];
             p.on('request', (r) => { if (r.url().includes('save-text')) saves.push(r.method() + ' ' + r.url()); });
-            await p.goto(BASE, { waitUntil: 'networkidle' });
+            await p.goto(BASE + TEXT_PAGE, { waitUntil: 'networkidle' });
             await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle' }), p.click('li.editMode_btn')]);
             await p.waitForTimeout(1500);
             await p.click(block);
@@ -239,7 +297,7 @@ const showTabOf = (page, selector) => page.evaluate((sel) => {
             const now = JSON.parse(db('tb-get', tbId));
             check('режим правки: разметка блока без правки не тронута', now === FIXTURE, now);
 
-            await p.goto(BASE, { waitUntil: 'networkidle' });
+            await p.goto(BASE + TEXT_PAGE, { waitUntil: 'networkidle' });
             await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle' }), p.click('li.editMode_btn')]);
             await p.waitForTimeout(1500);
             await appendHtml(p, block, ' claude-test-keep');
@@ -410,7 +468,7 @@ const showTabOf = (page, selector) => page.evaluate((sel) => {
         try {
             const p = await ctx.newPage();
             const errors = watch(p);
-            await p.goto(BASE, { waitUntil: 'networkidle' });
+            await p.goto(BASE + TEXT_PAGE, { waitUntil: 'networkidle' });
             await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle' }), p.click('li.editMode_btn')]);
             await appendHtml(p, block, ' claude-sel claude-a <strong>claude-b</strong> claude-c<p>claude-p1</p><p>claude-p2</p>');
             await insertions(p, block, 'блок на странице');
@@ -429,7 +487,7 @@ const showTabOf = (page, selector) => page.evaluate((sel) => {
             const p = await ctx.newPage();
             const dialogs = [];
             p.on('dialog', (d) => { dialogs.push(d.message()); d.accept(); });
-            await p.goto(BASE, { waitUntil: 'networkidle' });
+            await p.goto(BASE + TEXT_PAGE, { waitUntil: 'networkidle' });
             await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle' }), p.click('li.editMode_btn')]);
             // an answer that is not a saved text: a page (so the server answers when rights or the session are gone)
             await p.route('**/save-text*', (route) => route.fulfill({ status: 200, contentType: 'text/html; charset=utf-8',
@@ -451,7 +509,7 @@ const showTabOf = (page, selector) => page.evaluate((sel) => {
 
             // a real refusal: a token that is not the visitor's
             dialogs.length = 0;
-            await p.goto(BASE, { waitUntil: 'networkidle' });
+            await p.goto(BASE + TEXT_PAGE, { waitUntil: 'networkidle' });
             await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle' }), p.click('li.editMode_btn')]);
             await p.evaluate(() => { Energine.csrf = '0'.repeat(64); });
             const was = JSON.parse(db('tb-get', tbId));
@@ -676,7 +734,7 @@ const showTabOf = (page, selector) => page.evaluate((sel) => {
     {
         const p = await ctx.newPage();
         const errors = watch(p);
-        await p.goto(BASE, { waitUntil: 'networkidle' });
+        await p.goto(BASE + TEXT_PAGE, { waitUntil: 'networkidle' });
         const pressed = () => p.evaluate(() => document.querySelector('li.editMode_btn').classList.contains('pressed'));
         const before = await pressed();
         await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle' }), p.click('li.editMode_btn')]);
@@ -752,7 +810,7 @@ const showTabOf = (page, selector) => page.evaluate((sel) => {
         });
         await mooFree('окно картинки', openImageWindow);
         await mooFree('режим правки', async (p) => {
-            await p.goto(BASE, { waitUntil: 'networkidle' });
+            await p.goto(BASE + TEXT_PAGE, { waitUntil: 'networkidle' });
             await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle' }), p.click('li.editMode_btn')]);
             return p;
         });
