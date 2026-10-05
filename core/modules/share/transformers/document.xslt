@@ -212,14 +212,27 @@
 
     <xsl:template match="component/javascript"/>
     
+    <!-- переводы для скриптов: данными в <template> (допустим и в <head>), а не строками в коде скрипта — апостроф
+         («Повне iм'я») и </script> его не ломают; скрипт читает textContent. ITEMS — узлы translation -->
+    <xsl:template name="js-translations">
+        <xsl:param name="ITEMS"/>
+        <template class="e-translations">
+            <xsl:for-each select="$ITEMS">
+                <span data-const="{@const}"><xsl:value-of select="."/></span>
+            </xsl:for-each>
+        </template>
+        <script type="module">
+            import {Energine} from 'Energine';
+            document.querySelectorAll('template.e-translations').forEach((t) => t.content.querySelectorAll('[data-const]')
+                .forEach((s) => Energine.translations.set(s.dataset.const, s.textContent)));
+        </script>
+    </xsl:template>
+
     <!-- Выводим переводы для WYSIWYG -->
     <xsl:template match="/document/translations[translation[@component=//component[@editable]/@name]]">
-            <script type="module">
-                import {Energine} from 'Energine';
-                <xsl:for-each select="translation[@component=$COMPONENTS[@editable]/@name]">
-                    Energine.translations.set('<xsl:value-of select="@const"/>', '<xsl:value-of select="."/>');
-                </xsl:for-each>
-            </script>
+            <xsl:call-template name="js-translations">
+                <xsl:with-param name="ITEMS" select="translation[@component=$COMPONENTS[@editable]/@name]"/>
+            </xsl:call-template>
     </xsl:template>
 
     <xsl:template match="/document/javascript"/>

@@ -73,5 +73,17 @@ $scripts = '';
 if (preg_match_all('~<script\b[^>]*>(.*?)</script>~s', $html, $m)) $scripts = implode("\n", $m[1]);
 check('форма раздела: перевод с апострофом и </script> не попадает в код скрипта', !str_contains($scripts, "a'b") && !str_contains($html, '<b>t7</b>')
     && str_contains($html, '&lt;/script&gt;&lt;b&gt;t7'), substr($scripts, 0, 300));
+// 4. переводы для скриптов (форма раздела, гриды, визуальный редактор) — данными в <template>, не строками в коде:
+//    апостроф («Повне iм'я») и </script> не ломают скрипт; блок переводов допустим и в <head>
+foreach (['/admin/users/', "/admin/structure/single/divEditor/$page/edit/"] as $u) {
+    $d = page($u);
+    $n = 0;
+    foreach ((new DOMXPath($d))->query('//translations/translation') as $t) { $t->nodeValue = "x'y</script><b>t9</b>"; $n++; }
+    $html = render($d);
+    $scripts = preg_match_all('~<script\b[^>]*>(.*?)</script>~s', $html, $m) ? implode("\n", $m[1]) : '';
+    check("$u: переводы ($n) не попадают в код скриптов, блок переводов — <template>", $n > 0 && !str_contains($scripts, "x'y")
+        && !str_contains($html, '<b>t9</b>') && !str_contains($html, '<div class="e-translations"')
+        && preg_match('~<template class="e-translations">~', $html), substr($scripts, 0, 200));
+}
 logout();
 done('escaping');

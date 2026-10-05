@@ -64,24 +64,18 @@
             </xsl:if>
             <xsl:call-template name="BUILD_GRID"/>
             <xsl:if test="count($TRANSLATION[@component=$NAME])&gt;0">
-                <script type="module">
-                    import {Energine} from 'Energine';
-                    <xsl:for-each select="$TRANSLATION[@component=$NAME]">
-                        Energine.translations.set('<xsl:value-of select="@const"/>', '<xsl:value-of select="."/>');
-                    </xsl:for-each>
-                </script>
+                <xsl:call-template name="js-translations">
+                    <xsl:with-param name="ITEMS" select="$TRANSLATION[@component=$NAME]"/>
+                </xsl:call-template>
             </xsl:if>
         </div>
     </xsl:template>
     
     <!-- Выводим переводы для WYSIWYG -->
     <xsl:template match="document/translations[translation[@component=//component[@type='form' and @exttype='grid'][descendant::field[@type='htmlblock']]/@name]]">
-            <script type="module">
-                import {Energine} from 'Energine';
-                <xsl:for-each select="translation[@component=$COMPONENTS[@type='form' and @exttype='grid'][descendant::field[@type='htmlblock']]/@name]">
-                    Energine.translations.set('<xsl:value-of select="@const"/>', '<xsl:value-of select="."/>');
-                </xsl:for-each>
-            </script>
+            <xsl:call-template name="js-translations">
+                <xsl:with-param name="ITEMS" select="translation[@component=$COMPONENTS[@type='form' and @exttype='grid'][descendant::field[@type='htmlblock']]/@name]"/>
+            </xsl:call-template>
     </xsl:template>
 
     <!--Фильтр обрабатывается в BUILD_GRID-->
@@ -322,9 +316,7 @@
 
     <xsl:template match="component[@type='list']/recordset/record/field">
         <span>
-            <xsl:if test=". = ''">
-                &#160;
-            </xsl:if>
+            <xsl:if test=". = ''"><xsl:text>&#160;</xsl:text></xsl:if>
             <xsl:value-of select="."/>
         </span>
     </xsl:template>
@@ -337,9 +329,7 @@
 -->
     <xsl:template match="component[@type='list']/recordset/record/field[@type='select']">
         <span>
-            <xsl:if test=". = ''">
-                &#160;
-            </xsl:if>
+            <xsl:if test=". = ''"><xsl:text>&#160;</xsl:text></xsl:if>
             <xsl:value-of select="options/option[@selected='selected']"/>
         </span>
     </xsl:template>

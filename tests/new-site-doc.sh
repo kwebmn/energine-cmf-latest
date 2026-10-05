@@ -16,5 +16,9 @@ done
 for t in landing service contacts; do
   grep -q "main/$t.content.xml" "$DOC" && echo "OK   шаблон $t" || { echo "FAIL шаблон $t не упомянут"; fail=$((fail+1)); }
 done
+# перенос на хостинг: сначала setup install (он пишет конфиг площадки), затем база стенда и загруженные файлы
+sec=$(sed -n '/^## 6\./,$p' "$DOC")
+grep -q 'setup install' <<< "$sec" && grep -q 'web/uploads' <<< "$sec" && ! grep -q 'вместо `setup install`' <<< "$sec" \
+  && echo "OK   перенос: установка, затем база и web/uploads" || { echo "FAIL перенос на хостинг: нужен setup install (конфиг), затем база стенда и web/uploads"; fail=$((fail+1)); }
 echo "== new-site-doc failures: $fail"
 [ $fail -eq 0 ]

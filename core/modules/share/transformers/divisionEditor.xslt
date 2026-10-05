@@ -5,16 +5,9 @@
     >
 
     <xsl:template match="document/translations[translation[@component=//component[@sample='DivisionEditor']/@name]]">
-            <!-- переводы формы раздела — данными в разметке, а не строками в коде скрипта (апостроф, </script>) -->
-            <div class="e-translations" hidden="hidden">
-                <xsl:for-each select="translation[@component=$COMPONENTS[@sample='DivisionEditor']/@name]">
-                    <span data-const="{@const}"><xsl:value-of select="."/></span>
-                </xsl:for-each>
-            </div>
-            <script type="module">
-                import {Energine} from 'Energine';
-                document.querySelectorAll('.e-translations [data-const]').forEach((s) => Energine.translations.set(s.dataset.const, s.textContent));
-            </script>
+            <xsl:call-template name="js-translations">
+                <xsl:with-param name="ITEMS" select="translation[@component=$COMPONENTS[@sample='DivisionEditor']/@name]"/>
+            </xsl:call-template>
     </xsl:template>
     
     <!-- вывод дерева разделов -->
