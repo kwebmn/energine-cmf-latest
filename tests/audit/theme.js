@@ -441,6 +441,12 @@ async function inspect(page) {
                         out.pictures = !gi || cs(gi).objectFit === 'cover';
                         pair('вопросы: вопрос', q('[data-section=faq] h3'));
                         pair('контакты: ссылка', q('[data-section=contacts] a'));
+                        // ревью: карточки услуг отличаются от полосы; у первого экрана с картинкой высокие поля;
+                        // ссылки #якорь из образцов ведут на секцию на этой странице
+                        out.cardBg = !!card && cs(card).backgroundColor !== bgOf(card.parentElement);
+                        out.heroPad = parseFloat(cs(q('[data-section=hero]')).paddingTop);
+                        out.deadAnchors = [...document.querySelectorAll('section[data-section] a[href^="#"]')]
+                            .map((a) => a.getAttribute('href')).filter((h) => !document.getElementById(h.slice(1)));
                         const cta = q('[data-section=cta]');
                         out.cta = !!cta && cs(cta).backgroundColor === primary;
                         pair('призыв: текст', q('[data-section=cta] h2'));
@@ -450,6 +456,9 @@ async function inspect(page) {
                     check(`${where}: восемь полос, без прокрутки`, r.sections === 8 && r.overflow <= 0, JSON.stringify({ s: r.sections, o: r.overflow }));
                     check(`${where}: правила секций применены`, r.heroButton && r.card && r.priceButton && r.quote && r.pictures && r.cta
                         && (stand !== 'claude-sections' || (r.heroCover && r.heroOverlay === 'ok')), JSON.stringify(r));
+                    check(`${where}: карточки услуг на фоне, отличном от полосы`, r.cardBg, JSON.stringify(r));
+                    check(`${where}: ссылки-якоря секций ведут на секцию`, !r.deadAnchors.length, r.deadAnchors.join(' '));
+                    if (stand === 'claude-sections' && w === 1280) check(`${where}: первый экран с картинкой — поля сверху не меньше 6rem`, r.heroPad >= 96, r.heroPad);
                     check(`${where}: контраст не ниже 4.5:1`, !r.low.length, r.low.join('; '));
                     if (scheme === 'light') await p.screenshot({ path: path.join(SHOTS, `${stand}-${w}.png`), fullPage: true });
                     await p.close();

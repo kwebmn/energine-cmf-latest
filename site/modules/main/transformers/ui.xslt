@@ -64,8 +64,8 @@
         <h2 class="mt-0 mb-4 text-2xl font-bold leading-tight"><xsl:value-of select="$text"/></h2>
     </xsl:template>
 
-    <!-- полоса секции визитки (sections.xslt): на всю ширину окна внутри ограниченного main, поля сверху и снизу -->
-    <xsl:variable name="UI_SECTION">relative mx-[calc(50%-50vw)] w-screen max-w-[100vw] py-12 md:py-16</xsl:variable>
+    <!-- полоса секции визитки (sections.xslt): на всю ширину окна внутри ограниченного main, поля сверху и снизу — .ui-section в tailwind.css -->
+    <xsl:variable name="UI_SECTION">relative mx-[calc(50%-50vw)] w-screen max-w-[100vw]</xsl:variable>
 
     <!-- форма сайта и поле формы: подпись, ввод, ошибка проверки (Validator.js: класс invalid и div.error) -->
     <xsl:variable name="UI_FORM">max-w-[38rem]</xsl:variable>

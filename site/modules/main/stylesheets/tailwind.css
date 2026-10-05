@@ -184,6 +184,9 @@ div.block:where(:not(.e-pane *, .e-topframe *, .e-sideframe *, .e-modalbox-frame
    Соглашение разметки — образцы TXT_SECTION_SAMPLE_* (sql/cut/stage11.sql). Полоса — на всю ширину окна
    (UI_SECTION: 100vw), поэтому у страницы с секциями горизонтальная прокрутка обрезается. */
 body:has(.ui-section) { overflow-x: clip; }
+/* поля полосы — здесь, а не утилитами: утилиты сильнее слоя components, и первый экран с картинкой их не переопределил бы */
+.ui-section { padding-block: 3rem; }
+@media (min-width: 48rem) { .ui-section { padding-block: 4rem; } }
 .ui-section :is(h1, h2) { margin: 0 0 1rem; line-height: 1.2; overflow-wrap: anywhere; }
 .ui-section h1 { font-size: clamp(2rem, 6vw, 3rem); }
 .ui-section h2 { font-size: clamp(1.5rem, 4vw, 2rem); }
@@ -197,7 +200,7 @@ body:has(.ui-section) { overflow-x: clip; }
 }
 .ui-section-hero a:hover, .ui-section-prices li a:hover { filter: brightness(1.1); }
 .ui-section:nth-of-type(even):not(.ui-section-cta, .ui-section-hero:has(img)) { background: var(--bg-soft); }
-.ui-section:nth-of-type(even) .ui-section-services li { background: var(--bg); }
+.ui-section-services:nth-of-type(even) li { background: var(--bg); }
 
 /* первый экран: картинка из текста — фон полосы с затемнением, текст поверх светлый */
 .ui-section-hero { text-align: center; }

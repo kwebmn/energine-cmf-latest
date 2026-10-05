@@ -7,14 +7,14 @@
             <params><param name="num">11</param><param name="section_sample">TXT_SECTION_SAMPLE_HERO</param></params></component></container>
         num — число (нечисловой num у TextBlock — глобальный блок, общий для всех страниц).
         Вид текста владельца — правила .ui-section-<имя> в tailwind.css (@layer components): классы в тексте не нужны.
-        Пустая секция гостю не выводится; в режиме правки вместо пустоты — образец (константа section_sample).
+        id полосы — имя секции (ссылки образцов «#contacts»). Пустая секция гостю не выводится; в режиме правки вместо пустоты — образец (константа section_sample).
     -->
 
 
     <xsl:template match="container[contains(' hero services prices reviews gallery faq contacts cta ', concat(' ', @section, ' '))]" priority="2">
         <xsl:variable name="TB" select="component[@sample='TextBlock'][1]"/>
         <xsl:if test="$TB/@editable or $TB/recordset/record/field != ''">
-            <section data-section="{@section}" class="ui-section ui-section-{@section} {$UI_SECTION}">
+            <section id="{@section}" data-section="{@section}" class="ui-section ui-section-{@section} {$UI_SECTION}">
                 <div class="{$UI_CONTAINER}">
                     <xsl:apply-templates select="$TB/recordset/record"/>
                 </div>
