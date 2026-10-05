@@ -64,12 +64,6 @@ export const Energine = /** @lends Energine */{
     csrf: '',
 
     /**
-     * Окно админки (режим single).
-     * @type {boolean}
-     */
-    singleMode: false,
-
-    /**
      * Translations.
      * @type {Object}
      *
@@ -92,18 +86,6 @@ export const Energine = /** @lends Energine */{
             Object.assign(Energine.translations, obj);
         }
     },
-
-    /**
-     * Force ths using of JSON.
-     * @type {boolean}
-     */
-    forceJSON: false,
-
-    /**
-     * Support content editing.
-     * @type {boolean}
-     */
-    supportContentEdit: true,
 
     /**
      * Запрос к серверу с теми же заголовками, что у прежнего запроса JSON на MooTools: X-Requested-With,
@@ -186,7 +168,7 @@ export const Energine = /** @lends Energine */{
             }
         };
 
-        Energine.send(uri + ((Energine.forceJSON) ? '?json' : ''), data, method).then(function (r) {
+        Energine.send(uri, data, method).then(function (r) {
             if (r.status >= 400 || r.status === 0) {
                 // отказ с объяснением в JSON (например, устаревшая форма — код 422) показывается как ошибка формы
                 if (r.json && r.json.errors) {
@@ -207,39 +189,8 @@ export const Energine = /** @lends Energine */{
                 showErrors(r.json);
             }
         });
-    },
-
-    /**
-     * Resize an requested image. The attribute <tt>src</tt> of the img-tag will be build as follow:
-     * <tt>Energine.resizer + r + 'w' + w + '-h' + h + '/' + src</tt>
-     *
-     * @function
-     * @public
-     * @param {HTMLImageElement} img Image, that will be resized.
-     * @param {string} src Source of the original image.
-     * @param {number} w Width of the new image.
-     * @param {number} h Height of the new image.
-     * @param {string} [r = ''] Special attribute. For example, if additional shrinking must be applied, in order to not cross requested width and height, <tt>r</tt> must be 'r'.
-     *
-     * @example
-     * Energine.resizer = 'http://www.site.ua/resizer/';
-     * Energine.resize(document.querySelector('img'), 'images/img01.png', 100, 50);
-     * document.querySelector('img').getAttribute('src') == 'http://www.site.ua/resizer/w100-h50/images/img01.png'
-     */
-    resize: function (img, src, w, h, r) {
-        if (r === undefined)
-            r = '';
-        img.setAttribute('src', Energine.resizer + r + 'w' + w + '-h' + h + '/' + src);
     }
 };
-
-/**
- * Compatibility fix.
- * @type {Function}
- *
- * @deprecated Use Energine.request.
- */
-Energine.request.request = Energine.request;
 
 /**
  * Скрытое поле токена для форм, которые создаёт JS (формы из XSLT получают его в шаблоне).

@@ -106,11 +106,6 @@ export class Form {
                     ? day + 'T' + pad(now.getHours()) + ':' + pad(now.getMinutes()) : day;
             }
         });
-
-        this.element.querySelectorAll('.pane').forEach((pane) => {
-            pane.style.border = '1px dotted #777';
-            pane.style.overflow = 'auto';
-        });
     }
 
     /**

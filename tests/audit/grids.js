@@ -626,7 +626,7 @@ const inspect = (page) => page.evaluate(() => {
                 tb.appendControl(new Toolbar.Button({ id: 'off', title: 'Off', action: 'act', disabled: 'disabled' }),
                     new Toolbar.Switcher({ id: 'sw', title: 'Sw', action: 'act', state: '0' }),
                     new Toolbar.Select({ id: 'sel', title: 'Sel', action: 'act' }, { a: 'A', b: 'B' }, 'a'));
-                box.appendChild(tb.getElement());
+                box.appendChild(tb.element);
                 tb.enableControls();
                 const off = tb.getControlById('off');
                 const stillOff = !!off.disabled() && off.element.classList.contains('disabled');

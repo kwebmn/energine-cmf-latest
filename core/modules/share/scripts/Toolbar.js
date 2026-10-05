@@ -4,7 +4,6 @@
  *     <li>[Toolbar]{@link Toolbar}</li>
  *     <li>[Toolbar.Control]{@link Toolbar.Control}</li>
  *     <li>[Toolbar.Button]{@link Toolbar.Button}</li>
- *     <li>[Toolbar.File]{@link Toolbar.File}</li>
  *     <li>[Toolbar.Switcher]{@link Toolbar.Switcher}</li>
  *     <li>[Toolbar.Separator]{@link Toolbar.Separator}</li>
  *     <li>[Toolbar.Select]{@link Toolbar.Select}</li>
@@ -43,10 +42,6 @@ export class Toolbar {
     // панель прикреплена к верху окна (панель страницы)
     dock() {
         this.element.classList.add('docked_toolbar');
-    }
-
-    getElement() {
-        return this.element;
     }
 
     bindTo(object) {
@@ -245,42 +240,6 @@ Toolbar.Button = class ToolbarButton extends Toolbar.Control {
         if (!this.properties.isDisabled) {
             this.toolbar.callAction(this.properties.action, data);
         }
-    }
-};
-
-/**
- * Кнопка выбора файла: открывает выбор файла, действие получает прочитанный файл (FileReader).
- *
- * @constructor
- * @param {Object} [properties]
- */
-Toolbar.File = class ToolbarFile extends Toolbar.Button {
-    build() {
-        super.build();
-        if (!this.element) {
-            return;
-        }
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.id = this.properties.id;
-        input.addEventListener('change', (event) => {
-            const file = event.target.files[0];
-            if (!file) {
-                return;
-            }
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                if (!this.properties.isDisabled) {
-                    this.toolbar.callAction(this.properties.action, e.target);
-                }
-            };
-            reader.readAsDataURL(file);
-        });
-        this.element.appendChild(input);
-    }
-
-    callAction() {
-        this.element.querySelector('input[type=file]').click();
     }
 };
 

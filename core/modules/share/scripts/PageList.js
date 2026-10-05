@@ -29,10 +29,6 @@ export class PageList {
         this.element.setAttribute('unselectable', 'on');
     }
 
-    getElement() {
-        return this.element;
-    }
-
     // пока грид грузится, листалка полупрозрачна и не реагирует
     disable() {
         this.disabled = true;

@@ -63,9 +63,6 @@ export class Grid {
          */
         this.sort = {field: null, order: null};
 
-        // TODO: I think this.headOff can be removed, because it is always hidden.
-        this.headOff = this.element.querySelector('.gridContainer thead');
-        this.headOff.style.display = 'none';
         this.tbody = this.element.querySelector('.gridContainer tbody');
         this.headers = Array.from(this.element.querySelectorAll('.gridHeadContainer table.gridTable th'));
         this.headers.forEach((header) => header.addEventListener('click', (event) => this.onChangeSort(event)));
@@ -110,10 +107,6 @@ export class Grid {
             }
         }
         this.metadata = metadata;
-    }
-
-    getMetadata() {
-        return this.metadata;
     }
 
     /**
@@ -530,13 +523,6 @@ export class Grid {
 
             if (totalH > paneH) {
                 this.pane.style.height = Math.round((totalH > freespace) ? freespace : totalH) + 'px';
-                const leftCol = document.querySelectorAll('div[column=left]');//ugly
-
-                if (this.pane.parentNode.parentNode.parentNode.classList.contains('fitGridHeightToLeftCol') && leftCol.length) {
-                    const fitGridHeightToLeftCol = leftCol.clientHeight - (toolbarH + gridHeadH - 30);//ugly
-
-                    this.pane.style.height = Math.round(fitGridHeightToLeftCol) + 'px';
-                }
             }
 
             this.fitGridSize();
@@ -1121,9 +1107,5 @@ export class GridManager {
 
     print() {
         window.open(this.element.getAttribute('single_template') + 'print/');
-    }
-
-    csv() {
-        document.location.href = this.element.getAttribute('single_template') + 'csv/';
     }
 };

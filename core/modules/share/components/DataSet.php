@@ -497,17 +497,6 @@ abstract class DataSet extends Component
                 }
                 $result->appendChild($JSObjectXML);
             }
-            foreach ($config->javascript->variable as $value) {
-                $JSObjectXML = $this->doc->createElement('variable');
-                foreach ($value->attributes() as $attrName => $attrValue) {
-                    if ($attrName == 'type') {
-                        $attrValue = ($attrValue) ? $attrValue : 'string';
-                    }
-                    $JSObjectXML->setAttribute($attrName, $attrValue);
-                }
-                $JSObjectXML->appendChild(new \DomText((string)$value));
-                $result->appendChild($JSObjectXML);
-            }
         }
         return $result;
     }

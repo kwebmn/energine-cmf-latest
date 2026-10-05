@@ -100,7 +100,7 @@ export class TreeView {
  * on('select', обработчик): обработчик получает узел.
  *
  * @constructor
- * @param {Object|Element} nodeInfo Описание {id, name, data: {segment, icon, class}} или готовый li.
+ * @param {Object} nodeInfo Описание {id, name, data: {segment, icon, class}}.
  * @param {TreeView} tree
  */
 TreeView.Node = class TreeViewNode {
@@ -110,20 +110,14 @@ TreeView.Node = class TreeViewNode {
         this.selected = false;
         this.id = null;
         this.data = null;
-        if (nodeInfo && nodeInfo.nodeType === 1) {
-            this.element = nodeInfo;
-            this.element.querySelector('a').setAttribute('href', Energine.base + Energine.lang + '/');
-            this.id = this.element.getAttribute('id');
-        } else {
-            this.element = document.createElement('li');
-            const link = document.createElement('a');
-            link.setAttribute('href', Energine.base + Energine.lang + '/' + nodeInfo.data.segment);
-            link.textContent = nodeInfo.name;
-            this.element.appendChild(link);
-            this.id = nodeInfo.id;
-            this.data = nodeInfo.data;
-            this.setIcon(nodeInfo.data.icon);
-        }
+        this.element = document.createElement('li');
+        const link = document.createElement('a');
+        link.setAttribute('href', Energine.base + Energine.lang + '/' + nodeInfo.data.segment);
+        link.textContent = nodeInfo.name;
+        this.element.appendChild(link);
+        this.id = nodeInfo.id;
+        this.data = nodeInfo.data;
+        this.setIcon(nodeInfo.data.icon);
         this.element.treeNode = this;
         const anchor = this.element.querySelector('a');
         if (nodeInfo.data && nodeInfo.data['class']) {

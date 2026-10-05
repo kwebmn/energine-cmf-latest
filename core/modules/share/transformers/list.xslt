@@ -284,7 +284,7 @@
                                             -->
                                         </xsl:otherwise>
                                     </xsl:choose>
-                                    <thead style="visibility: hidden;">
+                                    <thead style="display: none;">
                                         <tr>
                                         <xsl:for-each select="$FIELDS[@type!='hidden']">
                                             <xsl:choose>

@@ -264,7 +264,6 @@ ul.toolbar li:is(.select, .custom_select) { border: 0; background: none; padding
 ul.toolbar .label { margin: 0 10px; }
 ul.toolbar .text { color: var(--a-color-muted); }
 ul.toolbar li select { width: 150px; padding: .35rem .5rem; margin-right: 15px; border: 1px solid var(--a-color-border); border-radius: var(--a-radius-ui); }
-ul.toolbar li input[type="file"] { visibility: hidden; position: absolute; top: -50px; left: -50px; }
 ul.toolbar li.delete_btn { margin-left: auto; }
 ul.toolbar li:is(.save_btn, .close_btn) { background: var(--a-color-primary); border-color: var(--a-color-primary); color: var(--a-color-primary-fg); }
 ul.toolbar li:is(.save_btn, .close_btn).highlighted { filter: brightness(1.1); }

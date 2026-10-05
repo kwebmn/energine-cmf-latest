@@ -124,8 +124,6 @@ export class FileRepository extends GridManager {
      * @param {Object} result
      */
     processServerResponse(result) {
-        // todo: It is better to set this width as fixed over CSS.
-        this.grid.headOff.querySelector('th').style.width = '100px';
         if (!this.initialized) {
             this.grid.setMetadata(result.meta);
             this.initialized = true;
@@ -231,16 +229,6 @@ export class FileRepository extends GridManager {
             pid += '/';
         }
         Energine.request(this.singlePath + pid + 'copy/', '', () => document.FileRepository.reload());
-    }
-
-    /**
-     * Загрузка zip-архива (кнопка-файл панели).
-     *
-     * @param {Object} data прочитанный файл
-     */
-    uploadZip(data) {
-        Energine.request(this.singlePath + 'upload-zip', 'PID=' + this.grid.getSelectedRecord().upl_pid + '&data='
-            + encodeURIComponent(data.result), (response) => console.log(response));
     }
 
     /**

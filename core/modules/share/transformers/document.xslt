@@ -101,9 +101,7 @@
             <xsl:when test="not($DOC_PROPS[@name='single'])">
                 <xsl:apply-templates select="." mode="stylesheets"/>
             </xsl:when>
-            <xsl:otherwise>
-                <!--<script type="text/javascript">window.singleMode = true;</script>-->
-            </xsl:otherwise>
+            <xsl:otherwise/>
         </xsl:choose>
         <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
         <meta name="csrf-token" content="{$CSRF}"/>
@@ -128,11 +126,9 @@
             'media' : '<xsl:value-of select="$MEDIA_URL"/>',
             'root' : '<xsl:value-of select="$MAIN_SITE"/>',
             'lang' : '<xsl:value-of select="$DOC_PROPS[@name='lang']/@real_abbr"/>',
-            'csrf' : '<xsl:value-of select="$CSRF"/>',
-            'singleMode':<xsl:value-of select="boolean($DOC_PROPS[@name='single'])"/>
+            'csrf' : '<xsl:value-of select="$CSRF"/>'
             });
         </script>
-        <xsl:apply-templates select="/document//javascript/variable" mode="head"/>
         <xsl:apply-templates select="." mode="scripts"/>
         <script type="module">
             <xsl:for-each select="//javascript/behavior[not(@name = preceding::behavior/@name)]">
@@ -262,27 +258,6 @@
     </xsl:template>
 
     <xsl:template match="/document/javascript"/>
-
-    <xsl:template match="/document//javascript/variable"/>
-
-    <xsl:template match="/document//javascript/variable" mode="head">
-        <script type="text/javascript">
-            <xsl:text>window["</xsl:text>
-            <xsl:value-of select="@name"/>
-            <xsl:text>"] = </xsl:text>
-            <xsl:choose>
-                <xsl:when test="@type='json'">
-                    <xsl:value-of select="."/>
-                </xsl:when>
-                <xsl:otherwise>
-                    <xsl:text>"</xsl:text>
-                    <xsl:value-of select="."/>
-                    <xsl:text>"</xsl:text>
-                </xsl:otherwise>
-            </xsl:choose>
-            <xsl:text>;</xsl:text>
-        </script>
-    </xsl:template>
 
 
 </xsl:stylesheet>
