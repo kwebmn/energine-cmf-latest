@@ -6,6 +6,7 @@ const { chromium } = require(process.env.PLAYWRIGHT || '/root/.npm/_npx/e41f203b
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { execFileSync } = require('child_process');
 
 if (!process.env.BASE || !process.env.ADMIN_PASSWORD) {
     console.error('run: envsh=$(php8.5 ../env.php --shell) && eval "$envsh" first');
@@ -92,6 +93,11 @@ const SCREENS = [
                 check(`${name}, ${w}px: удалённые картинки и шрифты не запрашиваются`, !oldImg.length, oldImg.join(' '));
                 const over = await p.evaluate(() => document.documentElement.scrollWidth - innerWidth).catch(() => 0);
                 check(`${name}, ${w}px: без горизонтальной прокрутки страницы`, over <= 0, `лишние ${over} px`);
+                // кнопки панелей: доступное имя и Tab (п. 4–5 Review Focus)
+                const bad = await p.evaluate(() => [...document.querySelectorAll('ul.toolbar li:not(.separator):not(.select):not(.custom_select)')]
+                    .filter((li) => !(li.getAttribute('aria-label') || li.textContent || li.title).trim() || li.tabIndex !== 0)
+                    .map((li) => li.className)).catch(() => []);
+                check(`${name}, ${w}px: у кнопок панелей доступное имя и Tab`, !bad.length, bad.join(' | '));
             }
             await p.close();
         }
@@ -342,6 +348,23 @@ const SCREENS = [
             const want = 'properties,theme,base,components,admin,utilities';
             const site = await order(BASE + 'stylesheets/main/main.css'), admin = await order(BASE + 'stylesheets/admin.css');
             check('порядок слоёв в main.css и admin.css один: ' + want, site === want && admin === want, JSON.stringify({ site, admin }));
+        }
+
+        // в каталоге картинок ядра только используемое: на каждый файл есть ссылка в коде (не в комментарии XML)
+        {
+            const R = path.resolve(__dirname, '../..');
+            const dir = path.join(R, 'core/modules/share/images');
+            const files = execFileSync('find', [dir, '-type', 'f'], { encoding: 'utf8' }).trim().split('\n').map((f) => path.relative(dir, f));
+            const unused = files.filter((f) => {
+                let out = '';
+                try {
+                    out = execFileSync('grep', ['-rl', '--include=*.js', '--include=*.xslt', '--include=*.php', '--include=*.xml', '--include=*.css',
+                        path.basename(f), path.join(R, 'core'), path.join(R, 'site'), path.join(R, 'setup')], { encoding: 'utf8' });
+                } catch (e) { out = ''; }
+                return !out.split('\n').filter(Boolean).some((hit) => !hit.includes('/images/')
+                    && fs.readFileSync(hit, 'utf8').replace(/<!--[\s\S]*?-->/g, '').includes(path.basename(f)));
+            });
+            check('картинки ядра: каждая используется', !unused.length, unused.join(' '));
         }
 
         // значки: спрайт и Energine.icon
