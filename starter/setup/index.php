@@ -68,7 +68,9 @@ try {
 }
 catch (\Exception $e) {
     if(ob_get_length()) ob_end_clean();
-    echo 'При установке все пошло не так.', PHP_EOL, 'А точнее :', PHP_EOL, $e->getMessage();
+    echo 'При установке все пошло не так.', PHP_EOL, 'А точнее :', PHP_EOL, $e->getMessage(), PHP_EOL;
+    // the exit status tells scripts that setup failed
+    exit(1);
 }
 
 $data = ob_get_contents();

@@ -24,7 +24,7 @@ INSERT INTO `apps_feedback` (`feed_id`, `feed_date`, rcp_id, `feed_email`, `feed
 --
 
 INSERT INTO `apps_feedback_recipient` (`rcp_id`, `rcp_recipients`, `rcp_order_num`) VALUES
-(5, 'demo@energine.org', 1);
+(5, 'admin@example.com', 1);
 
 --
 -- Дамп данных таблицы `apps_feedback_recipient_translation`
@@ -133,7 +133,7 @@ INSERT INTO `apps_vote_translation` (`vote_id`, `lang_id`, `vote_name`) VALUES
 --
 
 INSERT INTO `form_5` (`pk_id`, `form_date`, `form_5_field_2`, `form_5_field_3_email`, `form_5_field_4_phone`, `form_5_field_5_multi`, `form_5_field_6`) VALUES
-(5, '2013-05-10 14:51:57', '344334', 'demo@energine.org', '233223233223', NULL, 1);
+(5, '2013-05-10 14:51:57', '344334', 'visitor@example.com', '233223233223', NULL, 1);
 
 --
 -- Дамп данных таблицы `form_5_field_5_multi_values`
@@ -179,7 +179,7 @@ INSERT INTO `form_5_field_6_translation` (`fk_id`, `lang_id`, `fk_name`) VALUES
 --
 
 INSERT INTO `frm_forms` (`form_id`, `form_creation_date`, `form_is_active`, `form_email_adresses`) VALUES
-(5, '2013-04-18 11:57:00', 1, 'demo@energine.org');
+(5, '2013-04-18 11:57:00', 1, 'admin@example.com');
 
 --
 -- Дамп данных таблицы `frm_forms_translation`

@@ -11,7 +11,7 @@ use Symfony\Component\Console\Application;
 error_reporting(E_ALL);
 
 require dirname(__DIR__) . '/vendor/autoload.php';
-// the project lives in private/project, htdocs is the ISPConfig document root web/
+// the project root is one level above cli/; htdocs/ is the web server's document root
 require_once(dirname(__DIR__) . '/htdocs/bootstrap.php');
 
 E()->getLanguage()->setCurrent(E()->getLanguage()->getDefault());
