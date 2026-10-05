@@ -258,6 +258,8 @@
     </xsl:template>
 
     <xsl:template match="/document/javascript"/>
+    <!-- запросы к базе (?debug): только для чтения в XML -->
+    <xsl:template match="/document/queries"/>
 
 
 </xsl:stylesheet>

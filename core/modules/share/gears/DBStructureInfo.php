@@ -47,15 +47,15 @@ class DBStructureInfo extends Primitive {
 	/**
 	 * PDO (PHP Data Objects).
 	 *
-	 * @var \PDO $pdo
+	 * @var Db $db — соединение: запросы схемы идут через Db::run (общий счётчик и журнал)
 	 */
-	private $pdo;
+	private $db;
 
 	/**
-	 * @param \PDO $pdo PDO instance.
+	 * @param Db $db
 	 */
-	public function __construct(\PDO $pdo) {
-		$this->pdo = $pdo;
+	public function __construct(Db $db) {
+		$this->db = $db;
 		$mc = E()->getCache();
 		if ($mc->isEnabled()) {
 			if (!($this->structure = $mc->retrieve(Cache::DB_STRUCTURE_KEY))) {
@@ -73,7 +73,7 @@ class DBStructureInfo extends Primitive {
 	 */
 	private function collectDBInfo() {
         $result = array();
-		$res = $this->pdo->query('/*ms=slave*/SHOW TABLES');
+		$res = $this->db->run('/*ms=slave*/SHOW TABLES');
 		if ($res) {
 			while ($tableName = $res->fetchColumn()) {
 				$result[$tableName] = $this->getTableMeta($tableName);
@@ -100,7 +100,7 @@ class DBStructureInfo extends Primitive {
 			$query = '/*ms=slave*/SHOW TABLES '.((sizeof($FQTableName) == 2) ? ' FROM `'.reset($FQTableName).'` ' : '').' LIKE \''.end($FQTableName).'\'';
 
 			//если существует в списке таблиц
-			if ($this->pdo->query($query) && $this->pdo->query($query)->rowCount()) {
+			if ($this->db->run($query)->rowCount()) {
 				$result = true;
                 $this->structure[$tableName] = array();
             }
@@ -152,7 +152,7 @@ class DBStructureInfo extends Primitive {
 	 * @return array|bool
 	 */
 	private function analyzeView($viewName) {
-		if (!($res = $this->pdo->query('/*ms=slave*/SHOW COLUMNS FROM `'.$viewName.'`')->fetchAll(\PDO::FETCH_ASSOC))) return false;
+		if (!($res = $this->db->run('/*ms=slave*/SHOW COLUMNS FROM `'.$viewName.'`')->fetchAll(\PDO::FETCH_ASSOC))) return false;
 		//Считаем что первое поле - PK
 
         $result = array();
@@ -191,7 +191,7 @@ class DBStructureInfo extends Primitive {
 			$dbName = $dTableName[0];
 		}
 
-		$res = $this->pdo->query($query);
+		$res = $this->db->run($query);
 
 		if (!$res) {
 			throw new SystemException('BAD_TABLE_NAME '.$tableName, SystemException::ERR_DB, $query);

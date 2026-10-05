@@ -292,6 +292,10 @@ namespace Energine\share\gears {
                         \PDO::ATTR_STRINGIFY_FETCHES => true
                     ]
                 );
+                // отладка: тексты запросов попадают в XML страницы (?debug → document/queries)
+                if ($this->getConfigValue('site.debug')) {
+                    $this->entities['QAL']->logQueries(true);
+                }
             }
 
             return $this->entities['QAL'];

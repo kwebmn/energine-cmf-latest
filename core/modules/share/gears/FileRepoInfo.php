@@ -59,15 +59,9 @@ class FileRepoInfo extends Primitive {
      * @var \finfo $finfo
      */
     private $finfo;
-    /**
-     * @var \PDOStatement $getFInfoSQL
-     */
-    private $getFInfoSQL;
-
     public function __construct() {
         parent::__construct();
         $this->finfo = new \finfo(FILEINFO_MIME_TYPE);
-        $this->getFInfoSQL = $this->dbh->getPDO()->prepare('SELECT upl_internal_type as type, upl_mime_type as mime, upl_width as width, upl_height as height FROM share_uploads WHERE upl_path = ?');
     }
 
     /**
@@ -81,9 +75,9 @@ class FileRepoInfo extends Primitive {
      */
     public function analyze($filename, $forceReadFromFile = false) {
         try {
+            // сведения о файле — из репозитория (Db::row: один счётчик запросов), иначе — чтение самого файла
             if ($forceReadFromFile
-                || !$this->getFInfoSQL->execute(array($filename))
-                || !($result = $this->getFInfoSQL->fetch(\PDO::FETCH_ASSOC))
+                || !($result = $this->dbh->row('SELECT upl_internal_type as type, upl_mime_type as mime, upl_width as width, upl_height as height FROM share_uploads WHERE upl_path = ?', [$filename]))
             ) {
                 if(!($result = $this->getFileInfoData($filename))){
                     throw new \Exception();

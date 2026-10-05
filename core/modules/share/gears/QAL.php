@@ -25,12 +25,11 @@ final class QAL;
  *
  * @final
  */
-final class QAL extends Primitive {
+final class QAL extends Db {
     /**
      * Instance of PDO class (PHP Data Objects).
      * @var \PDO $pdo
      */
-    private $pdo;
 
     /**
      * Last query to the data base.
@@ -218,26 +217,16 @@ final class QAL extends Primitive {
      */
     public function __construct($dsn, $username, $password, array $driverOptions, $charset = 'utf8') {
         try {
-            $this->pdo = new \PDO($dsn, $username, $password, $driverOptions);
-            $this->pdo->query('SET NAMES ' . $charset);
-            $this->pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+            $pdo = new \PDO($dsn, $username, $password, $driverOptions);
+            $pdo->query('SET NAMES ' . $charset);
+            $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+            parent::__construct($pdo);
 
-            $this->dbCache = new DBStructureInfo($this->pdo);
+            $this->dbCache = new DBStructureInfo($this);
 
         } catch (\PDOException $e) {
             throw new SystemException('Unable to connect. The site is temporarily unavailable.', SystemException::ERR_DB, 'The site is temporarily unavailable');
         }
-    }
-
-    /**
-     * Get @link QAL::$pdo \PDO@endlink.
-     *
-     * Use this for direct work with DB.
-     *
-     * @return \PDO
-     */
-    public function getPDO() {
-        return $this->pdo;
     }
 
     //todo VZ: What is the alternative?
@@ -387,21 +376,13 @@ final class QAL extends Primitive {
                 }
 
 
-                if (!($result = $this->pdo->prepare($realQuery))) {
-                    throw new \UnexpectedValueException();
-                }
-
-                if (!$result->execute($realData)) {
-                    throw new \UnexpectedValueException();
-                }
-
+                // выполнение — через Db::run: один счётчик и журнал запросов на весь объект
+                $result = $this->run($realQuery, $realData);
             } else {
-                if (!$result = $this->pdo->query($request)) {
-                    throw new \UnexpectedValueException();
-                }
+                $result = $this->run($request);
             }
         } catch (\UnexpectedValueException $e) {
-            // PDO работает в режиме исключений, сюда попадём только при другом режиме; раньше исключение создавалось, но не бросалось
+            // PDO работает в режиме исключений (ERRMODE_EXCEPTION): сюда не попасть, оставлено на случай другого режима
             throw new \PDOException((string)$this->pdo->errorInfo()[2]);
         }
         $this->lastQuery = $result->queryString;

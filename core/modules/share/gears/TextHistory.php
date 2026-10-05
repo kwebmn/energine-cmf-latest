@@ -27,9 +27,8 @@ class TextHistory {
      */
     public function store(int $tbId, int $langId, string $content, array $log = []): void {
         // блок читается до записи: при очистке последнего перевода его строка исчезнет
-        $block = $this->dbh->select('share_textblocks', ['smap_id', 'tb_num'], ['tb_id' => $tbId]);
-        $block = $block ? $block[0] : ['smap_id' => null, 'tb_num' => ''];
-        $current = $this->dbh->getScalar(self::TRANSLATION, 'tb_content', ['tb_id' => $tbId, 'lang_id' => $langId]);
+        $block = $this->dbh->row('SELECT smap_id, tb_num FROM share_textblocks WHERE tb_id = ?', [$tbId]) ?? ['smap_id' => null, 'tb_num' => ''];
+        $current = $this->dbh->scalar('SELECT tb_content FROM ' . self::TRANSLATION . ' WHERE tb_id = ? AND lang_id = ?', [$tbId, $langId]);
         $had = ($current !== false && $current !== null);
         if ($had && $current === $content) {
             return; // текст не изменился — ни версии, ни события
@@ -39,21 +38,21 @@ class TextHistory {
             if ($uid = (int)E()->getUser()->getID()) {
                 $row['u_id'] = $uid;
             }
-            $this->dbh->modify(QAL::INSERT, self::TABLE, $row);
-            $this->dbh->modify('DELETE FROM ' . self::TABLE . ' WHERE tb_id = %s AND lang_id = %s AND tbh_id NOT IN '
-                . '(SELECT tbh_id FROM (SELECT tbh_id FROM ' . self::TABLE . ' WHERE tb_id = %s AND lang_id = %s ORDER BY tbh_id DESC LIMIT '
-                . self::LIMIT . ') kept)', $tbId, $langId, $tbId, $langId);
+            $this->dbh->insert(self::TABLE, $row);
+            $this->dbh->exec('DELETE FROM ' . self::TABLE . ' WHERE tb_id = ? AND lang_id = ? AND tbh_id NOT IN '
+                . '(SELECT tbh_id FROM (SELECT tbh_id FROM ' . self::TABLE . ' WHERE tb_id = ? AND lang_id = ? ORDER BY tbh_id DESC LIMIT '
+                . self::LIMIT . ') kept)', [$tbId, $langId, $tbId, $langId]);
         }
         if (trim($content) !== '') {
             if ($had) {
-                $this->dbh->modify(QAL::UPDATE, self::TRANSLATION, ['tb_content' => $content], ['tb_id' => $tbId, 'lang_id' => $langId]);
+                $this->dbh->update(self::TRANSLATION, ['tb_content' => $content], ['tb_id' => $tbId, 'lang_id' => $langId]);
             } else {
-                $this->dbh->modify(QAL::INSERT, self::TRANSLATION, ['tb_id' => $tbId, 'lang_id' => $langId, 'tb_content' => $content]);
+                $this->dbh->insert(self::TRANSLATION, ['tb_id' => $tbId, 'lang_id' => $langId, 'tb_content' => $content]);
             }
         } else {
-            $this->dbh->modify(QAL::DELETE, self::TRANSLATION, null, ['tb_id' => $tbId, 'lang_id' => $langId]);
-            if (!$this->dbh->select(self::TRANSLATION, ['tb_id'], ['tb_id' => $tbId])) {
-                $this->dbh->modify(QAL::DELETE, 'share_textblocks', null, ['tb_id' => $tbId]);
+            $this->dbh->delete(self::TRANSLATION, ['tb_id' => $tbId, 'lang_id' => $langId]);
+            if ($this->dbh->scalar('SELECT COUNT(*) FROM ' . self::TRANSLATION . ' WHERE tb_id = ?', [$tbId]) == 0) {
+                $this->dbh->delete('share_textblocks', ['tb_id' => $tbId]);
             }
         }
         $this->event($block['smap_id'] ? (int)$block['smap_id'] : null, (string)$block['tb_num'], $langId, $content, $log);
@@ -65,17 +64,16 @@ class TextHistory {
      * @return array[] tbh_id, tbh_date, u_id, tbh_content
      */
     public function versions(int $tbId, int $langId): array {
-        return $this->dbh->select('SELECT tbh_id, tbh_date, u_id, tbh_content FROM ' . self::TABLE
-            . ' WHERE tb_id = %s AND lang_id = %s ORDER BY tbh_id DESC', $tbId, $langId) ?: [];
+        return $this->dbh->rows('SELECT tbh_id, tbh_date, u_id, tbh_content FROM ' . self::TABLE
+            . ' WHERE tb_id = ? AND lang_id = ? ORDER BY tbh_id DESC', [$tbId, $langId]);
     }
 
     /**
      * Версия, если она принадлежит этому блоку и языку.
      */
     public function version(int $tbhId, int $tbId, int $langId): ?array {
-        $rows = $this->dbh->select(self::TABLE, ['tbh_id', 'tbh_date', 'u_id', 'tbh_content'],
-            ['tbh_id' => $tbhId, 'tb_id' => $tbId, 'lang_id' => $langId]);
-        return $rows ? $rows[0] : null;
+        return $this->dbh->row('SELECT tbh_id, tbh_date, u_id, tbh_content FROM ' . self::TABLE
+            . ' WHERE tbh_id = ? AND tb_id = ? AND lang_id = ?', [$tbhId, $tbId, $langId]);
     }
 
     /**
@@ -96,7 +94,7 @@ class TextHistory {
             (new $class(TextBlock::class, mb_substr($page . '#' . $num, 0, 100)))->write('UPDATE', $data); // al_objectname — varchar(100)
         }
         if ($smapId) {
-            $this->dbh->modify(QAL::UPDATE, 'share_sitemap', ['smap_last_mod' => date('Y-m-d H:i:s')], ['smap_id' => $smapId]);
+            $this->dbh->update('share_sitemap', ['smap_last_mod' => date('Y-m-d H:i:s')], ['smap_id' => $smapId]);
         }
     }
 }

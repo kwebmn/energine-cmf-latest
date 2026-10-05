@@ -322,6 +322,17 @@ final class Document extends Primitive implements IDocument {
             $dom_module->setAttribute('version', $version);
             $dom_javascript->appendChild($dom_module);
         }
+
+        // отладка: сколько и каких запросов к базе понадобилось странице (?debug → document/@queries, document/queries)
+        if ($this->getConfigValue('site.debug')) {
+            $db = E()->getDB();
+            $dom_root->setAttribute('queries', (string)$db->queryCount());
+            $dom_queries = $this->doc->createElement('queries');
+            foreach ($db->queryLog() as $sql) {
+                $dom_queries->appendChild($this->doc->createElement('query'))->appendChild($this->doc->createTextNode($sql));
+            }
+            $dom_root->appendChild($dom_queries);
+        }
     }
 
     /**

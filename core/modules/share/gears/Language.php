@@ -75,8 +75,9 @@ final class Language extends Primitive{
                 $user = E()->getUser();
                 $groups = $user->isAuthenticated() ? array_map('intval', (array)$user->getGroups()) : [];
                 if ($groups) {
-                    $this->editor = (bool)$this->dbh->getScalar('SELECT COUNT(*) FROM share_access_level a JOIN share_sitemap s USING (smap_id) '
-                        . 'WHERE s.smap_pid IS NULL AND a.right_id = ' . (int)ACCESS_FULL . ' AND a.group_id IN (' . implode(',', $groups) . ')');
+                    $this->editor = (bool)$this->dbh->scalar('SELECT COUNT(*) FROM share_access_level a JOIN share_sitemap s USING (smap_id) '
+                        . 'WHERE s.smap_pid IS NULL AND a.right_id = ? AND a.group_id IN (' . rtrim(str_repeat('?, ', count($groups)), ', ') . ')',
+                        array_merge([(int)ACCESS_FULL], $groups));
                 }
             } catch (\Throwable $e) {
                 $this->editor = false;

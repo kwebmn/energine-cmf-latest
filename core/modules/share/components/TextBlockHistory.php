@@ -54,16 +54,17 @@ class TextBlockHistory extends Grid {
         if ($rows && $this->getState() === 'getRawData') {
             // текст версии не входит в описание данных грида (его не выводят) — читается отдельно для начала текста
             $texts = [];
-            foreach ($this->dbh->select(TextHistory::TABLE, ['tbh_id', 'tbh_content'],
-                ['tbh_id' => array_map('intval', array_column($rows, 'tbh_id'))]) ?: [] as $t) {
+            $ids = array_map('intval', array_column($rows, 'tbh_id'));
+            foreach ($this->dbh->rows('SELECT tbh_id, tbh_content FROM ' . TextHistory::TABLE . ' WHERE tbh_id IN ('
+                . rtrim(str_repeat('?, ', count($ids)), ', ') . ')', $ids) as $t) {
                 $texts[(int)$t['tbh_id']] = (string)$t['tbh_content'];
             }
             $names = [];
             foreach ($rows as &$row) {
                 $uid = (int)($row['u_id'] ?? 0);
                 if ($uid && !array_key_exists($uid, $names)) {
-                    $user = $this->dbh->select('user_users', ['u_fullname', 'u_name'], ['u_id' => $uid]);
-                    $names[$uid] = $user ? (string)($user[0]['u_fullname'] ?: $user[0]['u_name']) : '';
+                    $user = $this->dbh->row('SELECT u_fullname, u_name FROM user_users WHERE u_id = ?', [$uid]);
+                    $names[$uid] = $user ? (string)($user['u_fullname'] ?: $user['u_name']) : '';
                 }
                 $row['tbh_author'] = $uid ? $names[$uid] : '';
                 $text = html_entity_decode(strip_tags($texts[(int)$row['tbh_id']] ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8');
