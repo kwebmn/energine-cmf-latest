@@ -312,9 +312,18 @@ SMTP-сервер, в конфиг площадки добавляется бл�
 bash $R/tests/setup-linker.sh      # linker не трогает модули в core/modules
 bash $R/tests/no-traces.sh         # нет следов вырезанного (этапы 1–7) и MooTools (этап 8)
 bash $R/tests/regression.sh        # все сценарные наборы и журнал ошибок PHP
+bash $R/tools/get-phpstan.sh       # PHPStan (phar, сумма сверяется) — один раз, в git не попадает
+bash $R/tests/phpstan.sh           # PHP: ошибки сверх базовой линии phpstan-baseline.neon
+bash $R/tests/jscheck.sh           # JS: типы без сборки (tsc --noEmit по JSDoc, нужен Node)
 bash $R/tests/tools/install-check.sh   # установщик на временном экземпляре MariaDB
 bash $R/tests/tools/fresh-check.sh     # установка с нуля и демо == база площадки
 ```
+
+**Статический анализ.** PHPStan уровня 2 (`phpstan.neon`) и `tsc --noEmit` по JSDoc (`jsconfig.json`) входят в
+регрессию: новая ошибка — провал. Известные ошибки PHP записаны в `phpstan-baseline.neon` (11 вызовов методов
+конкретных билдеров через `getBuilder()`); исправили одну — обновите линию:
+`php8.5 tools/phpstan.phar analyse --generate-baseline`. Сайту ни PHPStan, ни Node не нужны — это инструменты
+разработчика; на машине без них наборы пропускаются только явно: `PHPSTAN_SKIP=1`, `JSCHECK_SKIP=1`.
 
 Обход браузером и подробности по тестам — в `tests/README.md`.
 

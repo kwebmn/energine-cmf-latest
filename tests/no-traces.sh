@@ -36,7 +36,8 @@ CODE_DIRS=(core site htdocs configs setup tests)
 EXCLUDE=(--exclude=no-traces.sh --exclude-dir=tools
          --exclude-dir=ckeditor --exclude-dir=FileAPI --exclude-dir=select2
          --exclude-dir=jwplayer --exclude-dir=resizer --exclude-dir=jodit
-         --exclude='*.out' --exclude='*cookies.txt' --exclude=smoke-write.json)
+         --exclude='*.out' --exclude='*cookies.txt' --exclude=smoke-write.json
+         --exclude-dir=cache --exclude-dir=node_modules) # кеш PHPStan (tests/phpstan/cache) и пакеты npm — не наш код
 KEPT_DIRS=(core/modules/share core/modules/user core/modules/seo site htdocs configs tests)
 
 # CODE — выражение для кода; FILES — файлы, которых быть не должно
