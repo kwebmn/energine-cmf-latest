@@ -82,7 +82,10 @@ class ComponentConfig {
 
             if ($config) {
                 try {
-                    $this->config = simplexml_load_file($config /*, 'ConfigElement'*/);
+                    // базовый конфиг (extends) ищется так же, как сам конфиг: файл проекта, сайт, модуль
+                    $this->config = self::loadXml($config, fn($name) => $this->getConfigPath($name, $moduleName));
+                } catch (\RuntimeException $e) {
+                    throw new SystemException($e->getMessage(), SystemException::ERR_DEVELOPER, $config);
                 } catch (\Exception  $e) {
                     throw new SystemException('ERR_DEV_BAD_CONFIG_FILE', SystemException::ERR_DEVELOPER, $config);
                 }
@@ -95,6 +98,65 @@ class ComponentConfig {
             throw new SystemException('ERR_DEV_STRANGE', SystemException::ERR_DEVELOPER, func_get_args());
             //поскольку быть этого не может никогда
         }
+    }
+
+    /**
+     * Конфиг с наследованием: <configuration extends="Базовый.component.xml"> — берутся состояния базового (рекурсивно),
+     * одноимённые заменяются на месте, новые добавляются в конец, <state name="…" remove="1"/> убирает состояние.
+     * Порядок — как у базового: от него зависят веса шаблонов адресов.
+     *
+     * @param string $file путь к файлу конфига
+     * @param callable $resolve имя базового файла => путь или false
+     * @param string[] $seen уже загруженные файлы цепочки (защита от цикла)
+     * @throws \RuntimeException ERR_DEV_CONFIG_EXTENDS_LOOP, ERR_DEV_NO_BASE_CONFIG
+     */
+    public static function loadXml(string $file, callable $resolve, array $seen = []): \SimpleXMLElement {
+        $real = realpath($file) ?: $file;
+        if (in_array($real, $seen, true)) {
+            throw new \RuntimeException('ERR_DEV_CONFIG_EXTENDS_LOOP: ' . implode(' → ', array_merge($seen, [$real])));
+        }
+        $doc = new \DOMDocument();
+        if (!@$doc->load($file)) {
+            throw new \Exception('ERR_DEV_BAD_CONFIG_FILE');
+        }
+        $root = $doc->documentElement;
+        $extends = $root->getAttribute('extends');
+        if ($extends === '') {
+            return simplexml_import_dom($doc);
+        }
+        $baseFile = $resolve($extends);
+        if (!$baseFile) {
+            throw new \RuntimeException('ERR_DEV_NO_BASE_CONFIG: ' . $extends);
+        }
+        $base = dom_import_simplexml(self::loadXml($baseFile, $resolve, array_merge($seen, [$real])))->ownerDocument;
+        $baseRoot = $base->documentElement;
+        $states = [];
+        foreach ($baseRoot->childNodes as $node) {
+            if ($node instanceof \DOMElement && $node->tagName === 'state') {
+                $states[$node->getAttribute('name')] = $node;
+            }
+        }
+        foreach ($root->childNodes as $node) {
+            if (!$node instanceof \DOMElement || $node->tagName !== 'state') {
+                continue;
+            }
+            $name = $node->getAttribute('name');
+            if ($node->getAttribute('remove') === '1') {
+                if (isset($states[$name])) {
+                    $baseRoot->removeChild($states[$name]);
+                    unset($states[$name]);
+                }
+                continue;
+            }
+            $copy = $base->importNode($node, true);
+            if (isset($states[$name])) {
+                $baseRoot->replaceChild($copy, $states[$name]);
+            } else {
+                $baseRoot->appendChild($copy);
+            }
+            $states[$name] = $copy;
+        }
+        return simplexml_import_dom($base);
     }
 
     /**

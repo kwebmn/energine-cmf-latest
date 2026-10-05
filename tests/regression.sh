@@ -36,6 +36,7 @@ echo "### component-states"; php8.5 component-states.php
 echo "### dev-tools"; php8.5 dev-tools.php
 echo "### untranslated"; php8.5 untranslated.php
 echo "### links"; php8.5 links.php
+echo "### config-extends"; php8.5 config-extends.php
 
 echo "### mail"
 php8.5 smoke-mail.php
