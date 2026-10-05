@@ -61,3 +61,8 @@ INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_va
         END
       FROM `share_lang_tags` t JOIN `share_languages` l
      WHERE t.`ltag_name` IN ('FIELD_LANG_IS_ACTIVE', 'TXT_LANG_INACTIVE', 'ERR_LANG_DEFAULT_INACTIVE', 'HELP_LANGUAGEEDITOR_MAIN');
+
+-- 3. Подпись скрытого ключа грида истории (setup check нашёл непереведённую FIELD_TBH_ID).
+INSERT IGNORE INTO `share_lang_tags` (`ltag_name`) VALUES ('FIELD_TBH_ID');
+INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`)
+    SELECT t.`ltag_id`, l.`lang_id`, '№' FROM `share_lang_tags` t JOIN `share_languages` l WHERE t.`ltag_name` = 'FIELD_TBH_ID';

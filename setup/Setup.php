@@ -647,6 +647,176 @@ final class Setup {
         }
     }
 
+
+    /**
+     * Памятка владельцу: docs/OWNER.md с подставленными адресом сайта, входа и админки и списком языков:
+     *   php web/index.php setup manual [--out=ФАЙЛ]
+     * Без --out печатается в вывод. Секретов в памятке нет.
+     */
+    private function manualAction(...$args) {
+        $o = $this->options($args, ['out'], []);
+        $this->checkDBConnection();
+        $site = $this->config['site'] ?? [];
+        $domain = (string)($site['domain'] ?? '');
+        $root = '/' . trim((string)($site['root'] ?? '/'), '/');
+        $url = 'https://' . $domain . ($root === '/' ? '/' : $root . '/');
+        $languages = [];
+        foreach ($this->dbConnect->query('SELECT lang_name, lang_abbr, lang_default, lang_is_active FROM share_languages ORDER BY lang_order_num') as $l) {
+            $notes = array_filter([$l['lang_default'] ? 'по умолчанию' : '', empty($l['lang_is_active']) ? 'в подготовке' : '']);
+            $languages[] = $l['lang_name'] . ' (' . $l['lang_abbr'] . ($notes ? ': ' . implode(', ', $notes) : '') . ')';
+        }
+        $text = strtr((string)file_get_contents(ROOT_DIR . '/docs/OWNER.md'), [
+            '{SITE}' => $url, '{ADMIN_URL}' => $url . 'admin/', '{LOGIN_URL}' => $url . 'login/',
+            '{LANGUAGES}' => implode(', ', $languages), '{DATE}' => date('d.m.Y'),
+        ]);
+        if (preg_match('/\{[A-Z_]+\}/', $text, $m)) {
+            throw new \Exception('В памятке остался заполнитель ' . $m[0]);
+        }
+        if (!empty($o['out'])) {
+            if (file_put_contents($o['out'], $text) === false) {
+                throw new \Exception('Не удалось записать ' . $o['out']);
+            }
+            $this->text('Памятка записана: ', $o['out']);
+        } else {
+            echo $text;
+        }
+    }
+
+    /**
+     * Проверка перед сдачей сайта владельцу — строки OK / WARN / FAIL, выход 1 при FAIL; базу не меняет:
+     *   php web/index.php setup check
+     * Отладка выключена; адрес сайта задан; нет демо-пользователей; нет статического web/robots.txt; у включённых
+     * публичных страниц есть названия на открытых языках (тексты — предупреждение); битых ссылок и непереведённых
+     * констант нет; предупреждения — языки «в подготовке», NOINDEX у обычных страниц, почта без SMTP.
+     */
+    private function checkAction() {
+        $this->title('Проверка перед сдачей');
+        $this->checkDBConnection();
+        $db = $this->dbConnect;
+        $site = $this->config['site'] ?? [];
+        $counts = ['OK' => 0, 'WARN' => 0, 'FAIL' => 0];
+        $say = function (string $level, string $text, array $items = []) use (&$counts) {
+            $counts[$level]++;
+            $this->text($level, str_repeat(' ', 5 - strlen($level)), $text);
+            foreach (array_slice($items, 0, 10) as $item) {
+                $this->text('       ', $item);
+            }
+            if (count($items) > 10) {
+                $this->text('       … ещё ', count($items) - 10);
+            }
+        };
+
+        // отладка и адрес
+        empty($site['debug']) ? $say('OK', 'отладка выключена (site.debug)')
+            : $say('FAIL', 'отладка включена (site.debug): страницы ошибок показывают посетителю подробности, ?debug открыт');
+        $domain = (string)($site['domain'] ?? '');
+        ($domain !== '' && $domain !== 'PROJECT DOMAIN NAME') ? $say('OK', 'адрес сайта задан: ' . $domain)
+            : $say('FAIL', 'адрес сайта (site.domain) не задан — переадресация на свой адрес и ссылки в письмах не работают');
+
+        // статический robots.txt веб-сервера перекрывает страницу robots сайта (NOINDEX из «Настроек сайта» не сработает)
+        is_file(HTDOCS_DIR . '/robots.txt') && !is_link(HTDOCS_DIR . '/robots.txt')
+            ? $say('FAIL', 'web/robots.txt — обычный файл: он перекрывает страницу robots.txt сайта (запрет индексации из настроек не действует); удалите его')
+            : $say('OK', 'страницу robots.txt отдаёт сайт');
+
+        // демо-пользователи
+        $demo = $db->query("SELECT u_name FROM user_users WHERE u_name LIKE '%@example.com' OR u_name LIKE '%@example.org'")->fetchAll(\PDO::FETCH_COLUMN);
+        $demo ? $say('FAIL', 'демо-пользователи на месте: ' . count($demo), $demo) : $say('OK', 'демо-пользователей нет');
+
+        // языки
+        $langs = $db->query('SELECT lang_id, lang_abbr, lang_name, lang_default, lang_is_active FROM share_languages ORDER BY lang_order_num')->fetchAll(\PDO::FETCH_ASSOC);
+        $inactive = array_filter($langs, fn($l) => empty($l['lang_is_active']));
+        $inactive ? $say('WARN', 'языки «в подготовке» (посетителям закрыты): ' . implode(', ', array_column($inactive, 'lang_name')))
+            : $say('OK', 'все языки открыты посетителям');
+        $active = array_filter($langs, fn($l) => !empty($l['lang_is_active']));
+
+        // страницы: названия на открытых языках, тексты
+        // интерфейсы IBlock, ITransformer, IDocument объявлены в файлах классов — автозагрузка их не найдёт
+        foreach (['DocumentController', 'ComponentManager', 'Utils'] as $gear) {
+            require_once CORE_DIR . '/modules/share/gears/' . $gear . '.php';
+        }
+        $system = \Energine\share\components\DivisionEditor::SYSTEM_SEGMENTS;
+        $pages = $db->query('SELECT smap_id, smap_pid, smap_segment, smap_content, smap_content_xml, smap_meta_robots FROM share_sitemap')->fetchAll(\PDO::FETCH_ASSOC);
+        $byId = array_column($pages, null, 'smap_id');
+        $path = function (int $id) use ($byId): string {
+            $parts = [];
+            for ($cur = $id; $cur && isset($byId[$cur]); $cur = (int)$byId[$cur]['smap_pid']) {
+                if ($byId[$cur]['smap_pid']) {
+                    array_unshift($parts, $byId[$cur]['smap_segment']);
+                }
+            }
+            return $parts ? implode('/', $parts) . '/' : '/';
+        };
+        $isSystem = function (int $id) use ($byId, $system): bool {
+            for ($cur = $id; $cur && isset($byId[$cur]); $cur = (int)$byId[$cur]['smap_pid']) {
+                if ($byId[$cur]['smap_pid'] && in_array($byId[$cur]['smap_segment'], $system, true)) {
+                    return true;
+                }
+            }
+            return false;
+        };
+        $titles = [];
+        foreach ($db->query('SELECT smap_id, lang_id, smap_name, smap_is_disabled FROM share_sitemap_translation') as $t) {
+            $titles[(int)$t['smap_id']][(int)$t['lang_id']] = $t;
+        }
+        $texts = [];
+        foreach ($db->query('SELECT t.smap_id, t.tb_num, tr.lang_id FROM share_textblocks t JOIN share_textblocks_translation tr USING (tb_id) WHERE t.smap_id IS NOT NULL') as $t) {
+            $texts[(int)$t['smap_id']][(int)$t['lang_id']][] = (string)$t['tb_num'];
+        }
+        $untitled = $notext = $noindex = [];
+        foreach ($pages as $page) {
+            $id = (int)$page['smap_id'];
+            if ($isSystem($id)) {
+                continue;
+            }
+            foreach ($active as $l) {
+                $tr = $titles[$id][(int)$l['lang_id']] ?? null;
+                if ($tr && (int)$tr['smap_is_disabled'] === 1) {
+                    continue;
+                }
+                if (!$tr || trim((string)$tr['smap_name']) === '') {
+                    $untitled[] = $path($id) . ' [' . $l['lang_abbr'] . ']';
+                }
+                if (empty($texts[$id][(int)$l['lang_id']])) {
+                    $notext[] = $path($id) . ' [' . $l['lang_abbr'] . ']';
+                }
+            }
+            if ($page['smap_meta_robots'] && str_contains((string)$page['smap_meta_robots'], 'NOINDEX')) {
+                $noindex[] = $path($id);
+            }
+        }
+        $untitled ? $say('FAIL', 'страницы без названия на открытом языке: ' . count($untitled), $untitled)
+            : $say('OK', 'у всех включённых страниц есть названия на открытых языках');
+        $notext ? $say('WARN', 'страницы без текстов (пустые для посетителя): ' . count($notext), $notext)
+            : $say('OK', 'у всех включённых страниц есть тексты');
+        $noindex ? $say('WARN', 'обычные страницы с NOINDEX (поисковики их не увидят): ' . count($noindex), $noindex)
+            : $say('OK', 'NOINDEX только у служебных страниц');
+
+        // ссылки в текстах
+        if ($domain !== '') {
+            $checker = new \Energine\share\gears\LinkChecker($db, HTDOCS_DIR, $domain, (string)($site['root'] ?? '/'));
+            $broken = array_filter($checker->check(), fn($b) => $b['reason'] !== \Energine\share\gears\LinkChecker::MEMBERS_ONLY);
+            $broken ? $say('FAIL', 'битые ссылки в текстах: ' . count($broken), array_map(fn($b) => $b['page'] . ' [' . $b['lang'] . ']: ' . $b['link'] . ' — ' . $b['reason'], $broken))
+                : $say('OK', 'битых ссылок в текстах нет');
+        }
+
+        // переводы
+        $untranslated = $this->getUntranslated(array_merge($this->getTransEngineCalls(), $this->getTransXmlCalls()));
+        $untranslated ? $say('FAIL', 'непереведённые константы (видно системные имена): ' . count($untranslated), array_keys($untranslated))
+            : $say('OK', 'все константы переведены');
+
+        // почта
+        $mail = $this->config['mail'] ?? [];
+        empty($mail['smtp']['host']) ? $say('WARN', 'почта без SMTP (mail.smtp): письма уходят через mail() — проверьте, что они доходят')
+            : $say('OK', 'почта через SMTP: ' . $mail['smtp']['host']);
+        (empty($mail['from']) || $mail['from'] === 'noreply@energine.org') ? $say('WARN', 'адрес отправителя писем (mail.from) не задан или из шаблона')
+            : $say('OK', 'адрес отправителя писем: ' . $mail['from']);
+
+        $this->text('Итог: OK ', $counts['OK'], ', WARN ', $counts['WARN'], ', FAIL ', $counts['FAIL']);
+        if ($counts['FAIL']) {
+            exit(1);
+        }
+    }
+
     /**
      * Новый шаблон страницы из секций визитки:
      *   php web/index.php setup page --name=<имя> --title="<название>" --sections=hero,services,cta [--title-ua="…"]

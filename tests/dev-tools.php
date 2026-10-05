@@ -117,4 +117,28 @@ chmod($trFile, $mode);
 check('setup page: translations.php не записать — отказ, шаблон не остаётся', !is_file(ROOT . '/site/modules/main/templates/content/claude_ro.content.xml')
     && file_get_contents($trFile) === $trOrig, substr((string)$out, -200));
 @unlink(ROOT . '/site/modules/main/templates/content/claude_ro.content.xml');
+// 6. setup manual: памятка владельцу с адресами площадки, без заполнителей и секретов; --out пишет файл
+$out = (string)$setup('manual');
+check('setup manual: памятка с адресами входа и админки, без заполнителей', str_contains($out, BASE . '/login/') && str_contains($out, BASE . '/admin/')
+    && !preg_match('/\{[A-Z_]+\}/', $out) && str_contains($out, 'История'), substr($out, 0, 200));
+check('setup manual: без пароля базы в тексте', !str_contains($out, (string)$GLOBALS['E']['MYSQL_PWD']));
+$mf = sys_get_temp_dir() . '/claude-manual-' . getmypid() . '.md';
+register_shutdown_function(fn() => @unlink($mf));
+$out = (string)$setup('manual', "--out=$mf");
+check('setup manual --out: файл записан', is_file($mf) && str_contains((string)file_get_contents($mf), BASE . '/login/'), substr($out, -160));
+// 7. setup check: строка OK/WARN/FAIL на каждый пункт, код выхода 1 ровно при FAIL, база не меняется
+$snap = fn() => q('SELECT (SELECT COUNT(*) FROM share_sitemap), (SELECT COUNT(*) FROM share_lang_tags), (SELECT COUNT(*) FROM user_users),
+    (SELECT COUNT(*) FROM share_textblocks_translation), (SELECT COUNT(*) FROM share_action_log), (SELECT COUNT(*) FROM share_languages WHERE lang_is_active = 1)')->fetch(PDO::FETCH_NUM);
+$before = $snap();
+$lines = [];
+exec('cd ' . escapeshellarg(WEB) . ' && runuser -u ' . escapeshellarg($owner) . ' -- php8.5 index.php setup check 2>&1', $lines, $code);
+$out = implode("\n", $lines);
+$hasFail = (bool)preg_match('/^FAIL /m', $out);
+check('setup check: строки OK/WARN/FAIL по пунктам (отладка, адрес, robots, демо, языки, страницы, ссылки, переводы, почта)',
+    preg_match_all('/^(OK|WARN|FAIL) /m', $out) >= 9 && preg_match('/отладк/u', $out) && preg_match('/robots/u', $out)
+    && preg_match('/ссыл/u', $out) && preg_match('/перевед/u', $out) && preg_match('/почт/u', $out), substr($out, 0, 300));
+check('setup check: код выхода 1 ровно при строке FAIL', ($code === 1) === $hasFail, "code=$code fail=" . var_export($hasFail, true));
+check('setup check: база не изменилась', $snap() === $before, json_encode([$before, $snap()]));
+check('setup check: итоговая строка', (bool)preg_match('/^Итог: OK \d+, WARN \d+, FAIL \d+/m', $out), substr($out, -200));
+
 done('dev-tools');
