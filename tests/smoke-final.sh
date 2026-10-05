@@ -74,10 +74,11 @@ q() { mysql -N --default-character-set=utf8mb4 -h "$DB_HOST" -u "$DB_USER" "$DB_
 page=$(q "SELECT smap_id FROM share_sitemap WHERE smap_segment = 'info'
   AND smap_pid = (SELECT smap_id FROM share_sitemap WHERE smap_pid IS NULL)")
 user=$(q "SELECT MIN(u_id) FROM user_users WHERE u_name <> '$ADMIN_EMAIL'")
+tag=$(q "SELECT ltag_id FROM share_lang_tags WHERE ltag_name = 'BTN_SAVE'")
 A=$B/admin
 for u in structure/single/divEditor/80/edit/ structure/single/divEditor/$page/edit/ structure/single/divEditor/add/80/ \
   users/single/userEditor/$user/edit/ users/single/userEditor/add/ users/roles/single/roleEditor/1/edit/ \
-  settings/single/settings/1/edit/ translations/single/transEditor/14/edit/ translations/single/transEditor/add/ \
+  settings/single/settings/1/edit/ translations/single/transEditor/$tag/edit/ translations/single/transEditor/add/ \
   translations/languages/single/langEditor/1/edit/ \
   users/single/adminPanel/file-library users/single/adminPanel/file-library/1/add/; do
   check "form" "$A/$u" 200

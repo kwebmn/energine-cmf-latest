@@ -61,6 +61,8 @@ $pdo = new PDO("mysql:host={$E['DB_HOST']};dbname={$E['DB_NAME']};charset=utf8",
     [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
 $pageId = (int)$pdo->query("SELECT smap_id FROM share_sitemap WHERE smap_segment = 'info'
     AND smap_pid = (SELECT smap_id FROM share_sitemap WHERE smap_pid IS NULL)")->fetchColumn();
+// перевод — константа, которая есть всегда (номера строк меняются при чистке справочника)
+$tagId = (int)$pdo->query("SELECT ltag_id FROM share_lang_tags WHERE ltag_name = 'BTN_SAVE'")->fetchColumn();
 $userId = (int)$pdo->query('SELECT MIN(u_id) FROM user_users WHERE u_name <> ' . $pdo->quote($E['ADMIN_EMAIL']))->fetchColumn();
 $editors = [
     'site settings'       => '/admin/settings/single/settings/1/edit/',
@@ -68,7 +70,7 @@ $editors = [
     'role'                => '/admin/users/roles/single/roleEditor/1/edit/',
     'page (division)'     => "/admin/structure/single/divEditor/$pageId/edit/",
     'user'                => "/admin/users/single/userEditor/$userId/edit/",
-    'translation'         => '/admin/translations/single/transEditor/14/edit/',
+    'translation'         => "/admin/translations/single/transEditor/$tagId/edit/",
 ];
 // права раздела сохраняются тем же запросом, что и форма; роундтрип не должен их менять
 $rights = fn($id) => $pdo->query('SELECT CONCAT(group_id, ":", right_id) FROM share_access_level WHERE smap_id = ' . (int)$id . ' ORDER BY 1')
