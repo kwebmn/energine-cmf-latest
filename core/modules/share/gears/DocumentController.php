@@ -226,7 +226,11 @@ class DocumentController extends Primitive {
                 $document->build();
             }
         } catch (\Throwable $e) {
-            // и ошибки PHP (TypeError …) — на страницу ошибки, а не посетителю с путями сервера
+            // и ошибки PHP (TypeError …) — на страницу ошибки, а не посетителю с путями сервера; код ответа — 500
+            // (у SystemException код ставит она сама: 403, 404, 422 или 200 для отказов формы)
+            if (!($e instanceof SystemException)) {
+                E()->getResponse()->setStatus(500);
+            }
             $document = E()->ErrorDocument;
             $document->attachException($e)->build();
         }

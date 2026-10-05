@@ -101,9 +101,8 @@ class LanguageEditor extends Grid {
     public function deleteData($id) {
         //если мы пытаемся удалить текущий язык
         //генерим ошибку
-        if ($this->document->getLang() == $id ||
-            $id == E()->getLanguage()->getDefault()
-        ) {
+        $ids = array_map('intval', (array)$id);
+        if (in_array((int)$this->document->getLang(), $ids, true) || in_array((int)E()->getLanguage()->getDefault(), $ids, true)) {
             throw new SystemException('ERR_CANT_DELETE', SystemException::ERR_CRITICAL);
         }
         parent::deleteData($id);

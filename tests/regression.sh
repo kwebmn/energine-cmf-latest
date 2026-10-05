@@ -40,6 +40,7 @@ echo "### config-extends"; php8.5 config-extends.php
 echo "### textblock-langs"; php8.5 textblock-langs.php
 echo "### pages-delete"; php8.5 pages-delete.php
 echo "### perimeter"; php8.5 perimeter.php
+echo "### delete-guards"; php8.5 delete-guards.php
 
 echo "### mail"
 php8.5 smoke-mail.php

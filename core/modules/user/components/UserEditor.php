@@ -44,7 +44,8 @@ class UserEditor extends Grid {
     public function deleteData($id) {
         //если мы пытаемся удалить текущего пользователя
         //генерим ошибку
-        if ($this->document->user->getID() == $id) {
+        // грид передаёт номера массивом (несколько записей одним адресом)
+        if (in_array((int)$this->document->user->getID(), array_map('intval', (array)$id), true)) {
             throw new SystemException('ERR_CANT_DELETE_YOURSELF', SystemException::ERR_CRITICAL);
         }
         parent::deleteData($id);
@@ -93,7 +94,8 @@ class UserEditor extends Grid {
                 throw new SystemException('ERR_404', SystemException::ERR_404);
             }
 
-            if ($this->document->user->getID() == $id) {
+            // грид передаёт номера массивом (несколько записей одним адресом)
+        if (in_array((int)$this->document->user->getID(), array_map('intval', (array)$id), true)) {
                 throw new SystemException('ERR_CANT_ACTIVATE_YOURSELF', SystemException::ERR_CRITICAL);
             }
 

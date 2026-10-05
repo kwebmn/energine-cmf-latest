@@ -605,7 +605,7 @@ class DivisionEditor extends Grid implements SampleDivisionEditor {
         parent::deleteData($id);
     }
 
-    /** системная страница: служебный сегмент корня или любой предок — admin корня */
+    /** системная страница: служебный сегмент корня (SYSTEM_SEGMENTS) или любой её предок — такой сегмент */
     private function isSystem(int $id): bool {
         $root = (int)$this->dbh->getScalar('share_sitemap', 'smap_id', ['smap_pid' => null]);
         for ($cur = $id, $depth = 0; $cur && $depth < 50; $depth++) {

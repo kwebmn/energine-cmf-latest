@@ -17,6 +17,10 @@ check('ini.func.php: display_errors только при отладке', !preg_m
     && preg_match("~display_errors~", $src('core/modules/share/gears/ini.func.php')));
 $tt = $src('htdocs/resizer/timthumb-config.php');
 check('timthumb: внешние источники и вывод ошибок выключены', preg_match("~ALLOW_EXTERNAL',\s*false~i", $tt) && preg_match("~DISPLAY_ERROR_MESSAGES',\s*false~i", $tt));
+$ed = $src('core/modules/share/gears/ErrorDocument.php');
+check('ErrorDocument: вне отладки предупреждения PHP (SystemException ERR_DEVELOPER) скрыты, как и прочие ошибки',
+    preg_match("~site\\.debug'\\)\\s*&&[^{]*ERR_DEVELOPER~s", $ed));
+check('DocumentController: ошибка PHP на странице — ответ 500, а не 200', preg_match('~setStatus\\(500\\)~', $src('core/modules/share/gears/DocumentController.php')));
 check('копии в web/ совпадают с репозиторием (index.php, resizer)', file_get_contents(WEB . '/index.php') === $src('htdocs/index.php')
     && file_get_contents(WEB . '/resizer/timthumb-config.php') === $tt);
 
@@ -43,6 +47,8 @@ $cases = [
     'файл: копирование с нечисловым номером' => ['/admin/users/single/adminPanel/file-library/1%20OR%201%3D1/copy/', [404]],
     'страница: нечисловой номер в правке' => ['/admin/structure/single/divEditor/1%20OR%201%3D1/edit/', [404]],
     'листалка: нечисловой номер страницы' => ['/admin/translations/single/transEditor/get-data/page-x/', [404]],
+    'листалка: список номеров страниц' => ['/admin/translations/single/transEditor/get-data/page-1,2/', [404]],
+    'перемещение страницы: список номеров' => ['/admin/structure/single/divEditor/1,2/up/', [404]],
 ];
 foreach ($cases as $label => [$url, $codes]) {
     [$c, $j, $raw] = json($url, '');
@@ -52,7 +58,9 @@ foreach ($cases as $label => [$url, $codes]) {
 $page = (int)scalar("SELECT q.smap_id FROM share_sitemap q JOIN share_sitemap i ON i.smap_id = q.smap_pid WHERE q.smap_segment = 'quick-start' AND i.smap_segment = 'info'");
 [$c, $j, $raw] = json('/admin/structure/single/divEditor/get-node-data/', http_build_query(['id' => $page, 'languageID' => '1 OR 1=1']));
 // подставное значение приводится к числу (1) — обычный ответ для языка 1 или отказ; главное — без текста ошибки SQL
-check('свойства раздела с подставным languageID — без текста ошибки SQL', is_array($j) && !preg_match($leak, $raw) && (empty($j['result']) || !empty($j['data'])), "HTTP $c " . substr($raw, 0, 160));
+$name1 = scalar('SELECT smap_name FROM share_sitemap_translation WHERE smap_id = ? AND lang_id = 1', [$page]);
+check('свойства раздела с подставным languageID — число 1: данные языка 1, без текста ошибки SQL', is_array($j) && !preg_match($leak, $raw)
+    && ($j['data']['smap_name'] ?? null) === $name1, "HTTP $c " . substr($raw, 0, 160));
 // обычная сортировка по-прежнему работает
 [$c, $j, $raw] = json('/admin/users/single/userEditor/get-data/u_name-asc/', '');
 check('обычная сортировка грида работает', $c == 200 && is_array($j) && !empty($j['data']), "HTTP $c " . substr($raw, 0, 120));

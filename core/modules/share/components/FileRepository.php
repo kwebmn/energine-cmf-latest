@@ -304,14 +304,31 @@ class FileRepository extends Grid implements SampleFileRepository {
      */
     protected function delete() {
         $sp = $this->getStateParams();
-        $uplID = $sp[0];
-        $db_key=$this->getPK();
-        $file_info=$this->dbh->select($this->getTableName(), true, array($db_key => (int)$uplID))[0];
+        // грид удаляет несколько записей одним адресом (12,15/delete/): записи — все, файлы с диска — все
+        $ids = array_values(array_unique(array_map('intval', explode(',', (string)$sp[0]))));
+        $rows = $ids ? $this->dbh->select($this->getTableName(), true, array($this->getPK() => $ids)) : [];
+        if (!$rows || count($rows) !== count($ids)) {
+            throw new SystemException('ERR_404', SystemException::ERR_404);
+        }
+        // папка вместе с чем-то из её содержимого (строка «..» — родительская папка — в выделении): отказ, иначе
+        // каскад снёс бы записи всего поддерева, а с диска ушёл бы только первый файл
+        foreach ($rows as $row) {
+            for ($pid = $row['upl_pid'], $depth = 0; $pid && $depth < 50; $depth++) {
+                if (in_array((int)$pid, $ids, true)) {
+                    throw new SystemException('ERR_FILE_DELETE_PARENT', SystemException::ERR_CRITICAL);
+                }
+                $pid = $this->dbh->getScalar($this->getTableName(), 'upl_pid', array($this->getPK() => (int)$pid));
+            }
+        }
         parent::delete();
-        if ($file_info['upl_internal_type'] == FileRepoInfo::META_TYPE_FOLDER) {
-            $this->rmdir_recursive($file_info['upl_path']);
-        } else {
-            unlink($file_info['upl_path']);
+        foreach ($rows as $row) {
+            if ($row['upl_internal_type'] == FileRepoInfo::META_TYPE_FOLDER) {
+                if (is_dir($row['upl_path'])) {
+                    $this->rmdir_recursive($row['upl_path']);
+                }
+            } elseif (is_file($row['upl_path'])) {
+                unlink($row['upl_path']);
+            }
         }
     }
       /**

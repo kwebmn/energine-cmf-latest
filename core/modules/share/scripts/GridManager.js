@@ -872,7 +872,7 @@ export class GridManager {
                 this.buildRequestURL(pageNum),
                 this.buildRequestPostBody(),
                 (result) => this.processServerResponse(result),
-                null,
+                () => this.overlay.hide(),
                 (responseText) => this.processServerError(responseText)
             );
         }, 0);

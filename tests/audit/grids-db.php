@@ -7,6 +7,7 @@
 //   php8.5 grids-db.php trans-pages    — число страниц грида переводов (по 50 строк)
 //   php8.5 grids-db.php count-user ЛОГИН — сколько пользователей с таким логином
 //   php8.5 grids-db.php remove-user ЛОГИН — удалить пользователя теста по логину
+//   php8.5 grids-db.php upload-exists ID   — есть ли запись репозитория с таким номером (1/0)
 require dirname(__DIR__) . '/testlib.php';
 
 const PAYLOAD = '<img src="x" onerror="window.claudeXss=(window.claudeXss||0)+1"><b>claude-grid</b>';
@@ -76,6 +77,10 @@ switch ($cmd) {
     case 'count-user':
         // сколько пользователей с таким логином (двойное сохранение формы)
         echo (int)scalar('SELECT COUNT(*) FROM user_users WHERE u_name = ?', [$argv[2] ?? '']);
+        break;
+    case 'upload-exists':
+        // есть ли запись репозитория с таким номером (удаление нескольких файлов)
+        echo (int)scalar('SELECT COUNT(*) FROM share_uploads WHERE upl_id = ?', [(int)($argv[2] ?? 0)]);
         break;
     case 'remove-user':
         // убрать одного пользователя теста по логину (не трогая остальные данные теста посреди прогона)

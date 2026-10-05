@@ -306,13 +306,13 @@ class ComponentConfig {
         foreach ($patterns as $pattern => $methodInfo) {
             $methodName = $methodInfo['method'];
             try {
-                // заполнители по типам: числовые — цифры (или список чисел через запятую: грид удаляет несколько строк
-                // адресом 12,15/delete/), направление сортировки — asc|desc, имя поля и направление перемещения —
-                // идентификатор, токен — его знаки; остальные ([any], [string], [login] …) — как были
+                // заполнители по типам: [int] — число или список чисел через запятую (грид удаляет несколько строк
+                // адресом 12,15/delete/), остальные числовые — одно число, направление сортировки — asc|desc, имя поля
+                // и направление перемещения — идентификатор, токен — его знаки; прочие ([any], [string], [login] …) — как были
                 $resPattern = preg_replace(
-                    array('/\[any\]\//', '/\//', '/\[(?:int|pid|pageNumber|fromId|toId|smap_id)\]/', '/\[sortDir\]/',
+                    array('/\[any\]\//', '/\//', '/\[int\]/', '/\[(?:pid|pageNumber|fromId|toId|smap_id)\]/', '/\[sortDir\]/',
                         '/\[(?:sortField|direction)\]/', '/\[token\]/', '/\[[a-zA-Z_]+\]/'),
-                    array('(.*)', '\/', '(\d+(?:,\d+)*)', '(asc|desc)', '([a-zA-Z_][a-zA-Z0-9_]*)', '([A-Za-z0-9_-]+)', '([^\/]+)'),
+                    array('(.*)', '\/', '(\d+(?:,\d+)*)', '(\d+)', '(asc|desc)', '([a-zA-Z_][a-zA-Z0-9_]*)', '([A-Za-z0-9_-]+)', '([^\/]+)'),
                     $pattern
                 );
             } catch (\Exception $e) {

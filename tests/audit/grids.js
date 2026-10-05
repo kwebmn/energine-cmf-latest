@@ -1374,6 +1374,58 @@ const inspect = (page) => page.evaluate(() => {
             await q.close();
             await ctx.clearCookies({ name: 'NRGNFRPID' });
         }
+        // 4. ревью этапа «надёжность»: грид после ответа-ошибки JSON снимает затемнение; удаление нескольких файлов
+        //    репозитория — все записи и все файлы; выделение вместе со строкой «..» (родительская папка) — отказ,
+        //    ничего не удалено. Последним: удаляет тестовые файлы big и tiny
+        {
+            const lib = BASE + 'admin/users/single/adminPanel/file-library/';
+            const fs = require('fs');
+            const onDisk = (name) => fs.existsSync(path.join(process.env.WEB, 'uploads/public/claude-grid-dir', name));
+            await ctx.addCookies([{ name: 'NRGNFRPID', value: String(ids.dir), url: BASE }]);
+            const p = await ctx.newPage();
+            const dialogs = [];
+            p.on('dialog', (d) => { dialogs.push(d.message()); d.accept(); });
+            await p.goto(lib, { waitUntil: 'networkidle' });
+            await p.waitForSelector('tbody tr td', { timeout: 10000 });
+            // ответ-ошибка JSON на загрузку страницы — затемнение снято
+            await p.route(/\/get-data\//, (route) => route.fulfill({ status: 404, contentType: 'text/javascript; charset=utf-8',
+                body: JSON.stringify({ result: false, errors: [{ message: 'нет' }] }) }));
+            await p.evaluate(() => { const id = Object.keys(window.componentToolbars)[0]; window[id].loadPage(1); });
+            await p.waitForTimeout(1200);
+            const stuck = await p.evaluate(() => [...document.querySelectorAll('.e-overlay')].some((o) => +getComputedStyle(o).opacity > 0.1));
+            check('грид: ответ-ошибка JSON на загрузку — сообщение показано, затемнение снято', dialogs.length === 1 && !stuck, JSON.stringify({ dialogs, stuck }));
+            await p.unroute(/\/get-data\//);
+            dialogs.length = 0;
+            await p.reload({ waitUntil: 'networkidle' });
+            await p.waitForSelector('tbody tr td', { timeout: 10000 });
+            // файл + строка «..» — отказ, записи и файлы на месте
+            const rowOf = (text) => p.locator('.gridContainer tbody tr', { hasText: text }).first();
+            await rowOf('claude-grid-tiny').click();
+            await p.locator('.gridContainer tbody tr').first().click({ modifiers: ['Shift'] });
+            const delEnabled = await p.evaluate(() => !document.querySelector('ul.toolbar li.delete_btn').classList.contains('disabled'));
+            if (delEnabled) {
+                await Promise.all([p.waitForResponse((r) => /\/delete\/?$/.test(r.url()), { timeout: 10000 }).catch(() => null), p.click('ul.toolbar li.delete_btn')]);
+                await p.waitForTimeout(1000);
+            }
+            const afterUp = { dir: db('upload-exists', String(ids.dir)).trim(), tiny: db('upload-exists', String(ids.tiny)).trim(), disk: onDisk('claude-grid-tiny.png') };
+            check('файл вместе со строкой «..»: отказ или кнопка выключена — папка, запись и файл на месте',
+                afterUp.dir === '1' && afterUp.tiny === '1' && afterUp.disk, JSON.stringify({ delEnabled, afterUp, dialogs }));
+            dialogs.length = 0;
+            await p.reload({ waitUntil: 'networkidle' });
+            await p.waitForSelector('tbody tr td', { timeout: 10000 });
+            // два файла — обе записи и оба файла удалены, папка на месте
+            await rowOf('claude-grid-big').click();
+            await rowOf('claude-grid-tiny').click({ modifiers: ['Control'] });
+            await Promise.all([p.waitForResponse((r) => /\/delete\/?$/.test(r.url()), { timeout: 10000 }), p.click('ul.toolbar li.delete_btn')]);
+            await p.waitForTimeout(1200);
+            const after = { big: db('upload-exists', String(ids.big)).trim(), tiny: db('upload-exists', String(ids.tiny)).trim(),
+                bigDisk: onDisk('claude-grid-big.png'), tinyDisk: onDisk('claude-grid-tiny.png'), dir: db('upload-exists', String(ids.dir)).trim(), dirDisk: fs.existsSync(path.join(process.env.WEB, 'uploads/public/claude-grid-dir')) };
+            check('удаление двух файлов: обе записи и оба файла удалены, папка на месте', after.big === '0' && after.tiny === '0' && !after.bigDisk && !after.tinyDisk
+                && after.dir === '1' && after.dirDisk, JSON.stringify(after));
+            await p.close();
+            await ctx.clearCookies({ name: 'NRGNFRPID' });
+        }
+
     } finally {
         db('remove');
     }

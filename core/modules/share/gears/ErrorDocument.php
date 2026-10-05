@@ -36,7 +36,7 @@ class ErrorDocument extends Primitive implements IDocument {
     /**
      * Attach exception.
      *
-     * @param \Exception $e
+     * @param \Throwable $e
      *
      * @see ErrorDocument::$e
      * @return ErrorDocument
@@ -72,11 +72,12 @@ class ErrorDocument extends Primitive implements IDocument {
         $result->setAttribute('xml:id', 'result');
         $dom_root->appendChild($result);
 
-        // вне отладки посетитель видит только переведённые сообщения (SystemException, кроме ошибок базы);
-        // текст остальных — SQL, пути сервера — уходит в журнал, а на странице — общий текст
+        // вне отладки посетитель видит только переведённые сообщения (SystemException, кроме ошибок базы и ошибок
+        // разработчика — в них предупреждения PHP с путями сервера); текст остальных уходит в журнал, на странице — общий
         $message = $this->e->getMessage();
         if (!$this->getConfigValue('site.debug')
-            && (!($this->e instanceof SystemException) || $this->e->getCode() == SystemException::ERR_DB)) {
+            && (!($this->e instanceof SystemException)
+                || in_array($this->e->getCode(), [SystemException::ERR_DB, SystemException::ERR_DEVELOPER], true))) {
             error_log('Energine: ' . get_class($this->e) . ': ' . $message . ' @ ' . $this->e->getFile() . ':' . $this->e->getLine());
             $message = E()->Utils->translate('ERR_SERVER');
         }
