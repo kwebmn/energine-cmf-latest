@@ -5,11 +5,6 @@
             <pattern>/upload-temp/</pattern>
         </uri_patterns>
     </state>
-    <state name="createTemporaryFile" rights="3">
-        <uri_patterns>
-            <pattern>/temp-file/</pattern>
-        </uri_patterns>
-    </state>
     <state name="main">
         <filter>
             <field name="upl_title"/>

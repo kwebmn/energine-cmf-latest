@@ -103,11 +103,6 @@
 				<pattern>/[int]/delete/</pattern>
 			</uri_patterns>
 		</state>
-        <state name="upload"  rights="3">
-             <uri_patterns>
-                 <pattern>/upload/</pattern>
-             </uri_patterns>
-        </state>
         <state name="imageManager" rights="3">
             <uri_patterns>
                 <pattern>/imagemanager/</pattern>

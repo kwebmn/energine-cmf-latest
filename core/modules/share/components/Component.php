@@ -353,12 +353,8 @@ class Component extends Primitive implements IBlock {
             call_user_func_array([$this, $state . 'State'], $params);
         } elseif (method_exists($this, $state)) {
             call_user_func_array([$this, $state], $params);
-        } elseif (is_callable([$this, $state . 'State'])) {
-            call_user_func_array([$this, $state . 'State'], $params);
-        } elseif (is_callable([$this, $state])) {
-            call_user_func_array([$this, $state], $params);
-        }
-        else {
+        } else {
+            // метода нет — ошибка разработчика (через __call состояния не ищутся: он бросает исключение на любое имя)
             throw new SystemException(
                 'ERR_DEV_NO_ACTION',
                 SystemException::ERR_DEVELOPER,

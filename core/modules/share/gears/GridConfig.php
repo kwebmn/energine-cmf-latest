@@ -27,8 +27,6 @@ class GridConfig extends DataSetConfig {
      */
     public function __construct($config, $className, $moduleName){
         parent::__construct($config, $className, $moduleName);
-        $this->registerState('put', array('/put/'));
-        $this->registerState('upload', array('/upload/'));
         $this->registerState('cleanup', array('/cleanup/'));
     }
 }

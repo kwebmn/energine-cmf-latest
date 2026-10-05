@@ -32,6 +32,7 @@ echo "### new-site-doc"; bash new-site-doc.sh
 echo "### unused-constants"; php8.5 unused-constants.php
 echo "### config-template"; php8.5 config-template.php
 echo "### dbworker-call"; php8.5 dbworker-call.php
+echo "### component-states"; php8.5 component-states.php
 
 echo "### mail"
 php8.5 smoke-mail.php
