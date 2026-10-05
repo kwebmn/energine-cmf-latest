@@ -77,7 +77,7 @@ ok "3. database energine and user energine"
 
 # 4. Import the SQL files in this order (the order is in INSTALL.md)
 if [ "$VARIANT" = empty ]; then
-  FILES="starter.structure.sql starter.routines.sql starter.data.empty.sql starter.structure.fixes.sql modules.structure.sql starter.data.admin.sql modules.data.sql"
+  FILES="starter.structure.sql starter.routines.sql starter.data.empty.sql starter.structure.fixes.sql modules.structure.sql starter.data.admin.sql starter.data.sitemap.sql modules.data.sql"
 else
   FILES="starter.structure.sql starter.routines.sql starter.data.demo.sql starter.structure.fixes.sql starter.data.demo.fixes.sql modules.structure.sql modules.data.sql demo/demo.content.sql"
 fi
@@ -150,7 +150,7 @@ clean() { ! grep -qiE 'Fatal error|Warning:|Notice:|Deprecated:|Uncaught' "$T/bo
 [ "$(get /templates/content/main.content.xml)" = 403 ] && ok "page XML not served" || bad "page XML is served"
 
 # sign in: the administrator from step 7; the starter's login no longer exists
-code=$(curl -s -o /dev/null -w '%{http_code}' -b "$T/jar" -c "$T/jar" -d 'user[login]=1' \
+code=$(curl -s -o /dev/null -w '%{http_code}' -b "$T/jar" -c "$T/jar" -e "$B/login/" -d 'user[login]=1' \
   --data-urlencode "user[username]=$ADMIN_EMAIL" --data-urlencode "user[password]@$T/admin.pw" "$B/auth.php")
 [ "$(get /admin/)" = 200 ] && clean && grep -qi 'logout' "$T/body" \
   && ok "administrator signs in ($code), /admin/ opens" || bad "administrator sign-in (auth $code, admin $(get /admin/))"
@@ -158,8 +158,10 @@ code=$(curl -s -o /dev/null -w '%{http_code}' -b "$T/jar" -c "$T/jar" -d 'user[l
   && ok "only the administrator has a usable password" || bad "other users have usable passwords"
 grep -rqs 'demo@energine.org' "$T/body" && bad "starter login shown on a page" || true
 
-# every site page under the root answers (guest)
+# every top-level page a guest may read answers (pages without guest rights answer 404 by design)
 DB -N -e "SELECT s.smap_segment FROM share_sitemap s JOIN share_sitemap r ON s.smap_pid = r.smap_id
+  JOIN share_access_level a ON a.smap_id = s.smap_id AND a.right_id > 0
+  JOIN user_groups g ON g.group_id = a.group_id AND g.group_default = 1
   WHERE r.smap_pid IS NULL AND s.smap_segment NOT IN ('admin', 'login')" > "$T/segments"
 while read -r seg; do
   c=$(get "/$seg/")
