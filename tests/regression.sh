@@ -35,6 +35,7 @@ echo "### dbworker-call"; php8.5 dbworker-call.php
 echo "### component-states"; php8.5 component-states.php
 echo "### dev-tools"; php8.5 dev-tools.php
 echo "### untranslated"; php8.5 untranslated.php
+echo "### links"; php8.5 links.php
 
 echo "### mail"
 php8.5 smoke-mail.php

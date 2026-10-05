@@ -1,0 +1,150 @@
+<?php
+/**
+ * @file
+ * LinkChecker: битые ссылки в текстах сайта (текстовые блоки, описания разделов).
+ */
+namespace Energine\share\gears;
+
+/**
+ * Битые ссылки в текстах: ссылки (href, src) на страницы сайта, которых нет, которые отключены или только для
+ * вошедших (ссылки на админку в текстах для администратора — пометка, а не ошибка), и на
+ * отсутствующие файлы. Внешние сайты не запрашиваются: ссылки на другие хосты, mailto:, tel:, якоря не проверяются.
+ *
+ * Путь ссылки — от корня сайта (как <base href>): без корня, языка (ua/…), запроса и якоря; страница ищется точно
+ * по цепочке сегментов, файл — в каталоге сайта (web/).
+ */
+class LinkChecker {
+    /** причина-пометка, а не ошибка: ссылка ведёт на страницу для вошедших (например, в админку из текста для администратора) */
+    const MEMBERS_ONLY = 'страница только для вошедших';
+
+    /** @var \PDO */
+    private $pdo;
+    /** @var string каталог сайта (web/) */
+    private $webDir;
+    /** @var string хост сайта */
+    private $domain;
+    /** @var string корень сайта: '/' или '/site/' */
+    private $root;
+    /** @var array путь страницы ('' — главная, 'a/b/') => ['id', 'enabled' => включена на всех языках, 'guest' => гостю можно читать] */
+    private $pages = [];
+    /** @var string[] сокращения языков, кроме языка по умолчанию */
+    private $langPrefixes = [];
+
+    public function __construct(\PDO $pdo, string $webDir, string $domain, string $root = '/') {
+        $this->pdo = $pdo;
+        $this->webDir = rtrim($webDir, '/');
+        $this->domain = strtolower(preg_replace('/:\d+$/', '', $domain));
+        $this->root = '/' . trim($root, '/') . (trim($root, '/') === '' ? '' : '/');
+        $this->loadPages();
+    }
+
+    /**
+     * Все битые ссылки.
+     * @return array[] ['page' => путь страницы текста или '(общий блок)', 'lang' => сокращение, 'link', 'reason']
+     */
+    public function check(): array {
+        $result = [];
+        $langs = $this->pdo->query('SELECT lang_id, lang_abbr FROM share_languages')->fetchAll(\PDO::FETCH_KEY_PAIR);
+        $pathOf = array_column(array_map(fn($p, $k) => ['id' => $p['id'], 'path' => $k], $this->pages, array_keys($this->pages)), 'path', 'id');
+        $sources = $this->pdo->query(
+            'SELECT t.smap_id AS page, tt.lang_id AS lang, tt.tb_content AS html FROM share_textblocks t
+               JOIN share_textblocks_translation tt ON tt.tb_id = t.tb_id
+             UNION ALL
+             SELECT smap_id, lang_id, smap_description_rtf FROM share_sitemap_translation WHERE smap_description_rtf IS NOT NULL'
+        );
+        foreach ($sources as $row) {
+            if (!preg_match_all('~\b(?:href|src)\s*=\s*(["\'])(.*?)\1~is', (string)$row['html'], $m)) {
+                continue;
+            }
+            foreach (array_unique($m[2]) as $link) {
+                $reason = $this->brokenReason(html_entity_decode($link, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+                if ($reason !== null) {
+                    $result[] = [
+                        'page' => $row['page'] === null ? '(общий блок)' : ($pathOf[$row['page']] ?? '?') ,
+                        'lang' => $langs[$row['lang']] ?? '?',
+                        'link' => $link,
+                        'reason' => $reason,
+                    ];
+                }
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * Почему ссылка битая, или null — рабочая либо не проверяется.
+     */
+    public function brokenReason(string $link): ?string {
+        $link = trim($link);
+        if ($link === '' || $link[0] === '#' || preg_match('~^(mailto|tel|javascript|data|sms|skype|callto):~i', $link)) {
+            return null;
+        }
+        if (preg_match('~^(?:https?:)?//([^/?#]+)(.*)$~i', $link, $m)) {
+            if (strtolower(preg_replace('/:\d+$/', '', $m[1])) !== $this->domain) {
+                return null; // другой сайт
+            }
+            $link = $m[2] === '' ? '/' : $m[2];
+        } elseif (preg_match('~^[a-z][a-z0-9+.-]*:~i', $link)) {
+            return null; // другая схема
+        }
+        $path = rawurldecode(preg_replace('~[?#].*$~s', '', $link));
+        if (str_starts_with($path, '/')) {
+            if (!str_starts_with($path . '/', $this->root) && $path !== rtrim($this->root, '/')) {
+                return 'вне сайта';
+            }
+            $path = substr($path, strlen($this->root));
+        }
+        // относительный путь — от корня сайта (<base href>); «./» и «../» выше корня не уходят
+        $parts = [];
+        foreach (explode('/', $path) as $part) {
+            if ($part === '..') {
+                array_pop($parts);
+            } elseif ($part !== '.' && $part !== '') {
+                $parts[] = $part;
+            }
+        }
+        $isDir = $path === '' || str_ends_with($path, '/');
+        $last = end($parts);
+        if (!$isDir && $last !== false && str_contains($last, '.')) {
+            $file = $this->webDir . '/' . implode('/', $parts);
+            return is_file($file) ? null : 'нет файла';
+        }
+        if ($parts && in_array($parts[0], $this->langPrefixes, true)) {
+            array_shift($parts);
+        }
+        $key = $parts ? implode('/', $parts) . '/' : '';
+        if (!isset($this->pages[$key])) {
+            return 'нет страницы';
+        }
+        return $this->pages[$key]['enabled'] ? ($this->pages[$key]['guest'] ? null : self::MEMBERS_ONLY) : 'страница отключена';
+    }
+
+    /**
+     * Пути всех страниц одним запросом: сегменты по дереву, доступность гостю — включена на всех языках и группа
+     * гостей имеет право чтения.
+     */
+    private function loadPages(): void {
+        $this->langPrefixes = $this->pdo->query('SELECT lang_abbr FROM share_languages WHERE lang_default = 0')->fetchAll(\PDO::FETCH_COLUMN);
+        $guest = (int)$this->pdo->query('SELECT group_id FROM user_groups WHERE group_default = 1')->fetchColumn();
+        $rows = $this->pdo->query(
+            "SELECT s.smap_id, s.smap_pid, s.smap_segment,
+                    (SELECT COUNT(*) FROM share_sitemap_translation t WHERE t.smap_id = s.smap_id AND t.smap_is_disabled = 0) AS enabled,
+                    (SELECT COUNT(*) FROM share_languages) AS langs,
+                    (SELECT MAX(a.right_id) FROM share_access_level a WHERE a.smap_id = s.smap_id AND a.group_id = $guest) AS guest_right
+               FROM share_sitemap s"
+        )->fetchAll(\PDO::FETCH_ASSOC);
+        $byId = array_column($rows, null, 'smap_id');
+        foreach ($byId as $id => $row) {
+            $segments = [];
+            $guestOk = $enabled = true;
+            for ($cur = $row, $depth = 0; $cur && $depth < 50; $cur = $byId[$cur['smap_pid']] ?? null, $depth++) {
+                $enabled = $enabled && $cur['enabled'] == $cur['langs'];
+                $guestOk = $guestOk && (int)$cur['guest_right'] > 0;
+                if ($cur['smap_pid'] !== null) {
+                    array_unshift($segments, $cur['smap_segment']);
+                }
+            }
+            $this->pages[$segments ? implode('/', $segments) . '/' : ''] = ['id' => (int)$id, 'enabled' => $enabled, 'guest' => $guestOk];
+        }
+    }
+}

@@ -616,6 +616,34 @@ final class Setup {
     }
 
     /**
+     * Битые ссылки в текстах сайта (текстовые блоки, описания разделов): на несуществующие или отключённые страницы,
+     * страницы только для вошедших и отсутствующие файлы. Внешние сайты не запрашиваются.
+     *   php web/index.php setup checklinks — выход 1, если битые есть
+     */
+    private function checklinksAction() {
+        $this->title('Битые ссылки в текстах');
+        $this->checkDBConnection();
+        $site = $this->config['site'] ?? [];
+        $checker = new \Energine\share\gears\LinkChecker($this->dbConnect, HTDOCS_DIR, (string)($site['domain'] ?? ''), (string)($site['root'] ?? '/'));
+        $all = $checker->check();
+        $notes = array_filter($all, fn($b) => $b['reason'] === \Energine\share\gears\LinkChecker::MEMBERS_ONLY);
+        $broken = array_diff_key($all, $notes);
+        foreach ($broken as $b) {
+            $this->text($b['page'], ' [', $b['lang'], ']: ', $b['link'], ' — ', $b['reason']);
+        }
+        $this->text($broken ? 'Битых ссылок: ' . count($broken) : 'Битых ссылок нет');
+        if ($notes) {
+            $this->text('Ссылки на страницы только для вошедших (гостю не откроются): ' . count($notes));
+            foreach ($notes as $b) {
+                $this->text('  ', $b['page'], ' [', $b['lang'], ']: ', $b['link']);
+            }
+        }
+        if ($broken) {
+            exit(1);
+        }
+    }
+
+    /**
      * Новый шаблон страницы из секций визитки:
      *   php web/index.php setup page --name=<имя> --title="<название>" --sections=hero,services,cta [--title-ua="…"]
      * Создаёт site/modules/main/templates/content/<имя>.content.xml (секции — TextBlock с параметром section),
