@@ -625,6 +625,7 @@ final class Setup {
     private function pageAction(...$args) {
         $o = $this->options($args, ['name', 'title', 'title-ua', 'sections'], []);
         $this->title('Новый шаблон страницы');
+        $this->refuseRoot();
         $name = $o['name'] ?? '';
         if (!preg_match('/^[a-z][a-z0-9_]{1,40}$/', $name)) {
             throw new \Exception('Имя шаблона — строчные латинские буквы, цифры и «_», с буквы: --name=about_us');
@@ -654,7 +655,9 @@ final class Setup {
             throw new \Exception('Название ' . $const . ' уже есть в ' . $trFile);
         }
         $xml = '<?xml version="1.0" encoding="UTF-8"?>' . PHP_EOL
-            . '<!-- «' . htmlspecialchars($o['title'], ENT_XML1) . '»: создан командой setup page -->' . PHP_EOL . '<content>' . PHP_EOL;
+            // в комментарии XML нельзя «--»
+            . '<!-- «' . str_replace('--', '- -', htmlspecialchars($o['title'], ENT_XML1)) . '»: создан командой setup page -->' . PHP_EOL
+            . '<content>' . PHP_EOL;
         foreach ($sections as $section) {
             $xml .= "    <container name=\"$section\" section=\"$section\">" . PHP_EOL
                 . "        <component name=\"section_$section\" class=\"TextBlock\">" . PHP_EOL
@@ -668,13 +671,24 @@ final class Setup {
         if ($pos === false) {
             throw new \Exception('Не разобрать ' . $trFile . ': нет закрывающей «];»');
         }
-        file_put_contents($file, $xml);
-        file_put_contents($trFile, substr($tr, 0, $pos) . $entry . substr($tr, $pos));
+        // сначала оба файла; не записался второй — первый убирается, ничего не остаётся
+        if (@file_put_contents($file, $xml) === false) {
+            throw new \Exception('Не записать шаблон: ' . $file);
+        }
+        if (@file_put_contents($trFile, substr($tr, 0, $pos) . $entry . substr($tr, $pos)) === false) {
+            @unlink($file);
+            throw new \Exception('Не записать ' . $trFile . ' — шаблон не создан');
+        }
         $this->text('Шаблон: ', $file);
         $this->text('Название: ', $const, ' — ', $trFile);
-        $this->checkDBConnection();
-        $this->text('Переводы добавлены: ', $this->installTranslations($this->dbConnect, $trFile));
-        $this->linkerAction();
+        try {
+            $this->checkDBConnection();
+            $this->text('Переводы добавлены: ', $this->installTranslations($this->dbConnect, $trFile));
+            $this->linkerAction();
+        } catch (\Exception $e) {
+            throw new \Exception('Шаблон и название записаны, но не доделано: ' . $e->getMessage() . PHP_EOL
+                . 'Исправьте причину и запустите от владельца площадки: setup translations, затем setup linker');
+        }
         $this->text('Дальше: «Управление структурой» → «Добавить», поле «Содержимое страницы» — «', $o['title'],
             '»; тексты секций правятся на странице в режиме редактирования.');
     }
@@ -1143,6 +1157,8 @@ final class Setup {
     }
 
     private function linkerAction() {
+        // ссылки, созданные от root, сайт не отдаёт (у ссылки и файла должен быть один владелец)
+        $this->refuseRoot();
 
         $this->title('Связывание данных модулей ');
 

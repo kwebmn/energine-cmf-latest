@@ -99,4 +99,22 @@ foreach ([['--name=../x', '--title=X', '--sections=hero'], ['--name=Bad Name', '
         $before === [file_get_contents($trFile), glob(ROOT . '/site/modules/main/templates/content/*.xml')] && preg_match('~ошибка|Error|отказ|нельзя|нет|неизвест~iu', (string)$o),
         substr((string)$o, -200));
 }
+// 5. ревью: от root — отказ; «--» в названии не ломает XML; translations.php недоступен для записи — шаблон не остаётся
+$asRoot = (string)shell_exec('cd ' . escapeshellarg(WEB) . ' && php8.5 index.php setup page --name=claude_root --title=X --sections=hero 2>&1');
+check('setup page от root — отказ, ничего не создано', !is_file(ROOT . '/site/modules/main/templates/content/claude_root.content.xml')
+    && preg_match('~root~i', $asRoot), substr($asRoot, -200));
+$tpl2 = ROOT . '/site/modules/main/templates/content/claude_dash.content.xml';
+register_shutdown_function(fn() => @unlink($tpl2));
+$out = $setup('page', '--name=claude_dash', '--title=Цены -- услуги', '--sections=hero');
+check('setup page: «--» в названии — шаблон остаётся правильным XML', is_file($tpl2) && @simplexml_load_file($tpl2) !== false, substr((string)$out, -200));
+q("DELETE tr FROM share_lang_tags_translation tr JOIN share_lang_tags t USING (ltag_id) WHERE t.ltag_name = 'CONTENT_CLAUDE_DASH'");
+q("DELETE FROM share_lang_tags WHERE ltag_name = 'CONTENT_CLAUDE_DASH'");
+file_put_contents($trFile, $trOrig);
+$mode = fileperms($trFile) & 0777;
+chmod($trFile, 0444);
+$out = $setup('page', '--name=claude_ro', '--title=X', '--sections=hero');
+chmod($trFile, $mode);
+check('setup page: translations.php не записать — отказ, шаблон не остаётся', !is_file(ROOT . '/site/modules/main/templates/content/claude_ro.content.xml')
+    && file_get_contents($trFile) === $trOrig, substr((string)$out, -200));
+@unlink(ROOT . '/site/modules/main/templates/content/claude_ro.content.xml');
 done('dev-tools');
