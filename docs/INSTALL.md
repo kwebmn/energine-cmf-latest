@@ -320,8 +320,9 @@ bash $R/tests/tools/fresh-check.sh     # установка с нуля и де�
 ```
 
 **Статический анализ.** PHPStan уровня 2 (`phpstan.neon`) и `tsc --noEmit` по JSDoc (`jsconfig.json`) входят в
-регрессию: новая ошибка — провал. Известные ошибки PHP записаны в `phpstan-baseline.neon` (11 вызовов методов
-конкретных билдеров через `getBuilder()`); исправили одну — обновите линию:
+регрессию: новая ошибка — провал. Известные ошибки PHP записаны в `phpstan-baseline.neon` (11 записей: методы конкретных
+билдеров через `getBuilder()`, `Switcher::setState` через `getControlById()`, `BreadCrumbs::addCrumb` через
+`getBlockByName()`); исправили одну — обновите линию из корня репозитория:
 `php8.5 tools/phpstan.phar analyse --generate-baseline`. Сайту ни PHPStan, ни Node не нужны — это инструменты
 разработчика; на машине без них наборы пропускаются только явно: `PHPSTAN_SKIP=1`, `JSCHECK_SKIP=1`.
 

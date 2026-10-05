@@ -222,7 +222,7 @@ final class ComponentManager extends Primitive implements \Iterator {
     /**
      * Get the block by his name.
      * @param string $name Block name.
-     * @return Component
+     * @return Component|null
      */
     public function getBlockByName($name) {
         $result = NULL;

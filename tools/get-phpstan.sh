@@ -8,5 +8,6 @@ D="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 tmp=$(mktemp)
 curl -fsSL -o "$tmp" "https://github.com/phpstan/phpstan/releases/download/$VERSION/phpstan.phar"
 mv "$tmp" "$D/phpstan.phar"
+chmod 644 "$D/phpstan.phar" # mktemp создаёт файл 0600
 (cd "$D" && sha256sum -c phpstan.phar.sha256) || { rm -f "$D/phpstan.phar"; echo "сумма не совпала — файл удалён" >&2; exit 1; }
 echo "phpstan $VERSION: $D/phpstan.phar"

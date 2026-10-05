@@ -234,7 +234,10 @@ class UserProfile extends DBDataSet {
         $di->setData($this->translate($messageConst));
         $d->addField($di);
 
-        $this->document->componentManager->getBlockByName('breadCrumbs')->addCrumb();
+        // в окне (single) компонента крошек нет — без защиты здесь падало бы на null
+        if ($crumbs = $this->document->componentManager->getBlockByName('breadCrumbs')) {
+            $crumbs->addCrumb();
+        }
     }
 
     /**

@@ -119,6 +119,11 @@ saveProfile($html, ['user_users[u_password]' => $new, 'u_password2' => $new, 'u_
 check('верный текущий пароль и повтор: пароль сменён', password_verify($new, $row()['u_password']));
 logout();
 check('вход с новым паролем', signIn($login, $new));
+// страница ошибки профиля в окне (single): компонента крошек там нет — раньше падало на null (ответ 500)
+[, $html] = http('/profile/');
+saveProfile($html, ['user_users[u_password]' => $new, 'u_password2' => $new, 'u_password_current' => $new . 'x']);
+[$c, $body] = http('/profile/single/userProfile/error/');
+check('страница ошибки профиля в окне (single) — без ошибки сервера', $c == 200 && str_contains($body, (string)translation('TXT_USER_PROFILE_WRONG_PWD')), "HTTP $c " . substr(strip_tags($body), 0, 160));
 logout();
 
 done('smoke-profile');

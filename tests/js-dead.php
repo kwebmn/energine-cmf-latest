@@ -19,16 +19,18 @@ $dead = [
     "createElement('variable')" => 'DataSet::buildJS — ветка переменных',
     "querySelectorAll('.pane')" => 'Form.js — класса .pane нет в разметке',
     'nodeInfo.nodeType'        => 'TreeView.Node из готового li — узлы создаются только из описания',
-    'csv('                     => 'Grid.csv — удалено раньше',
-    'getElement('              => 'Toolbar/PageList getElement — удалено раньше',
+    'csv() {'                  => 'Grid.csv — кнопки и состояния csv нет',
+    'getElement() {'           => 'Toolbar/PageList getElement — элемент читают напрямую (.element)',
 ];
 $files = [];
 foreach (['core', 'site', 'tests'] as $dir) {
     $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator("$root/$dir", FilesystemIterator::SKIP_DOTS));
     foreach ($it as $f) {
         $p = $f->getPathname();
+        // чужое и собранное не читается: Jodit, собранные стили, кеш PHPStan (tests/phpstan/cache), пакеты npm
         if (!preg_match('/\.(js|xslt|xml|php|css)$/', $p) || str_contains($p, '/scripts/jodit/')
-            || preg_match('~/stylesheets/(main|admin)\.css$~', $p) || $p === __FILE__) continue;
+            || preg_match('~/stylesheets/(main|admin)\.css$~', $p) || $p === __FILE__
+            || str_contains($p, '/tests/phpstan/cache/') || str_contains($p, '/node_modules/')) continue;
         $files[$p] = file_get_contents($p);
     }
 }
