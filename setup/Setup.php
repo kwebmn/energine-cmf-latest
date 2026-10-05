@@ -624,7 +624,11 @@ final class Setup {
         $this->title('Битые ссылки в текстах');
         $this->checkDBConnection();
         $site = $this->config['site'] ?? [];
-        $checker = new \Energine\share\gears\LinkChecker($this->dbConnect, HTDOCS_DIR, (string)($site['domain'] ?? ''), (string)($site['root'] ?? '/'));
+        $domain = (string)($site['domain'] ?? '');
+        if ($domain === '') {
+            throw new \Exception('В конфиге площадки нет site.domain — без него ссылки на свой сайт не отличить от чужих');
+        }
+        $checker = new \Energine\share\gears\LinkChecker($this->dbConnect, HTDOCS_DIR, $domain, (string)($site['root'] ?? '/'));
         $all = $checker->check();
         $notes = array_filter($all, fn($b) => $b['reason'] === \Energine\share\gears\LinkChecker::MEMBERS_ONLY);
         $broken = array_diff_key($all, $notes);

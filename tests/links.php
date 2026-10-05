@@ -27,13 +27,21 @@ register_shutdown_function('unstand');
 $domain = parse_url(BASE, PHP_URL_HOST);
 $good = ['service/', '/ua/contacts/', 'contacts', "https://$domain/sitemap/", 'uploads/public/13662314846.png', 'service/?x=1', 'service/#top',
     '#contacts', 'mailto:info@example.org', 'tel:+70000000000', 'https://example.org/nope/', 'info/quick-start/'];
-$bad = ['nope/', '/ua/nope/', 'uploads/public/nope.png', 'claude-links-off/', 'info/nope-deeper/'];
+$bad = ['nope/', '/ua/nope/', 'uploads/public/nope.png', 'claude-links-off/', 'info/nope-deeper/', "https://www.$domain/nope-www/"];
+// страница, отключённая только на украинском: со ссылкой из русского текста — рабочая
+$good[] = 'claude-links-half/';
 $html = '<p>' . implode(' ', array_map(fn($u) => '<a href="' . htmlspecialchars($u) . '">x</a>', array_merge($good, $bad))) . '<img src="uploads/public/nope2.png"></p>';
 $bad[] = 'uploads/public/nope2.png';
 $id = stand('claude-links');
 stand('claude-links-off', true);
+$half = stand('claude-links-half');
+q("UPDATE share_sitemap_translation SET smap_is_disabled = 1 WHERE smap_id = ? AND lang_id <> (SELECT lang_id FROM share_languages WHERE lang_default = 1)", [$half]);
 q("INSERT INTO share_textblocks (smap_id, tb_num) VALUES (?, '1')", [$id]);
-q('INSERT INTO share_textblocks_translation (tb_id, lang_id, tb_content) VALUES (?, 1, ?)', [pdo()->lastInsertId(), $html]);
+$tbId = (int)pdo()->lastInsertId();
+$def = (int)scalar('SELECT lang_id FROM share_languages WHERE lang_default = 1');
+q('INSERT INTO share_textblocks_translation (tb_id, lang_id, tb_content) VALUES (?, ?, ?)', [$tbId, $def, $html]);
+q('INSERT INTO share_textblocks_translation (tb_id, lang_id, tb_content) SELECT ?, lang_id, ? FROM share_languages WHERE lang_default = 0',
+    [$tbId, '<p><a href="ua/claude-links-half/">x</a></p>']);
 
 $owner = posix_getpwuid(fileowner(WEB))['name'];
 exec('cd ' . escapeshellarg(WEB) . ' && runuser -u ' . escapeshellarg($owner) . ' -- php8.5 index.php setup checklinks 2>&1', $out, $rc);
@@ -44,6 +52,10 @@ $false = array_filter($good, fn($u) => $found($u));
 check('setup checklinks: все битые ссылки стенда найдены', !$missed, 'не найдены: ' . implode(' ', $missed) . ' | ' . implode(' / ', array_slice($out, -8)));
 check('setup checklinks: рабочие, внешние, якоря, mailto, tel — не битые', !$false, 'ложные: ' . implode(' ', $false));
 check('setup checklinks: при битых ссылках выход 1', $rc === 1, "выход $rc");
+// та же страница из украинского текста — битая (на украинском отключена)
+$uaTb = (int)scalar("SELECT tb_id FROM share_textblocks WHERE smap_id = ?", [$id]);
+check('страница отключена только на украинском: из украинского текста ссылка ua/… — битая', (bool)array_filter($out, fn($l) => str_contains($l, '[ua]')
+    && str_contains($l, ' ua/claude-links-half/ ')), implode(' / ', array_slice($out, -6)));
 check('ссылка на отключённую страницу — причина «страница отключена»', (bool)array_filter($lines, fn($l) => str_contains($l, 'claude-links-off/') && preg_match('~отключена~u', $l)));
 // страница админки «Битые ссылки»: администратор видит битую ссылку стенда со страницей и причиной; гостю — отказ
 logout();
