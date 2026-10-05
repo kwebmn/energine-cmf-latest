@@ -37,30 +37,37 @@ http("$B/auth.php", ['csrf_token' => token($loginPage), 'user' => ['login' => 1,
 [, $home] = http("$B/");
 $csrf = token($home);
 
+// текстовая страница с блоком textBlock_1 (главная демо — лендинг из секций, блока num 1 на ней нет)
+$P = '/info/quick-start/';
+$pageId = (int)$pdo->query("SELECT q.smap_id FROM share_sitemap q JOIN share_sitemap i ON i.smap_id = q.smap_pid
+    WHERE q.smap_segment = 'quick-start' AND i.smap_segment = 'info'")->fetchColumn();
+$tbId = (int)$pdo->query("SELECT tb_id FROM share_textblocks WHERE smap_id = $pageId AND tb_num = '1'")->fetchColumn();
+$pageName = $pdo->query("SELECT smap_name FROM share_sitemap_translation WHERE smap_id = $pageId AND lang_id = 1")->fetchColumn();
+
 // backups
-$tbOrig = $pdo->query("SELECT tb_content FROM share_textblocks_translation WHERE tb_id = 59 AND lang_id = 1")->fetchColumn();
-$xmlOrig = $pdo->query("SELECT smap_content_xml FROM share_sitemap WHERE smap_id = 80")->fetchColumn();
+$tbOrig = $pdo->query("SELECT tb_content FROM share_textblocks_translation WHERE tb_id = $tbId AND lang_id = 1")->fetchColumn();
+$xmlOrig = $pdo->query("SELECT smap_content_xml FROM share_sitemap WHERE smap_id = $pageId")->fetchColumn();
 
 try {
-    [$code, $body] = http("$B/", ['editMode' => 1, 'csrf_token' => $csrf]);
+    [$code, $body] = http("$B$P", ['editMode' => 1, 'csrf_token' => $csrf]);
     check('edit mode page', $code == 200 && clean($body) && strpos($body, 'single/textBlock_1/') !== false, $body);
     preg_match("~new PageToolbar\('([^']+)'~", $body, $m);
     $panel = $m[1] ?? "$B/single/adminPanel/";
 
     // text block save with the same content
-    [$code, $body] = http("$B/single/textBlock_1/save-text", ['data' => $tbOrig, 'ID' => 80, 'num' => 1, 'csrf_token' => $csrf]);
-    $tbNow = $pdo->query("SELECT tb_content FROM share_textblocks_translation WHERE tb_id = 59 AND lang_id = 1")->fetchColumn();
+    [$code, $body] = http("$B{$P}single/textBlock_1/save-text", ['data' => $tbOrig, 'ID' => $pageId, 'num' => 1, 'csrf_token' => $csrf]);
+    $tbNow = $pdo->query("SELECT tb_content FROM share_textblocks_translation WHERE tb_id = $tbId AND lang_id = 1")->fetchColumn();
     check('textblock save', $code == 200 && clean($body) && trim($tbNow) !== '', $body);
 
-    [$code, $body] = http("$B/");
-    check('page after textblock save', $code == 200 && clean($body) && strpos($body, 'Главная страница') !== false, $body);
+    [$code, $body] = http("$B$P");
+    check('page after textblock save', $code == 200 && clean($body) && $pageName && strpos($body, $pageName) !== false, $body);
 } finally {
-    $st = $pdo->prepare("UPDATE share_textblocks_translation SET tb_content = ? WHERE tb_id = 59 AND lang_id = 1");
+    $st = $pdo->prepare("UPDATE share_textblocks_translation SET tb_content = ? WHERE tb_id = $tbId AND lang_id = 1");
     $st->execute([$tbOrig]);
-    $st = $pdo->prepare("UPDATE share_sitemap SET smap_content_xml = ? WHERE smap_id = 80");
+    $st = $pdo->prepare("UPDATE share_sitemap SET smap_content_xml = ? WHERE smap_id = $pageId");
     $st->execute([$xmlOrig]);
-    $same = $pdo->query("SELECT tb_content FROM share_textblocks_translation WHERE tb_id = 59 AND lang_id = 1")->fetchColumn() === $tbOrig
-        && $pdo->query("SELECT smap_content_xml FROM share_sitemap WHERE smap_id = 80")->fetchColumn() === $xmlOrig;
+    $same = $pdo->query("SELECT tb_content FROM share_textblocks_translation WHERE tb_id = $tbId AND lang_id = 1")->fetchColumn() === $tbOrig
+        && $pdo->query("SELECT smap_content_xml FROM share_sitemap WHERE smap_id = $pageId")->fetchColumn() === $xmlOrig;
     check('originals restored', $same);
 }
 echo "== editing failures: $fail\n";

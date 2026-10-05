@@ -16,6 +16,8 @@ if (!process.env.BASE || !process.env.ADMIN_PASSWORD) {
 const BASE = process.env.BASE.replace(/\/$/, '') + '/';
 const PAYLOAD = '<img src="x" onerror="window.claudeXss=(window.claudeXss||0)+1"><b>claude-grid</b>';
 const db = (...args) => execFileSync('php8.5', [path.join(__dirname, 'grids-db.php'), ...args], { encoding: 'utf8' });
+// последняя страница грида переводов: число констант меняется с переходами базы
+const LAST = String(db('trans-pages').trim());
 let fail = 0;
 function check(label, cond, detail = '') {
     console.log((cond ? 'OK   ' : 'FAIL ') + label + (cond ? '' : ': ' + String(detail).replace(/\s+/g, ' ').slice(0, 300)));
@@ -204,7 +206,7 @@ const inspect = (page) => page.evaluate(() => {
             await op.close();
         }
 
-        // листалка, затемнение и вкладки языков грида (PageList, Overlay, TabPane) — грид переводов: 18 страниц по 50
+        // листалка, затемнение и вкладки языков грида (PageList, Overlay, TabPane) — грид переводов: страницы по 50 (их число — grids-db.php trans-pages)
         // строк, вкладки двух языков. Щелчок по странице показывает другие строки и отмечает её текущей; пока страница
         // грузится, грид затемнён, а листалка не реагирует; после загрузки затемнения нет; на последней странице нет
         // стрелки «дальше»; вкладка другого языка перезагружает строки на этом языке. Грид в одну страницу — без листалки
@@ -253,10 +255,10 @@ const inspect = (page) => page.evaluate(() => {
             check('листалка: страница 2 — другие строки, текущая — 2, стрелка «назад» есть, затемнения нет',
                 s2.current === '2' && s2.first !== s1.first && s2.prev && !s2.overlays.length, JSON.stringify(s2));
             await gp.unroute('**/transEditor/get-data/**');
-            await Promise.all([gp.waitForResponse((r) => r.url().includes('/transEditor/get-data/')), gp.click('.e-pagelist li[index="18"]')]);
+            await Promise.all([gp.waitForResponse((r) => r.url().includes('/transEditor/get-data/')), gp.click(`.e-pagelist li[index="${LAST}"]`)]);
             await gp.waitForTimeout(800);
             const s3 = await state();
-            check('листалка: последняя страница — текущая, стрелки «дальше» нет', s3.current === '18' && !s3.next && s3.prev,
+            check('листалка: последняя страница — текущая, стрелки «дальше» нет', s3.current === LAST && !s3.next && s3.prev,
                 JSON.stringify(s3));
             await Promise.all([gp.waitForResponse((r) => r.url().includes('/transEditor/get-data/')), gp.click('ul.e-tabs li:nth-child(2) a')]);
             await gp.waitForTimeout(800);
@@ -275,7 +277,7 @@ const inspect = (page) => page.evaluate(() => {
                     next: !!list.querySelector('img[alt="next"]'), overlays: document.querySelectorAll('.e-overlay').length };
             });
             check('листалка: страница за последней — отмечена последняя, стрелки «дальше» нет, затемнения нет',
-                beyond.current === '18' && !beyond.next && !beyond.overlays, JSON.stringify(beyond));
+                beyond.current === LAST && !beyond.next && !beyond.overlays, JSON.stringify(beyond));
             check('грид переводов: без ошибок JS и 404', !gErrors.list().length, gErrors.list().join(' | '));
             await gp.close();
 

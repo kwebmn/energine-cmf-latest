@@ -4,6 +4,7 @@
 //   php8.5 grids-db.php add        — создать записи, вывести их id (JSON)
 //   php8.5 grids-db.php remove     — убрать все записи теста
 //   php8.5 grids-db.php user-active ID — активен ли пользователь (1/0)
+//   php8.5 grids-db.php trans-pages    — число страниц грида переводов (по 50 строк)
 require dirname(__DIR__) . '/testlib.php';
 
 const PAYLOAD = '<img src="x" onerror="window.claudeXss=(window.claudeXss||0)+1"><b>claude-grid</b>';
@@ -66,6 +67,9 @@ switch ($cmd) {
         echo json_encode(['user' => (int)$user, 'upload' => (int)$upload, 'root' => (int)$root,
             'today' => scalar('SELECT DATE(NOW())'), 'del' => $del, 'off' => $off, 'dir' => $dir, 'big' => $files['big'],
             'tiny' => $files['tiny'], 'pub' => (int)$pub]);
+        break;
+    case 'trans-pages':
+        echo (int)ceil(scalar('SELECT COUNT(*) FROM share_lang_tags') / 50);
         break;
     case 'remove':
         q('DELETE FROM user_users WHERE u_name LIKE ?', [MARK]);

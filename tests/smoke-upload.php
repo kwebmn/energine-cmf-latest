@@ -4,7 +4,8 @@
 require __DIR__ . '/testlib.php';
 
 const TEMP_DIR = WEB . '/uploads/temp/';
-const ENDPOINT = '/single/textBlock_1/file-library/upload-temp/?json';
+// компонент textBlock_1 есть на текстовой странице (главная демо — лендинг из секций)
+const ENDPOINT = '/info/quick-start/single/textBlock_1/file-library/upload-temp/?json';
 
 function upload($name, $content, $mime) {
     $tmp = tempnam(sys_get_temp_dir(), 'up');

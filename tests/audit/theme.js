@@ -438,7 +438,7 @@ async function inspect(page) {
                         pair('отзывы: цитата', q('[data-section=reviews] blockquote p'));
                         pair('отзывы: автор', q('[data-section=reviews] cite'));
                         const gi = q('[data-section=gallery] img');
-                        out.gallery = !gi || cs(gi).objectFit === 'cover';
+                        out.pictures = !gi || cs(gi).objectFit === 'cover';
                         pair('вопросы: вопрос', q('[data-section=faq] h3'));
                         pair('контакты: ссылка', q('[data-section=contacts] a'));
                         const cta = q('[data-section=cta]');
@@ -448,7 +448,7 @@ async function inspect(page) {
                         return out;
                     });
                     check(`${where}: восемь полос, без прокрутки`, r.sections === 8 && r.overflow <= 0, JSON.stringify({ s: r.sections, o: r.overflow }));
-                    check(`${where}: правила секций применены`, r.heroButton && r.card && r.priceButton && r.quote && r.gallery && r.cta
+                    check(`${where}: правила секций применены`, r.heroButton && r.card && r.priceButton && r.quote && r.pictures && r.cta
                         && (stand !== 'claude-sections' || (r.heroCover && r.heroOverlay === 'ok')), JSON.stringify(r));
                     check(`${where}: контраст не ниже 4.5:1`, !r.low.length, r.low.join('; '));
                     if (scheme === 'light') await p.screenshot({ path: path.join(SHOTS, `${stand}-${w}.png`), fullPage: true });

@@ -23,7 +23,7 @@ INSERT IGNORE INTO `share_lang_tags` (`ltag_name`) VALUES ('TXT_SECTION_SAMPLE_P
 INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`)
     SELECT t.`ltag_id`, l.`lang_id`, IF(l.`lang_abbr` = 'ua',
            '<h2>Ціни</h2><ul><li><h3>Базовий</h3><p>1 000 ₴</p><ul><li>Що входить</li><li>Що входить</li></ul><p><a href="#contacts">Замовити</a></p></li><li><h3>Розширений</h3><p>2 000 ₴</p><ul><li>Що входить</li><li>Що входить</li></ul><p><a href="#contacts">Замовити</a></p></li></ul>',
-           '<h2>Цены</h2><ul><li><h3>Базовый</h3><p>1 000 ₽</p><ul><li>Что входит</li><li>Что входит</li></ul><p><a href="#contacts">Заказать</a></p></li><li><h3>Расширенный</h3><p>2 000 ₽</p><ul><li>Что входит</li><li>Что входит</li></ul><p><a href="#contacts">Заказать</a></p></li></ul>')
+           '<h2>Цены</h2><ul><li><h3>Базовый</h3><p>1 000 ₽</p><ul><li>Что входит</li><li>Что входит</li></ul><p><a href="#contacts">Выбрать</a></p></li><li><h3>Расширенный</h3><p>2 000 ₽</p><ul><li>Что входит</li><li>Что входит</li></ul><p><a href="#contacts">Выбрать</a></p></li></ul>')
       FROM `share_lang_tags` t JOIN `share_languages` l
      WHERE t.`ltag_name` = 'TXT_SECTION_SAMPLE_PRICES';
 INSERT IGNORE INTO `share_lang_tags` (`ltag_name`) VALUES ('TXT_SECTION_SAMPLE_REVIEWS');
