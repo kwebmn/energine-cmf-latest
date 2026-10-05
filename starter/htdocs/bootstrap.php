@@ -53,6 +53,12 @@ define('DEBUG', $config['site']['debug']);
 // как одного из путей для нахождения файлов для include
 set_include_path(implode(PATH_SEPARATOR, array(HTDOCS_DIR, get_include_path())));
 
+// setup (install, linker, scriptMap, …) запускается только из консоли: php index.php setup <action>
+if ((PHP_SAPI == 'cli') && isset($argv[1]) && ($argv[1] == 'setup')) {
+    include_once($config['setup_dir'] . DIRECTORY_SEPARATOR . 'index.php');
+    exit;
+}
+
 //это первое обращение к ядру
 //проверяем наличие файла ini.func.php, если он отсутствует -значит скорее всего инсталляция проекта не произошла
 if(!file_exists($iniPath = implode(DIRECTORY_SEPARATOR, array(CORE_DIR, 'modules', 'share', 'gears', 'ini.func.php')))){

@@ -5,13 +5,14 @@
  *
  * @copyright 2013 Energine
  */
+$energine_release = 'PATH TO CORE'; // the directory where the energine repository is cloned
 return array(
 
     // название проекта
-    'project' => 'Energine 2.12.85.06',
+    'project' => 'Energine 2.13.0',
 
     // путь к директории setup текущего используемого ядра
-    'setup_dir' => ($energine_release = 'PATH TO CORE') . '/setup',
+    'setup_dir' => ROOT_DIR . '/setup',
 
     // список подключенных модулей ядра в конкретном проекте
     // ключи массива - названия модулей, значения - абсолютные пути к месторасположению
@@ -23,6 +24,10 @@ return array(
         'seo'       => $energine_release . '/core/modules/seo',
         'calendar'  => $energine_release . '/core/modules/calendar',
         'comments'  => $energine_release . '/core/modules/comments',
+        'mail'      => $energine_release . '/core/modules/mail',
+        'ads'       => $energine_release . '/core/modules/ads',
+        'blog'      => $energine_release . '/core/modules/blog',
+        'shop'      => $energine_release . '/core/modules/shop',
     ),
 
     // настройки подключения к mysql
@@ -55,7 +60,8 @@ return array(
             'ANOTHER_GLOBAL_XML_VARIABLE' => 'another value',
         ),
         */
-        //'action_log' => 'Energine\\share\\components\\ActionLog',
+        // журнал действий в админке: пишет share_action_log, страница /admin/action-log/
+        'action_log' => 'Energine\\share\\components\\ActionLog',
         /*'js-lib' => [
             'jquery' => 'https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js',
             'mootools' => /*$staticURL*//*'scripts/mootools.min.js'
@@ -104,20 +110,6 @@ return array(
             'height' => 367,
         ),
     ),
-    // дополнительные внешние системы авторизации
-    /*'auth' => array(
-        // VK.COM
-        'vk' => array(
-            'appID' => 'VK APP ID',
-            'secretKey' => 'VK SECRET'
-        ),
-        // FACEBOOK.COM
-        'facebook' => array(
-            'appID' => 'FACEBOOK APP ID',
-            'secretKey' => 'FACEBOOK SECRET'
-        ),
-    ),*/
-
     // натройка сессий
     'session' => array(
         'timeout' => 6000,
@@ -127,16 +119,16 @@ return array(
     // настройка почтовых уведомлений
     'mail' => array(
         // адрес отправителя почтовой корреспонденции
-        'from' => 'noreply@energine.org',
+        'from' => 'noreply@example.com',
         // адрес менеджера
-        'manager' => 'demo@energine.org',
+        'manager' => 'admin@example.com',
         // адрес для сообщений обратной связи
-        'feedback' => 'demo@energine.org'
-    ),
-    // настройки recaptcha
-    'recaptcha' => array(
-        'public' => '6LfkCeASAAAAALl-av9HM_RG1AU-tcta3teX7Z2u',
-        'private' => '6LfkCeASAAAAABPo4F3GoXULR2w5EgHjjd3RDjXk'
+        'feedback' => 'admin@example.com',
+        // источники данных для рассылок (mail_subscriptions.subscription_type => класс)
+        'subscriptions' => array(
+            'news' => 'Energine\\mail\\gears\\MailSourceNews',
+            'crm' => 'Energine\\mail\\gears\\MailSourceCRM',
+        ),
     ),
 
     // настройки файловых репозитариев

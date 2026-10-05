@@ -26,9 +26,16 @@
 
     <!-- page body -->
     <xsl:template match="document">
-        <xsl:if test="$COMPONENTS[@class='Ads']/recordset/record/field[@name='ad_top_728_90']">
+        <!-- врезка страницы: компонент apps отдаёт HTML-код каждого места отдельным полем -->
+        <xsl:if test="$COMPONENTS[@name='pageAds']/recordset/record/field[@name='ad_top_728_90'] != ''">
             <div class="top_adblock">
-                <xsl:value-of select="$COMPONENTS[@class='Ads']/recordset/record/field[@name='ad_top_728_90']" disable-output-escaping="yes"/>
+                <xsl:value-of select="$COMPONENTS[@name='pageAds']/recordset/record/field[@name='ad_top_728_90']" disable-output-escaping="yes"/>
+            </div>
+        </xsl:if>
+        <!-- баннер модуля ads из макета страницы -->
+        <xsl:if test="$COMPONENTS[@name='topBanner']/recordset/record">
+            <div class="top_adblock">
+                <xsl:apply-templates select="$COMPONENTS[@name='topBanner']"/>
             </div>
         </xsl:if>
         <xsl:if test="$COMPONENTS[@class='CrossDomainAuth']">
@@ -47,7 +54,16 @@
                 <xsl:apply-templates select="$COMPONENTS[@class='LangSwitcher']"/>
             </div>
             <div class="main">
+                <xsl:if test="$COMPONENTS[@name='pageAds']/recordset/record/field[@name='ad_content_468_60'] != ''">
+                    <div class="content_adblock">
+                        <xsl:value-of select="$COMPONENTS[@name='pageAds']/recordset/record/field[@name='ad_content_468_60']" disable-output-escaping="yes"/>
+                    </div>
+                </xsl:if>
+                <!-- оформление раздела выводится над содержимым -->
+                <xsl:apply-templates select="$COMPONENTS[@class='Branding']"/>
                 <xsl:apply-templates select="$COMPONENTS[@name='breadCrumbs']"/>
+                <!-- страница ошибки: компонент добавляется в корень документа, а не в content -->
+                <xsl:apply-templates select="$COMPONENTS[@class='ErrorComponent']"/>
                 <xsl:apply-templates select="content"/>
             </div>
             <div class="footer">
@@ -295,7 +311,9 @@
             <xsl:apply-templates/>
         </ul>
         <div class="read_more">
-            <a href="{$BASE}{$LANG_ABBR}{$TEMPLATE}"><xsl:value-of select="$TRANSLATION[@const='TXT_ALL_NEWS']"/></a>
+            <!-- $TEMPLATE — адрес текущей страницы, на главной он вёл обратно на главную:
+                 берём раздел самой новости -->
+            <a href="{$BASE}{$LANG_ABBR}{record[1]/field[@name='category']/@url}"><xsl:value-of select="$TRANSLATION[@const='TXT_ALL_NEWS']"/></a>
         </div>
     </xsl:template>
 

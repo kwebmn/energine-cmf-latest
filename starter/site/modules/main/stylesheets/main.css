@@ -367,17 +367,6 @@ input.radio, input.checkbox {
     width: 100px;
     vertical-align: middle;
 }
-.captcha_field {
-    padding: 10px 0;
-}
-.captcha_field input.text {
-    display: block;
-    width: 92px;
-    margin-top: 5px;
-}
-.captcha_field .name {
-    padding-bottom: 5px;
-}
 /* base form */
 .base_form {
     margin: 0 0 1em 0;
@@ -406,12 +395,6 @@ input.radio, input.checkbox {
 }
 .base_form .date_field select {
     width: 100px;
-}
-.base_form .captcha_field input.text {
-    width: 92px;
-}
-.base_form .captcha_field .name {
-    padding-bottom: 5px;
 }
 /* /base form */
 /* ----- /default forms ----- */
@@ -819,7 +802,7 @@ ul.inline.wo-separator li + li {
 .vote_option a,
 .vote_option .result {
     display: block;
-    background: #f3f3f3 url(../images/vote_option_bg.gif) 0 0 repeat-x;
+    background: #f3f3f3 url(../../images/vote_option_bg.gif) 0 0 repeat-x;
     padding: 8px 12px;
     text-decoration: none;
     color: #555;
@@ -897,6 +880,64 @@ ul.inline.wo-separator li + li {
 p.red { color: red; }
 p.underline { text-decoration: underline; }
 
+/* --- blogs (core/modules/blog) and the calendar of posts --- */
+.blog .calendar {
+    float: right;
+    width: 230px;
+    margin: 0 0 15px 20px;
+    font-size: 12px;
+}
+.calendar_header {
+    text-align: center;
+    margin-bottom: 5px;
+}
+.calendar_header a {
+    margin: 0 5px;
+}
+.calendar_table {
+    border-collapse: collapse;
+    border: none;
+}
+.calendar_table th,
+.calendar_table td {
+    border: none;
+    padding: 2px;
+    text-align: center;
+}
+.calendar_table .foreign_day {
+    color: #bbb;
+}
+.calendar_table .active_day a,
+.calendar_table .current_day {
+    font-weight: bold;
+}
+.blog_header {
+    margin-bottom: 15px;
+}
+.blog_header .blog_all_posts {
+    margin-right: 15px;
+}
+.blog_info {
+    margin-bottom: 3px;
+    font-size: 12px;
+    color: #777;
+}
+.blog_links {
+    margin-top: 5px;
+    font-size: 12px;
+}
+.blog_links a + a {
+    margin-left: 15px;
+}
+.ads_item {
+    margin-bottom: 10px;
+}
+.ads_item img {
+    max-width: 100%;
+    height: auto;
+}
+/* --- /blogs --- */
+
 /* --- media queries --- */
 @media screen and (max-width: 1024px) {
    .colset3 > .col1,
@@ -939,3 +980,27 @@ p.underline { text-decoration: underline; }
     }
 }
 /* --- /media queries -- */
+/* ----- лента вложений страницы -----
+   Разметку строит ядро (fields.xslt). Штатный carousel.css рассчитан на
+   JS-карусель и без неё прячет содержимое, поэтому оформляем лентой сами. */
+.carousel_box .carousel_viewbox ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.carousel_box .carousel_viewbox ul li {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+.carousel_box .carousel_image img {
+    display: block;
+    border: 1px solid rgb(220, 220, 220);
+}
+.carousel_box .next_control,
+.carousel_box .previous_control {
+    display: none;
+}
