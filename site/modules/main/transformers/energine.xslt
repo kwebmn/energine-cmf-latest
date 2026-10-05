@@ -195,7 +195,7 @@
          поля админки — fields.xslt ядра, как были -->
     <xsl:template match="field[not(@name='message')][ancestor::component[@type='form'][@sample='LoginForm' or @class='Register' or @class='UserProfile' or @class='RestorePassword']]" priority="2">
         <div>
-            <xsl:attribute name="class">form-group field <xsl:value-of select="@name"/><xsl:if test="not(@nullable) and @type!='boolean'"> required</xsl:if><xsl:text> </xsl:text><xsl:value-of select="$UI_FIELD"/></xsl:attribute>
+            <xsl:attribute name="class">field <xsl:value-of select="@name"/><xsl:if test="not(@nullable) and @type!='boolean'"> required</xsl:if><xsl:text> </xsl:text><xsl:value-of select="$UI_FIELD"/></xsl:attribute>
             <xsl:apply-templates select="." mode="field_name"/>
             <xsl:apply-templates select="." mode="field_content"/>
         </div>

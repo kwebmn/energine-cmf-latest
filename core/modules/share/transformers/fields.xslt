@@ -14,7 +14,7 @@
     -->
     <xsl:template match="field[ancestor::component[@type='form']]">
         <div>
-            <xsl:attribute name="class">form-group field <xsl:value-of select="./@name"/> <xsl:if test="not(@nullable) and @type!='boolean'"> required</xsl:if></xsl:attribute>            
+            <xsl:attribute name="class">field <xsl:value-of select="./@name"/> <xsl:if test="not(@nullable) and @type!='boolean'"> required</xsl:if></xsl:attribute>            
             <xsl:apply-templates select="." mode="field_name"/>
             <xsl:apply-templates select="." mode="field_content"/>
         </div>
@@ -100,35 +100,51 @@
         Секция 2. Инпуты.
         В этой секции собраны правила вывода полей формы, которые создают сам html-элемент (input, select, etc.).
     -->
+    <!-- поле ввода: класс (inp_* — на них опираются Validator.js и стили), тип, имя и значение — если заданы;
+         остальные атрибуты — FORM_ELEMENT_ATTRIBUTES -->
+    <xsl:template name="field-input">
+        <xsl:param name="class"/>
+        <xsl:param name="type"/>
+        <xsl:param name="name"/>
+        <xsl:param name="set-value" select="false()"/>
+        <xsl:param name="value"/>
+        <input class="{$class}">
+            <xsl:call-template name="FORM_ELEMENT_ATTRIBUTES"/>
+            <xsl:if test="$type != ''"><xsl:attribute name="type"><xsl:value-of select="$type"/></xsl:attribute></xsl:if>
+            <xsl:if test="$name != ''"><xsl:attribute name="name"><xsl:value-of select="$name"/></xsl:attribute></xsl:if>
+            <xsl:if test="$set-value"><xsl:attribute name="value"><xsl:value-of select="$value"/></xsl:attribute></xsl:if>
+        </input>
+    </xsl:template>
+
     <!-- строковое поле (string), или поле, к которому не нашлось шаблона -->
     <xsl:template match="field[ancestor::component[@type='form']]" mode="field_input">    
-        <input class="text inp_string form-control">
-            <xsl:call-template name="FORM_ELEMENT_ATTRIBUTES"/>
-        </input>
+        <xsl:call-template name="field-input">
+            <xsl:with-param name="class" select="'text inp_string'"/>
+        </xsl:call-template>
     </xsl:template>
 
     <!-- поле для почтового адреса (email) -->
     <xsl:template match="field[@type='email'][ancestor::component[@type='form']]" mode="field_input">
-        <input class="text inp_email form-control">
-            <xsl:call-template name="FORM_ELEMENT_ATTRIBUTES"/>
-            <xsl:attribute name="type">email</xsl:attribute>
-        </input>
+        <xsl:call-template name="field-input">
+            <xsl:with-param name="class" select="'text inp_email'"/>
+            <xsl:with-param name="type" select="'email'"/>
+        </xsl:call-template>
     </xsl:template>
 
     <!-- поле для цвета -->
     <xsl:template match="field[@type='color'][ancestor::component[@type='form']]" mode="field_input">
-        <input class="text inp_color form-control">
-            <xsl:call-template name="FORM_ELEMENT_ATTRIBUTES"/>
-            <xsl:attribute name="type">hidden</xsl:attribute>
-        </input>
+        <xsl:call-template name="field-input">
+            <xsl:with-param name="class" select="'text inp_color'"/>
+            <xsl:with-param name="type" select="'hidden'"/>
+        </xsl:call-template>
     </xsl:template>
 
     <!-- поле для телефона (phone)-->
     <xsl:template match="field[@type='phone'][ancestor::component[@type='form']]" mode="field_input">
-        <input class="text inp_phone form-control">
-            <xsl:call-template name="FORM_ELEMENT_ATTRIBUTES"/>
-            <xsl:attribute name="type">tel</xsl:attribute>
-        </input>
+        <xsl:call-template name="field-input">
+            <xsl:with-param name="class" select="'text inp_phone'"/>
+            <xsl:with-param name="type" select="'tel'"/>
+        </xsl:call-template>
     </xsl:template>
 
 
@@ -145,27 +161,27 @@
 
     <!-- числовое поле (float) -->
     <xsl:template match="field[@type='float'][ancestor::component[@type='form']]" mode="field_input">
-        <input class="text inp_float">
-            <xsl:call-template name="FORM_ELEMENT_ATTRIBUTES"/>
-        </input>
+        <xsl:call-template name="field-input">
+            <xsl:with-param name="class" select="'text inp_float'"/>
+        </xsl:call-template>
     </xsl:template>
 
     <xsl:template match="field[@type='money'][ancestor::component[@type='form']]" mode="field_input">
-        <input class="text inp_money">
-            <xsl:call-template name="FORM_ELEMENT_ATTRIBUTES"/>
-        </input>
+        <xsl:call-template name="field-input">
+            <xsl:with-param name="class" select="'text inp_money'"/>
+        </xsl:call-template>
     </xsl:template>
 
     <!-- поле пароля (password) -->
     <xsl:template match="field[@type='password' and ancestor::component[@type='form']]" mode="field_input">
-        <input class="text inp_password  form-control">
-            <xsl:call-template name="FORM_ELEMENT_ATTRIBUTES"/>
-            <xsl:attribute name="type">password</xsl:attribute>
-            <xsl:attribute name="name"><xsl:choose>
+        <xsl:call-template name="field-input">
+            <xsl:with-param name="class" select="'text inp_password'"/>
+            <xsl:with-param name="type" select="'password'"/>
+            <xsl:with-param name="name"><xsl:choose>
                 <xsl:when test="@tableName"><xsl:value-of select="@tableName"/>[<xsl:value-of select="@name"/>]</xsl:when>
                 <xsl:otherwise><xsl:value-of select="@name"/></xsl:otherwise>
-            </xsl:choose></xsl:attribute>
-        </input>
+            </xsl:choose></xsl:with-param>
+        </xsl:call-template>
     </xsl:template>
 
     <!-- поле логического типа (boolean) -->
@@ -354,11 +370,12 @@
             <xsl:when test="@date"><xsl:value-of select="@date"/></xsl:when>
             <xsl:otherwise><xsl:value-of select="."/></xsl:otherwise>
         </xsl:choose></xsl:variable>
-        <input class="text inp_datetime">
-            <xsl:call-template name="FORM_ELEMENT_ATTRIBUTES"/>
-            <xsl:attribute name="type">datetime-local</xsl:attribute>
-            <xsl:attribute name="value"><xsl:value-of select="translate(substring($VALUE, 1, 16), ' ', 'T')"/></xsl:attribute>
-        </input>
+        <xsl:call-template name="field-input">
+            <xsl:with-param name="class" select="'text inp_datetime'"/>
+            <xsl:with-param name="type" select="'datetime-local'"/>
+            <xsl:with-param name="set-value" select="true()"/>
+            <xsl:with-param name="value" select="translate(substring($VALUE, 1, 16), ' ', 'T')"/>
+        </xsl:call-template>
     </xsl:template>
 
     <xsl:template match="field[@type='date'][ancestor::component[@type='form']]" mode="field_input">
@@ -366,11 +383,12 @@
             <xsl:when test="@date"><xsl:value-of select="@date"/></xsl:when>
             <xsl:otherwise><xsl:value-of select="."/></xsl:otherwise>
         </xsl:choose></xsl:variable>
-        <input class="text inp_date">
-            <xsl:call-template name="FORM_ELEMENT_ATTRIBUTES"/>
-            <xsl:attribute name="type">date</xsl:attribute>
-            <xsl:attribute name="value"><xsl:value-of select="substring($VALUE, 1, 10)"/></xsl:attribute>
-        </input>
+        <xsl:call-template name="field-input">
+            <xsl:with-param name="class" select="'text inp_date'"/>
+            <xsl:with-param name="type" select="'date'"/>
+            <xsl:with-param name="set-value" select="true()"/>
+            <xsl:with-param name="value" select="substring($VALUE, 1, 10)"/>
+        </xsl:call-template>
     </xsl:template>
 
     <!-- поле типа thumb используется только в FileRepository -->

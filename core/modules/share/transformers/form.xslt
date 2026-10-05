@@ -59,7 +59,7 @@
 
     
     <xsl:template match="toolbar[parent::component[@type='form']]">
-        <div class="controlset form-group">
+        <div class="controlset">
             <xsl:apply-templates/>
         </div>
     </xsl:template>

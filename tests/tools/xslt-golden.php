@@ -4,6 +4,7 @@
 //                                                          гость и администратор, страницы сайта, формы, гриды
 //   php8.5 tests/tools/xslt-golden.php compare DIR REV  — каждый XML преобразуется шаблонами ревизии REV (git archive)
 //                                                          и текущими; разница HTML — в вывод
+// XSLT_GOLDEN_IGNORE='регулярное выражение' — убирается из обоих выводов (задуманная разница, например снятый класс).
 // Выход: 0 — без разницы (capture — снято), 1 — есть разница, 2 — не выполнено.
 require dirname(__DIR__) . '/testlib.php';
 
@@ -56,6 +57,7 @@ function render(string $root, string $xmlFile): string {
     // generate-id() и токены зависят от прогона, пробелы — от форматирования шаблона
     $html = preg_replace('~\bid[a-z]{0,2}\d{5,}\b~', 'ID', $html);
     $html = preg_replace('~[a-f0-9]{64}~', 'TOKEN', $html);
+    if ($ignore = getenv('XSLT_GOLDEN_IGNORE')) $html = preg_replace($ignore, '', $html);
     return trim(preg_replace('~\s+~', ' ', preg_replace('~>\s+<~', '><', $html)));
 }
 

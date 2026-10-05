@@ -27,6 +27,7 @@ echo "### css"; bash css-build.sh
 echo "### menu"; php8.5 menu.php
 echo "### sections"; php8.5 sections.php
 echo "### escaping"; php8.5 xslt-escaping.php
+echo "### xslt-lint"; php8.5 xslt-lint.php
 
 echo "### mail"
 php8.5 smoke-mail.php
