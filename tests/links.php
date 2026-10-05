@@ -45,4 +45,14 @@ check('setup checklinks: все битые ссылки стенда найде�
 check('setup checklinks: рабочие, внешние, якоря, mailto, tel — не битые', !$false, 'ложные: ' . implode(' ', $false));
 check('setup checklinks: при битых ссылках выход 1', $rc === 1, "выход $rc");
 check('ссылка на отключённую страницу — причина «страница отключена»', (bool)array_filter($lines, fn($l) => str_contains($l, 'claude-links-off/') && preg_match('~отключена~u', $l)));
+// страница админки «Битые ссылки»: администратор видит битую ссылку стенда со страницей и причиной; гостю — отказ
+logout();
+[$gc, $gb] = http('/admin/links/');
+check('гостю /admin/links/ — отказ (как у прочих страниц админки — 404)', $gc == 404 || $gc == 403 || ($gc == 200 && !str_contains($gb, 'uploads/public/nope.png')), "HTTP $gc");
+login();
+[$ac, $ab] = http('/admin/links/');
+check('администратор: /admin/links/ — таблица битых ссылок со ссылкой стенда и причиной', $ac == 200 && str_contains($ab, 'uploads/public/nope.png')
+    && str_contains($ab, 'claude-links/') && preg_match('~<table~', $ab) && str_contains($ab, 'Нет файла'), "HTTP $ac " . substr(strip_tags($ab), 0, 200));
+check('администратор: ссылки только для вошедших — отдельным списком', str_contains($ab, 'только для вошедших'));
+logout();
 done('links');

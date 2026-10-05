@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- «Битые ссылки»: ссылки в текстах сайта на несуществующие или отключённые страницы и отсутствующие файлы -->
+<content>
+    <container name="linksContainer" block="alfa">
+        <component name="brokenLinks" class="BrokenLinks">
+            <params>
+                <param name="rights">3</param>
+            </params>
+        </component>
+    </container>
+</content>

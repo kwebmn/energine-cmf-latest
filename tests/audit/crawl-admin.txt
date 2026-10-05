@@ -1,5 +1,6 @@
 admin/
 admin/action-log/
+admin/links/
 admin/mail-templates/
 admin/structure/
 admin/settings/
