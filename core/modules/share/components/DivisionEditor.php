@@ -552,15 +552,74 @@ class DivisionEditor extends Grid implements SampleDivisionEditor {
      *
      * @throws SystemException 'ERR_DEV_BAD_DATA'
      */
-    // Не позволяет удалить раздел по умолчанию а также системные разделы
+    /** служебные страницы корня: без них сайт не работает (вход, админка, карта, robots) */
+    const SYSTEM_SEGMENTS = ['admin', 'login', 'register', 'restore-password', 'profile', 'sitemap', 'google-sitemap', 'robots.txt'];
+
+    /**
+     * Удаление страницы: на страницу ссылаются тексты других страниц — без подтверждения (?confirm=1) ответ
+     * {result: true, mode: 'confirm', confirm: «На страницу ссылаются: …»}, ничего не удалено; DivManager спрашивает
+     * ещё раз и повторяет запрос с ?confirm=1.
+     */
+    protected function delete() {
+        list($id) = $this->getStateParams();
+        $referrers = [];
+        foreach (explode(',', (string)$id) as $one) {
+            $referrers = array_merge($referrers, $this->referrers((int)$one));
+        }
+        if (empty($_GET['confirm']) && $referrers) {
+            $b = new JSONCustomBuilder();
+            // result true: это не ошибка, а вопрос (Energine.request зовёт onSuccess только при result true)
+            $b->setProperty('result', true)->setProperty('mode', 'confirm')
+                ->setProperty('confirm', $this->translate('MSG_DIV_LINKED') . ' ' . implode(', ', array_map(fn($p) => $p === '' ? '/' : $p, array_unique($referrers))));
+            $this->setBuilder($b);
+            return;
+        }
+        parent::delete();
+    }
+
+    /** пути страниц, тексты которых ссылаются на страницу $id */
+    private function referrers(int $id): array {
+        $site = E()->getSiteManager()->getCurrentSite();
+        $checker = new gears\LinkChecker(E()->getDB()->getPDO(), HTDOCS_DIR, (string)parse_url($site->base, PHP_URL_HOST), (string)$site->root);
+        return $checker->referrers($id);
+    }
+
+    /**
+     * Не удаляются: корень, страницы с подстраницами (каскад снёс бы поддерево с текстами) и системные —
+     * служебные сегменты корня и всё внутри admin/.
+     * @throws SystemException ERR_DIV_HAS_CHILDREN, ERR_DIV_SYSTEM
+     */
     protected function deleteData($id) {
         if (!($PID = $this->dbh->getScalar('share_sitemap', ['smap_pid'], [$this->getPK() => $id])))
             throw new SystemException('ERR_DEV_BAD_DATA', SystemException::ERR_CRITICAL);
-        if (empty($PID)) {
-            $PID = null;
+        // грид удаляет и несколько записей сразу: $id — число или массив номеров
+        foreach ((array)$id as $one) {
+            if ($this->dbh->getScalar('share_sitemap', 'COUNT(*)', ['smap_pid' => (int)$one])) {
+                throw new SystemException('ERR_DIV_HAS_CHILDREN', SystemException::ERR_CRITICAL);
+            }
+            if ($this->isSystem((int)$one)) {
+                throw new SystemException('ERR_DIV_SYSTEM', SystemException::ERR_CRITICAL);
+            }
         }
         $this->setFilter(['smap_pid' => $PID]);
         parent::deleteData($id);
+    }
+
+    /** системная страница: служебный сегмент корня или любой предок — admin корня */
+    private function isSystem(int $id): bool {
+        $root = (int)$this->dbh->getScalar('share_sitemap', 'smap_id', ['smap_pid' => null]);
+        for ($cur = $id, $depth = 0; $cur && $depth < 50; $depth++) {
+            $row = $this->dbh->select('share_sitemap', ['smap_pid', 'smap_segment'], ['smap_id' => $cur]);
+            if (!$row) {
+                return false;
+            }
+            [$row] = $row;
+            if ((int)$row['smap_pid'] === $root && in_array($row['smap_segment'], self::SYSTEM_SEGMENTS, true)) {
+                return true;
+            }
+            $cur = (int)$row['smap_pid'];
+        }
+        return false;
     }
 
 

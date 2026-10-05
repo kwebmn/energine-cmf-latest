@@ -265,7 +265,13 @@ class TextBlock extends DataSet implements SampleTextBlock{
                     $this->dbh->modify(QAL::INSERT, $tableName, array('tb_content' => $result, 'tb_id' => $tbID, 'lang_id' => $langID));
                 }
             } elseif ($tbID) {
-                $this->dbh->modify(QAL::DELETE, $this->tableName, null, array('tb_id' => $tbID));
+                // стёртый текст — удаляется только перевод этого языка; строка блока уходит, когда переводов не осталось
+                // (раньше удалялась вся строка, и каскад сносил тексты на других языках)
+                $tableName = $this->tableName . '_translation';
+                $this->dbh->modify(QAL::DELETE, $tableName, null, array('tb_id' => $tbID, 'lang_id' => $langID));
+                if (!$this->dbh->select($tableName, array('tb_id'), array('tb_id' => $tbID))) {
+                    $this->dbh->modify(QAL::DELETE, $this->tableName, null, array('tb_id' => $tbID));
+                }
             }
 
 

@@ -238,7 +238,16 @@ export class DivManager {
             return;
         }
         const nodeId = this.tree.getSelectedNode().getId();
-        Energine.request(this.singlePath + nodeId + '/delete/', '', () => this.reload());
+        // на страницу ссылаются тексты — сервер отвечает полем confirm, спрашиваем ещё раз и повторяем с ?confirm=1
+        Energine.request(this.singlePath + nodeId + '/delete/', '', (response) => {
+            if (response.confirm) {
+                if (confirm(response.confirm)) {
+                    Energine.request(this.singlePath + nodeId + '/delete/?confirm=1', '', () => this.reload());
+                }
+                return;
+            }
+            this.reload();
+        });
     }
 
     /**

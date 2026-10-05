@@ -79,6 +79,78 @@ class LinkChecker {
     }
 
     /**
+     * Страницы, в текстах которых есть ссылки на страницу $pageId (по пути; язык ссылки не важен).
+     * @return string[] пути страниц-источников ('' — главная), без повторов
+     */
+    public function referrers(int $pageId): array {
+        $target = null;
+        foreach ($this->pages as $path => $p) {
+            if ($p['id'] === $pageId) { $target = $path; }
+        }
+        if ($target === null) {
+            return [];
+        }
+        $pathOf = [];
+        foreach ($this->pages as $path => $p) { $pathOf[$p['id']] = $path; }
+        $result = [];
+        $sources = $this->pdo->query(
+            'SELECT t.smap_id AS page, tt.tb_content AS html FROM share_textblocks t JOIN share_textblocks_translation tt ON tt.tb_id = t.tb_id
+             UNION ALL SELECT smap_id, smap_description_rtf FROM share_sitemap_translation WHERE smap_description_rtf IS NOT NULL'
+        );
+        foreach ($sources as $row) {
+            if ($row['page'] == $pageId || !preg_match_all('~\b(?:href|src)\s*=\s*(["\'])(.*?)\1~is', (string)$row['html'], $m)) {
+                continue;
+            }
+            foreach ($m[2] as $link) {
+                if ($this->pageKeyOf(html_entity_decode($link, ENT_QUOTES | ENT_HTML5, 'UTF-8')) === $target) {
+                    $result[$row['page'] === null ? '(общий блок)' : ($pathOf[$row['page']] ?? '?')] = true;
+                    break;
+                }
+            }
+        }
+        return array_keys($result);
+    }
+
+    /**
+     * Путь страницы сайта, на которую ведёт ссылка ('' — главная), или null — ссылка не на страницу этого сайта
+     * (внешняя, файл, якорь, mailto …). Префикс языка снимается.
+     */
+    public function pageKeyOf(string $link): ?string {
+        $link = trim($link);
+        if ($link === '' || $link[0] === '#' || preg_match('~^(mailto|tel|javascript|data|sms|skype|callto):~i', $link)) {
+            return null;
+        }
+        if (preg_match('~^(?:https?:)?//([^/?#]+)(.*)$~i', $link, $m)) {
+            if (self::host($m[1]) !== $this->domain) {
+                return null;
+            }
+            $link = $m[2] === '' ? '/' : $m[2];
+        } elseif (preg_match('~^[a-z][a-z0-9+.-]*:~i', $link)) {
+            return null;
+        }
+        $path = rawurldecode(preg_replace('~[?#].*$~s', '', $link));
+        if (str_starts_with($path, '/')) {
+            if (!str_starts_with($path . '/', $this->root) && $path !== rtrim($this->root, '/')) {
+                return null;
+            }
+            $path = substr($path, strlen($this->root));
+        }
+        $parts = [];
+        foreach (explode('/', $path) as $part) {
+            if ($part === '..') { array_pop($parts); } elseif ($part !== '.' && $part !== '') { $parts[] = $part; }
+        }
+        $last = end($parts);
+        if (!($path === '' || str_ends_with($path, '/')) && $last !== false && str_contains($last, '.')) {
+            return null; // файл
+        }
+        if ($parts && in_array($parts[0], $this->langPrefixes, true)) {
+            array_shift($parts);
+        }
+        $key = $parts ? implode('/', $parts) . '/' : '';
+        return isset($this->pages[$key]) ? $key : null;
+    }
+
+    /**
      * Почему ссылка битая, или null — рабочая либо не проверяется. Язык ссылки — по префиксу (ua/…), без префикса —
      * язык по умолчанию: так адрес и открывается; страница должна быть включена на этом языке.
      */

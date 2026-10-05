@@ -453,6 +453,9 @@ INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2856,'HELP_FILERE
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2857,'HELP_TRANSLATIONEDITOR_MAIN');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2858,'HELP_SITESETTINGS_EDIT');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2859,'HELP_MAILTEMPLATEEDITOR_EDIT');
+INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2860,'ERR_DIV_HAS_CHILDREN');
+INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2861,'ERR_DIV_SYSTEM');
+INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2862,'MSG_DIV_LINKED');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (15,1,'Выйти');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (15,2,'Вийти');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (42,1,'Сохранить');
@@ -1337,6 +1340,12 @@ INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2858,2,'Налаштування сайту: назва, ключові слова та опис для пошуковиків за замовчуванням, прапорці robots (NOINDEX закриває весь сайт від пошуковиків).');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2859,1,'Шаблон письма: тема и текст. Слова в квадратных скобках ([user_name], [site_name] …) подставляются при отправке — их не удаляйте.');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2859,2,'Шаблон листа: тема та текст. Слова у квадратних дужках ([user_name], [site_name] …) підставляються під час надсилання — їх не видаляйте.');
+INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2860,1,'Сначала удалите или перенесите подстраницы этой страницы.');
+INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2860,2,'Спочатку видаліть або перенесіть підсторінки цієї сторінки.');
+INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2861,1,'Это служебная страница сайта (вход, админка, карта сайта): её нельзя удалить.');
+INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2861,2,'Це службова сторінка сайту (вхід, адмінка, мапа сайту): її не можна видалити.');
+INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2862,1,'На эту страницу ссылаются тексты других страниц — ссылки станут битыми. Удалить всё равно? Страницы со ссылками:');
+INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2862,2,'На цю сторінку посилаються тексти інших сторінок — посилання стануть битими. Все одно видалити? Сторінки з посиланнями:');
 INSERT INTO `mail_templates` (`template_id`, `template_sysname`, `template_is_active`, `template_hints`) VALUES (1,'user_registration',1,'[user_name] - имя пользователя, [user_login] - логин (e-mail), [password_link] - ссылка установки пароля (действует час), [site_name] - название сайта, [site_url] - адрес сайта');
 INSERT INTO `mail_templates` (`template_id`, `template_sysname`, `template_is_active`, `template_hints`) VALUES (2,'user_restore_password',1,'[sex_suffix_hello] - окончание обращения по полу пользователя (константы TXT_EMAIL_SUFFIX_SEX_M/F/UNKNOWN), [user_name] - имя, [user_login] - логин (e-mail), [restore_link] - ссылка для смены пароля (действует час), [site_name] - название сайта, [site_url] - адрес сайта');
 INSERT INTO `mail_templates_translation` (`template_id`, `lang_id`, `template_name`, `template_subject`, `template_body`, `template_body_rtf`) VALUES (1,1,'Регистрация пользователя','Регистрация на сайте [site_name]','Здравствуйте, [user_name]!\n\nВы зарегистрированы на сайте [site_name] ([site_url]). Логин: [user_login]\n\nЗадайте пароль по ссылке (действует час): [password_link]\nЕсли ссылка устарела, воспользуйтесь «Забыли пароль?» на странице входа.\n\nПисьмо отправлено автоматически, отвечать на него не нужно.','<p>Здравствуйте, [user_name]!</p>\n<p>Вы зарегистрированы на сайте <a href=\"[site_url]\">[site_name]</a>. Логин: <strong>[user_login]</strong></p>\n<p><a href=\"[password_link]\">Задайте пароль</a> — ссылка действует час. Если она устарела, воспользуйтесь «Забыли пароль?» на странице входа.</p>\n<p>Письмо отправлено автоматически, отвечать на него не нужно.</p>');
