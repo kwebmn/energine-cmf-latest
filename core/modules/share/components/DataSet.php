@@ -630,7 +630,8 @@ abstract class DataSet extends Component
     protected function pageTree()
     {
         $this->request->shiftPath(1);
-        $this->pageTree = $this->document->componentManager->createComponent('pagetree', 'Energine\\share\\components\\DivisionEditor', NULL);
+        $this->pageTree = $this->document->componentManager->createComponent('pagetree', 'Energine\\share\\components\\DivisionEditor',
+            ['config' => 'core/modules/share/config/DivisionEditorSelect.component.xml']);
         $this->pageTree->run();
     }
 

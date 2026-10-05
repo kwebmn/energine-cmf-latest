@@ -12,6 +12,9 @@ use Energine\share\gears\SystemException;
 use Energine\share\gears\TextHistory;
 
 class TextBlockHistory extends Grid {
+    /** Откат меняет данные — только POST с токеном (Component::CHANGING_STATES + restore). */
+    const CHANGING_STATES = ['delete', 'up', 'down', 'moveTo', 'activate', 'clear', 'copy', 'resetTemplates', 'restore'];
+
     public function __construct($name, ?array $params = null) {
         parent::__construct($name, $params);
         $this->setTableName(TextHistory::TABLE);

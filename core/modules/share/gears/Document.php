@@ -462,6 +462,10 @@ final class Document extends Primitive implements IDocument {
                 ($this->getRights() >= $block->getCurrentStateRights())
             ) {
                 $block->run();
+            } elseif ($block->enabled() && $this->getProperty('single')) {
+                // окно (single): запрошенный компонент — единственный на странице; прав на его состояние нет —
+                // отказ 403, а не пустая страница 200
+                throw new SystemException('ERR_403', SystemException::ERR_403);
             }
             /*
             * Запускаем определение текущего действия компонента

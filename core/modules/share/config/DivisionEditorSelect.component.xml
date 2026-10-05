@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Дерево разделов для выбора страницы (DataSet::pageTree — ссылка на страницу в редакторе): только просмотр
+     и выбор; состояния правки, пользователей, ролей, языков и настроек убраны -->
+<configuration extends="DivisionEditor.component.xml">
+    <state name="showTransEditor" remove="1"/>
+    <state name="showUserEditor" remove="1"/>
+    <state name="showRoleEditor" remove="1"/>
+    <state name="showLangEditor" remove="1"/>
+    <state name="showSiteSettings" remove="1"/>
+    <state name="resetTemplates" remove="1"/>
+    <state name="getProperties" remove="1"/>
+    <state name="add" remove="1"/>
+    <state name="edit" remove="1"/>
+    <state name="save" remove="1"/>
+    <state name="delete" remove="1"/>
+    <state name="up" remove="1"/>
+    <state name="down" remove="1"/>
+    <state name="showPageToolbar" remove="1"/>
+</configuration>

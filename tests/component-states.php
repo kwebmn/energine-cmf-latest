@@ -11,6 +11,7 @@ foreach (['DocumentController', 'ComponentManager', 'Utils'] as $g) require_once
 const USED_BY = [
     'FileRepositoryModal' => 'Energine\share\components\FileRepository',   // DivisionEditor::fileLibrary
     'FileRepositorySelect' => 'Energine\share\components\FileRepository',  // DataSet::fileLibrary
+    'DivisionEditorSelect' => 'Energine\share\components\DivisionEditor',   // DataSet::pageTree
     'ChildDivisions' => 'Energine\share\components\PageList',              // admin_childs.content.xml
     'MainMenu' => 'Energine\share\components\PageList',                    // default.layout.xml
     'SiteDivisionEditor' => 'Energine\share\components\DivisionEditor',    // site_div_editor.content.xml

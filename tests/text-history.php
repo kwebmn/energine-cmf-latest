@@ -14,7 +14,7 @@ if (!scalar("SHOW TABLES LIKE 'share_textblocks_history'")) {
 $root = (int)scalar('SELECT smap_id FROM share_sitemap WHERE smap_pid IS NULL');
 $info = (int)scalar("SELECT smap_id FROM share_sitemap WHERE smap_segment = 'info' AND smap_pid = ?", [$root]);
 function unstand(): void {
-    foreach (q("SELECT smap_id FROM share_sitemap WHERE smap_segment = 'claude-th'")->fetchAll(PDO::FETCH_COLUMN) as $id) {
+    foreach (q("SELECT smap_id FROM share_sitemap WHERE smap_segment LIKE 'claude-th%' ORDER BY smap_id DESC")->fetchAll(PDO::FETCH_COLUMN) as $id) {
         q('DELETE FROM share_action_log WHERE al_classname LIKE ? AND al_data LIKE ?', ['CLASS_ENERGINE_SHARE_COMPONENTS_TEXTBLOCK%', '%"smap_id";i:' . $id . ';%']);
         q('DELETE tt FROM share_textblocks_translation tt JOIN share_textblocks t USING (tb_id) WHERE t.smap_id = ?', [$id]);
         foreach (['share_textblocks', 'share_access_level', 'share_sitemap_translation', 'share_sitemap'] as $t) q("DELETE FROM $t WHERE smap_id = ?", [$id]);
@@ -90,5 +90,31 @@ $save('');
 $save('', '/' . $other['lang_abbr']);
 check('блока нет — истории нет (каскад)', (int)scalar('SELECT COUNT(*) FROM share_textblocks WHERE tb_id = ?', [$tb]) === 0
     && (int)scalar('SELECT COUNT(*) FROM share_textblocks_history WHERE tb_id = ?', [$tb]) === 0);
+// 6. откат — действие, меняющее данные: GET-ом не выполняется (как delete/up/down — Csrf::refuse, 422)
+$save('<p>первая</p>');
+$save('<p>до отката</p>');
+$tb2 = (int)scalar("SELECT tb_id FROM share_textblocks WHERE smap_id = ? AND tb_num = '1'", [$id]); // блок пересоздан — новый tb_id
+$first = scalar('SELECT tbh_id FROM share_textblocks_history WHERE tb_id = ? AND lang_id = ? ORDER BY tbh_id DESC LIMIT 1', [$tb2, $L]);
+check('новый блок после удаления снова копит историю', (bool)$first, var_export($first, true));
+if ($first) {
+    [$c, $b] = http("/claude-th/single/textBlock_1/history/restore/$first/", null, ['X-Request: JSON']);
+    $now2 = scalar('SELECT tb_content FROM share_textblocks_translation WHERE tb_id = ? AND lang_id = ?', [$tb2, $L]);
+    check('откат GET-ом — отказ 422, текст не изменился', $c == 422 && $now2 === '<p>до отката</p>', "HTTP $c " . substr($b, 0, 120) . ' | ' . $now2);
+}
+
+// 7. страница с длинным адресом (вложенные разделы): запись в журнал не ломает сохранение (al_objectname — 100 знаков)
+$seg = 'claude-th-' . str_repeat('x', 40);
+$pid = $id;
+foreach ([1, 2, 3] as $level) {
+    q("INSERT INTO share_sitemap (smap_layout, smap_content, smap_pid, smap_segment, smap_in_menu, smap_order_num) VALUES ('default.layout.xml', 'textblock.content.xml', ?, ?, 0, 999)", [$pid, $seg]);
+    $pid = (int)pdo()->lastInsertId();
+    foreach ($langs as $l) q('INSERT INTO share_sitemap_translation (smap_id, lang_id, smap_name, smap_is_disabled) VALUES (?, ?, ?, 0)', [$pid, $l['lang_id'], 'Стенд ' . $level]);
+    q('INSERT INTO share_access_level (smap_id, group_id, right_id) SELECT ?, group_id, right_id FROM share_access_level WHERE smap_id = ?', [$pid, $info]);
+}
+$deepPath = "/claude-th/$seg/$seg/$seg/";
+[$c, $b] = http($deepPath . 'single/textBlock_1/save-text', ['data' => '<p>глубоко</p>', 'ID' => $pid, 'num' => 1]);
+check('сохранение текста на странице с адресом длиннее 100 знаков — успешно', $c == 200 && str_contains($b, '"result":true')
+    && scalar("SELECT tb_content FROM share_textblocks t JOIN share_textblocks_translation tt USING (tb_id) WHERE t.smap_id = ? AND tt.lang_id = ?", [$pid, $L]) === '<p>глубоко</p>', "HTTP $c " . substr($b, 0, 160));
+
 logout();
 done('text-history');

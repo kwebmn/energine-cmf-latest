@@ -65,4 +65,18 @@ check('свойства раздела с подставным languageID — ч
 [$c, $j, $raw] = json('/admin/users/single/userEditor/get-data/u_name-asc/', '');
 check('обычная сортировка грида работает', $c == 200 && is_array($j) && !empty($j['data']), "HTTP $c " . substr($raw, 0, 120));
 logout();
+// 4. окна редактора, встроенные в компоненты (дерево разделов, библиотека файлов, менеджер картинок), — только
+//    редактору: у гостя через публичную форму (регистрация) ни карты сайта, ни списка пользователей, ни файлов
+logout();
+foreach (['page-tree/list/' => 'divtree|gridContainer', 'page-tree/get-data/' => '"smap_id"|smap_segment', 'page-tree/user/get-data/' => 'u_name|u_fullname',
+          'file-library/' => 'gridContainer|upl_path', 'imagemanager/' => 'upl_width|image_manager|imageManager'] as $tail => $marker) {
+    [$c, $b] = http('/register/single/regForm/' . $tail);
+    check("гость: /register/single/regForm/$tail — без данных ($c)", in_array($c, [403, 404]) || ($c == 200 && !preg_match("~$marker~", $b)),
+        "HTTP $c " . substr(preg_replace('/\s+/', ' ', strip_tags($b)), 0, 120));
+}
+login();
+[$c, $b] = http('/info/quick-start/single/textBlock_1/page-tree/list/');
+check('администратор: дерево разделов для ссылки открывается', $c == 200 && str_contains($b, 'divtree'), "HTTP $c");
+logout();
+
 done('perimeter');

@@ -93,7 +93,7 @@ class TextHistory {
             }
         }
         if ($class = Primitive::getConfigValue('site.action_log')) {
-            (new $class(TextBlock::class, $page . '#' . $num))->write('UPDATE', $data);
+            (new $class(TextBlock::class, mb_substr($page . '#' . $num, 0, 100)))->write('UPDATE', $data); // al_objectname — varchar(100)
         }
         if ($smapId) {
             $this->dbh->modify(QAL::UPDATE, 'share_sitemap', ['smap_last_mod' => date('Y-m-d H:i:s')], ['smap_id' => $smapId]);
