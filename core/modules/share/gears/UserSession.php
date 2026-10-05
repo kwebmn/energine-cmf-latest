@@ -276,7 +276,7 @@ final class UserSession implements \SessionHandlerInterface {
      * Read session data.
      *
      * @param string $phpSessId Sesion ID.
-     * @return mixed
+     * @return string|false
      *
      * @see UserSession::data
      */
@@ -289,7 +289,7 @@ final class UserSession implements \SessionHandlerInterface {
      *
      * @param string $phpSessId Session ID.
      * @param mixed $data Data.
-     * @return mixed
+     * @return bool
      */
     public function write($phpSessId, $data): bool {
         if (!empty($data)) {
@@ -319,7 +319,7 @@ final class UserSession implements \SessionHandlerInterface {
      * Garbage collector.
      *
      * @param int $maxLifeTime Maximal session lifespan.
-     * @return bool
+     * @return int|false
      */
     public function gc($maxLifeTime): int|false {
         $this->dbh->modify(

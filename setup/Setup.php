@@ -1111,12 +1111,14 @@ final class Setup {
      */
     private function writeTranslations($data, $transFileName = 'translations.csv') {
         $langRes = $this->dbConnect->query('SELECT lang_id, lang_abbr FROM share_languages');
+        $langData = [];
         while ($row = $langRes->fetch(PDO::FETCH_ASSOC)) {
             $langData[$row['lang_id']] = $row['lang_abbr'];
         }
 
 
         //$rows[] = 'CONST;' . implode(';', $langData);
+        $rows = [];
         //Формируем массив вида [тип_модуля][имя_модуля]=>array("Имя константы; Перевод 1; Перевод 2")
         foreach ($data as $ltagName => $ltagInfo) {
             //Берем только первый файл, все остальные вхождения нам не сильно интересны
@@ -1135,6 +1137,7 @@ final class Setup {
         //Пишем в файлы данные массива
         foreach ($rows as $moduleType => $modulesInfo) {
             //Не используем  константы CORE_REL_DIR/SITE_REL_DIR поскольку там могут быть пути
+            $filePath = '';
             if ($moduleType == 'core') {
                 $filePath = CORE_DIR;
             } elseif ($moduleType == 'site') {
@@ -1294,6 +1297,7 @@ final class Setup {
                 if (!$res) throw new \Exception('ERROR');
 
                 $data = $res->fetch(\PDO::FETCH_ASSOC);
+                $newPID = null;
 
                 if (empty($data)) {
                     $uplWidth = $uplHeight = 'NULL';
@@ -1495,7 +1499,7 @@ final class Setup {
     /**
      * Show all input arguments as string line.
      *
-     * @return string
+     * @return void
      */
     private function text() {
         foreach (func_get_args() as $text) {

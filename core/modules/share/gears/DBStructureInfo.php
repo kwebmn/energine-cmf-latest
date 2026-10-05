@@ -178,7 +178,7 @@ class DBStructureInfo extends Primitive {
 	 * Analyze table structure.
 	 *
 	 * @param string $tableName Table name.
-	 * @return array|PDOStatement|string
+	 * @return array|\PDOStatement|string
 	 *
 	 * @throws SystemException
 	 */

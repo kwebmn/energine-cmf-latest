@@ -26,6 +26,8 @@ class Site;
  * @property-read array $metaRobots
  * @property-read string $metaKeywords
  * @property-read string $metaDescription
+ * @property-read string $name название сайта на текущем языке (share_sites_translation)
+ * @property-read string $folder папка сайта в site/modules
  */
 class Site extends Primitive {
     use DBWorker {

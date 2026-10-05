@@ -81,7 +81,7 @@ class Button extends Control {
      * Set tooltip.
      *
      * @param string $tooltip Tooltip.
-     * @return string
+     * @return void
      */
     public function setTooltip($tooltip) {
          $this->setAttribute('tooltip', $tooltip);

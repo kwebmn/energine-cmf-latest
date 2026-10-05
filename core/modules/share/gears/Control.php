@@ -57,7 +57,7 @@ abstract class Control extends Primitive {
 
     /**
      * Toolbar.
-     * @var ToolBar $toolbar
+     * @var Toolbar $toolbar
      */
     private $toolbar;
 
@@ -218,7 +218,7 @@ abstract class Control extends Primitive {
     /**
      * Build control element.
      *
-     * @return DOMNode
+     * @return \DOMNode
      */
     public function build() {
         $controlElem = $this->doc->createElement(self::TAG_NAME);

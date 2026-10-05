@@ -51,12 +51,12 @@ class DivisionEditor extends Grid implements SampleDivisionEditor {
     private $transEditor;
     /**
      * User editor.
-     * @var UserEditor $userEditor
+     * @var \Energine\user\components\UserEditor $userEditor
      */
     protected $userEditor;
     /**
      * Role editor.
-     * @var RoleEditor $roleEditor
+     * @var \Energine\user\components\RoleEditor $roleEditor
      */
     protected $roleEditor;
     /**
@@ -91,6 +91,7 @@ class DivisionEditor extends Grid implements SampleDivisionEditor {
         $groups = convertDBResult($groups, 'group_id');
         //создаем матриц
         //название группы/перечень прав
+        $res = [];
         foreach (array_keys($groups) as $groupID) {
             $res[] = ['right_id' => 0, 'group_id' => $groupID];
         }

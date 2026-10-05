@@ -342,7 +342,7 @@ class FilterConditionConverter implements \ArrayAccess, \Iterator {
      */
     public static function getInstance() {
         if (is_null(self::$instance)) {
-            self::$instance = new static;
+            self::$instance = new self;
         }
 
         return self::$instance;

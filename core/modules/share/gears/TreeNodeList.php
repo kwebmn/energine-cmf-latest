@@ -61,16 +61,6 @@ class TreeNodeList implements \Iterator{
         return $this->nodeList[$k];
     }
 
-    /**
-     * Insert node before target node.
-     *
-     * @param TreeNode $node Node that will be inserted.
-     * @param TreeNode $beforeNode Target node.
-     * @return TreeNode
-     */
-    public function insertBefore(TreeNode $node, TreeNode $beforeNode) {
-    }
-
     //todo VZ: Why this function has return value?
     /**
      * Remove node.

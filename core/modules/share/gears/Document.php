@@ -274,15 +274,11 @@ final class Document extends Primitive implements IDocument {
         unset($prop);
         foreach ($this->componentManager as $component) {
             $componentResult = false;
-            $dom_errors = false;
-            try {
-                if ($component->enabled()
-                    &&
-                    ($this->getRights() >= $component->getCurrentStateRights())
-                ) {
-                    $componentResult = $component->build();
-                }
-            } catch (DummyException $dummyException) {
+            if ($component->enabled()
+                &&
+                ($this->getRights() >= $component->getCurrentStateRights())
+            ) {
+                $componentResult = $component->build();
             }
 
             if (!empty($componentResult)) {
@@ -294,12 +290,7 @@ final class Document extends Primitive implements IDocument {
                 } catch (\Exception $e) {
                     //stop($e->getTraceAsString());
                 }
-                if ($dom_errors) {
-                    $componentResult->insertBefore($dom_errors, $componentResult->firstChild);
-                }
                 $dom_root->appendChild($componentResult);
-            } elseif ($dom_errors) {
-                $dom_root->appendChild($dom_errors);
             }
         }
 

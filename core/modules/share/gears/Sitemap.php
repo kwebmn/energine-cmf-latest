@@ -234,7 +234,7 @@ final class Sitemap extends Primitive {
                 if (isset($this->info[$id]) && $this->info[$id]['Segment']) {
                     $result[] = $this->info[$id]['Segment'];
                 } else {
-                    $res = $this->getDocumentInfo($id, false);
+                    $res = $this->getDocumentInfo($id);
                     $result[] = $res['Segment'];
                 }
             }

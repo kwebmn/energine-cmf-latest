@@ -126,7 +126,7 @@ class Field extends Primitive implements \Iterator {
      * Remove data from specific row.
      *
      * @param int $rowIndex Row index
-     * @return bool
+     * @return void
      */
     public function removeRowData($rowIndex) {
         unset($this->data[$rowIndex]);

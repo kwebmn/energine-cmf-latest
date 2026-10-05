@@ -45,8 +45,8 @@ interface IBuilder {
 
 /**
  * Page component.
- * @method string translate() translate(string $string, int $langID = null)
- * @method string dateToString() dateToString(int $year, int $month, int $day)
+ * @method string translate(string $const, int|null $langId = null)
+ * @method string dateToString(int|string $year, int|string $month, int|string $day)
  * @code
 class Component;
  * @endcode
@@ -256,7 +256,6 @@ class Component extends Primitive implements IBlock {
      * @todo Если компонент активный - то передача значения в параметре state - ни на что не влияет,
      * @todo все равно используется состояние определяемое конфигом
      * @todo непонятно то ли это фича то ли бага
-     * @final
      */
     private function determineState() {
         //Текущее действие берем из параметров
@@ -319,7 +318,6 @@ class Component extends Primitive implements IBlock {
      * Get component configurations.
      * @return ComponentConfig
      * @note This method was created for redefining configurations in the children.
-     * @final
      */
     protected function getConfig() {
         if (!$this->config) {
@@ -443,7 +441,7 @@ class Component extends Primitive implements IBlock {
 
     /**
      * Get component builder.
-     * @return Builder
+     * @return IBuilder
      * @final
      */
     final public function getBuilder() {
@@ -609,11 +607,10 @@ class Component extends Primitive implements IBlock {
 
     /**
      * Default action.
-     * @return boolean
+     * @return void
      */
     protected function main() {
         $this->prepare(); // вызываем метод подготовки данных
-        return true;
     }
 
     /**

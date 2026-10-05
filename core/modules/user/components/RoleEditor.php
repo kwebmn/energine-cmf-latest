@@ -97,7 +97,7 @@ class RoleEditor extends Grid {
     /**
      * Build tab with division rights.
      *
-     * @return DOMNode
+     * @return \DOMNode
      */
     private function buildDivRightsData() {
         $builder = new TreeBuilder();

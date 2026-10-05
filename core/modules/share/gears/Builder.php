@@ -257,7 +257,7 @@ class Builder extends XMLBuilder {
 	 * @param FieldDescription $fieldInfo Field description.
 	 * @param mixed $data                 Data.
 	 *
-	 * @return DOMNode
+	 * @return \DOMNode
 	 */
 	protected function createOptions( FieldDescription $fieldInfo, $data = false ) {
 		$fieldValue = $this->document->createElement( 'options' );

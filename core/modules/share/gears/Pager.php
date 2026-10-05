@@ -185,7 +185,7 @@ VISIBLE_PAGES_COUNT = 3 --> 1 2 ... 5  6  7 _8_ 9 10 11 ... 455 456
      * Build page list.
      * The root node is returned.
      *
-     * @return DOMNode
+     * @return \DOMNode
      */
     public function build() {
         $pager = new Toolbar('pager');

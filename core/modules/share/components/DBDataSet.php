@@ -338,6 +338,8 @@ class DBDataSet extends DataSet {
             //Если данные не только для текущего языка
             if ($data && (!$this->getDataLanguage() || $this->getDataLanguage() && !$this->getParam('onlyCurrentLang') && isset($dbFields[$this->getTranslationTableName()]))) {
 
+                $matrix = [];
+                $template = [];
                 //формируем матрицу
                 foreach ($data as $row) {
                     $matrix[$row[$this->getPK()]][$row['lang_id']] = $row;

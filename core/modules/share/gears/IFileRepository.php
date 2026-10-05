@@ -114,7 +114,7 @@ interface IFileRepository {
      *
      * @param string $sourceFilename Source filename.
      * @param string $destFilename Destination filename.
-     * @return boolean
+     * @return object|false
      */
     public function uploadFile($sourceFilename, $destFilename);
 
@@ -210,7 +210,7 @@ interface IFileRepository {
     /**
      * Prepare data with
      * @param &$data array repository data as array
-     * @return array||boolean
+     * @return array|bool
      */
     public function prepare(&$data);
 }

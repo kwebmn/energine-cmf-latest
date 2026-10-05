@@ -76,7 +76,7 @@ class TreeBuilder extends Builder {
      * Build tree-like XML.
      *
      * @param TreeNodeList $tree Tree.
-     * @param \DOMElement
+     * @param \DOMElement $recordset Recordset element.
      *
      * @return \DOMElement
      */

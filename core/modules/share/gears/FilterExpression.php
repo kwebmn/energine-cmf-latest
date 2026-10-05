@@ -7,7 +7,6 @@ namespace Energine\share\gears;
 /**
  * Class FilterFieldGroup
  * @package Energine\share\gears
- * @param FilterFieldGroup []|FilterField[]
  */
 class FilterExpression implements \Iterator {
     /**

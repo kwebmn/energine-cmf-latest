@@ -16,8 +16,8 @@ namespace Energine\share\gears;
 /**
  * @property-read QAL $dbh
  *
- * @method string translate()
- * @method string dateToString()
+ * @method string translate(string $const, int|null $langId = null)
+ * @method string dateToString(int|string $year, int|string $month, int|string $day)
  *
  *
  * Class DBWorker
@@ -40,10 +40,11 @@ trait DBWorker {
     }
 
     /**
-     * @param $name
-     * @return \Energine\share\gears\QAL|\QAL
+     * @param string $name
+     * @return QAL|null
      */
     public function __get($name) {
         if ($name == 'dbh') return E()->getDB();
+        return null;
     }
 }

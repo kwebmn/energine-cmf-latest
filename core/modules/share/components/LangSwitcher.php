@@ -46,6 +46,7 @@ class LangSwitcher extends DataSet {
     protected function loadData() {
         $lang = E()->getLanguage();
         $data = $lang->getLanguages();
+        $result = [];
         foreach ($data as $langID => $langInfo) {
             if (!isset($langInfo['lang_is_active']) || $langInfo['lang_is_active']) {
                 $abbr = $langInfo['lang_abbr'];

@@ -985,7 +985,7 @@ class FieldDescription extends Primitive implements \Iterator {
         } //Если права на чтение на контрол больше или равны правам на метод, и права на запись меньше  - просто выводится текст контрола
         elseif ($methodRights >= $RORights && $methodRights < $FCRights) {
             $result = FieldDescription::FIELD_MODE_READ;
-        } elseif ($methodRights >= $FCRights) {
+        } else { // права на запись есть: $methodRights >= $FCRights
             $result = FieldDescription::FIELD_MODE_EDIT;
         }
 

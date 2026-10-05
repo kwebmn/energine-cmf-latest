@@ -62,7 +62,7 @@ class FilterField extends Primitive {
 
 	/**
 	 * @param string $name Name.
-	 * @param string
+	 * @param string $type Field type (FieldDescription::FIELD_TYPE_*).
 	 */
 	public function __construct( $name, $type = FieldDescription::FIELD_TYPE_STRING ) {
 		$this->name = $name;
@@ -200,6 +200,7 @@ class FilterField extends Primitive {
 	 * @return FilterField
 	 */
 	public static function createFrom( $data ) {
+		$result = null;
 		if ( isset( $data['field'] ) && preg_match( '/^\[([a-z_]+)\]\[([a-z_]+)\]$/', $data['field'], $matches ) ) {
 			$result = new FilterField( $matches[2] );
 			$result->setAttribute( 'tableName', $matches[1] );
@@ -314,6 +315,7 @@ class FilterField extends Primitive {
 				$values = array_filter( $tableInfo[ $fieldName ]['options'], function ( $option ) use ( $fieldName, $type ) {
 					$option_value = mb_convert_case(translate( 'field_' . $fieldName . '_' . $type . '_' . $option ), MB_CASE_LOWER);
 					$value = mb_convert_case($this->value, MB_CASE_LOWER);
+					$result = false;
 					switch($this->condition){
 						case '=':
 							$result = $option_value === $value;
@@ -381,7 +383,7 @@ class FilterField extends Primitive {
 
 	/**
 	 * Build element.
-	 * @return DOMNode
+	 * @return \DOMNode
 	 */
 	public function build() {
 		$this->doc = new \DOMDocument( '1.0', 'UTF-8' );

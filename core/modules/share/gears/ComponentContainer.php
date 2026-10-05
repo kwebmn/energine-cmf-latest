@@ -176,7 +176,7 @@ class ComponentContainer extends Primitive implements IBlock, \Iterator {
     /**
      * Build DOM document.
      *
-     * @return DOMElement|array
+     * @return \DOMElement|array
      */
     public function build() {
         $doc = new \DOMDocument('1.0', 'UTF-8');

@@ -3,11 +3,9 @@ ob_start();
 
 define('CHARSET', 'UTF-8');
 
-require_once('bootstrap.php');
-
-// установщик запускается только из CLI (bootstrap.php подключает его при PHP_SAPI === 'cli'):
+// сюда попадаем только из htdocs/bootstrap.php (он уже подключён и подключает нас при PHP_SAPI === 'cli'):
 // php index.php setup ДЕЙСТВИЕ [АРГУМЕНТЫ…]; без действия — install
-$args = array_slice($argv, 2);
+$args = array_slice($_SERVER['argv'], 2);
 $action = $args ? array_shift($args) : 'install';
 // аргументы действия нумеруются с 1, как их ждёт Setup::execute()
 $additionalArgs = $args ? array_combine(range(1, count($args)), $args) : array();

@@ -1,0 +1,67 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Call to an undefined method Energine\\share\\components\\IBuilder\:\:setData\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: core/modules/share/components/DivisionEditor.php
+
+		-
+			message: '#^Call to an undefined method Energine\\share\\components\\IBuilder\:\:setDataDescription\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: core/modules/share/components/DivisionEditor.php
+
+		-
+			message: '#^Call to an undefined method Energine\\share\\components\\IBuilder\:\:setDocumentId\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: core/modules/share/components/DivisionEditor.php
+
+		-
+			message: '#^Call to an undefined method Energine\\share\\components\\IBuilder\:\:setProperty\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: core/modules/share/components/DivisionEditor.php
+
+		-
+			message: '#^Call to an undefined method Energine\\share\\gears\\Control\:\:setState\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: core/modules/share/components/DivisionEditor.php
+
+		-
+			message: '#^Call to an undefined method Energine\\share\\components\\IBuilder\:\:setBreadcrumbs\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: core/modules/share/components/FileRepository.php
+
+		-
+			message: '#^Call to an undefined method Energine\\share\\components\\IBuilder\:\:setPager\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: core/modules/share/components/FileRepository.php
+
+		-
+			message: '#^Call to an undefined method Energine\\share\\components\\IBuilder\:\:setPager\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: core/modules/share/components/Grid.php
+
+		-
+			message: '#^Call to an undefined method Energine\\share\\components\\IBuilder\:\:setTree\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: core/modules/share/components/PageList.php
+
+		-
+			message: '#^Call to an undefined method Energine\\share\\components\\Component\:\:addCrumb\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: core/modules/user/components/RestorePassword.php
+
+		-
+			message: '#^Call to an undefined method Energine\\share\\components\\Component\:\:addCrumb\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: core/modules/user/components/UserProfile.php

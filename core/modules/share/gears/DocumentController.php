@@ -204,14 +204,10 @@ class DocumentController extends Primitive {
 
                 });
 
-                /**
-                 * if there is no error component on page - add it
-                 */
-                /**
-                 * @var ErrorComponent $ec
-                 */
-                if (!($ec = $document->componentManager->getBlockByName('error'))) {
-
+                // if there is no error component on page - add it
+                /** @var ErrorComponent|null $ec */
+                $ec = $document->componentManager->getBlockByName('error');
+                if (!$ec) {
                     $ec = $document->componentManager->createComponent(
                         'error',
                         'Energine\share\components\ErrorComponent'

@@ -217,6 +217,7 @@ class Saver extends Primitive {
         //Данные для сохранения в связанные таблицы или в mysql set
         //Ключ таблицы появляется, когда поле существует, даже если ничего не выбрано (тогда связи удаляются)
         $m2mData = [];
+        $pkName = $mainTableName = null; // имя первичного ключа и основной таблицы — из описания поля-ключа
         $m2mFDs = $this->getDataDescription()->getFieldDescriptionsByType(FieldDescription::FIELD_TYPE_MULTI);
         if (!empty($m2mFDs)) {
             foreach ($m2mFDs as $fieldInfo) {

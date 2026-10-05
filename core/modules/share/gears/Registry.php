@@ -41,6 +41,8 @@ namespace Energine\share\gears {
      * @property \Energine\share\gears\Response $Response
      * @property \Energine\share\gears\ErrorDocument $ErrorDocument
      * @property \Energine\share\gears\PageStructureDocument $PageStructureDocument
+     * @property-read \Energine\share\gears\FileRepoInfo $FileRepoInfo
+     * @property-read \Energine\share\gears\UserGroup $UserGroup
      *
      *
      * Such Registry & Service Locator hybrid.

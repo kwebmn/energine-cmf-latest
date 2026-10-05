@@ -235,10 +235,11 @@ final class ComponentManager extends Primitive implements \Iterator {
 
     /**
      * Create component.
+     * @template T of Component
      * @param string $name Component name.
-     * @param string $class Component class.
+     * @param class-string<T> $class Component class.
      * @param array $params Component properties.
-     * @return Component
+     * @return T
      */
     public function createComponent($name, $class, $params = NULL) {
         return call_user_func_array(['Energine\\share\\components\\Component', 'create'], func_get_args());

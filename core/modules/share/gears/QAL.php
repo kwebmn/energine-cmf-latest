@@ -197,7 +197,7 @@ final class QAL extends Primitive {
 
     /**
      * Empty string.
-     * @var string EMPTY_STRING
+     * @var null EMPTY_STRING
      */
     const EMPTY_STRING = NULL;
 
@@ -401,7 +401,8 @@ final class QAL extends Primitive {
                 }
             }
         } catch (\UnexpectedValueException $e) {
-            new \PDOException($this->pdo->errorInfo()[2]);
+            // PDO работает в режиме исключений, сюда попадём только при другом режиме; раньше исключение создавалось, но не бросалось
+            throw new \PDOException((string)$this->pdo->errorInfo()[2]);
         }
         $this->lastQuery = $result->queryString;
         return $result;
@@ -554,11 +555,8 @@ final class QAL extends Primitive {
      *
      * @c true will be returned if the the result is empty.
      *
-     * @param string $tableOrText Table name or SQL-request text (in this case all further arguments follows as variables)
-     * @param array|string|true $fields Field names.
-     * @param array|string $condition Condition.
-     * @param array|string $sortOrder Sort order.
-     * @param array|string $lim Limit.
+     * Arguments (func_get_args): string $tableOrText — table name or SQL text (then the rest are its variables);
+     * array|string|true $fields; array|string $condition; array|string $sortOrder; array|string $lim.
      * @return array|true
      *
      * @see QAL::selectRequest()
@@ -678,10 +676,7 @@ final class QAL extends Primitive {
 
     /**
      * Get the scalar value of the column in the table.
-     *
-     * @param string $tableName Table name.
-     * @param string $colName Column name.
-     * @param array|mixed $cond Condition.
+     * Arguments (func_get_args): string $tableName, string $colName, array|mixed $cond — or SQL text with its variables.
      * @return mixed
      */
     public function getScalar() {
@@ -699,10 +694,7 @@ final class QAL extends Primitive {
 
     /**
      * Get column values from the table.
-     *
-     * @param string $tableName Table name.
-     * @param string $colName Column name.
-     * @param array|mixed $cond Condition.
+     * Arguments (func_get_args): string $tableName, string $colName, array|mixed $cond — or SQL text with its variables.
      * @return array
      */
     public function getColumn() {

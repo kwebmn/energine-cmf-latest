@@ -635,7 +635,7 @@ class Grid extends DBDataSet {
             throw new SystemException('ERR_NO_ORDER_COLUMN', SystemException::ERR_DEVELOPER);
         }
         $params = $this->getStateParams();
-
+        $direction = $firstItem = null;
 	if (count($params)==3) {
 	list($someid,$direction, $firstItem) = $params;
 	} elseif (count($params)==2) {

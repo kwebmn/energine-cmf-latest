@@ -1,0 +1,22 @@
+# Статический анализ PHP: php8.5 tools/phpstan.phar analyse (phar — bash tools/get-phpstan.sh); в регрессии — tests/phpstan.sh.
+# Известные ошибки записаны в phpstan-baseline.neon, новые — провал; исправили старую — обновить линию:
+#   php8.5 tools/phpstan.phar analyse --generate-baseline
+includes:
+    - phpstan-baseline.neon
+parameters:
+    level: 2
+    phpVersion: 80400 # анализатор 2.2 ещё не знает 8.5
+    paths:
+        - core/modules
+        - site/modules
+        - setup
+        - htdocs
+    excludePaths:
+        - htdocs/resizer/timthumb.php # чужой код
+    bootstrapFiles:
+        - tests/phpstan/bootstrap.php # константы площадки; не vendor/autoload.php (см. комментарий там)
+    tmpDir: tests/phpstan/cache
+    ignoreErrors:
+        # конфиг площадки лежит в web/ рядом с private/, в репозитории его нет — анализатор этот путь не найдёт
+        - identifier: include.fileNotFound
+          path: setup/Setup.php

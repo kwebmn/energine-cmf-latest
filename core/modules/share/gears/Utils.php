@@ -61,7 +61,7 @@ namespace Energine\share\gears {
          * @brief Simplify data base result.
          * It selects the values at the defined field from the result of SELECT request.
          * @see array_column
-         * @param mixed $dbResult Result of SELECT request.
+         * @param array $dbResult Result of SELECT request.
          * @param string $fieldName Field name that will be selected from result.
          * @param boolean $singleRow Return only the first value at defined field name?
          * @return mixed
@@ -221,6 +221,7 @@ namespace Energine\share\gears {
          * @return array
          */
         function arrayPushAfter($src, $in, $pos) {
+            $R = [];
             if (is_int($pos)) {
                 $R = array_merge(array_slice($src, 0, $pos + 1), $in, array_slice($src, $pos + 1));
             } else {
@@ -465,7 +466,7 @@ namespace {
      * @brief Simplify data base result.
      * It selects the values at the defined field from the result of SELECT request.
      * @see array_column
-     * @param mixed $dbResult Result of SELECT request.
+     * @param array $dbResult Result of SELECT request.
      * @param string $fieldName Field name that will be selected from result.
      * @param boolean $singleRow Return only the first value at defined field name?
      * @return mixed
@@ -504,7 +505,7 @@ namespace {
     /**
      * @fn convertDBResult($dbResult, $pkName, $deletePK = false)
      * @brief Convert data base result.
-     * @param mixed $dbResult Data base result.
+     * @param array $dbResult Data base result.
      * @param mixed $pkName Primary key.
      * @param boolean $deletePK Delete fields with primary key from the result?
      * @return array

@@ -24,3 +24,8 @@
 /tests/smoke-write.json
 /tests/cookies-*.txt
 tools/tailwindcss
+
+# инструменты разработчика: PHPStan (tools/get-phpstan.sh) и его кеш, TypeScript (npx) — сайту не нужны
+tools/phpstan.phar
+/tests/phpstan/cache/
+/node_modules/

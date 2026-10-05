@@ -267,7 +267,7 @@ abstract class DataSet extends Component
     /**
      * Create builder.
      *
-     * @return AbstractBuilder
+     * @return IBuilder
      */
     protected function createBuilder()
     {
@@ -478,7 +478,7 @@ abstract class DataSet extends Component
     /**
      * Create description of JS objects.
      *
-     * @return DOMNode
+     * @return \DOMNode
      */
     protected function buildJS()
     {

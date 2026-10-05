@@ -175,7 +175,7 @@ final class Response extends Primitive {
      *
      * @param string $location Redirection URL.
      * @param int $status
-     * @throws InvalidArgumentException
+     * @throws \InvalidArgumentException
      */
     public function setRedirect($location, $status = 302) {
         if(!in_array($status, array(301, 302))) throw new \InvalidArgumentException();

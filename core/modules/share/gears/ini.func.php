@@ -34,22 +34,18 @@ error_reporting(E_ALL);
  */
 /**
  * Access level: none.
- * @var int ACCESS_NONE
  */
 define('ACCESS_NONE', 0);
 /**
  * Access level: read.
- * @var int ACCESS_READ
  */
 define('ACCESS_READ', 1);
 /**
  * Access level: edit.
- * @var int ACCESS_EDIT
  */
 define('ACCESS_EDIT', 2);
 /**
  * Access level: full.
- * @var int ACCESS_FULL
  */
 define('ACCESS_FULL', 3);
 

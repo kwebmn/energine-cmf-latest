@@ -104,6 +104,7 @@ class FileRepository extends Grid implements SampleFileRepository {
     public static function cleanFileData($data, $maxFileSize = 5242880) {
         ini_set('pcre.backtrack_limit', $maxFileSize);
         if (!preg_match('/data\:(.*);base64\,(.*)$/', $data, $matches)) {
+            $errorMessage = 'ERR_BAD_FILE'; // и для кодов, которых нет в списке ниже
             switch (preg_last_error()) {
                 case PREG_NO_ERROR:
                     $errorMessage = 'ERR_BAD_FILE';
@@ -131,9 +132,8 @@ class FileRepository extends Grid implements SampleFileRepository {
 
         return (object)['mime' => $mime, 'data' => base64_decode($string)];
     }
-     /**
-     * moveToDir
-     * @param int $uplID Upload ID.
+    /**
+     * moveToDir: первый параметр состояния — номер записи (upl_id).
      */
     protected function moveToDir() {
         $sp = $this->getStateParams();
@@ -145,9 +145,8 @@ class FileRepository extends Grid implements SampleFileRepository {
         $this->addToolbar($this->loadToolbar()); // add ok cancel buttons
         $this->js = $this->buildJS();
     }
-     /**
+    /**
      * GetDirectories
-     * @param
      */
     protected function getDirs() {
         $this->setDataDescription($this->createDataDescription());
@@ -165,9 +164,8 @@ class FileRepository extends Grid implements SampleFileRepository {
         $this->setBuilder(new JSONRepoBuilder());
 
     }
-      /**
-     * Move Folder
-     * @param int,int $moving_id $movetoid
+    /**
+     * Move Folder: параметр состояния — «кого,куда» (upl_id через запятую).
      */
     protected function getDirsMove() {
         $transactionStarted = $this->dbh->beginTransaction();
@@ -200,9 +198,8 @@ class FileRepository extends Grid implements SampleFileRepository {
             throw $e;
         }
     }
-     /**
-     * Copy
-     * @param int $uplID Upload ID.
+    /**
+     * Copy: первый параметр состояния — номер записи (upl_id).
      */
     protected function copy() {
         $sp = $this->getStateParams();
@@ -298,9 +295,8 @@ class FileRepository extends Grid implements SampleFileRepository {
             }
         }
     }
-      /**
-     * Delete
-     * @param int $uplID Upload ID.
+    /**
+     * Delete: первый параметр состояния — номера записей (upl_id через запятую).
      */
     protected function delete() {
         $sp = $this->getStateParams();
