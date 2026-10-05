@@ -119,7 +119,6 @@ INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (432,'TXT_CONTACTS
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (439,'TXT_REQUIRED_FIELDS');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (441,'TXT_USER_REGISTRED');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (467,'FIELD_SMAP_REDIRECT_URL');
-INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (469,'BTN_ZIP_UPLOAD');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (471,'TXT_MONTH_1');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (472,'TXT_MONTH_2');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (473,'TXT_MONTH_3');
@@ -310,7 +309,6 @@ INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2101,'ERR_CANT_CO
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2102,'ERR_CANT_CREATE_DIR');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2103,'ERR_DEV_NO_PARAM');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2104,'ERR_DUPLICATE_LOGIN');
-INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2105,'ERR_FAKE');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2106,'ERR_INCORRECT_MIME');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2107,'ERR_INSUFFICIENT_DATA');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2108,'ERR_INVALID_UPL_PATH');
@@ -669,8 +667,6 @@ INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (441,2,'Вітаємо, Ви вдало зареєструвалися. На вказану Вами електронну адресу\nвідправлено лист з Вашим паролем.');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (467,1,'Перенаправлять по адресу');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (467,2,'Перенаправляти за адресою');
-INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (469,1,'Загрузить архив');
-INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (469,2,'Завантажити архiв');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (471,1,'января');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (471,2,'сiчня');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (472,1,'февраля');
@@ -1055,8 +1051,6 @@ INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2103,2,'Компоненту передано невідомий параметр.');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2104,1,'Пользователь с таким e-mail уже зарегистрирован.');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2104,2,'Користувач з таким e-mail вже зареєстрований.');
-INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2105,1,'Файл не прошёл проверку.');
-INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2105,2,'Файл не пройшов перевірку.');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2106,1,'Недопустимый тип файла.');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2106,2,'Неприпустимий тип файлу.');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2107,1,'Недостаточно данных для выполнения запроса.');
