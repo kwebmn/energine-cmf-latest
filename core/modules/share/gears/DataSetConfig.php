@@ -29,5 +29,7 @@ class DataSetConfig extends ComponentConfig {
         parent::__construct($config, $className, $moduleName);
         $this->registerState('imageManager', array('/imagemanager/'));
         $this->registerState('fileLibrary', array('/file-library/', '/file-library/[any]/'));
+        // дерево разделов для ссылки на страницу сайта в редакторе (EnergineEditor.insertPageLink → DataSet::pageTree)
+        $this->registerState('pageTree', array('/page-tree/', '/page-tree/[any]/'));
     }
 }

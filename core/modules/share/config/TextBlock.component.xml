@@ -31,6 +31,11 @@
 				<pattern>/file-library/[any]/</pattern>
 			</uri_patterns>
 		</state>
+		<state name="pageTree" rights="3">
+			<uri_patterns>
+				<pattern>/page-tree/[any]/</pattern>
+			</uri_patterns>
+		</state>
 		<!-- окно истории текста: грид версий (TextBlockHistory), его get-data, view и restore — под history/ -->
 		<state name="history" rights="3">
 			<uri_patterns>

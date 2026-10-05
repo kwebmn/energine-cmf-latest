@@ -176,7 +176,7 @@ const showTabOf = (page, selector) => page.evaluate((sel) => {
                 await p.waitForSelector('.e-modalbox iframe', { state: 'detached', timeout: 10000 }).catch(() => null);
                 const now = JSON.parse(db('tb-get', tbId));
                 check('«Вернуть»: прежний текст снова текущий на сервере', now === before, JSON.stringify([now, before]).slice(0, 200));
-                const inEditor = await p.evaluate((sel) => document.querySelector(sel).innerHTML, block);
+                const inEditor = await p.evaluate((sel) => Object.values(Jodit.instances).find((e) => e.element === document.querySelector(sel)).value, block);
                 check('«Вернуть»: текст в редакторе на странице обновлён', !inEditor.includes('claude-history-new'), inEditor.slice(0, 160));
                 const g = await browser.newContext();
                 const gp = await g.newPage();
@@ -191,6 +191,66 @@ const showTabOf = (page, selector) => page.evaluate((sel) => {
     } finally {
         db('tb-restore', tbId, tbSnap);
         db('tb-history-clear', tbId);
+    }
+
+
+    // 2c. ссылка на страницу сайта (надёжность, этап 3): кнопка редактора открывает дерево разделов; выбранная
+    //     страница вставляется ссылкой с полным адресом (язык и все уровни), текст — выделение; окно без выбора
+    //     ничего не вставляет
+    try {
+        const p = await ctx.newPage();
+        const errors = watch(p);
+        await p.goto(BASE + TEXT_PAGE, { waitUntil: 'networkidle' });
+        await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle' }), p.click('li.editMode_btn')]);
+        // выделить слово «claude-link-text», добавленное в конец блока
+        await appendHtml(p, block, ' <span id="claude-link-anchor">claude-link-text</span>');
+        await p.evaluate((sel) => {
+            const ed = Object.values(Jodit.instances).find((e) => e.element === document.querySelector(sel));
+            ed.s.focus();
+            ed.s.select(document.getElementById('claude-link-anchor'), true);
+        }, block);
+        const linkBtn = p.locator('.jodit-toolbar-button_energineLink button').first();
+        if (check('в панели редактора блока есть «Ссылка на страницу сайта»', await linkBtn.count() > 0 && await linkBtn.isVisible())) {
+            // окно закрыто без выбора — ничего не вставлено
+            await linkBtn.click();
+            let frameEl = await p.waitForSelector('.e-modalbox iframe', { timeout: 10000 }).catch(() => null);
+            let frame = frameEl ? await frameEl.contentFrame() : null;
+            const node = frame ? await frame.waitForSelector('.e-divtree-select li a', { timeout: 15000 }).catch(() => null) : null;
+            if (check('окно дерева разделов открылось', !!node)) {
+                await frame.click('ul.toolbar li.close_btn');
+                await p.waitForSelector('.e-modalbox iframe', { state: 'detached', timeout: 10000 }).catch(() => null);
+                const untouched = await p.evaluate((sel) => Object.values(Jodit.instances).find((e) => e.element === document.querySelector(sel)).value, block);
+                check('окно закрыто без выбора — ссылки нет', !/<a [^>]*claude-link-text|<a[^>]*>\s*<span id="claude-link-anchor"/.test(untouched), untouched.slice(-160));
+                // выбор страницы info/quick-start
+                await p.evaluate((sel) => {
+                    const ed = Object.values(Jodit.instances).find((e) => e.element === document.querySelector(sel));
+                    ed.s.focus();
+                    ed.s.select(document.getElementById('claude-link-anchor'), true);
+                }, block);
+                await linkBtn.click();
+                frameEl = await p.waitForSelector('.e-modalbox iframe', { timeout: 10000 }).catch(() => null);
+                frame = frameEl ? await frameEl.contentFrame() : null;
+                await frame.waitForSelector('.e-divtree-select li a', { timeout: 15000 });
+                const picked = await frame.evaluate(() => {
+                    const a = [...document.querySelectorAll('.e-divtree-select li a')].find((el) => /quick-start\/?$/.test(el.getAttribute('href') || ''));
+                    if (!a) return null;
+                    a.click();
+                    return a.textContent;
+                });
+                if (check('в дереве есть страница quick-start', !!picked, picked)) {
+                    await frame.click('ul.toolbar li.select_btn');
+                    await p.waitForSelector('.e-modalbox iframe', { state: 'detached', timeout: 10000 }).catch(() => null);
+                    const linked = await p.evaluate((sel) => Object.values(Jodit.instances).find((e) => e.element === document.querySelector(sel)).value, block);
+                    const m = /<a href="([^"]+)">([^<]*(?:<[^>]+>[^<]*)*)<\/a>/.exec(linked.slice(linked.indexOf('claude-link') - 200));
+                    check('вставлена ссылка на страницу с полным адресом и текстом выделения',
+                        !!m && m[1].endsWith('/info/quick-start/') && m[1].startsWith(BASE) && m[2].includes('claude-link-text'), linked.slice(-240));
+                }
+            }
+        }
+        check('ссылка на страницу: без ошибок JS и 404', !errors.length, errors.join(' | '));
+        await p.close();
+    } finally {
+        db('tb-restore', tbId, tbSnap);
     }
 
 

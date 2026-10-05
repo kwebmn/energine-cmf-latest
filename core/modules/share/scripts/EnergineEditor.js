@@ -19,10 +19,13 @@ export const EnergineEditor = {
      */
     labels: {
         ru: {image: 'Вставка изображения из медиа-библиотеки', file: 'Вставка файла из медиа-библиотеки',
+            link: 'Ссылка на страницу сайта',
             history: 'История', historyTip: 'История текста: прежние версии и возврат любой из них'},
         ua: {image: 'Додати зображення з медіа-бібліотеки', file: 'Додати файл з медіа-бібліотеки',
+            link: 'Посилання на сторінку сайту',
             history: 'Історія', historyTip: 'Історія тексту: попередні версії та повернення будь-якої з них'},
         en: {image: 'Insert an image from the media library', file: 'Insert a file from the media library',
+            link: 'Link to a page of this site',
             history: 'History', historyTip: 'Text history: previous versions and restoring any of them'}
     },
 
@@ -98,6 +101,10 @@ export const EnergineEditor = {
                 {
                     name: 'energineFile', icon: 'file', tooltip: labels.file,
                     exec: function (editor) { EnergineEditor.insertFile(editor, singlePath); }
+                },
+                {
+                    name: 'energineLink', icon: 'link', tooltip: labels.link,
+                    exec: function (editor) { EnergineEditor.insertPageLink(editor, singlePath); }
                 },
                 '|', 'undo', 'redo'
             ].concat(options.extraButtons || [])
@@ -179,17 +186,50 @@ export const EnergineEditor = {
     /**
      * Файл из репозитория: ссылка на выделенное (с его оформлением) или, если выделения нет, ссылка с названием файла.
      */
-    insertFile: function (editor, singlePath) {
-        // выделение — с оформлением (жирный, курсив): разметка берётся до сохранения выделения маркерами
+    /**
+     * Ссылка на страницу сайта: окно дерева разделов (page-tree/list/); адрес — Energine.root (с языком) и путь
+     * страницы, текст — выделение (без блочной разметки) или название страницы. Окно без выбора ничего не вставляет.
+     *
+     * @param {Jodit} editor
+     * @param {string} singlePath
+     */
+    insertPageLink: function (editor, singlePath) {
+        var html = EnergineEditor.selectionText(editor),
+            selection = editor.s.save();
+        ModalBox.open({
+            url: singlePath + 'page-tree/list/',
+            onClose: function (page) {
+                if (!page || typeof page.smap_segment !== 'string') {
+                    return;
+                }
+                editor.s.restore(selection);
+                editor.s.insertHTML('<a href="' + EnergineEditor.escape(Energine.root + page.smap_segment) + '">'
+                    + (html || EnergineEditor.escape(page.smap_name || page.smap_segment)) + '</a>');
+            }
+        });
+    },
+
+    /**
+     * Выделение как текст будущей ссылки: с оформлением (жирный, курсив) — разметка берётся до сохранения
+     * выделения маркерами; абзацы, списки и ссылки внутри <a> недопустимы — тогда только текст выделения.
+     *
+     * @param {Jodit} editor
+     * @returns {string} HTML или пустая строка, если ничего не выделено
+     */
+    selectionText: function (editor) {
         var range = editor.s.range, html = '';
         if (range && !range.collapsed) {
             var box = document.createElement('div');
             box.appendChild(range.cloneContents());
-            // абзацы, списки и ссылки внутри <a> недопустимы: тогда в ссылку идёт только текст выделения
             html = box.querySelector('p, div, ul, ol, li, table, h1, h2, h3, h4, h5, h6, blockquote, pre, a')
                 ? EnergineEditor.escape(range.toString()) : box.innerHTML;
         }
-        var selection = editor.s.save();
+        return html;
+    },
+
+    insertFile: function (editor, singlePath) {
+        var html = EnergineEditor.selectionText(editor),
+            selection = editor.s.save();
         ModalBox.open({
             url: singlePath + 'file-library/',
             onClose: function (data) {

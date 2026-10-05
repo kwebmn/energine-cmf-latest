@@ -14,7 +14,7 @@ declare class Jodit {
     editor: HTMLElement;
     events: { on(event: string, handler: (...args: any[]) => any): void; off(event: string, handler?: (...args: any[]) => any): void; fire(event: string, ...args: any[]): any };
     e: Jodit['events'];
-    s: { insertHTML(html: string): void; focus(): void; current(): Node | false; save(): void; restore(): void; range: Range };
+    s: { insertHTML(html: string): void; focus(): void; current(): Node | false; save(): any; restore(markers?: any): void; select(node: Node, inward?: boolean): void; range: Range };
     selection: Jodit['s'];
     destruct(): void;
     isDestructed: boolean;

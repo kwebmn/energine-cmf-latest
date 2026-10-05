@@ -44,6 +44,11 @@ abstract class DataSet extends Component
      * @var ImageManager $imageManager
      */
     protected $imageManager;
+    /**
+     * Дерево разделов для выбора страницы (ссылка в редакторе, состояние pageTree).
+     * @var DivisionEditor
+     */
+    protected $pageTree;
 
     /**
      * Component type: list.
@@ -387,6 +392,8 @@ abstract class DataSet extends Component
             $result = $this->fileLibrary->build();
         } elseif ($this->getState() == 'imageManager') {
             $result = $this->imageManager->build();
+        } elseif ($this->getState() == 'pageTree') {
+            $result = $this->pageTree->build();
         } else {
             if (!$this->getBuilder()) {
                 throw new SystemException(
@@ -614,6 +621,17 @@ abstract class DataSet extends Component
         $this->fileLibrary = $this->document->componentManager->createComponent('filelibrary', 'Energine\share\components\FileRepository', ['config' => 'core/modules/share/config/FileRepositorySelect.component.xml']);
 
         $this->fileLibrary->run();
+    }
+
+    /**
+     * Дерево разделов для выбора страницы — ссылка на свою страницу в редакторе (EnergineEditor.insertPageLink):
+     * встроенный DivisionEditor в состоянии selector (адрес page-tree/list/), как fileLibrary — FileRepository.
+     */
+    protected function pageTree()
+    {
+        $this->request->shiftPath(1);
+        $this->pageTree = $this->document->componentManager->createComponent('pagetree', 'Energine\\share\\components\\DivisionEditor', NULL);
+        $this->pageTree->run();
     }
 
     /**
