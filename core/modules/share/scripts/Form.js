@@ -162,10 +162,16 @@ export class Form {
      * Сохранить: визуальные поля — в textarea, проверка полей, затемнение, запрос с полями формы.
      */
     save() {
+        // пока ответ на сохранение не пришёл, повторный щелчок ничего не отправляет (в окне поверх грида своего
+        // затемнения у формы нет — иначе двойной щелчок создавал бы две записи)
+        if (this.saving) {
+            return;
+        }
         this.richEditors.forEach((editor) => editor.onSaveForm());
         if (!this.validator.validate()) {
             return;
         }
+        this.saving = true;
         this.overlay.show();
         Energine.request(
             this.buildSaveURL(),
@@ -183,6 +189,7 @@ export class Form {
      * @param {Object} response
      */
     processServerResponse(response) {
+        this.saving = false;
         const nextActionSelector = response && this.toolbar.getControlById('after_save_action');
         if (nextActionSelector) {
             Energine.writeCookie('after_add_default_action', nextActionSelector.getValue(),
@@ -195,12 +202,18 @@ export class Form {
     }
 
     /**
-     * Отказ сервера: затемнение снимается, форма остаётся открытой.
+     * Отказ сервера: затемнение снимается, форма остаётся открытой. Ошибки проверки (объект с errors) уже показал
+     * Energine.request; сбой без JSON (строка — HTML ошибки, страница входа) — понятное сообщение, сам текст — в консоль.
      *
-     * @param {Object} response
+     * @param {Object|string} response
      */
     processServerError(response) {
+        this.saving = false;
         this.overlay.hide();
+        if (typeof response === 'string') {
+            console.error('Form.save: ответ без JSON', response.slice(0, 500));
+            alert(Energine.translations.get('ERR_SERVER') || 'Ошибка на сервере. Попробуйте ещё раз позже.');
+        }
     }
 
     /**

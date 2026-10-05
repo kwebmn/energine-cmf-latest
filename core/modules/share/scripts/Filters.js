@@ -110,7 +110,9 @@ export class Filters {
     }
 
     remove(filter) {
+        // без аргумента — убрать все фильтры (так зовут при смене языка грида и папки репозитория)
         if (!filter) {
+            this.reset();
             return;
         }
         Filters.resized();

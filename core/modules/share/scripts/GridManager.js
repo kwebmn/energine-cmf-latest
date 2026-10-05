@@ -944,7 +944,9 @@ export class GridManager {
      * @param {string} responseText
      */
     processServerError(responseText) {
-        alert(responseText);
+        // ответ без JSON (HTML ошибки, страница входа после истёкшей сессии) — понятное сообщение, сам текст — в консоль
+        console.error('GridManager: ответ без JSON', String(responseText).slice(0, 500));
+        alert(Energine.translations.get('ERR_SERVER') || 'Ошибка на сервере. Попробуйте ещё раз позже.');
         this.overlay.hide();
     }
 

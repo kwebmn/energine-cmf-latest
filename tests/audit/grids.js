@@ -1054,6 +1054,72 @@ const inspect = (page) => page.evaluate(() => {
             await p.close();
         }
 
+        // 8а. дефекты форм и фильтра (надёжность, этап 1): двойной щелчок «Сохранить» даёт одну запись; ответ 500 с HTML —
+        //     понятное сообщение, затемнение снято, форма открыта; смена вкладки языка сбрасывает фильтр грида
+        {
+            const email = 'claude-grid-double@example.org';
+            const fill = async (p) => {
+                await p.waitForSelector('li.save_btn', { timeout: 10000 });
+                await p.fill('#u_name', email);
+                await p.fill('#u_password', 'Claude-Double-1');
+                await p.fill('#u_fullname', 'Claude Double');
+                // обязательная группа — флажок на другой вкладке
+                await p.evaluate(() => { const cb = document.querySelector('input[type=checkbox][name^="group_id"]'); if (cb) cb.checked = true; });
+            };
+            // форма — в окне поверх грида: там затемнение окна уже есть, и своё затемнение форма не добавляет
+            const p = await ctx.newPage();
+            const errors = watch(p);
+            await p.goto(BASE + 'admin/users/', { waitUntil: 'networkidle' });
+            await p.evaluate((u) => window.top.ModalBox.open({ url: u }), BASE + 'admin/users/single/userEditor/add/');
+            const frameEl = await p.waitForSelector('.e-modalbox iframe', { timeout: 10000 });
+            const f = await frameEl.contentFrame();
+            await f.waitForSelector('li.save_btn', { timeout: 10000 });
+            await f.fill('#u_name', email);
+            await f.fill('#u_password', 'Claude-Double-1');
+            await f.fill('#u_fullname', 'Claude Double');
+            await f.evaluate(() => { const cb = document.querySelector('input[type=checkbox][name^="group_id"]'); if (cb) cb.checked = true; });
+            const saves = [];
+            p.on('request', (r) => { if (/\/save\/?$/.test(r.url()) && r.method() === 'POST') saves.push(r.url()); });
+            await f.dblclick('li.save_btn');
+            await p.waitForTimeout(2500);
+            check('двойной щелчок «Сохранить» в окне: один запрос, одна запись', saves.length === 1 && db('count-user', email).trim() === '1',
+                JSON.stringify({ saves: saves.length, users: db('count-user', email).trim() }));
+            await p.close();
+            db('remove-user', email);
+
+            const q = await ctx.newPage();
+            const dialogs = [];
+            q.on('dialog', (d) => { dialogs.push(d.message()); d.accept(); });
+            await q.goto(BASE + 'admin/users/single/userEditor/add/', { waitUntil: 'networkidle' });
+            await fill(q);
+            await q.route(/\/save\/?$/, (route) => route.fulfill({ status: 500, contentType: 'text/html; charset=utf-8',
+                body: '<html><body><h1>Internal Server Error</h1><pre>/var/www/x.php:1</pre></body></html>' }));
+            await q.click('li.save_btn');
+            await q.waitForTimeout(1500);
+            const after = await q.evaluate(() => ({ overlay: [...document.querySelectorAll('.e-overlay')].some((o) => getComputedStyle(o).opacity > 0.1),
+                form: !!document.querySelector('li.save_btn') }));
+            check('ответ 500 с HTML: понятное сообщение без разметки и путей, затемнение снято, форма открыта',
+                dialogs.length === 1 && !/<html|\/var\/www/i.test(dialogs[0]) && !after.overlay && after.form, JSON.stringify({ dialogs, after }));
+            await q.unroute(/\/save\/?$/);
+            await q.close();
+
+            const t = await ctx.newPage();
+            await t.goto(BASE + 'admin/translations/single/transEditor/', { waitUntil: 'networkidle' });
+            await t.waitForSelector('tbody tr td', { timeout: 10000 });
+            const all = (await gridState(t)).rows.length;
+            await filterGrid(t, 'BTN_SAVE');
+            const filtered = (await gridState(t)).rows.length;
+            await Promise.all([t.waitForResponse((r) => r.url().includes('/get-data/')), t.click('ul.e-tabs li:nth-child(2) a')]);
+            await t.waitForTimeout(800);
+            const reset = await t.evaluate(() => ({ query: document.querySelector('.filters .filter .f_query_container input.query').value,
+                active: document.querySelector('div.filters_block').classList.contains('active') }));
+            const rows = (await gridState(t)).rows.length;
+            check('вкладка другого языка сбрасывает фильтр: поле пустое, строк — как без фильтра', filtered < all && reset.query === '' && !reset.active && rows === all,
+                JSON.stringify({ all, filtered, rows, reset }));
+            check('формы и фильтр: без ошибок JS и 404', !errors.list().length, errors.list().join(' | '));
+            await t.close();
+        }
+
         // 9. «Очистить» the action log (the request is answered here — the log stays): a refusal sends nothing,
         //    the consent sends clear and reloads the grid
         {
