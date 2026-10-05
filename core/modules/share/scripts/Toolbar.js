@@ -29,7 +29,6 @@ import {Energine} from 'Energine';
  */
 export class Toolbar {
     constructor(toolbarName, props) {
-        Energine.loadCSS('toolbar.css');
         this.name = toolbarName;
         this.boundTo = null;
         this.controls = [];
@@ -129,13 +128,18 @@ Toolbar.Control = class ToolbarControl {
         }
     }
 
-    // кнопка-значок: картинка фоном, подпись — в подсказке
+    // кнопка-значок: значок спрайта (имя без «/») или картинка фоном (путь); подпись — в подсказке и доступном имени
     buildAsIcon(icon) {
         this.element.classList.add('icon', 'unselectable');
         this.element.id = this.toolbar.name + this.properties.id;
         this.element.title = this.properties.title + (this.properties.tooltip ? ' (' + this.properties.tooltip + ')' : '');
+        this.element.setAttribute('aria-label', this.properties.title);
         this.element.style.userSelect = 'none';
-        this.element.style.backgroundImage = 'url(' + Energine.base + icon + ')';
+        if (String(icon).includes('/')) {
+            this.element.style.backgroundImage = 'url(' + Energine.base + icon + ')';
+        } else {
+            this.element.innerHTML = Energine.icon(icon);
+        }
     }
 
     build() {
@@ -201,6 +205,15 @@ Toolbar.Button = class ToolbarButton extends Toolbar.Control {
         });
         this.element.addEventListener('mouseout', () => this.element.classList.remove('highlighted'));
         this.element.addEventListener('click', (event) => this.callAction(event));
+        // кнопка достижима с клавиатуры: Tab, затем Enter или пробел — то же, что щелчок
+        this.element.setAttribute('role', 'button');
+        this.element.tabIndex = 0;
+        this.element.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                this.callAction(event);
+            }
+        });
         // нажатие мыши не уводит фокус из поля формы и не выделяет текст
         this.element.addEventListener('mousedown', (event) => {
             event.preventDefault();

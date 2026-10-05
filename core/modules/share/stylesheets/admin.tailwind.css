@@ -162,4 +162,116 @@ form div.error { display: inline-block; padding: .35rem 0; color: var(--a-color-
 .smap_segment input#smap_segment { width: 130px; }
 .tool-tip { padding: 5px; background: var(--a-color-bg-soft); border: 1px solid var(--a-color-border); }
 .label_icon { vertical-align: baseline; margin: 0 5px; }
+
+/* ---------- гриды, листалка, панель кнопок (задача 3; было: grid.css, pagelist.css, toolbar.css, Font Awesome) ----------
+   Строки и ячейки грида, кнопки панели и пункты листалки создаёт JS (GridManager.js, Toolbar.js, PageList.js) и
+   переключает их состояния (highlighted, selected, current, disabled, asc/desc); каркас фильтра — list.xslt.
+   Без !important: важное объявление в слое сильнее важного вне слоя, и оно перебило бы стили, ещё не перенесённые
+   из старых файлов (div.css, pagetoolbar.css). */
+.grid { background: var(--a-color-bg); color: var(--a-color-fg); font-family: var(--a-font-sans); font-size: .875rem; }
+.grid_toolbar { padding: 10px 0; }
+.e-singlemode-layout .grid_toolbar { height: 46px; }
+.gridHeadContainer { padding-right: 17px; background: var(--a-color-bg-soft); border-radius: var(--a-radius-ui) var(--a-radius-ui) 0 0; overflow: hidden; }
+.gridContainer { overflow: scroll; overflow-x: hidden; }
+table.gridTable { width: 100%; margin: 0; border: 0; border-collapse: separate; border-spacing: 0; user-select: none; }
+.gridTable th { padding: .55rem .5rem; border-right: 1px solid var(--a-color-border); background: var(--a-color-bg-soft); font-weight: 600; text-align: center; cursor: default; }
+.gridTable th.asc, .gridTable th.desc { padding-right: 1.6em; position: relative; }
+.gridTable th.asc::after, .gridTable th.desc::after {
+    content: ""; position: absolute; right: .55em; top: 50%; border: .3em solid transparent; color: var(--a-color-primary);
+}
+.gridTable th.asc::after { border-bottom-color: currentColor; margin-top: -.5em; }
+.gridTable th.desc::after { border-top-color: currentColor; margin-top: -.15em; }
+.gridTable td { padding: .65rem .5rem; border-right: 1px solid var(--a-color-border); border-bottom: 1px solid var(--a-color-bg-soft); cursor: default; }
+.gridTable tr .firstColumn { border-left: 0; }
+.gridTable tr.even td { background: #fafbfc; }
+div.grid table tr.highlighted td { background: #e8eef7; }
+div.grid table tr.selected td { background: var(--a-color-primary); color: var(--a-color-primary-fg); }
+.gridContainer table.gridTable { border-bottom: 1px solid var(--a-color-border); }
+.gridContainer table.gridTable a { color: var(--a-color-primary); }
+.gridContainer table.gridTable .selected a { color: var(--a-color-primary-fg); }
+.gridTable [data-checkbox] { display: inline-block; width: 1rem; height: 1rem; border: 1px solid var(--a-color-muted); border-radius: .2rem; vertical-align: middle; }
+.gridTable [data-checkbox="on"] { background: var(--a-color-primary); border-color: var(--a-color-primary); color: var(--a-color-primary-fg); }
+.gridTable [data-checkbox] svg { display: block; width: 100%; height: 100%; }
+.thumb_container { position: relative; }
+.properties table, .properties table td { padding: 0; margin: 0; border: none; }
+.properties table td { font-size: xx-small; }
+.grid_breadcrumbs { display: inline-block; padding-left: 25px; font-size: .8125rem; }
+.grid_breadcrumbs a { color: var(--a-color-primary); cursor: pointer; }
+a.f_reset { color: var(--a-color-fg); text-decoration: none; }
+
+/* фильтр грида */
+div.grid div.filters_block { width: 99%; margin: 0 0 0 .5%; padding: 10px; box-sizing: border-box; background: var(--a-color-bg-soft);
+    border: 1px solid var(--a-color-border); border-radius: var(--a-radius-ui); }
+.e-singlemode-layout div.grid div.filters_block { position: absolute; top: 10px; left: 0; }
+div.grid div.filters_block.active { background: #f4f1e6; }
+div.grid div.filters_block .filters_block_inner { display: flex; flex-wrap: wrap; align-items: flex-start; gap: .5rem 1rem; }
+div.grid div.filters_block .filters_block_inner.toggled { overflow: hidden; }
+div.grid div.filters_block .filters { position: relative; flex: 1 1 32rem; min-width: 0; padding-left: 50px; }
+div.grid div.filters.active { background: transparent; }
+div.grid div.filters_block .filters .filter { position: relative; display: flex; gap: 5px; width: 100%; }
+div.grid div.filters_block .filters .filter + .filter { margin-top: 10px; }
+div.grid div.filters_block .filters .filter :is(.f_select_container, .f_query_container) { display: block; }
+div.grid div.filters_block .filters .filter .f_select_container.operand_container { flex: 0 0 16%; }
+div.grid div.filters_block .filters .filter .f_select_container.fieldname_container { flex: 0 0 24%; }
+div.grid div.filters_block .filters .filter_add_block + .filter .f_select_container.fieldname_container { flex-basis: calc(40% + 5px); }
+div.grid div.filters_block .filters .filter .f_query_container { flex: 1 1 auto; display: flex; gap: 5px; }
+div.grid div.filter :is(select, input) { width: 100%; height: 2.1rem; padding: .3rem .5rem; font: inherit; color: var(--a-color-fg);
+    background: var(--a-color-bg); border: 1px solid var(--a-color-border); border-radius: var(--a-radius-ui); box-sizing: border-box; }
+div.grid div.filter input.small { width: 72px; }
+div.grid div.filters_block .filters :is(.filter_add_block, .filter_remove_block) { position: absolute; top: 6px; left: 0; }
+div.grid div.filters_block .filters .filter_remove_block { left: -26px; }
+div.grid div.filters_block .filters :is(.filter_add_block, .filter_remove_block) button {
+    display: block; width: 21px; height: 21px; padding: 0; font-size: 12px; font-weight: 700; line-height: 1; color: var(--a-color-fg);
+    background: var(--a-color-bg); border: 1px solid var(--a-color-border); border-radius: .2rem; }
+div.grid div.filters_block .filters :is(.filter_add_block, .filter_remove_block) button:disabled { color: transparent; cursor: not-allowed; }
+div.grid div.filters_block .filter_controls { display: flex; align-items: center; gap: .75rem; }
+div.grid div.filter_controls button { padding: .4rem .9rem; font: inherit; cursor: pointer; white-space: nowrap; background: var(--a-color-bg);
+    border: 1px solid var(--a-color-border); border-radius: var(--a-radius-ui); user-select: none; }
+div.grid div.filter_controls button.f_apply { background: var(--a-color-primary); border-color: var(--a-color-primary); color: var(--a-color-primary-fg); }
+div.grid div.filter_controls button:hover { filter: brightness(.96); }
+.filter_toggle { display: none; width: 100%; padding-top: 5px; text-align: center; color: var(--a-color-muted); font-size: 1.25rem; }
+.filter_toggle svg { transition: transform .3s ease-out; }
+div.grid div.filters_block .filters_block_inner.toggled + .filter_toggle svg { transform: rotate(180deg); }
+.e-singlemode-layout .filter_toggle { display: block; }
+@media (max-width: 1100px) { .filter_toggle { display: block; margin: 5px 0 0; } }
+
+/* листалка */
+.e-pagelist { display: inline-flex; flex-wrap: wrap; margin: 10px 0 0; padding: 0; font-size: .875rem; }
+.e-pagelist > li { list-style: none; margin: 0 0 0 -1px; padding: .35rem .7rem; line-height: 1.4; display: inline-flex; align-items: center;
+    background: var(--a-color-bg); border: 1px solid var(--a-color-border); color: var(--a-color-fg); }
+.e-pagelist > li:first-child { border-radius: var(--a-radius-ui) 0 0 var(--a-radius-ui); }
+.e-pagelist > li:last-child { border-radius: 0 var(--a-radius-ui) var(--a-radius-ui) 0; }
+.e-pagelist > li[tabindex]:focus-visible { outline: 2px solid var(--a-color-primary); outline-offset: -2px; }
+.e-pagelist .highlighted { background: var(--a-color-bg-soft); cursor: pointer; }
+.e-pagelist .current { background: var(--a-color-primary); border-color: var(--a-color-primary); color: var(--a-color-primary-fg); font-weight: 600; cursor: default; }
+.e-pagelist li input { width: 50px; margin-right: 10px; padding: 6px; }
+
+/* панель кнопок */
+ul.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: 10px 0 0; padding: 8px 8px 8px 0;
+    color: var(--a-color-fg); font-family: var(--a-font-sans); }
+ul.toolbar * { margin: 0; padding: 0; }
+ul.toolbar_siteEditor .separator { display: none; }
+ul.toolbar li { list-style: none; display: inline-flex; align-items: center; gap: .35rem; padding: .4rem .7rem;
+    font-size: .8125rem; white-space: nowrap; cursor: pointer; user-select: none;
+    background: var(--a-color-bg); border: 1px solid var(--a-color-border); border-radius: var(--a-radius-ui); }
+ul.toolbar li:focus-visible { outline: 2px solid var(--a-color-primary); outline-offset: 1px; }
+ul.toolbar li.highlighted { background: var(--a-color-bg-soft); border-color: var(--a-color-muted); }
+ul.toolbar li.icon { width: 2rem; height: 2rem; justify-content: center; padding: 0; background-position: center; background-repeat: no-repeat; }
+ul.toolbar li.separator { width: 1px; height: 1.4rem; padding: 0; margin: 0 4px; border: 0; border-radius: 0; background: var(--a-color-border); cursor: default; }
+ul.toolbar li:is(.select, .custom_select) { border: 0; background: none; padding: 0; }
+ul.toolbar .label { margin: 0 10px; }
+ul.toolbar .text { color: var(--a-color-muted); }
+ul.toolbar li select { width: 150px; padding: .35rem .5rem; margin-right: 15px; border: 1px solid var(--a-color-border); border-radius: var(--a-radius-ui); }
+ul.toolbar li input[type="file"] { visibility: hidden; position: absolute; top: -50px; left: -50px; }
+ul.toolbar li.delete_btn { margin-left: auto; }
+ul.toolbar li:is(.save_btn, .close_btn) { background: var(--a-color-primary); border-color: var(--a-color-primary); color: var(--a-color-primary-fg); }
+ul.toolbar li:is(.save_btn, .close_btn).highlighted { filter: brightness(1.1); }
+ul.e-divtree-toolbar.toolbar li { background-color: transparent; }
+ul.toolbar .custom_select_box { position: relative; display: inline-block; padding-right: 18px; border: 1px solid var(--a-color-border); }
+ul.toolbar .custom_select_view { min-width: 120px; padding: 1px 2px; background: var(--a-color-bg); border-right: 1px solid var(--a-color-border); white-space: nowrap; }
+ul.toolbar .custom_select_button { position: absolute; top: 0; right: 0; width: 18px; height: 100%; background: var(--a-color-bg-soft); }
+ul.toolbar .custom_select_dropbox { position: relative; }
+ul.toolbar .custom_select_options { position: absolute; left: -1px; top: 1px; z-index: 10; background: var(--a-color-bg); border: 1px solid var(--a-color-border); box-shadow: 0 2px 4px rgb(0 0 0 / .3); white-space: nowrap; }
+ul.toolbar .custom_select_option { padding: 4px 8px; }
+ul.toolbar .custom_select_option:is(.selected, :hover) { background: var(--a-color-bg-soft); }
 }

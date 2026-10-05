@@ -1,7 +1,7 @@
 // Browser test: escaping of HTML in the admin grids (stage 5a). Markup that a visitor could send
 // (registration) or an editor could write (a file title, a page name) is shown as text in the grids —
 // users, file repository — and in the page tree, and nothing of it is parsed or run.
-// The grids' own markup (activity checkboxes, image previews, the file link) stays.
+// The grids' own markup (activity checkboxes — [data-checkbox], image previews, the file link) stays.
 // Everything the test adds is removed (grids-db.php remove).
 // Run in a subshell, like crawl.js:
 //   cd tests/audit && ( envsh=$(php8.5 ../env.php --shell) && eval "$envsh" && node grids.js )
@@ -45,7 +45,7 @@ const inspect = (page) => page.evaluate(() => {
         parsedImg: !!document.querySelector('img[src="x"]'),
         parsedB: [...document.querySelectorAll('td b')].some((b) => b.textContent === 'claude-grid'),
         ran: window.claudeXss || 0,
-        checkboxes: document.querySelectorAll('td img[src*="checkbox_"]').length,
+        checkboxes: document.querySelectorAll('td [data-checkbox]').length,
         previews: document.querySelectorAll('td img').length,
         fileLink: [...document.querySelectorAll('td a[target="_blank"]')].some((a) => a.textContent.includes('<img src="x"')),
     };
@@ -222,8 +222,8 @@ const inspect = (page) => page.evaluate(() => {
                 return {
                     visible: !!list && list.checkVisibility(),
                     current: ((list && list.querySelector('li.current')) || {}).textContent || '',
-                    prev: items.some((li) => li.querySelector('img[alt="previous"]')),
-                    next: items.some((li) => li.querySelector('img[alt="next"]')),
+                    prev: items.some((li) => li.matches('[data-page="previous"]')),
+                    next: items.some((li) => li.matches('[data-page="next"]')),
                     first: ((document.querySelector('tbody tr') || {}).textContent || '').trim(),
                     overlays: [...document.querySelectorAll('.e-overlay')].map((o) => +getComputedStyle(o).opacity),
                     tab: ((document.querySelector('ul.e-tabs li.current a')) || {}).textContent || '',
@@ -274,7 +274,7 @@ const inspect = (page) => page.evaluate(() => {
                 await new Promise((resolve) => setTimeout(resolve, 2500));
                 const list = document.querySelector('.e-pagelist');
                 return { current: ((list.querySelector('li.current')) || {}).textContent || '',
-                    next: !!list.querySelector('img[alt="next"]'), overlays: document.querySelectorAll('.e-overlay').length };
+                    next: !!list.querySelector('[data-page="next"]'), overlays: document.querySelectorAll('.e-overlay').length };
             });
             check('листалка: страница за последней — отмечена последняя, стрелки «дальше» нет, затемнения нет',
                 beyond.current === LAST && !beyond.next && !beyond.overlays, JSON.stringify(beyond));

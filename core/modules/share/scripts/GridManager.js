@@ -40,7 +40,6 @@ import {Filters} from 'Filters';
  */
 export class Grid {
     constructor(element, options) {
-        Energine.loadCSS('grid.css');
         this.element = element;
         this.options = Object.assign({}, options);
         /**
@@ -362,10 +361,15 @@ export class Grid {
         cell.classList.add(fieldName); // добавляем имя поля в класс
         switch (this.metadata[fieldName].type) {
             case 'boolean': {
-                const checkbox = document.createElement('img');
-                checkbox.setAttribute('src', 'images/checkbox_' + (record[fieldName] == true ? 'on' : 'off') + '.png');
-                checkbox.setAttribute('width', '13');
-                checkbox.setAttribute('height', '13');
+                // флажок: значок «галочка» у включённого; состояние — в data-checkbox и доступном имени
+                const on = record[fieldName] == true;
+                const checkbox = document.createElement('span');
+                checkbox.dataset.checkbox = on ? 'on' : 'off';
+                checkbox.setAttribute('role', 'img');
+                checkbox.setAttribute('aria-label', on ? '✓' : '—');
+                if (on) {
+                    checkbox.innerHTML = Energine.icon('check');
+                }
                 cell.appendChild(checkbox);
                 cell.style.textAlign = 'center';
                 cell.style.verticalAlign = 'middle';

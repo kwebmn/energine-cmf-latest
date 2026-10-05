@@ -15,6 +15,7 @@
 #   нет)
 # Этап 9 — ES-модули: modules (нет ScriptLoader и карты зависимостей; скрипты — модули, имена других модулей
 #   импортированы)
+# UI-подпроект 3 — админка: fontawesome (Font Awesome: файлов шрифта и стилей нет, ссылок на них нет)
 # i18n — в справочнике переводов нет ни одной константы из списков удаления в sql/cut/*.sql.
 # mail-core — отправка писем живёт в ядре: класс Energine\share\gears\Mail есть,
 # а оставшийся код не ссылается на Energine\mail\gears\Mail*.
@@ -26,7 +27,7 @@ mods=("$@")
 [ ${#mods[@]} -eq 0 ] && mods=(mail-core mail calendar comments forms ads blog shop
                                 pageads branding tops vote feed tagcloud similar rss sockets htmlcap
                                 tags widgets storages watermark video flash lookup columns placehold
-                                ckeditor fileapi jsonp theme multisite apps gallery editors dead mootools modules i18n)
+                                ckeditor fileapi jsonp theme multisite apps gallery editors dead mootools modules fontawesome i18n)
 
 # код: весь репозиторий, кроме истории (docs), переходного SQL (sql) и инструментов чистки
 CODE_DIRS=(core site htdocs configs setup tests)
@@ -155,6 +156,8 @@ XMLCLASS[gallery]='Energine\share\components\PageMedia"'
 CODE[dead]='JSqueeze|MODE_COPY|ComponentProxyBuilder|\bEventHandler\b|\bFieldRow\b|\bFormBuilder\b|JSONPCustomBuilder|JSONUploadBuilder|\bPageInfo\b|\bRemover\b|components\\SiteProperties\b|TextBlockSource|GridManagerModal|GridModal|mootools\.ext|\bScrollbar\b|\bbase\.xslt|new\.layout\.xml|default\.content\.xml|moveTo_old|exportCSV|prepareCSVString|downloadFile|array_push_after|dumpLog|dump_log|ddumpLog|simpleLog|simple_log|splitDate|funcExists|procExists|getLastError|site\.compress|xslcache|copy_site_structure'
 FILES[dead]='core/modules/share/scripts/mootools.js core/modules/share/scripts/Scrollbar.js core/modules/share/scripts/mootools.ext.js core/modules/share/scripts/Menu.js core/modules/share/scripts/GridManagerModal.js core/modules/share/stylesheets/errors.css core/modules/share/stylesheets/mootools-colorpicker.css setup/JSqueeze.php cli jambalaya image-cache tests/smoke.sh'
 # этап 8: MooTools ушла (шаг 7): ни в одном скрипте ядра и сайта (кроме Jodit) нет её конструкций, файлов нет
+CODE[fontawesome]='font-awesome|FontAwesome|fontawesome-webfont'
+FILES[fontawesome]='core/modules/share/stylesheets/font-awesome'
 MOOTOOLS_FILES='core/modules/share/scripts/mootools.min.js core/modules/share/scripts/MooCompat.js'
 MOOTOOLS_CODE='new Class\(|\$\$?\(|\.(add|remove)Events?\(|\.fireEvent\(|Request\.JSON|new Request\(|Object\.append|new Element\(|\.getElements?\(|\.getParent\(|\.inject\(|\.grab\(|\.adopt\(|\.pass\(|\.each\(|\.(get|set)Property\(|\.(add|remove|has)Class\(|\.(get|set)\(.(value|html|text|tag|disabled).|Fx\.|\.toInt\(\)|Browser\.|typeOf\(|instanceOf\('
 # карту зависимостей никто не читает и не пишет (удалять устаревший файл — можно)

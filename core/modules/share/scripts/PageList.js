@@ -21,7 +21,6 @@ import {Energine} from 'Energine';
  */
 export class PageList {
     constructor(options) {
-        Energine.loadCSS('pagelist.css');
         this.options = Object.assign({}, options);
         this.currentPage = 1;
         this.disabled = false;
@@ -87,10 +86,10 @@ export class PageList {
         this.element.querySelector('li[index="' + this.currentPage + '"]').classList.add('current');
 
         if (currentPage != 1) {
-            this.element.prepend(this.createPageLink('previous', currentPage - 1, 'images/prev_page.gif'));
+            this.element.prepend(this.createPageLink('previous', currentPage - 1, 'prev'));
         }
         if (currentPage != numPages) {
-            this.element.appendChild(this.createPageLink('next', currentPage + 1, 'images/next_page.gif'));
+            this.element.appendChild(this.createPageLink('next', currentPage + 1, 'next'));
         }
     }
 
@@ -110,15 +109,11 @@ export class PageList {
         index = index || 0;
         const listItem = document.createElement('li');
         if (image) {
-            const img = document.createElement('img');
-            img.src = image;
-            img.setAttribute('border', '0');
-            img.setAttribute('align', 'absmiddle');
-            img.alt = title;
-            img.title = title;
-            img.style.width = '6px';
-            img.style.height = '11px';
-            listItem.appendChild(img);
+            // стрелка «назад»/«дальше»: значок спрайта, подпись — доступное имя и подсказка
+            listItem.dataset.page = title;
+            listItem.setAttribute('aria-label', title);
+            listItem.title = title;
+            listItem.innerHTML = Energine.icon(image);
         } else {
             listItem.appendChild(document.createTextNode(title));
         }
@@ -133,6 +128,14 @@ export class PageList {
             listItem.addEventListener('mouseout', () => listItem.classList.remove('highlighted'));
             listItem.addEventListener('click', () => {
                 if (!this.disabled && listItem.getAttribute('index') != String(this.currentPage)) {
+                    this.selectPage(listItem);
+                }
+            });
+            // номер и стрелки достижимы с клавиатуры: Tab, затем Enter — то же, что щелчок
+            listItem.tabIndex = 0;
+            listItem.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter' && !this.disabled && listItem.getAttribute('index') != String(this.currentPage)) {
+                    event.preventDefault();
                     this.selectPage(listItem);
                 }
             });

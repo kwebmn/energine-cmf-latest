@@ -15,7 +15,10 @@ const BASE = process.env.BASE.replace(/\/$/, '') + '/';
 const SHOTS = process.env.SHOTS || fs.mkdtempSync(path.join(os.tmpdir(), 'admin-'));
 const BASELINE = process.env.BASELINE === '1';
 // старые файлы стилей и картинок админки, удалённые подпроектом: страница их не запрашивает
-const GONE_CSS = ['modalbox.css', 'form.css', 'controls.css', 'tabpane.css'];
+const GONE_CSS = ['modalbox.css', 'form.css', 'controls.css', 'tabpane.css', 'grid.css', 'pagelist.css', 'toolbar.css'];
+const GONE_IMAGES = ['images/asc.gif', 'images/desc.gif', 'images/pagelist.gif', 'images/prev_page.gif', 'images/next_page.gif',
+    'images/checkbox_on.png', 'images/checkbox_off.png', 'images/toolbar/separator.gif', 'images/toolbar/add.png', 'images/toolbar/edit.png',
+    'images/toolbar/delete.png', 'images/toolbar/up.png', 'images/toolbar/down.png'];
 const ICONS = ['add', 'edit', 'delete', 'up', 'down', 'save', 'close', 'list', 'search', 'filter', 'sort-asc', 'sort-desc',
     'prev', 'next', 'folder', 'file', 'image', 'upload', 'eye', 'gear', 'check'];
 let fail = 0;
@@ -81,8 +84,10 @@ const SCREENS = [
             if (!BASELINE) {
                 check(`${name}, ${w}px: admin.css загружен`, log.css.includes('admin.css'), log.css.join(' '));
                 check(`${name}, ${w}px: без ошибок JS и 404`, !log.errors.length, log.errors.join(' | '));
-                const old = log.css.filter((f) => GONE_CSS.includes(f));
+                const old = log.css.filter((f) => GONE_CSS.includes(f) || /awesome/i.test(f));
                 check(`${name}, ${w}px: удалённые стили не запрашиваются`, !old.length, old.join(' '));
+                const oldImg = log.images.filter((f) => GONE_IMAGES.includes(f) || /awesome/i.test(f));
+                check(`${name}, ${w}px: удалённые картинки и шрифты не запрашиваются`, !oldImg.length, oldImg.join(' '));
                 const over = await p.evaluate(() => document.documentElement.scrollWidth - innerWidth).catch(() => 0);
                 check(`${name}, ${w}px: без горизонтальной прокрутки страницы`, over <= 0, `лишние ${over} px`);
             }
@@ -156,6 +161,63 @@ const SCREENS = [
                 JSON.stringify({ ...stack, left }));
             await shot(p, `окно-формы-${w}`);
             await p.close();
+        }
+
+        // гриды: сортировка, чередование и выделение строк, кнопки панели (значок + доступное имя, клавиатура), листалка
+        {
+            const p = await ctx.newPage();
+            await p.setViewportSize({ width: 1280, height: 900 });
+            await p.goto(BASE + 'admin/translations/', { waitUntil: 'networkidle' });
+            await p.waitForTimeout(1000);
+            // первая колонка, по которой грид сортирует (по щелчку у заголовка появляется класс asc)
+            const ths = await p.$$('.gridHeadContainer th');
+            for (const th of ths) {
+                await th.click();
+                await p.waitForTimeout(900);
+                if (await p.$('.gridHeadContainer th.asc')) break;
+            }
+            await p.click('.gridContainer tr:nth-child(3) td:nth-child(2)');
+            const g = await p.evaluate(() => {
+                const cs = (e) => e && getComputedStyle(e);
+                const th = document.querySelector('.gridHeadContainer th.asc, .gridHeadContainer th.desc');
+                const odd = document.querySelector('.gridContainer tr:not(.even):not(.selected) td');
+                const even = document.querySelector('.gridContainer tr.even:not(.selected) td');
+                const sel = document.querySelector('.gridContainer tr.selected td');
+                const primary = 'rgb(31, 95, 174)'; // --a-color-primary (#1f5fae)
+                return { sortMark: !!th && cs(th, '::after') && getComputedStyle(th, '::after').content !== 'none',
+                    zebra: !!odd && !!even && cs(odd).backgroundColor !== cs(even).backgroundColor,
+                    selected: !!sel && cs(sel).backgroundColor === primary, primary,
+                    font: cs(document.querySelector('.grid')).fontFamily };
+            });
+            check('грид: у отсортированной колонки знак направления, строки чередуются, выделенная — основного цвета, шрифт системный',
+                g.sortMark && g.zebra && g.selected && /system-ui/.test(g.font), JSON.stringify(g));
+            const tb = await p.evaluate(() => [...document.querySelectorAll('ul.toolbar li:not(.separator):not(.select)')].map((li) => ({
+                name: (li.getAttribute('aria-label') || li.textContent || li.title).trim(), tab: li.tabIndex, svg: !!li.querySelector('svg use'),
+                icon: li.classList.contains('icon') })));
+            const noName = tb.filter((b) => !b.name);
+            check('панель грида: у каждой кнопки доступное имя, все достижимы с Tab', tb.length > 0 && !noName.length && tb.every((b) => b.tab === 0),
+                JSON.stringify(tb.slice(0, 6)));
+            const pl = await p.evaluate(() => {
+                const items = [...document.querySelectorAll('.e-pagelist > li[index]:not([index="0"])')];
+                const next = document.querySelector('.e-pagelist [data-page="next"]');
+                return { n: items.length, tab: items.every((li) => li.tabIndex === 0), next: !!next && !!next.querySelector('svg use')
+                    && !!next.getAttribute('aria-label') };
+            });
+            check('листалка: номера и стрелки достижимы с Tab, стрелка — значок с доступным именем', pl.n > 0 && pl.tab && pl.next, JSON.stringify(pl));
+            await p.focus('.e-pagelist > li[index="2"]');
+            await Promise.all([p.waitForResponse((r) => r.url().includes('/get-data/')), p.keyboard.press('Enter')]);
+            await p.waitForTimeout(600);
+            const cur = await p.evaluate(() => (document.querySelector('.e-pagelist li.current') || {}).textContent);
+            check('листалка: Enter на номере открывает страницу', cur === '2', cur);
+            await shot(p, 'грид-переводов-сортировка');
+            await p.close();
+            const up = await ctx.newPage();
+            await up.goto(BASE + 'admin/users/', { waitUntil: 'networkidle' });
+            await up.waitForTimeout(800);
+            const cb = await up.evaluate(() => ({ on: document.querySelectorAll('td [data-checkbox="on"] svg use').length,
+                imgs: document.querySelectorAll('td img[src*="checkbox_"]').length }));
+            check('грид пользователей: флажок активности — значок, не картинка', cb.on > 0 && !cb.imgs, JSON.stringify(cb));
+            await up.close();
         }
 
         // значки: спрайт и Energine.icon

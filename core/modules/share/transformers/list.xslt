@@ -206,8 +206,8 @@
 		                                </div>-->
 		                                <!--<div class="filter_divider"></div>-->
 		                            </div>
-	                                <a href="#" class="filter_toggle">
-		                                <i class="fa"></i>
+	                                <a href="#" class="filter_toggle" aria-label="{ancestor::component/filter/@title}">
+		                                <xsl:call-template name="admin-icon"><xsl:with-param name="name" select="'up'"/></xsl:call-template>
 	                                </a>
                                 </div>
 
