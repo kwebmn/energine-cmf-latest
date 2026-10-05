@@ -31,8 +31,21 @@ cd $H/web && runuser -u <владелец> -- php8.5 index.php setup install --d
 
 Остальные страницы — обычный текст («Текстовая страница»), список подразделов, карта сайта.
 
-Файлы шаблонов — `site/modules/main/templates/content/`; свой шаблон кладётся туда же, название в списке — константа
-`CONTENT_<ИМЯ>` (раздел «Шаблоны страниц и секции» в `docs/INSTALL.md`), после нового файла — `setup linker`.
+Свой шаблон из секций — одной командой:
+
+```sh
+cd $H/web && runuser -u <владелец> -- php8.5 index.php setup page --name=about --title="О компании" \
+  --sections=hero,services,reviews,cta
+```
+
+Она создаёт `site/modules/main/templates/content/<имя>.content.xml` (здесь `about.content.xml`), дописывает название `CONTENT_ABOUT` в
+`site/modules/main/translations.php` и раскладывает статику — шаблон сразу есть в списке «Содержимое страницы».
+Файл шаблона дальше правится руками: компоненты — короткими именами (`class="TextBlock"`), секции — `section`
+(раздел «Шаблоны страниц и секции» в `docs/INSTALL.md`).
+
+Переводы сайта (названия шаблонов, образцы секций) — `site/modules/main/translations.php`; после правки —
+`setup translations` (добавляет недостающее, правленое в админке не трогает). Найти подписи без перевода —
+`setup untranslated`.
 
 ## 3. Тексты секций
 

@@ -914,7 +914,8 @@ final class Setup {
                 if ($nl->length > 0)
                     foreach ($nl as $node)
                         if ($node instanceof DOMElement)
-                            $result[$file][] = 'FIELD_' . strtoupper($node->getAttribute('name'));
+                            // подпись поля — его title, если задан; иначе FIELD_<ИМЯ>
+                            $result[$file][] = $node->getAttribute('title') ?: 'FIELD_' . strtoupper($node->getAttribute('name'));
             }
 
         if ($result) {

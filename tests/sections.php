@@ -5,7 +5,7 @@
 //  3. пустая секция в режиме правки — полоса с редактором и образцом из константы TXT_SECTION_SAMPLE_<ИМЯ>;
 //  4. контейнер с неизвестным именем секции выводится обычным блоком;
 //  5. шаблоны страниц «Лендинг», «Услуга», «Контакты»: файлы связаны в web/templates/content/main/ (setup linker),
-//     названия в редакторе структуры — константы CONTENT_* на всех языках, num секций — числа, не 1 и без повторов.
+//     названия в редакторе структуры — константы CONTENT_* на всех языках, секции заданы именем (section), без повторов.
 require __DIR__ . '/testlib.php';
 
 const SECTIONS = ['hero', 'services', 'prices', 'reviews', 'gallery', 'faq', 'contacts', 'cta'];
@@ -83,12 +83,15 @@ foreach (['landing' => 'CONTENT_LANDING', 'service' => 'CONTENT_SERVICE', 'conta
         WHERE t.ltag_name = ? AND tr.ltag_value_rtf <> ""', [$const]);
     check("шаблон $t: название $const на всех языках", $names > 0 && $names == (int)scalar('SELECT COUNT(*) FROM share_languages'), "переводов: $names");
     if (!$xml) continue;
-    $nums = array_map('strval', $xml->xpath('//container[@section]/component/params/param[@name="num"]'));
-    $samples = array_map('strval', $xml->xpath('//container[@section]/component/params/param[@name="section_sample"]'));
-    $all = array_map('strval', $xml->xpath('//component/params/param[@name="num"]'));
-    check("шаблон $t: секции с числовыми num, не 1, без повторов, у каждой образец", $nums
-        && !array_filter($nums, fn($n) => !ctype_digit($n) || $n === '1') && count(array_unique($all)) == count($all)
-        && count($samples) == count($nums), implode(' ', $all));
+    // секция задаётся именем (param section = имя контейнера); номер блока берёт TextBlock::SECTIONS — номера секций
+    // не пересекаются друг с другом и с обычными блоками (num)
+    $secs = $xml->xpath('//container[@section]');
+    $bad = array_filter($secs, fn($c) => (string)($c->xpath('component/params/param[@name="section"]')[0] ?? '') !== (string)$c['section']);
+    $names = array_map(fn($c) => (string)$c['section'], $secs);
+    $nums = array_map('strval', $xml->xpath('//component/params/param[@name="num"]'));
+    check("шаблон $t: у каждой секции param section = её имя, секции и номера без повторов", $secs && !$bad
+        && count(array_unique($names)) == count($names) && count(array_unique($nums)) == count($nums)
+        && !array_intersect($nums, ['11', '12', '13', '14', '15', '16', '17', '18']), implode(' ', $names) . ' / ' . implode(' ', $nums));
 }
 
 done('sections');

@@ -233,16 +233,14 @@ root, отдаётся с кодом 404 — после правки `chown web9
 Пустая секция гостю не выводится, администратору показывает образец текста (константа `TXT_SECTION_SAMPLE_*`).
 ```xml
 <container name="cta" section="cta">
-    <component name="section_cta" class="Energine\share\components\TextBlock">
-        <params>
-            <param name="num">18</param>
-            <param name="section_sample">TXT_SECTION_SAMPLE_CTA</param>
-        </params>
+    <component name="section_cta" class="TextBlock">
+        <params><param name="section">cta</param></params>
     </component>
 </container>
 ```
-`num` — число и своё у каждой секции: hero 11, services 12, prices 13, reviews 14, gallery 15, faq 16,
-contacts 17, cta 18 (нечисловой `num` — общий блок всех страниц). Разметка текста владельца, она же образец:
+`class` — короткое имя компонента (ищется в модулях сайта, затем ядра; полное имя тоже работает). `section` задаёт
+номер текстового блока и образец секции: hero 11, services 12, prices 13, reviews 14, gallery 15, faq 16,
+contacts 17, cta 18 (номера не меняются — по ним в базе лежат тексты). Разметка текста владельца, она же образец:
 
 | Секция | Текст | Вид |
 |---|---|---|
