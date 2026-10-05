@@ -32,6 +32,24 @@ $e = null;
 try { ComponentConfig::loadXml("$dir/L1.xml", $resolve); } catch (\Throwable $x) { $e = $x; }
 check('цикл extends — ERR_DEV_CONFIG_EXTENDS_LOOP', $e && str_contains($e->getMessage(), 'ERR_DEV_CONFIG_EXTENDS_LOOP'), $e ? $e->getMessage() : 'исключения нет');
 
+// поиск базового (ComponentConfig::baseResolver): рядом с файлом (не он сам), затем обычный поиск, затем модули ядра;
+// конфиг сайта с тем же именем, что у ядра, наследует ядро, а не себя
+mkdir("$dir/site"); mkdir("$dir/core"); mkdir("$dir/core2");
+file_put_contents("$dir/core/Foo.xml", '<?xml version="1.0"?><configuration><state name="main"><a/></state></configuration>');
+file_put_contents("$dir/site/Foo.xml", '<?xml version="1.0"?><configuration extends="Foo.xml"><state name="more"><m/></state></configuration>');
+file_put_contents("$dir/core2/Other.xml", '<?xml version="1.0"?><configuration><state name="main"><o/></state></configuration>');
+file_put_contents("$dir/site/Bar.xml", '<?xml version="1.0"?><configuration extends="Other.xml"/>');
+// обычный поиск (как getConfigPath): сначала сайт, затем ядро модуля компонента (core)
+$lookup = fn($name) => is_file("$dir/site/$name") ? "$dir/site/$name" : (is_file("$dir/core/$name") ? "$dir/core/$name" : false);
+$e = null;
+try {
+    $r = ComponentConfig::loadXml("$dir/site/Foo.xml", ComponentConfig::baseResolver($lookup, ["$dir/core", "$dir/core2"]));
+    check('конфиг сайта с именем ядра наследует ядро, а не себя', $states($r) === ['main:a', 'more:m'], implode(' ', $states($r)));
+    $r = ComponentConfig::loadXml("$dir/site/Bar.xml", ComponentConfig::baseResolver($lookup, ["$dir/core", "$dir/core2"]));
+    check('базовый из другого модуля ядра находится', $states($r) === ['main:o'], implode(' ', $states($r)));
+} catch (\Throwable $x) { $e = $x; }
+check('поиск базового без исключений', $e === null, $e ? $e->getMessage() : '');
+
 // переведённые на extends конфиги ядра: объединённый результат совпадает с прежним полным файлом (ревизия 343ec644):
 // те же состояния в том же порядке и с тем же содержимым (C14N); файл — не больше 3/4 прежнего
 $coreResolve = fn($name) => is_file($f = ROOT . '/core/modules/share/config/' . $name) ? $f : false;

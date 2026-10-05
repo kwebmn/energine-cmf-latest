@@ -83,7 +83,8 @@ class ComponentConfig {
             if ($config) {
                 try {
                     // базовый конфиг (extends) ищется так же, как сам конфиг: файл проекта, сайт, модуль
-                    $this->config = self::loadXml($config, fn($name) => $this->getConfigPath($name, $moduleName));
+                    $this->config = self::loadXml($config, self::baseResolver(fn($name) => $this->getConfigPath($name, $moduleName),
+                        glob(CORE_DIR . '/modules/*/config', GLOB_ONLYDIR) ?: []));
                 } catch (\RuntimeException $e) {
                     throw new SystemException($e->getMessage(), SystemException::ERR_DEVELOPER, $config);
                 } catch (\Exception  $e) {
@@ -101,12 +102,34 @@ class ComponentConfig {
     }
 
     /**
+     * Поиск базового конфига для extends: рядом с текущим файлом, затем обычный поиск конфига компонента (файл проекта,
+     * сайт, модуль компонента), затем конфиги всех модулей ядра. Сам текущий файл пропускается: конфиг сайта с тем же
+     * именем, что у ядра (Foo.component.xml extends="Foo.component.xml"), наследует ядро, а не себя.
+     *
+     * @param callable $lookup имя => путь или false (обычный поиск)
+     * @param string[] $coreDirs каталоги config модулей ядра
+     */
+    public static function baseResolver(callable $lookup, array $coreDirs): callable {
+        return function (string $name, string $from) use ($lookup, $coreDirs) {
+            $self = realpath($from);
+            $candidates = array_merge([dirname($from) . '/' . $name, $lookup($name)],
+                array_map(fn($dir) => rtrim($dir, '/') . '/' . $name, $coreDirs));
+            foreach ($candidates as $candidate) {
+                if ($candidate && is_file($candidate) && realpath($candidate) !== $self) {
+                    return $candidate;
+                }
+            }
+            return false;
+        };
+    }
+
+    /**
      * Конфиг с наследованием: <configuration extends="Базовый.component.xml"> — берутся состояния базового (рекурсивно),
      * одноимённые заменяются на месте, новые добавляются в конец, <state name="…" remove="1"/> убирает состояние.
      * Порядок — как у базового: от него зависят веса шаблонов адресов.
      *
      * @param string $file путь к файлу конфига
-     * @param callable $resolve имя базового файла => путь или false
+     * @param callable $resolve (имя базового, путь текущего) => путь базового или false — см. baseResolver()
      * @param string[] $seen уже загруженные файлы цепочки (защита от цикла)
      * @throws \RuntimeException ERR_DEV_CONFIG_EXTENDS_LOOP, ERR_DEV_NO_BASE_CONFIG
      */
@@ -124,7 +147,7 @@ class ComponentConfig {
         if ($extends === '') {
             return simplexml_import_dom($doc);
         }
-        $baseFile = $resolve($extends);
+        $baseFile = $resolve($extends, $file);
         if (!$baseFile) {
             throw new \RuntimeException('ERR_DEV_NO_BASE_CONFIG: ' . $extends);
         }
