@@ -398,6 +398,13 @@ class Component extends Primitive implements IBlock {
             $result->setAttribute($propName, (string)$propValue);
         }
 
+        // подсказка экрана админки «?»: константа HELP_<КЛАСС>_<СОСТОЯНИЕ>, если она есть в справочнике
+        $helpConst = 'HELP_' . strtoupper(simplifyClassName(get_class($this)) . '_' . $this->getState());
+        if (($help = translate($helpConst)) !== $helpConst) {
+            $result->setAttribute('help', $help);
+            $result->setAttribute('help_title', translate('TXT_HELP'));
+        }
+
         /*
         * Существует ли построитель и правильно ли он отработал?
         * Построитель может не существовать, если мы создаем компонент в котором нет данных.

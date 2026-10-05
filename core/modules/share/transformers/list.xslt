@@ -86,6 +86,7 @@
         <xsl:variable name="TAB_ID" select="generate-id(record)"/>
 
         <div class="e-pane-t-toolbar">
+                <xsl:call-template name="admin-help"/>
             <ul class="e-pane-toolbar e-tabs">
                 <xsl:choose>
                     <xsl:when test="$FIELDS[@language]">

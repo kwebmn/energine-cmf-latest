@@ -137,7 +137,7 @@ class LinkChecker {
         foreach ($byId as $id => $row) {
             $segments = [];
             $guestOk = $enabled = true;
-            for ($cur = $row, $depth = 0; $cur && $depth < 50; $cur = $byId[$cur['smap_pid']] ?? null, $depth++) {
+            for ($cur = $row, $depth = 0; $cur && $depth < 50; $cur = $cur['smap_pid'] === null ? null : ($byId[$cur['smap_pid']] ?? null), $depth++) {
                 $enabled = $enabled && $cur['enabled'] == $cur['langs'];
                 $guestOk = $guestOk && (int)$cur['guest_right'] > 0;
                 if ($cur['smap_pid'] !== null) {

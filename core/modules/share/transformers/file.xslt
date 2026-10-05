@@ -27,6 +27,7 @@
                 <xsl:attribute name="class">e-pane e-pane-has-t-toolbar1 e-pane-has-b-toolbar1</xsl:attribute>
             </xsl:if>
             <div class="e-pane-t-toolbar">
+                <xsl:call-template name="admin-help"/>
                 <ul class="e-pane-toolbar e-tabs">
                     <li>
                         <a href="#{$IDD}"><xsl:value-of select="$TRANSLATION[@const='TXT_IMG_MANAGER']"/></a>

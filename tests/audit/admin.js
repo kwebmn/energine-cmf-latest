@@ -368,6 +368,33 @@ const SCREENS = [
             check('картинки ядра: каждая используется', !unused.length, unused.join(' '));
         }
 
+        // подсказка «?» (константы HELP_<КЛАСС>_<СОСТОЯНИЕ>): кнопка с доступным именем, щелчок открывает текст;
+        // где подсказки нет — нет и кнопки
+        {
+            const pageId = 3629;
+            for (const [label, url, want] of [['форма раздела', `admin/structure/single/divEditor/${pageId}/edit/`, true],
+                ['грид пользователей', 'admin/users/single/userEditor/', true], ['файлы', 'admin/users/single/adminPanel/file-library/', true],
+                ['грид языков', 'admin/translations/languages/single/langEditor/', false]]) {
+                const p = await ctx.newPage();
+                await p.setViewportSize({ width: 1280, height: 900 });
+                await p.goto(BASE + url, { waitUntil: 'networkidle' });
+                const h = await p.evaluate(() => {
+                    const d = document.querySelector('details.e-help');
+                    if (!d) return null;
+                    const s = d.querySelector('summary');
+                    s.click();
+                    const body = d.querySelector('.e-help-text');
+                    return { name: s.getAttribute('aria-label'), open: d.open, text: body ? body.textContent.trim().length : 0,
+                        visible: !!body && body.getBoundingClientRect().height > 0 };
+                });
+                const over = await p.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+                check(`подсказка, ${label}: ${want ? 'кнопка «?» с именем открывает текст' : 'нет'}`, want
+                    ? !!h && !!h.name && h.open && h.text > 20 && h.visible && over <= 0 : h === null, JSON.stringify({ h, over }));
+                if (want) await shot(p, `подсказка-${label.replace(/ /g, '-')}`);
+                await p.close();
+            }
+        }
+
         // значки: спрайт и Energine.icon
         const p = await ctx.newPage();
         await p.goto(BASE + 'admin/users/', { waitUntil: 'networkidle' });

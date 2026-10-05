@@ -72,3 +72,45 @@ INSERT IGNORE INTO `share_lang_tags` (`ltag_name`) VALUES ('TXT_LINKS_MEMBERS_ON
 INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`)
     SELECT t.`ltag_id`, l.`lang_id`, IF(l.`lang_abbr` = 'ua', 'Лише для тих, хто увійшов', 'Только для вошедших')
       FROM `share_lang_tags` t JOIN `share_languages` l WHERE t.`ltag_name` = 'TXT_LINKS_MEMBERS_ONLY';
+
+-- 3. Подсказки «?» экранов админки: HELP_<КЛАСС>_<СОСТОЯНИЕ> (Component::build), текст — без разметки.
+INSERT IGNORE INTO `share_lang_tags` (`ltag_name`) VALUES ('TXT_HELP');
+INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`)
+    SELECT t.`ltag_id`, l.`lang_id`, IF(l.`lang_abbr` = 'ua', 'Підказка', 'Подсказка')
+      FROM `share_lang_tags` t JOIN `share_languages` l WHERE t.`ltag_name` = 'TXT_HELP';
+INSERT IGNORE INTO `share_lang_tags` (`ltag_name`) VALUES ('HELP_DIVISIONEDITOR_EDIT');
+INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`)
+    SELECT t.`ltag_id`, l.`lang_id`, IF(l.`lang_abbr` = 'ua', 'Властивості сторінки. «Назва» — пункт меню та крихт; «Сегмент URI» — частина адреси; «Вміст сторінки» — шаблон (лендінг, послуга, контакти, текст). Вкладки мов — тексти кожною мовою. Збережіть кнопкою «Зберегти»; тексти самої сторінки редагуються на ній у режимі редагування.', 'Свойства страницы. «Название» — пункт меню и крошек; «Сегмент URI» — часть адреса; «Содержимое страницы» — шаблон (лендинг, услуга, контакты, текст). Вкладки языков — тексты на каждом языке. Сохраните кнопкой «Сохранить»; тексты самой страницы правятся на ней в режиме редактирования.')
+      FROM `share_lang_tags` t JOIN `share_languages` l WHERE t.`ltag_name` = 'HELP_DIVISIONEDITOR_EDIT';
+INSERT IGNORE INTO `share_lang_tags` (`ltag_name`) VALUES ('HELP_DIVISIONEDITOR_ADD');
+INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`)
+    SELECT t.`ltag_id`, l.`lang_id`, IF(l.`lang_abbr` = 'ua', 'Нова сторінка. Заповніть «Назву» кожною мовою та «Сегмент URI» (латиниця, цифри, дефіс), оберіть «Вміст сторінки» — шаблон. Порожні секції шаблону покажуть приклад тексту в режимі редагування.', 'Новая страница. Заполните «Название» на каждом языке и «Сегмент URI» (латиница, цифры, дефис), выберите «Содержимое страницы» — шаблон. Пустые секции шаблона покажут пример текста в режиме редактирования.')
+      FROM `share_lang_tags` t JOIN `share_languages` l WHERE t.`ltag_name` = 'HELP_DIVISIONEDITOR_ADD';
+INSERT IGNORE INTO `share_lang_tags` (`ltag_name`) VALUES ('HELP_USEREDITOR_MAIN');
+INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`)
+    SELECT t.`ltag_id`, l.`lang_id`, IF(l.`lang_abbr` = 'ua', 'Користувачі сайту. Рядок виділяють клацанням; «Редагувати» відкриває форму, «Активувати» вмикає відвідувача, який зареєструвався, але не підтвердив адресу. Фільтр над таблицею шукає за колонкою.', 'Пользователи сайта. Строку выделяют щелчком; «Редактировать» открывает форму, «Активизировать» включает посетителя, зарегистрированного, но не подтвердившего адрес. Фильтр над таблицей ищет по колонке.')
+      FROM `share_lang_tags` t JOIN `share_languages` l WHERE t.`ltag_name` = 'HELP_USEREDITOR_MAIN';
+INSERT IGNORE INTO `share_lang_tags` (`ltag_name`) VALUES ('HELP_USEREDITOR_EDIT');
+INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`)
+    SELECT t.`ltag_id`, l.`lang_id`, IF(l.`lang_abbr` = 'ua', 'Дані користувача. E-mail — логін для входу; пароль змінюється, лише якщо ввести новий. На вкладці «Групи» — права: адміністратор бачить адмінку.', 'Данные пользователя. E-mail — логин для входа; пароль меняется, только если ввести новый. На вкладке «Группы» — права: администратор видит админку.')
+      FROM `share_lang_tags` t JOIN `share_languages` l WHERE t.`ltag_name` = 'HELP_USEREDITOR_EDIT';
+INSERT IGNORE INTO `share_lang_tags` (`ltag_name`) VALUES ('HELP_USEREDITOR_ADD');
+INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`)
+    SELECT t.`ltag_id`, l.`lang_id`, IF(l.`lang_abbr` = 'ua', 'Новий користувач: e-mail (логін), пароль, імя; на вкладці «Групи» — права.', 'Новый пользователь: e-mail (логин), пароль, имя; на вкладке «Группы» — права.')
+      FROM `share_lang_tags` t JOIN `share_languages` l WHERE t.`ltag_name` = 'HELP_USEREDITOR_ADD';
+INSERT IGNORE INTO `share_lang_tags` (`ltag_name`) VALUES ('HELP_FILEREPOSITORY_MAIN');
+INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`)
+    SELECT t.`ltag_id`, l.`lang_id`, IF(l.`lang_abbr` = 'ua', 'Файли сайту: зображення та документи для текстів. Подвійне клацання відкриває теку, «Додати» завантажує файл. Вставити зображення в текст — кнопка «Зображення» редактора на сторінці.', 'Файлы сайта: картинки и документы для текстов. Двойной щелчок открывает папку, «Добавить» загружает файл. Вставить картинку в текст — кнопка «Изображение» редактора на странице.')
+      FROM `share_lang_tags` t JOIN `share_languages` l WHERE t.`ltag_name` = 'HELP_FILEREPOSITORY_MAIN';
+INSERT IGNORE INTO `share_lang_tags` (`ltag_name`) VALUES ('HELP_TRANSLATIONEDITOR_MAIN');
+INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`)
+    SELECT t.`ltag_id`, l.`lang_id`, IF(l.`lang_abbr` = 'ua', 'Підписи інтерфейсу всіма мовами (кнопки, поля, повідомлення). Знайдіть константу фільтром, «Редагувати» — змінити текст. Назву константи змінювати не потрібно.', 'Подписи интерфейса на всех языках (кнопки, поля, сообщения). Найдите константу фильтром, «Редактировать» — поменять текст. Название константы менять не нужно.')
+      FROM `share_lang_tags` t JOIN `share_languages` l WHERE t.`ltag_name` = 'HELP_TRANSLATIONEDITOR_MAIN';
+INSERT IGNORE INTO `share_lang_tags` (`ltag_name`) VALUES ('HELP_SITESETTINGS_EDIT');
+INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`)
+    SELECT t.`ltag_id`, l.`lang_id`, IF(l.`lang_abbr` = 'ua', 'Налаштування сайту: назва, ключові слова та опис для пошуковиків за замовчуванням, прапорці robots (NOINDEX закриває весь сайт від пошуковиків).', 'Настройки сайта: название, ключевые слова и описание для поисковиков по умолчанию, флажки robots (NOINDEX закрывает весь сайт от поисковиков).')
+      FROM `share_lang_tags` t JOIN `share_languages` l WHERE t.`ltag_name` = 'HELP_SITESETTINGS_EDIT';
+INSERT IGNORE INTO `share_lang_tags` (`ltag_name`) VALUES ('HELP_MAILTEMPLATEEDITOR_EDIT');
+INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`)
+    SELECT t.`ltag_id`, l.`lang_id`, IF(l.`lang_abbr` = 'ua', 'Шаблон листа: тема та текст. Слова у квадратних дужках ([user_name], [site_name] …) підставляються під час надсилання — їх не видаляйте.', 'Шаблон письма: тема и текст. Слова в квадратных скобках ([user_name], [site_name] …) подставляются при отправке — их не удаляйте.')
+      FROM `share_lang_tags` t JOIN `share_languages` l WHERE t.`ltag_name` = 'HELP_MAILTEMPLATEEDITOR_EDIT';
