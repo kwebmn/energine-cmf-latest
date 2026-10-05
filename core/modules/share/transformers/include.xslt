@@ -14,6 +14,7 @@
     <xsl:include href="divisionEditor.xslt"/>
     <xsl:include href="text.xslt"/>
     <xsl:include href="error.xslt"/>
+    <xsl:include href="icons.xslt"/>
     <!--<xsl:include href="error_page.xslt"/>-->
     
 </xsl:stylesheet>

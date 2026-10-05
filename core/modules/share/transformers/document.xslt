@@ -97,6 +97,7 @@
         <!-- стили админки: панель администратора, режим правки, окна; гостю не нужны -->
         <xsl:if test="$COMPONENTS[@componentAction='showPageToolbar'] or $DOC_PROPS[@name='single']">
             <link rel="stylesheet" type="text/css" href="{$STATIC_URL}stylesheets/energine.css"/>
+            <link rel="stylesheet" type="text/css" href="{$STATIC_URL}stylesheets/admin.css"/>
         </xsl:if>
         <xsl:choose>
             <xsl:when test="not($DOC_PROPS[@name='single'])">

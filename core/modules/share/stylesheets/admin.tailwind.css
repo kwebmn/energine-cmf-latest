@@ -1,0 +1,39 @@
+/*
+    Energine Simple — стили админки (UI-подпроект 3): панели, окна, формы, гриды, дерево структуры.
+    Собирается командой setup css в admin.css (tools/tailwindcss, бинарник не в git); грузится только администратору
+    и в окнах (document.xslt). Утилиты — с префиксом a: (a:flex, a:px-3): так они не совпадают ни с утилитами
+    сайта (main.css грузится на той же странице), ни с классами ядра, на которые опирается JS (grid, hidden, block).
+    Переменные дизайна получают тот же префикс (--a-color-bg …) и не задевают переменные темы сайта.
+    Тёмной схемы у админки нет.
+*/
+@layer theme, base, admin, utilities;
+@import "tailwindcss/theme.css" layer(theme) prefix(a);
+@import "tailwindcss/utilities.css" layer(utilities) prefix(a);
+
+@source "../transformers";
+@source "../../user/transformers";
+@source "../../seo/transformers";
+@source "../scripts";
+@source "../../user/scripts";
+@source not "../scripts/jodit";
+
+/* «&» в классе XSLT сканер не видит (&amp;) — свои варианты с понятными именами */
+
+@theme {
+    --color-bg: #ffffff;
+    --color-bg-soft: #f4f5f7;
+    --color-fg: #1d2128;
+    --color-muted: #5d6573;
+    --color-border: #d9dde3;
+    --color-primary: #1f5fae;
+    --color-primary-fg: #ffffff;
+    --color-danger: #b3261e;
+    --color-danger-bg: #fdecea;
+    --color-ok-bg: #e8f4ea;
+    --radius-ui: .375rem;
+    --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* правила для разметки, которую пишет не XSLT и не строка класса в JS (с причиной у каждого) */
+@layer admin {
+}

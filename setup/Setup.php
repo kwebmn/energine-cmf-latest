@@ -1011,18 +1011,23 @@ final class Setup {
      * (tools/tailwindcss, скачивается tools/get-tailwind.sh). Собранный файл лежит в git: сайту бинарник не нужен.
      */
     private function cssAction() {
-        $this->title('Стили сайта (Tailwind)');
+        $this->title('Стили (Tailwind): сайт и админка');
         $bin = ROOT_DIR . '/tools/tailwindcss';
         if (!is_executable($bin)) {
             throw new \Exception('Нет бинарника Tailwind: bash tools/get-tailwind.sh');
         }
-        $dir = SITE_DIR . '/modules/main/stylesheets';
-        $cmd = 'cd ' . escapeshellarg($dir) . ' && ' . escapeshellarg($bin) . ' --input tailwind.css --output main.css --minify 2>&1';
-        exec($cmd, $out, $rc);
-        if ($rc !== 0) {
-            throw new \Exception('Сборка стилей не удалась: ' . implode(PHP_EOL, array_slice($out, -5)));
+        // вход и выход каждой сборки: тема сайта (main.css) и админка (admin.css, утилиты с префиксом a:)
+        foreach ([[SITE_DIR . '/modules/main/stylesheets', 'tailwind.css', 'main.css'],
+                  [CORE_DIR . '/modules/share/stylesheets', 'admin.tailwind.css', 'admin.css']] as [$dir, $in, $outFile]) {
+            $cmd = 'cd ' . escapeshellarg($dir) . ' && ' . escapeshellarg($bin) . ' --input ' . escapeshellarg($in)
+                . ' --output ' . escapeshellarg($outFile) . ' --minify 2>&1';
+            $out = [];
+            exec($cmd, $out, $rc);
+            if ($rc !== 0) {
+                throw new \Exception('Сборка стилей ' . $outFile . ' не удалась: ' . implode(PHP_EOL, array_slice($out, -5)));
+            }
+            $this->text('Собрано: ', $dir, '/', $outFile);
         }
-        $this->text('Собрано: ', $dir, '/main.css');
     }
 
     private function linkerAction() {

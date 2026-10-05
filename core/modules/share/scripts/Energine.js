@@ -277,6 +277,18 @@ Energine.loadCSS = function (name) {
 };
 
 /**
+ * Значок админки из спрайта images/icons.svg: HTML строкой (svg > use), украшение — aria-hidden; доступное имя даёт
+ * кнопка. То же в XSLT — шаблон admin-icon (icons.xslt).
+ *
+ * @param {string} name Имя значка (id символа в спрайте).
+ * @returns {string}
+ */
+Energine.icon = function (name) {
+    return '<svg class="a:inline-block a:size-[1.15em] a:shrink-0 a:align-[-.2em]" aria-hidden="true" focusable="false">'
+        + '<use href="' + (Energine['static'] || '') + 'images/icons.svg#' + String(name).replace(/[^a-z0-9-]/g, '') + '"/></svg>';
+};
+
+/**
  * Cookie по имени (значение — через decodeURIComponent, как у Cookie MooTools) или null.
  * @param {string} name
  * @returns {string|null}
