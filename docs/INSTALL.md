@@ -128,6 +128,8 @@ cp $R/htdocs/index.php $R/htdocs/bootstrap.php $R/htdocs/auth.php $H/web/
 chown -R web97:client1 $H/private $H/web
 cd $H/web && runuser -u web97 -- php8.5 index.php setup linker
 ```
+Новый скрипт модуля (например, окно истории текста `TextBlockHistory.js`) попадает в import map страниц только
+после `setup linker`, и файл должен принадлежать владельцу площадки — чужой файл веб-сервер отдаёт как 404.
 Изменения базы между версиями — переходные скрипты `sql/cut/stage*.sql` (см. ниже).
 
 Модули ядра перечислены в `modules` конфига площадки. Если модуль убран из ядра (этап 7 убрал `apps`), его
@@ -315,6 +317,8 @@ bash $R/tests/regression.sh        # все сценарные наборы и �
 bash $R/tools/get-phpstan.sh       # PHPStan (phar, сумма сверяется) — один раз, в git не попадает
 bash $R/tests/phpstan.sh           # PHP: ошибки сверх базовой линии phpstan-baseline.neon
 bash $R/tests/jscheck.sh           # JS: типы без сборки (tsc --noEmit по JSDoc, нужен Node)
+cd $H/web && runuser -u web97 -- php8.5 index.php setup check    # перед сдачей: отладка, адрес, демо, robots, названия, ссылки, переводы
+cd $H/web && runuser -u web97 -- php8.5 index.php setup manual --out=$H/private/OWNER-$(date +%F).md  # памятка владельцу
 bash $R/tests/tools/install-check.sh   # установщик на временном экземпляре MariaDB
 bash $R/tests/tools/fresh-check.sh     # установка с нуля и демо == база площадки
 ```
@@ -325,6 +329,13 @@ bash $R/tests/tools/fresh-check.sh     # установка с нуля и де�
 `getBlockByName()`); исправили одну — обновите линию из корня репозитория:
 `php8.5 tools/phpstan.phar analyse --generate-baseline`. Сайту ни PHPStan, ни Node не нужны — это инструменты
 разработчика; на машине без них наборы пропускаются только явно: `PHPSTAN_SKIP=1`, `JSCHECK_SKIP=1`.
+
+**Сдача владельцу.** `setup check` — проверка перед сдачей, строки `OK`/`WARN`/`FAIL`, код выхода 1 при `FAIL`,
+базу не меняет: отладка выключена, адрес сайта задан, нет демо-пользователей и статического `web/robots.txt`, у
+включённых страниц есть названия на открытых языках (пустые тексты — предупреждение), битых ссылок и непереведённых
+констант нет; предупреждения — языки «в подготовке», NOINDEX у обычных страниц, почта без SMTP. `setup manual`
+печатает памятку владельцу (`docs/OWNER.md` с адресами площадки и списком языков; `--out=ФАЙЛ` пишет файл — не в
+`web/`). Язык можно готовить скрыто от посетителей: «Языки» → снять «Открыт посетителям» (виден только редакторам).
 
 Обход браузером и подробности по тестам — в `tests/README.md`.
 
