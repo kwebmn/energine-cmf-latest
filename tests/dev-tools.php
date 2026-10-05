@@ -71,4 +71,32 @@ check('повторный запуск не перезаписывает пра�
 $site = include ROOT . '/site/modules/main/translations.php';
 check('переводы сайта в site/modules/main/translations.php: шаблоны страниц и образцы секций',
     is_array($site) && isset($site['CONTENT_LANDING']['ru'], $site['TXT_SECTION_SAMPLE_HERO']['ua']));
+// 4. setup page: шаблон страницы из секций — файл, название в translations.php и в базе, связан в web/templates;
+//    плохое имя, неизвестная секция, существующий файл — отказ, ничего не создано
+$trFile = ROOT . '/site/modules/main/translations.php';
+$trOrig = file_get_contents($trFile);
+$tpl = ROOT . '/site/modules/main/templates/content/claude_page.content.xml';
+register_shutdown_function(function () use ($trFile, $trOrig, $tpl, $setup) {
+    @unlink($tpl);
+    file_put_contents($trFile, $trOrig);
+    q("DELETE tr FROM share_lang_tags_translation tr JOIN share_lang_tags t USING (ltag_id) WHERE t.ltag_name = 'CONTENT_CLAUDE_PAGE'");
+    q("DELETE FROM share_lang_tags WHERE ltag_name = 'CONTENT_CLAUDE_PAGE'");
+    $setup('linker');
+});
+$out = $setup('page', '--name=claude_page', '--title=Проба страницы', '--sections=hero,cta');
+$x = is_file($tpl) ? simplexml_load_file($tpl) : null;
+$secs = $x ? array_map('strval', $x->xpath('//component[@class="TextBlock"]/params/param[@name="section"]')) : [];
+check('setup page: файл шаблона с секциями hero, cta (короткие имена, section)', $secs === ['hero', 'cta'], $out);
+check('setup page: название CONTENT_CLAUDE_PAGE — в translations.php и в базе', str_contains(file_get_contents($trFile), "'CONTENT_CLAUDE_PAGE'")
+    && scalar("SELECT COUNT(*) FROM share_lang_tags WHERE ltag_name = 'CONTENT_CLAUDE_PAGE'") == 1);
+check('setup page: шаблон связан в web/templates/content/main', is_file(WEB . '/templates/content/main/claude_page.content.xml'));
+$before = [file_get_contents($trFile), glob(ROOT . '/site/modules/main/templates/content/*.xml')];
+foreach ([['--name=../x', '--title=X', '--sections=hero'], ['--name=Bad Name', '--title=X', '--sections=hero'],
+          ['--name=claude_page2', '--title=X', '--sections=hero,nope'], ['--name=claude_page', '--title=X', '--sections=hero'],
+          ['--name=claude_page3', '--sections=hero']] as $bad) {
+    $o = $setup('page', ...$bad);
+    check('setup page ' . implode(' ', $bad) . ' — отказ, ничего не создано',
+        $before === [file_get_contents($trFile), glob(ROOT . '/site/modules/main/templates/content/*.xml')] && preg_match('~ошибка|Error|отказ|нельзя|нет|неизвест~iu', (string)$o),
+        substr((string)$o, -200));
+}
 done('dev-tools');

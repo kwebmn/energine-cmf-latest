@@ -616,6 +616,70 @@ final class Setup {
     }
 
     /**
+     * Новый шаблон страницы из секций визитки:
+     *   php web/index.php setup page --name=<имя> --title="<название>" --sections=hero,services,cta [--title-ua="…"]
+     * Создаёт site/modules/main/templates/content/<имя>.content.xml (секции — TextBlock с параметром section),
+     * дописывает название CONTENT_<ИМЯ> в site/modules/main/translations.php, ставит его в базу и раскладывает
+     * статику. Имя — строчные латинские буквы, цифры и «_»; существующий файл не перезаписывается.
+     */
+    private function pageAction(...$args) {
+        $o = $this->options($args, ['name', 'title', 'title-ua', 'sections'], []);
+        $this->title('Новый шаблон страницы');
+        $name = $o['name'] ?? '';
+        if (!preg_match('/^[a-z][a-z0-9_]{1,40}$/', $name)) {
+            throw new \Exception('Имя шаблона — строчные латинские буквы, цифры и «_», с буквы: --name=about_us');
+        }
+        if (trim($o['title'] ?? '') === '') {
+            throw new \Exception('Нужно название шаблона в списке редактора структуры: --title="О компании"');
+        }
+        // интерфейсы ядра (IBlock …) объявлены в файлах классов, а не в своих: без них TextBlock не загрузить
+        foreach (['DocumentController', 'ComponentManager'] as $gear) {
+            require_once CORE_DIR . '/modules/share/gears/' . $gear . '.php';
+        }
+        $known = \Energine\share\components\TextBlock::SECTIONS;
+        $sections = array_values(array_filter(array_map('trim', explode(',', $o['sections'] ?? ''))));
+        $unknown = array_diff($sections, array_keys($known));
+        if (!$sections || $unknown) {
+            throw new \Exception('Секции — через запятую из: ' . implode(', ', array_keys($known))
+                . ($unknown ? '; неизвестные: ' . implode(', ', $unknown) : ''));
+        }
+        $file = SITE_DIR . '/modules/main/templates/content/' . $name . '.content.xml';
+        if (file_exists($file)) {
+            throw new \Exception('Шаблон уже есть, не перезаписываю: ' . $file);
+        }
+        $const = 'CONTENT_' . strtoupper($name);
+        $trFile = SITE_DIR . '/modules/main/translations.php';
+        $tr = file_get_contents($trFile);
+        if (str_contains($tr, "'$const'")) {
+            throw new \Exception('Название ' . $const . ' уже есть в ' . $trFile);
+        }
+        $xml = '<?xml version="1.0" encoding="UTF-8"?>' . PHP_EOL
+            . '<!-- «' . htmlspecialchars($o['title'], ENT_XML1) . '»: создан командой setup page -->' . PHP_EOL . '<content>' . PHP_EOL;
+        foreach ($sections as $section) {
+            $xml .= "    <container name=\"$section\" section=\"$section\">" . PHP_EOL
+                . "        <component name=\"section_$section\" class=\"TextBlock\">" . PHP_EOL
+                . "            <params><param name=\"section\">$section</param></params>" . PHP_EOL
+                . '        </component>' . PHP_EOL . '    </container>' . PHP_EOL;
+        }
+        $xml .= '</content>' . PHP_EOL;
+        $entry = "    '$const' => [" . PHP_EOL . "        'ru' => " . var_export($o['title'], true) . ',' . PHP_EOL
+            . "        'ua' => " . var_export($o['title-ua'] ?? $o['title'], true) . ',' . PHP_EOL . '    ],' . PHP_EOL;
+        $pos = strrpos($tr, '];');
+        if ($pos === false) {
+            throw new \Exception('Не разобрать ' . $trFile . ': нет закрывающей «];»');
+        }
+        file_put_contents($file, $xml);
+        file_put_contents($trFile, substr($tr, 0, $pos) . $entry . substr($tr, $pos));
+        $this->text('Шаблон: ', $file);
+        $this->text('Название: ', $const, ' — ', $trFile);
+        $this->checkDBConnection();
+        $this->text('Переводы добавлены: ', $this->installTranslations($this->dbConnect, $trFile));
+        $this->linkerAction();
+        $this->text('Дальше: «Управление структурой» → «Добавить», поле «Содержимое страницы» — «', $o['title'],
+            '»; тексты секций правятся на странице в режиме редактирования.');
+    }
+
+    /**
      * Переводы сайта из файла site/modules/<сайт>/translations.php (константа => [сокращение языка => текст]):
      * добавляет недостающие константы и переводы; существующие, в том числе правленые в админке, не меняет.
      *   php web/index.php setup translations [--file=ПУТЬ]
