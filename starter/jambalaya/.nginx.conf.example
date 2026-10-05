@@ -1,78 +1,32 @@
-#Пример конфигурации Nginx для проекта на базе Energine 2.11.x
-
-# настройка PHP-FPM (backend)
-upstream php-fpm {
-    # тут можно использовать либо 127.0.0.1:9000 либо unix-сокет
-    server unix:/tmp/php-fpm.sock;
-}
-
-# Конфиг Nginx (frontend)
+# nginx for an Energine 2.13 project with PHP-FPM 8.4+.
+# Replace the server name, the project path and the PHP-FPM socket with yours.
 server {
-
-    # Защита от бага http://forum.nginx.org/read.php?2,154025,154036
-    server_name_in_redirect off;
-
-    # Порт, принимаемые HOST и путь к сайту
     listen 80;
-    server_name   starter.local
-                  *.starter.local;
+    server_name example.com;
+    root /var/www/my-site/htdocs;
+    index index.php;
+    client_max_body_size 64M;
 
-  # путь к проекту
-  set $www_folder '/var/www/energine/branches/2.11.2.dev/starter';
+    # dot-files, page and template XML/XSLT, PHP inside uploads are never served
+    location ~ /\. { deny all; }
+    location ~* \.(xml|xslt)$ { deny all; }
+    location ~* ^/uploads/.*\.php$ { deny all; }
 
-  set $root_path '$www_folder/htdocs';
-  root $root_path;
-  index index.htm index.html index.php;
+    # image resizer: /resizer/w200-h150/uploads/public/photo.jpg
+    rewrite "^/resizer/w([0-9]+)-h([0-9]+)/(.*)$" /resizer/timthumb.php?w=$1&h=$2&src=$3&zc=2 last;
 
-  # Запросы непосредственно .php-файлов, например index.php
-  location ~ \.php$ {
-    include fastcgi_params;
-    fastcgi_param SCRIPT_FILENAME $root_path/$fastcgi_script_name;
-    fastcgi_param DOCUMENT_ROOT $root_path; # этот параметр нужен несмотря на root в секции server
-    fastcgi_pass php-fpm;
-  }
+    # existing files as they are, every other address to Energine
+    location / {
+        try_files $uri @energine;
+    }
+    location @energine {
+        rewrite ^ /index.php last;
+    }
 
-  # rewrite-правильно для локального ресайзера
-  rewrite "^/resizer/w([0-9]+)\-h([0-9]+)/(.*)$" /resizer/timthumb.php?w=$1&h=$2&src=$3&zc=2;
-
- # Остальные запросы также идут на PHP-FPM, если $uri не существует
-  location / {
-     default_type text/html;
-     root  $root_path;
-
-     if (!-e $request_filename) {
-        return 404;
-     }
-
-     error_page      404 502 504 403 405 = @php;
-  }
-
-  # Веб-приложение
-  location @php {
-    include fastcgi_params;
-    fastcgi_param SCRIPT_FILENAME $root_path/index.php;
-    fastcgi_pass php-fpm;
-  }
-
-  # Для js, css, swf, ico и т.д.
-  location ~* \.(css|js|swf|ico|png|jpg|gif|jpeg)$ {
-    root  $root_path;
-    access_log   off;
-    expires      30d;
-  }
-
-  # Защита от просмотра .htaccess и .htpasswd файлов
-  location ~ /\.ht {
-    deny  all;
-  }
-
-  # Защита от просмотра svn-файлов
-  location ~ /.svn/ {
-    deny all;
-  }
-
-  # Защита от просмотра содержимое папок инсталции
-    location ~ /install/ {
-      deny all;
-  }
+    location ~ \.php$ {
+        try_files $uri =404;
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_pass unix:/run/php/php8.5-fpm.sock;
+    }
 }

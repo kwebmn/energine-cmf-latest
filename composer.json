@@ -11,8 +11,10 @@
   ],
   "homepage": "http://energine.net/",
   "require": {
-    "php": ">=5.5.0",
+    "php": ">=8.4",
+    "ext-ctype": "*",
     "ext-dom": "*",
+    "ext-fileinfo": "*",
     "ext-gd": "*",
     "ext-json": "*",
     "ext-libxml": "*",
@@ -21,8 +23,14 @@
     "ext-pdo_mysql": "*",
     "ext-SimpleXML": "*",
     "ext-session": "*",
-    "ext-tidy": "*",
     "ext-xsl": "*"
+  },
+  "suggest": {
+    "ext-tidy": "Cleans up HTML of text blocks when site.aggressive_cleanup is on (skipped without the extension)",
+    "ext-zip": "Archives in the file repository",
+    "ext-curl": "Remote images in the resizer",
+    "ext-ftp": "FTP file repositories",
+    "ext-iconv": "CSV export of grids in encodings other than UTF-8"
   },
   "authors": [
     {

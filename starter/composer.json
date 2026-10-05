@@ -12,7 +12,9 @@
   "homepage": "http://energine.net/",
   "require": {
     "php": ">=8.4",
+    "ext-ctype": "*",
     "ext-dom": "*",
+    "ext-fileinfo": "*",
     "ext-gd": "*",
     "ext-json": "*",
     "ext-libxml": "*",
