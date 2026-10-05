@@ -6,7 +6,9 @@
     Переменные дизайна получают тот же префикс (--a-color-bg …) и не задевают переменные темы сайта.
     Тёмной схемы у админки нет.
 */
-@layer theme, base, admin, utilities;
+/* порядок слоёв — общий с темой сайта (tailwind.css): какой файл подключится первым, тот и задаёт порядок, поэтому
+   здесь перечислены и слои сайта; admin — выше components темы, утилиты — выше всего */
+@layer theme, base, components, admin, utilities;
 @import "tailwindcss/theme.css" layer(theme) prefix(a);
 @import "tailwindcss/utilities.css" layer(utilities) prefix(a);
 
@@ -297,7 +299,8 @@ code { white-space: pre; }
 .nrgnEditor.nrgnEditorError { outline: 2px solid var(--a-color-danger); }
 
 /* окно single (форма, грид в окне) */
-html:has(body.e-singlemode-layout), body.e-singlemode-layout { height: 100%; margin: 0; padding: 0; border: 0; background: var(--a-color-bg); }
+html:has(body.e-singlemode-layout) { height: 100%; }
+body.e-singlemode-layout { height: 100%; margin: 0; padding: 0; border: 0; background: var(--a-color-bg); }
 body.e-singlemode-layout { overflow: hidden; font-family: var(--a-font-sans); font-size: .875rem; color: var(--a-color-fg); }
 
 /* страница с панелью администратора: панель сверху, страница — в прокручиваемой рамке, боковая панель разделов слева */
@@ -305,7 +308,7 @@ html:is(.e-has-topframe1, .e-has-topframe2, .e-has-topframe3) { box-sizing: bord
 html:is(.e-has-topframe1, .e-has-topframe2, .e-has-topframe3) body { height: 100%; margin: 0; padding: 0; border: 0; }
 html.e-has-topframe1 { padding-top: 31px; }
 html:is(.e-has-topframe2, .e-has-topframe3) { padding-top: 62px; }
-.e-has-sideframe body { padding-left: 300px; }
+html.e-has-sideframe body { padding-left: 300px; }
 .e-topframe { display: none; position: absolute; top: 0; left: 0; z-index: 3; width: 100%; min-height: 31px; font-family: var(--a-font-sans); }
 :is(.e-has-topframe1, .e-has-topframe2, .e-has-topframe3) .e-topframe { display: block; }
 .e-mainframe { position: relative; float: left; width: 100%; height: 100%; overflow: auto; margin-right: -100%; }
@@ -344,7 +347,7 @@ ul.docked_toolbar.block_management_toolbar li.save_btn { background: none; }
     .e-sideframe, .e-has-topframe2 .e-sideframe { padding-top: 31px; }
 }
 @media (max-width: 768px) {
-    .e-has-sideframe body { padding-left: 0; }
+    html.e-has-sideframe body { padding-left: 0; }
     .e-has-sideframe .e-sideframe { width: 100%; box-shadow: 0 2px 3px rgb(0 0 0 / .4); }
     .e-has-sideframe .e-mainframe { position: relative; top: 100%; height: auto; }
     .editMode_btn { display: none; }
@@ -353,4 +356,40 @@ ul.docked_toolbar.block_management_toolbar li.save_btn { background: none; }
 }
 @media (max-width: 646px) { html.e-has-topframe1 { padding-top: 61px; } .e-sideframe { padding-top: 31px; } }
 @media (max-width: 370px) { html.e-has-topframe1 { padding-top: 91px; } .e-sideframe { padding-top: 61px; } }
+
+/* ---------- дерево разделов и боковая панель (задача 5; было: treeview.css, div.css) ----------
+   Узлы дерева создаёт TreeView.js (folder/opened/last/selected переключает он же); знак раскрытия — ::before у li на
+   месте прежней картинки (TreeView.nodeToggleListener ловит щелчок в левом верхнем квадрате 0–8 × 4–12 px). */
+.treeview, .treeview ul { margin: 0; padding: 0; font: .8125rem/1.25rem var(--a-font-sans); }
+.treeview ul { margin-left: 4px; border-left: 1px solid var(--a-color-border); }
+.treeview ul.hidden { display: none; }
+.treeview li { position: relative; margin: 4px 0; padding: 0 0 0 16px; list-style: none; }
+.treeview li li::after { content: ""; position: absolute; left: -4px; top: .6rem; width: 10px; border-top: 1px solid var(--a-color-border); }
+.treeview li.folder::before {
+    content: "+"; position: absolute; left: 0; top: 4px; z-index: 1; box-sizing: border-box; width: 10px; height: 10px;
+    border: 1px solid var(--a-color-muted); border-radius: 2px; background: var(--a-color-bg); color: var(--a-color-fg);
+    font: 600 10px/8px var(--a-font-sans); text-align: center; cursor: pointer;
+}
+.treeview li.folder.opened::before { content: "−"; }
+.treeview a { display: inline-flex; align-items: center; gap: .3rem; padding: 1px 6px 1px 3px; border-radius: .25rem;
+    color: var(--a-color-fg); text-decoration: none; background-repeat: no-repeat; }
+.treeview a svg { color: var(--a-color-muted); }
+.treeview li a:hover, .treeview li.selected li a:hover { background-color: var(--a-color-bg-soft); color: var(--a-color-fg); }
+.treeview a:focus-visible { outline: 2px solid var(--a-color-primary); outline-offset: 1px; }
+.treeview li.selected > a, .treeview li.selected > a:hover { background-color: var(--a-color-primary); color: var(--a-color-primary-fg); }
+.treeview li.selected > a svg { color: inherit; }
+.treeview li.selected li a { background-color: transparent; color: var(--a-color-fg); }
+.treeview a.final { font-style: italic; }
+.treeview a.current, .treeview li.selected li a.current { font-weight: 700; }
+
+/* боковая панель разделов (окно в e-sideframe) и дерево в окне выбора */
+.e-divtree-panel { box-sizing: border-box; height: 100%; overflow: hidden; padding: 74px 10px 12px; border: 0; background: var(--a-color-bg-soft); font-family: var(--a-font-sans); }
+.e-divtree-panel body, .e-divtree-panel .e-singlemode-layout { height: 100%; padding: 0; background: var(--a-color-bg); border: 1px solid var(--a-color-border); border-radius: var(--a-radius-ui); overflow: visible; }
+.e-divtree-panel .e-grid-form { position: relative; height: 100%; }
+.e-divtree-wrapper { height: 100%; }
+.e-divtree-main { height: 100%; overflow: auto; padding: 4px 0 0 6px; }
+.e-divtree-panel .e-divtree-toolbar { position: absolute; top: -38px; left: -1px; z-index: 1; width: 100%; margin: 0; padding: 2px 0; gap: 3px; border-radius: 0; }
+.e-divtree-panel .e-divtree-toolbar li.icon { width: 1.9rem; height: 1.9rem; }
+.e-divtree-panel .e-divtree-toolbar li.separator { height: 1.2rem; }
+.e-divtree-select { padding: 1px 0; }
 }

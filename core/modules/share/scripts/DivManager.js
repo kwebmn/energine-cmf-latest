@@ -46,7 +46,6 @@ export class DivManager {
      * @param {Element|string} element
      */
     setup(element) {
-        Energine.loadCSS('div.css');
         this.element = DivManager.element(element);
         this.tabPane = new TabPane(this.element);
         this.langId = this.element.getAttribute('lang_id');
@@ -127,7 +126,7 @@ export class DivManager {
             (treeInfo[nodeId] || []).forEach((child) => {
                 const icon = (child['tmpl_icon'])
                         ? Energine.base + child['tmpl_icon']
-                        : Energine.base + 'templates/icons/empty.icon.gif',
+                        : 'file',
                     childId = child['smap_id'];
                 const newNode = new TreeView.Node({
                     id: childId,

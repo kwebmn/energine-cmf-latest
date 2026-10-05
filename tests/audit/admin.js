@@ -16,11 +16,11 @@ const SHOTS = process.env.SHOTS || fs.mkdtempSync(path.join(os.tmpdir(), 'admin-
 const BASELINE = process.env.BASELINE === '1';
 // старые файлы стилей и картинок админки, удалённые подпроектом: страница их не запрашивает
 const GONE_CSS = ['modalbox.css', 'form.css', 'controls.css', 'tabpane.css', 'grid.css', 'pagelist.css', 'toolbar.css',
-    'pagetoolbar.css', 'singlemode.css', 'energine.css'];
+    'pagetoolbar.css', 'singlemode.css', 'energine.css', 'treeview.css', 'div.css'];
 const GONE_IMAGES = ['images/asc.gif', 'images/desc.gif', 'images/pagelist.gif', 'images/prev_page.gif', 'images/next_page.gif',
     'images/checkbox_on.png', 'images/checkbox_off.png', 'images/toolbar/separator.gif', 'images/toolbar/add.png', 'images/toolbar/edit.png',
     'images/toolbar/delete.png', 'images/toolbar/up.png', 'images/toolbar/down.png', 'images/toolbar/nrgnptb.png',
-    'images/toolbar/nrgnptbdbg.png', 'images/overlay_loading.gif'];
+    'images/toolbar/nrgnptbdbg.png', 'images/overlay_loading.gif', 'templates/icons/empty.icon.gif', 'templates/icons/divisions_list.icon.gif'];
 const ICONS = ['add', 'edit', 'delete', 'up', 'down', 'save', 'close', 'list', 'search', 'filter', 'sort-asc', 'sort-desc',
     'prev', 'next', 'folder', 'file', 'image', 'upload', 'eye', 'gear', 'check'];
 let fail = 0;
@@ -88,7 +88,7 @@ const SCREENS = [
                 check(`${name}, ${w}px: без ошибок JS и 404`, !log.errors.length, log.errors.join(' | '));
                 const old = log.css.filter((f) => GONE_CSS.includes(f) || /awesome/i.test(f));
                 check(`${name}, ${w}px: удалённые стили не запрашиваются`, !old.length, old.join(' '));
-                const oldImg = log.images.filter((f) => GONE_IMAGES.includes(f) || /awesome/i.test(f));
+                const oldImg = log.images.filter((f) => GONE_IMAGES.includes(f) || /awesome|images\/treeview\//i.test(f));
                 check(`${name}, ${w}px: удалённые картинки и шрифты не запрашиваются`, !oldImg.length, oldImg.join(' '));
                 const over = await p.evaluate(() => document.documentElement.scrollWidth - innerWidth).catch(() => 0);
                 check(`${name}, ${w}px: без горизонтальной прокрутки страницы`, over <= 0, `лишние ${over} px`);
@@ -273,6 +273,75 @@ const SCREENS = [
             const single = await sp.evaluate(() => ({ font: getComputedStyle(document.body).fontFamily, bg: getComputedStyle(document.body).backgroundColor }));
             check('окно single: фон и шрифт админки', /system-ui/.test(single.font) && single.bg === 'rgb(255, 255, 255)', JSON.stringify(single));
             await sp.close();
+        }
+
+        // дерево структуры: значки узлов, раскрытие щелчком и с клавиатуры, выбранный узел; боковая панель разделов
+        {
+            const p = await ctx.newPage();
+            await p.setViewportSize({ width: 1280, height: 900 });
+            await p.goto(BASE + 'admin/structure/', { waitUntil: 'networkidle' });
+            await p.waitForTimeout(1200);
+            const t = await p.evaluate(() => {
+                const links = [...document.querySelectorAll('.treeview li > a')];
+                const folder = document.querySelector('.treeview li.folder');
+                return { nodes: links.length, icons: links.filter((a) => a.querySelector('svg use')).length, folder: !!folder,
+                    opened: folder && folder.classList.contains('opened') };
+            });
+            check('дерево: у каждого узла значок из спрайта', t.nodes > 1 && t.icons === t.nodes, JSON.stringify(t));
+            // клавиатура: фокус на ссылке узла с вложенными, стрелка вправо раскрывает, влево — сворачивает
+            const kb = await p.evaluate(() => {
+                const li = [...document.querySelectorAll('.treeview li.folder')].find((x) => !x.classList.contains('opened'))
+                    || document.querySelector('.treeview li.folder');
+                li.querySelector('a').focus();
+                return li.classList.contains('opened');
+            });
+            await p.keyboard.press(kb ? 'ArrowLeft' : 'ArrowRight');
+            const kb2 = await p.evaluate(() => document.activeElement.closest('li').classList.contains('opened'));
+            await p.keyboard.press(kb2 ? 'ArrowLeft' : 'ArrowRight');
+            const kb3 = await p.evaluate(() => document.activeElement.closest('li').classList.contains('opened'));
+            check('дерево: стрелки вправо/влево раскрывают и сворачивают узел', kb2 !== kb && kb3 === kb, JSON.stringify({ kb, kb2, kb3 }));
+            await p.keyboard.press('Enter');
+            await p.waitForTimeout(300);
+            const sel = await p.evaluate(() => { const a = document.querySelector('.treeview li.selected > a'); const cs = a && getComputedStyle(a);
+                const f = document.querySelector('.treeview li.folder'); const b = f && getComputedStyle(f, '::before');
+                return { bg: cs && cs.backgroundColor, color: cs && cs.color, toggle: b && b.content }; });
+            check('дерево: Enter выбирает узел, выбранный — основного цвета; у узла с вложенными знак раскрытия', sel.bg === 'rgb(31, 95, 174)'
+                && sel.color === 'rgb(255, 255, 255)' && !!sel.toggle && sel.toggle !== 'none', JSON.stringify(sel));
+            await shot(p, 'структура-после');
+            await p.close();
+        }
+        {
+            // боковая панель разделов: открывается шестерёнкой, страница сдвигается, кнопки дерева не под панелью сверху
+            const p = await ctx.newPage();
+            await p.setViewportSize({ width: 1280, height: 900 });
+            await p.goto(BASE + 'info/quick-start/', { waitUntil: 'networkidle' });
+            const wasOpen = await p.evaluate(() => document.documentElement.classList.contains('e-has-sideframe'));
+            if (!wasOpen) await p.click('.pagetb_logo');
+            await p.waitForTimeout(2500);
+            const f = await (await p.$('.e-sideframe iframe')).contentFrame();
+            await f.waitForSelector('#divTree li a', { timeout: 10000 }).catch(() => null);
+            const side = await p.evaluate(() => ({ pl: getComputedStyle(document.body).paddingLeft,
+                top: document.querySelector('.e-topframe').getBoundingClientRect().bottom }));
+            const tb = await f.evaluate(() => { const li = document.querySelector('ul.toolbar li'); return li ? li.getBoundingClientRect().top : -1; });
+            const icons = await f.evaluate(() => document.querySelectorAll('#divTree li > a svg use').length);
+            check('боковая панель: страница сдвинута, кнопки дерева ниже панели сверху, у узлов значки', side.pl === '300px' && tb >= side.top && icons > 1,
+                JSON.stringify({ side, tb, icons }));
+            await shot(p, 'боковая-панель');
+            if (!wasOpen) await p.click('.pagetb_logo');
+            await p.waitForTimeout(500);
+            await p.close();
+        }
+
+        // порядок слоёв в обоих файлах один и тот же (иначе у администратора каскад зависит от порядка подключения)
+        {
+            // порядок слоёв — по первому появлению имени в @layer (так его и считает браузер)
+            const order = async (url) => { const r = await ctx.request.get(url); const t = r.ok() ? await r.text() : '';
+                const names = [];
+                for (const m of t.matchAll(/@layer ([a-z,]+)[;{]/g)) m[1].split(',').forEach((n) => { if (!names.includes(n)) names.push(n); });
+                return names.join(','); };
+            const want = 'properties,theme,base,components,admin,utilities';
+            const site = await order(BASE + 'stylesheets/main/main.css'), admin = await order(BASE + 'stylesheets/admin.css');
+            check('порядок слоёв в main.css и admin.css один: ' + want, site === want && admin === want, JSON.stringify({ site, admin }));
         }
 
         // значки: спрайт и Energine.icon

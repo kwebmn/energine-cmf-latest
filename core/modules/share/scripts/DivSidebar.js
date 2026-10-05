@@ -32,7 +32,6 @@ export class DivSidebar extends DivManager {
      * @param {Element|string} element
      */
     setup(element) {
-        Energine.loadCSS('div.css');
         this.element = DivManager.element(element);
         const list = DivManager.treeList();
         this.langId = this.element.getAttribute('lang_id');

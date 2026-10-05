@@ -5,7 +5,9 @@
     по умолчанию; своя база темы — ниже и не касается контейнеров админки.
     Переменные дизайна — @theme; утилиты читают их (bg-primary, text-muted, rounded-ui …).
 */
-@layer theme, base, components, utilities;
+/* порядок слоёв — общий со стилями админки (admin.tailwind.css): у администратора на странице оба файла, и какой
+   подключится первым, тот задаёт порядок; admin — выше components темы, утилиты — выше всего */
+@layer theme, base, components, admin, utilities;
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/utilities.css" layer(utilities);
 

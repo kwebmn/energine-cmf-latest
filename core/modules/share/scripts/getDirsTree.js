@@ -54,7 +54,7 @@ export class getDirsTree extends DivManager {
             (treeInfo[nodeId] || []).forEach((child) => {
                 const icon = (child['tmpl_icon'])
                         ? Energine.base + child['tmpl_icon']
-                        : Energine.base + 'templates/icons/divisions_list.icon.gif',
+                        : 'folder',
                     childId = child['upl_id'];
                 const newNode = new TreeView.Node({
                     id: childId,

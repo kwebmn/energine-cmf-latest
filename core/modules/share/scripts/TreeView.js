@@ -23,7 +23,6 @@ import {Energine} from 'Energine';
  */
 export class TreeView {
     constructor(element, options) {
-        Energine.loadCSS('treeview.css');
         this.element = (typeof element === 'string') ? document.getElementById(element) : element;
         this.options = Object.assign({}, options);
         this.selectedNode = null;
@@ -137,6 +136,13 @@ TreeView.Node = class TreeViewNode {
             anchor.addEventListener('dblclick', this.tree.options.dblClick);
         }
         anchor.addEventListener('click', (event) => this.tree.nodeSelectListener(event, this));
+        // клавиатура на ссылке узла: стрелка вправо раскрывает, влево сворачивает (Enter — щелчок по ссылке: выбор)
+        anchor.addEventListener('keydown', (event) => {
+            if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
+                event.preventDefault();
+                (event.key === 'ArrowRight') ? this.expand() : this.collapse();
+            }
+        });
     }
 
     on(type, handler) {
@@ -316,18 +322,28 @@ TreeView.Node = class TreeViewNode {
 
     // название — текстом
     setName(name) {
-        this.element.querySelector('a').textContent = name;
+        const link = this.element.querySelector('a');
+        const icon = link.querySelector('svg');
+        link.textContent = name;
+        if (icon) {
+            link.prepend(icon);
+        }
     }
 
     setData(data) {
         this.data = data;
     }
 
+    // значок узла: имя значка спрайта (без «/») — svg перед названием; путь к картинке — фоном, как прежде
     setIcon(icon) {
         const link = this.element.querySelector('a');
+        if (!String(icon).includes('/')) {
+            link.insertAdjacentHTML('afterbegin', Energine.icon(icon));
+            return;
+        }
         link.style.backgroundImage = 'url(' + icon + ')';
         link.style.backgroundPosition = '1px 1px';
-        link.style.backgroundRepeat = 'no-repeat';
+        link.style.paddingLeft = '21px';
     }
 
     getData() {
