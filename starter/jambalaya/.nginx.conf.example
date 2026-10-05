@@ -1,5 +1,5 @@
-# nginx for an Energine 2.13 project with PHP-FPM 8.4+.
-# Replace the server name, the project path and the PHP-FPM socket with yours.
+# nginx for an Energine 2.13 project with PHP-FPM 8.4+ (INSTALL.md, step 10).
+# Replace the server name, the project path and the socket of the site's own PHP-FPM pool with yours.
 server {
     listen 80;
     server_name example.com;
@@ -7,8 +7,9 @@ server {
     index index.php;
     client_max_body_size 64M;
 
-    # dot-files, page and template XML/XSLT, PHP inside uploads are never served
-    location ~ /\. { deny all; }
+    # dot-files (except /.well-known/ for certificates), page and template XML/XSLT, PHP inside uploads
+    # are never served
+    location ~ /\.(?!well-known/) { deny all; }
     location ~* \.(xml|xslt)$ { deny all; }
     location ~* ^/uploads/.*\.php$ { deny all; }
 
@@ -27,6 +28,6 @@ server {
         try_files $uri =404;
         include fastcgi_params;
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-        fastcgi_pass unix:/run/php/php8.5-fpm.sock;
+        fastcgi_pass unix:/run/php/my-site.sock;
     }
 }

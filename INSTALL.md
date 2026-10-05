@@ -1,8 +1,8 @@
 # Installing Energine 2.13
 
 These steps install an empty site. To see every module at work, install the site with demo content: step 4
-has its own SQL list and step 9 adds its images. `tools/install-check.sh` runs exactly these steps on a
-temporary server before each release.
+has its own SQL list and step 9 adds its images. `tools/install-check.sh` runs these steps on a temporary
+server before each release, with PHP's built-in web server in place of step 10.
 
 ## Requirements
 
@@ -26,7 +26,7 @@ cp -a /var/www/energine/starter /var/www/my-site
 ```
 
 `/var/www/energine` is the core, `/var/www/my-site` is your project. The web server's document root is
-`/var/www/my-site/htdocs`; the rest of the project (configuration, SQL, setup, vendor) stays outside it.
+`/var/www/my-site/htdocs`; SQL, setup, vendor and the configuration template stay outside it.
 
 ## 2. Install PHP dependencies
 
@@ -104,12 +104,16 @@ php index.php setup install
 ```
 
 `setup install` checks the database connection, writes your domain into the site's address, links the core's
-modules into the project's `core/modules/`, fills `htdocs/` with the modules' images, scripts, stylesheets and
-templates, and writes the script map `htdocs/system.jsmap.php`. Setup runs from the console only.
+modules into the project's `core/modules/`, fills `htdocs/images/`, `scripts/`, `stylesheets/` and
+`templates/` from the modules, and writes the script map `htdocs/system.jsmap.php`. With `debug` off it
+minifies the JavaScript it puts there; everything else is linked. Setup runs from the console only and exits
+with a non-zero status when it fails.
 
-With `debug` off, setup copies the module files into `htdocs/`; with `debug` on, it links them. Run
-`php index.php setup linker` again after updating the core, after moving the core or the project, and after
-changing `debug`.
+Every setup run empties and rebuilds those four `htdocs/` folders. Put your own images, scripts and
+stylesheets into `site/modules/main/images/`, `site/modules/main/scripts/` and `site/modules/main/stylesheets/`
+(setup links them into `htdocs/images/main/` and so on) or into `htdocs/uploads/`, never straight into the
+rebuilt folders. Run `php index.php setup linker` again after updating the core, after moving the core or the
+project, after changing `debug`, and after adding files to `site/modules/main/`.
 
 ## 7. Create your administrator
 
@@ -123,8 +127,7 @@ mariadb --default-character-set=utf8 -u energine -p energine \
   -e "UPDATE user_users SET u_name = 'you@example.com', u_fullname = 'Administrator', u_password = '$HASH' WHERE u_name = 'demo@energine.org'"
 ```
 
-The password appears neither in your shell history nor in the process list. Sign in at `/login/`; the
-administration is at `/admin/`.
+The password appears neither in your shell history nor in the process list.
 
 ## 8. The address the site answers on
 
@@ -151,11 +154,44 @@ cp -a sql/demo/uploads/. htdocs/uploads/public/demo/
 The demo users (`@example.com`) have no usable passwords either; to sign in as one of them, set a password in
 the administration (Users).
 
+## 10. Web server
+
+PHP must run as the user that owns the site: setup and the site write to the same folders, and other users
+cannot read `htdocs/system.config.php` (step 5). Give the site a PHP-FPM pool of its own, for example
+`/etc/php/8.5/fpm/pool.d/my-site.conf`:
+
+```ini
+[my-site]
+user = mysite
+group = mysite
+listen = /run/php/my-site.sock
+listen.owner = www-data
+listen.group = www-data
+pm = ondemand
+pm.max_children = 10
+php_admin_flag[display_errors] = off
+php_admin_flag[log_errors] = on
+```
+
+The core switches `display_errors` on at run time; only `php_admin_flag[display_errors] = off` in the pool
+keeps error details off the pages of a live site. Restart PHP-FPM after adding the pool.
+
+- **nginx:** copy the server block of `starter/jambalaya/.nginx.conf.example` into the server's configuration,
+  set `server_name`, `root` (`/var/www/my-site/htdocs`) and the pool's socket in `fastcgi_pass`, then reload
+  nginx.
+- **Apache 2.4** (not tested): copy `starter/jambalaya/.htaccess` into `htdocs/`, enable mod_rewrite, and allow
+  the file with `AllowOverride All` in the site's `<Directory>`.
+
+Open the site and sign in at `/login/` as the administrator from step 7; the administration is at `/admin/`.
+
 ## Writable folders
 
-- Setup writes to `htdocs/` and to the project's `core/modules/`.
-- PHP, as the web server runs it, writes to `htdocs/uploads/` and everything below it (uploaded files) and to
-  `site/modules/*/templates/content/` (the widget editor saves page layouts there).
+Setup and PHP run as the site's user (step 10) and write to:
+
+- `htdocs/` — setup rebuilds `images/`, `scripts/`, `stylesheets/`, `templates/` and `system.jsmap.php`;
+- the project's `core/modules/` — setup links the core's modules there;
+- `htdocs/uploads/` and everything below it — uploaded files;
+- `site/modules/*/templates/content/` — the widget editor saves page layouts there.
 
 ## Updating
 
@@ -166,8 +202,9 @@ php index.php setup linker
 php index.php setup scriptMap
 ```
 
-The project folder is yours: updating the core does not change it. Compare `starter/` of a new release with
-your project to take over its changes.
+Setup rebuilds the four `htdocs/` folders, so files you put straight into them are gone after an update: keep
+them in `site/modules/main/` (step 6). The project folder is yours: updating the core does not change it.
+Compare `starter/` of a new release with your project to take over its changes.
 
 ## Known risks
 

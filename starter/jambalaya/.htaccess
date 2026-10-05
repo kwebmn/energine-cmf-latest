@@ -1,11 +1,12 @@
-# Apache 2.4 for an Energine 2.13 project (mod_rewrite): put it into htdocs/.
-# nginx (.nginx.conf.example) is the tested setup; these rules mirror it.
+# Apache 2.4 for an Energine 2.13 project (mod_rewrite): put it into htdocs/ and allow it there with
+# AllowOverride All (INSTALL.md, step 10). nginx (.nginx.conf.example) is the tested setup; these rules mirror it.
 Options -Indexes +FollowSymLinks
 DirectoryIndex index.php
 RewriteEngine on
 
-# dot-files, page and template XML/XSLT, PHP inside uploads are never served
-RewriteRule "(^|/)\." - [F]
+# dot-files (except /.well-known/ for certificates), page and template XML/XSLT, PHP inside uploads
+# are never served
+RewriteRule "(^|/)\.(?!well-known/)" - [F]
 RewriteRule "\.(xml|xslt)$" - [F]
 RewriteRule "^uploads/.*\.php$" - [F]
 
