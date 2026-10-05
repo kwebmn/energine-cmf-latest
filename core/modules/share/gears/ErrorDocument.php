@@ -80,6 +80,13 @@ class ErrorDocument extends Primitive implements IDocument {
             error_log('Energine: ' . get_class($this->e) . ': ' . $message . ' @ ' . $this->e->getFile() . ':' . $this->e->getLine());
             $message = E()->Utils->translate('ERR_SERVER');
         }
+        // в отладке — подробности ошибки разработчика (имя класса, секции, файла …) прямо в сообщении
+        if ($this->getConfigValue('site.debug') && $this->e instanceof SystemException) {
+            $details = array_filter((array)$this->e->getCustomMessage(), 'is_scalar');
+            if ($details) {
+                $message .= ': ' . implode('; ', $details);
+            }
+        }
         $vm = E()->getController()->getViewMode();
         if ($vm == DocumentController::TRANSFORM_JSON) {
             $errors = [['message' => $message]];

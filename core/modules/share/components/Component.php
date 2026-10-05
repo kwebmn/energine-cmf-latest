@@ -518,6 +518,35 @@ class Component extends Primitive implements IBlock {
     }
 
     /**
+     * Полное имя класса компонента по короткому (class="TextBlock" в XML страницы): сначала модули сайта
+     * (EnergineSite\<модуль>\components), затем модули ядра из конфига (Energine\<модуль>\components).
+     * Полное имя (с «\\») возвращается как есть.
+     * @throws SystemException ERR_DEV_NO_COMPONENT_CLASS — класса с таким именем нет
+     */
+    static public function resolveClassName($className) {
+        $className = ltrim((string)$className, '\\');
+        if (str_contains($className, '\\')) {
+            if (!class_exists($className)) {
+                throw new SystemException('ERR_DEV_NO_COMPONENT_CLASS', SystemException::ERR_DEVELOPER, $className);
+            }
+            return $className;
+        }
+        $candidates = [];
+        foreach (glob(SITE_DIR . '/modules/*', GLOB_ONLYDIR) ?: [] as $dir) {
+            $candidates[] = 'EnergineSite\\' . basename($dir) . '\\components\\' . $className;
+        }
+        foreach (array_keys((array)E()->getConfigValue('modules')) as $module) {
+            $candidates[] = 'Energine\\' . $module . '\\components\\' . $className;
+        }
+        foreach ($candidates as $candidate) {
+            if (class_exists($candidate)) {
+                return $candidate;
+            }
+        }
+        throw new SystemException('ERR_DEV_NO_COMPONENT_CLASS', SystemException::ERR_DEVELOPER, $className);
+    }
+
+    /**
      * Create component by requested parameters.
      * @param string $name Component name.
      * @param string $fqClassName Component class name.
@@ -527,6 +556,7 @@ class Component extends Primitive implements IBlock {
      * @throws SystemException
      */
     static public function create($name, $fqClassName, $params = null) {
+        $fqClassName = self::resolveClassName($fqClassName);
         try {
             $result = new $fqClassName($name, $params);
         } catch (SystemException $e) {

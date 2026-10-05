@@ -79,9 +79,36 @@ class TextBlock extends DataSet implements SampleTextBlock{
                 'active' => true,
                 'text' => false,
                 // константа с образцом текста секции визитки: показывается в режиме правки вместо пустого блока
-                'section_sample' => false
+                'section_sample' => false,
+                // секция визитки по имени (hero … cta): номер блока и образец — из SECTIONS
+                'section' => false
             )
         );
+    }
+
+    /**
+     * Секции визиток: имя → номер текстового блока на странице (номер — число, чтобы блок был свой у страницы;
+     * нечисловой num — общий блок всех страниц). Номера не меняются: по ним в базе лежат тексты.
+     */
+    const SECTIONS = ['hero' => 11, 'services' => 12, 'prices' => 13, 'reviews' => 14, 'gallery' => 15, 'faq' => 16,
+        'contacts' => 17, 'cta' => 18];
+
+    /**
+     * section=<имя> задаёт номер блока и образец секции (TXT_SECTION_SAMPLE_<ИМЯ>, если образец не указан явно).
+     * @throws SystemException ERR_DEV_NO_SECTION — секции с таким именем нет
+     */
+    protected function setParam($name, $value) {
+        if ($name === 'section' && $value) {
+            if (!isset(self::SECTIONS[$value])) {
+                throw new SystemException('ERR_DEV_NO_SECTION', SystemException::ERR_DEVELOPER,
+                    [$value, implode(', ', array_keys(self::SECTIONS))]);
+            }
+            parent::setParam('num', self::SECTIONS[$value]);
+            if (!$this->getParam('section_sample')) {
+                parent::setParam('section_sample', 'TXT_SECTION_SAMPLE_' . strtoupper($value));
+            }
+        }
+        parent::setParam($name, $value);
     }
 
     //todo VZ: This confuse! What is returned when $num is text block ID?
@@ -132,6 +159,9 @@ class TextBlock extends DataSet implements SampleTextBlock{
         }
 
         $this->setProperty('num', $this->getParam('num'));
+        if ($this->getParam('section')) {
+            $this->setProperty('section', $this->getParam('section'));
+        }
         if ($this->isEditable && ($sample = $this->getParam('section_sample')) && trim((string)$this->content) === '') {
             $this->setProperty('section_sample', $sample);
             $this->document->addTranslation($sample, $this);

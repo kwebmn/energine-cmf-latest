@@ -2,17 +2,16 @@
 <!-- «Контакты»: заголовок страницы и текст (блок alfa, num 1), затем секция контактов -->
 <content>
     <container name="textBlockContainer1" block="alfa">
-        <component name="textBlock_1" class="Energine\share\components\TextBlock">
+        <component name="textBlock_1" class="TextBlock">
             <params>
                 <param name="num">1</param>
             </params>
         </component>
     </container>
     <container name="contacts" section="contacts">
-        <component name="section_contacts" class="Energine\share\components\TextBlock">
+        <component name="section_contacts" class="TextBlock">
             <params>
-                <param name="num">17</param>
-                <param name="section_sample">TXT_SECTION_SAMPLE_CONTACTS</param>
+                <param name="section">contacts</param>
             </params>
         </component>
     </container>
