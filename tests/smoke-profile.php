@@ -22,8 +22,10 @@ $row = fn() => q('SELECT u_fullname, u_password, u_is_active, u_restore_hash, u_
 
 function signIn($login, $password) {
     @unlink($GLOBALS['jar']);
-    http('/login/');
-    http('/auth.php', ['user' => ['login' => 1, 'username' => $login, 'password' => $password]], [], BASE . '/login/');
+    [$pc] = http('/login/');
+    [$ac, $body] = http('/auth.php', ['user' => ['login' => 1, 'username' => $login, 'password' => $password]], [], BASE . '/login/');
+    // для разбора редкого сбоя входа (в полном прогоне): коды ответов, cookie причины и начало ответа auth.php
+    $GLOBALS['signInDiag'] = "login HTTP $pc, auth.php HTTP $ac, failed_login: " . var_export(cookie('failed_login'), true) . ', ' . substr(strip_tags($body), 0, 120);
     return (bool)cookie('NRGNSID');
 }
 // имена полей формы, помеченных обязательными (класс required у обёртки поля)
@@ -48,7 +50,7 @@ $noPassword = ['user_users[u_password]' => '', 'u_password2' => '', 'u_password_
 [$c, $html] = http('/profile/');
 check('гостю форма профиля не показывается', !str_contains($html, 'save-user'), "HTTP $c");
 
-check('посетитель вошёл', signIn($login, $password));
+check('посетитель вошёл', signIn($login, $password), $GLOBALS['signInDiag']);
 [$c, $html] = http('/profile/');
 check("форма профиля открывается (HTTP $c)", $c == 200 && str_contains($html, 'save-user'));
 check('в форме нет служебных полей (активность, ссылка восстановления)',
