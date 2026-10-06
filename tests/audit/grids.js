@@ -834,7 +834,7 @@ const inspect = (page) => page.evaluate(() => {
             p.on('request', (r) => { if (r.url().includes('/get-data/')) urls.push(r.url()); });
             await p.setViewportSize({ width: 1280, height: 720 });
             await p.goto(BASE + 'admin/users/single/userEditor/', { waitUntil: 'networkidle' });
-            const head = '.gridHeadContainer th[name="u_name"]';
+            const head = '.gridContainer thead th[name="u_name"]';
             const clickSort = async () => {
                 await Promise.all([p.waitForResponse((r) => r.url().includes('/get-data/')), p.click(head)]);
                 await p.waitForTimeout(300);
@@ -844,25 +844,39 @@ const inspect = (page) => page.evaluate(() => {
             check('сортировка: щелчок по заголовку — по возрастанию, второй — по убыванию, третий — без сортировки',
                 /get-data\/u_name-asc\/page-1$/.test(a.url) && a.cls === 'asc' && /get-data\/u_name-desc\/page-1$/.test(d.url)
                 && d.cls === 'desc' && /get-data\/page-1$/.test(n.url) && n.cls === '', JSON.stringify({ a, d, n }));
-            const cols = await p.evaluate(() => ({
-                head: [...document.querySelectorAll('.gridHeadContainer col')].map((c) => c.style.width),
-                body: [...document.querySelectorAll('.gridContainer col')].map((c) => c.style.width),
-                ths: [...document.querySelectorAll('.gridHeadContainer th')].map((th) => Math.round(th.getBoundingClientRect().width)),
-                tds: [...document.querySelectorAll('.gridContainer tbody tr:first-child td')].map((td) => Math.round(td.getBoundingClientRect().width)),
-            }));
-            check('колонки: ширины колонок заголовка — как у тела', cols.head.length > 0 && cols.head.join() === cols.body.join()
-                && cols.head.every((w) => /^\d+px$/.test(w)) && cols.ths.every((w, i) => Math.abs(w - cols.tds[i]) <= 1), JSON.stringify(cols));
-            const height = () => p.evaluate(() => parseInt(document.querySelector('.gridContainer').style.height, 10));
+            // грид на CSS (надёжность, этап 5): одна таблица с липкой шапкой — ширины колонок шапки и строк совпадают сами,
+            // высоту списка задаёт CSS (inline-высоты из JS нет)
+            const cols = await p.evaluate(() => {
+                const c = document.querySelector('.gridContainer');
+                return {
+                    tables: document.querySelectorAll('.grid table').length,
+                    ths: [...c.querySelectorAll('thead th')].filter((th) => th.offsetParent).map((th) => Math.round(th.getBoundingClientRect().width)),
+                    tds: [...c.querySelectorAll('tbody tr:first-child td')].map((td) => Math.round(td.getBoundingClientRect().width)),
+                    inline: c.style.height,
+                };
+            });
+            check('колонки: шапка и строки — одна таблица, ширины колонок совпадают', cols.tables === 1 && cols.ths.length > 0
+                && cols.ths.length === cols.tds.length && cols.ths.every((w, i) => Math.abs(w - cols.tds[i]) <= 1), JSON.stringify(cols));
+            const height = () => p.evaluate(() => Math.round(document.querySelector('.gridContainer').getBoundingClientRect().height));
             const h720 = await height();
             await p.setViewportSize({ width: 1280, height: 480 });
             await p.waitForTimeout(600);
             const h480 = await height();
-            check('размер окна: высота грида в окне следует за окном', h720 > 0 && h720 - h480 === 240, JSON.stringify({ h720, h480 }));
+            check('размер окна: высота грида в окне следует за окном (CSS, без высоты из JS)', cols.inline === '' && h720 > 0
+                && Math.abs(h720 - h480 - 240) <= 2, JSON.stringify({ h720, h480, inline: cols.inline }));
+            await p.setViewportSize({ width: 390, height: 720 });
+            await p.waitForTimeout(600);
+            const narrow = await p.evaluate(() => {
+                const c = document.querySelector('.gridContainer');
+                return { page: document.documentElement.scrollWidth, view: innerWidth, box: Math.round(c.getBoundingClientRect().right) };
+            });
+            check('узкое окно 390 px: грид в пределах окна', narrow.page <= narrow.view && narrow.box <= narrow.view, JSON.stringify(narrow));
             check('сортировка, колонки, размер окна: без ошибок JS и 404', !errors.list().length, errors.list().join(' | '));
             await p.close();
         }
         {
-            // a full page: the pane follows the window
+            // a full page: the pane follows the window; the head stays on top while the list scrolls; long values wrap;
+            // the row selected before a reload is the same and visible below the head
             const p = await ctx.newPage();
             const errors = watch(p);
             await p.setViewportSize({ width: 1280, height: 720 });
@@ -870,17 +884,51 @@ const inspect = (page) => page.evaluate(() => {
             await p.waitForTimeout(600);
             const size = () => p.evaluate(() => {
                 const g = document.querySelector('.gridContainer');
-                return { pane: parseInt(g.closest('.e-pane').style.height, 10), grid: parseInt(g.style.height, 10) };
+                return { pane: Math.round(g.closest('.e-pane').getBoundingClientRect().height), grid: Math.round(g.getBoundingClientRect().height) };
             });
-            const s720 = await size();
-            await p.setViewportSize({ width: 1280, height: 480 });
+            // панель — до низа окна, но не ниже 500 px (у низкого окна страница прокручивается, как и прежде)
+            const at = async (h) => { await p.setViewportSize({ width: 1280, height: h }); await p.waitForTimeout(600); return size(); };
+            const s480 = await at(480), s800 = await at(800), s1000 = await at(1000), s1200 = await at(1200);
+            check('размер окна: панель грида на странице следует за окном (не ниже 500 px)', s480.pane >= 500 && s800.pane < s1000.pane
+                && s1000.pane < s1200.pane && s1200.grid > s800.grid, JSON.stringify({ s480, s800, s1000, s1200 }));
+            await at(720);
+            // липкие — ячейки шапки (th), и у отсортированной колонки тоже
+            const sticky = await p.evaluate(() => {
+                const c = document.querySelector('.gridContainer');
+                c.scrollTop = 300;
+                const th = [...c.querySelectorAll('thead th')].find((t) => t.offsetParent);
+                th.classList.add('asc');
+                const sortedPosition = getComputedStyle(th).position;
+                th.classList.remove('asc');
+                return { scrolled: c.scrollTop, head: Math.round(th.getBoundingClientRect().top), top: Math.round(c.getBoundingClientRect().top), sortedPosition };
+            });
+            check('шапка грида на месте при прокрутке списка (и у отсортированной колонки)', sticky.scrolled > 0
+                && Math.abs(sticky.head - sticky.top) <= 1 && sticky.sortedPosition === 'sticky', JSON.stringify(sticky));
+            await p.evaluate(() => {
+                const c = document.querySelector('.gridContainer');
+                const rows = c.querySelectorAll('tbody tr');
+                rows[Math.min(rows.length - 1, 30)].click();
+                c.scrollTop = 0;
+            });
+            const key = await p.evaluate(() => document.querySelector('.e-pane').GridManager.grid.getSelectedRecordKey());
+            await Promise.all([p.waitForResponse((r) => r.url().includes('/get-data/')),
+                p.evaluate(() => document.querySelector('.e-pane').GridManager.reload())]);
             await p.waitForTimeout(600);
-            const s480 = await size();
-            await p.setViewportSize({ width: 1280, height: 900 });
-            await p.waitForTimeout(600);
-            const s900 = await size();
-            check('размер окна: панель грида на странице следует за окном', s480.pane < s720.pane && s720.pane < s900.pane
-                && s900.grid > s720.grid, JSON.stringify({ s480, s720, s900 }));
+            const sel = await p.evaluate(() => {
+                const c = document.querySelector('.gridContainer'), row = c.querySelector('tbody tr.selected');
+                const r = row && row.getBoundingClientRect();
+                return { key: document.querySelector('.e-pane').GridManager.grid.getSelectedRecordKey(), rowTop: r && Math.round(r.top),
+                    rowBottom: r && Math.round(r.bottom), headBottom: Math.round([...c.querySelectorAll('thead th')].find((t) => t.offsetParent).getBoundingClientRect().bottom),
+                    boxBottom: Math.round(c.getBoundingClientRect().bottom) };
+            });
+            check('выбранная строка после перезагрузки — та же и видна под шапкой', !!key && sel.key == key && sel.rowTop !== null
+                && sel.rowTop >= sel.headBottom - 1 && sel.rowBottom <= sel.boxBottom + 1, JSON.stringify({ key, ...sel }));
+            const wide = await p.evaluate(() => {
+                const c = document.querySelector('.gridContainer');
+                c.querySelector('tbody tr td').textContent = 'x'.repeat(400);
+                return { table: Math.round(c.querySelector('table').getBoundingClientRect().width), box: c.clientWidth };
+            });
+            check('длинное значение без пробелов переносится, таблица не шире списка', wide.table <= wide.box, JSON.stringify(wide));
             check('размер окна, страница: без ошибок JS и 404', !errors.list().length, errors.list().join(' | '));
             await p.close();
         }

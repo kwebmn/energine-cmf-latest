@@ -21,6 +21,15 @@ $dead = [
     'nodeInfo.nodeType'        => 'TreeView.Node из готового li — узлы создаются только из описания',
     'csv() {'                  => 'Grid.csv — кнопки и состояния csv нет',
     'getElement() {'           => 'Toolbar/PageList getElement — элемент читают напрямую (.element)',
+    // надёжность, этап 5: грид — одна таблица с липкой шапкой, размеры — CSS
+    'gridHeadContainer'        => 'шапка грида отдельной таблицей — шапка теперь thead той же таблицы',
+    'gridBodyContainer'        => 'обёртка тела грида — тело в .gridContainer',
+    'adjustColumns'            => 'Grid.adjustColumns — ширины колонок двух таблиц из JS',
+    'fitGridSize'              => 'Grid.fitGridSize — высота списка из JS',
+    'fitGridFormSize'          => 'Grid.fitGridFormSize — высота панели на странице из JS (теперь CSS от --e-pane-top)',
+    'minGridHeight'            => 'Grid.minGridHeight — минимум высоты для расчётов из JS',
+    'scrollBarWidth'           => 'Grid.scrollBarWidth — ширина полосы прокрутки для отступа шапки',
+    'ScrollBarWidth'           => 'window.ScrollBarWidth — то же, общее для окон',
 ];
 $files = [];
 foreach (['core', 'site', 'tests'] as $dir) {

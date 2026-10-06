@@ -211,99 +211,37 @@
                                 </xsl:if>
                             </div>
                         </xsl:if>
-                        <div class="gridHeadContainer">
-                        <table class="gridTable" cellspacing="0">
-                            <xsl:choose>
-                                <xsl:when test="ancestor::component[@sample='FileRepository']">
-                                    <xsl:attribute name="class">gridTable fixed_columns</xsl:attribute>
-                                    <col id="col_11" style="width:12%"/>
-                                    <col id="col_12" style="width:30%"/>
-                                    <col id="col_13" style="width:28%"/>
-                                    <col id="col_14" style="width:30%"/>
-                                </xsl:when>
-                                <xsl:otherwise>
-                                    <xsl:for-each select="$FIELDS[@type!='hidden']">
-                                        <xsl:choose>
-                                            <xsl:when test="@language">
-                                                <xsl:if test="@language = $LANG_ID">
-                                                    <col id="col_1{position()}"/>
-                                                </xsl:if>
-                                            </xsl:when>
-                                            <xsl:otherwise>
-                                                <col id="col_1{position()}"/>
-                                            </xsl:otherwise>
-                                        </xsl:choose>
-                                    </xsl:for-each>
-                                </xsl:otherwise>
-                            </xsl:choose>
-                            <thead>
-                                <tr>
-                                    <xsl:for-each select="$FIELDS[@type!='hidden']">
-                                        <xsl:choose>
-                                            <!--<xsl:when test="@index='PRI'"></xsl:when>-->
-                                            <xsl:when test="@language">
-                                                <xsl:if test="@language = $LANG_ID">
-                                                    <th name="{@name}"><xsl:value-of select="@title"/></th>
-                                                </xsl:if>
-                                            </xsl:when>
-                                            <xsl:otherwise>
-                                                <th name="{@name}"><xsl:value-of select="@title"/></th>
-                                            </xsl:otherwise>
-                                        </xsl:choose>
-                                    </xsl:for-each>
-                                </tr>
-                            </thead>
-                        </table>
-                        </div>
+                        <!-- грид — одна таблица: шапка (thead) липкая, ширины колонок у шапки и строк общие, высоту списка задаёт
+                             CSS (admin.tailwind.css); у файлового репозитория колонки фиксированной ширины -->
                         <div class="gridContainer">
-                            <div class="gridBodyContainer">
-                                <table class="gridTable" cellspacing="0">
-                                    <xsl:choose>
-                                        <xsl:when test="ancestor::component[@sample='FileRepository']">
-                                            <xsl:attribute name="class">gridTable fixed_columns</xsl:attribute>
-                                            <col id="col_11a" style="width:12%"/>
-                                            <col id="col_12a" style="width:30%"/>
-                                            <col id="col_13a" style="width:28%"/>
-                                            <col id="col_14a" style="width:30%"/>
-                                        </xsl:when>
-                                        <xsl:otherwise>
-                                            <xsl:for-each select="$FIELDS[@type!='hidden']">
-                                                <xsl:choose>
-                                                    <xsl:when test="@language">
-                                                        <xsl:if test="@language = $LANG_ID">
-                                                            <col id="col_{position()}a"/>
-                                                        </xsl:if>
-                                                    </xsl:when>
-                                                    <xsl:otherwise>
-                                                        <col id="col_{position()}a"/>
-                                                    </xsl:otherwise>
-                                                </xsl:choose>
-                                            </xsl:for-each>
-                                            <!--  !!!TODO!!!
-                                                чтобы выводить колонки фиксированной ширины, нужно выводить в инлайн-стиль ширину колонки style="width: 25%;"
-                                            -->
-                                        </xsl:otherwise>
-                                    </xsl:choose>
-                                    <thead style="display: none;">
-                                        <tr>
+                            <table class="gridTable">
+                                <xsl:if test="ancestor::component[@sample='FileRepository']">
+                                    <xsl:attribute name="class">gridTable fixed_columns</xsl:attribute>
+                                    <colgroup>
+                                        <col style="width:12%"/>
+                                        <col style="width:30%"/>
+                                        <col style="width:28%"/>
+                                        <col style="width:30%"/>
+                                    </colgroup>
+                                </xsl:if>
+                                <thead>
+                                    <tr>
                                         <xsl:for-each select="$FIELDS[@type!='hidden']">
                                             <xsl:choose>
-                                                <!--<xsl:when test="@index='PRI'"></xsl:when>-->
                                                 <xsl:when test="@language">
                                                     <xsl:if test="@language = $LANG_ID">
-                                                        <th id="col_{position()}" name="{@name}"><xsl:value-of select="@title"/></th>
+                                                        <th name="{@name}"><xsl:value-of select="@title"/></th>
                                                     </xsl:if>
                                                 </xsl:when>
                                                 <xsl:otherwise>
-                                                    <th id="col_{position()}" name="{@name}"><xsl:value-of select="@title"/></th>
+                                                    <th name="{@name}"><xsl:value-of select="@title"/></th>
                                                 </xsl:otherwise>
                                             </xsl:choose>
                                         </xsl:for-each>
-                                        </tr>
-                                    </thead>
-                                    <tbody/>
-                                </table>
-                            </div>
+                                    </tr>
+                                </thead>
+                                <tbody/>
+                            </table>
                         </div>
                     </div>
                 </div>

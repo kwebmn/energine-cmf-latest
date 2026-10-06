@@ -7,8 +7,6 @@ interface Window {
     Energine: typeof import('Energine').Energine;
     /** Очередь окон админки верхнего окна (ModalBox.js: окна внутри окна работают с window.top.ModalBox). */
     ModalBox: any;
-    /** Ширина полосы прокрутки, измеренная один раз (GridManager.js: Grid.scrollBarWidth). */
-    ScrollBarWidth?: number;
 }
 
 interface Document {

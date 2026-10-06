@@ -179,16 +179,16 @@ const SCREENS = [
             await p.goto(BASE + 'admin/translations/', { waitUntil: 'networkidle' });
             await p.waitForTimeout(1000);
             // первая колонка, по которой грид сортирует (по щелчку у заголовка появляется класс asc)
-            const ths = await p.$$('.gridHeadContainer th');
+            const ths = await p.$$('.gridTable thead th');
             for (const th of ths) {
                 await th.click();
                 await p.waitForTimeout(900);
-                if (await p.$('.gridHeadContainer th.asc')) break;
+                if (await p.$('.gridTable thead th.asc')) break;
             }
             await p.click('.gridContainer tr:nth-child(3) td:nth-child(2)');
             const g = await p.evaluate(() => {
                 const cs = (e) => e && getComputedStyle(e);
-                const th = document.querySelector('.gridHeadContainer th.asc, .gridHeadContainer th.desc');
+                const th = document.querySelector('.gridTable thead th.asc, .gridTable thead th.desc');
                 const odd = document.querySelector('.gridContainer tr:not(.even):not(.selected) td');
                 const even = document.querySelector('.gridContainer tr.even:not(.selected) td');
                 const sel = document.querySelector('.gridContainer tr.selected td');

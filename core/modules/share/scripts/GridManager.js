@@ -67,17 +67,19 @@ export class Grid {
         this.sort = {field: null, order: null};
 
         this.tbody = this.element.querySelector('.gridContainer tbody');
-        this.headers = /** @type {HTMLElement[]} */ (Array.from(this.element.querySelectorAll('.gridHeadContainer table.gridTable th')));
+        this.headers = /** @type {HTMLElement[]} */ (Array.from(this.element.querySelectorAll('.gridContainer thead th')));
         this.headers.forEach((header) => header.addEventListener('click', (event) => this.onChangeSort(event)));
 
-        // добавляем к контейнеру класс, который указывает, что в нем есть грид
-        this.element.closest('.e-pane').classList.add('e-grid-pane');
+        // панель с гридом: раскладку (липкая шапка, высота списка) задаёт CSS по классу e-grid-pane (admin.tailwind.css)
+        const pane = /** @type {HTMLElement} */ (this.element.closest('.e-pane'));
+        pane.classList.add('e-grid-pane');
 
-        // вешаем пересчет размеров гридовой формы на ресайз окна
-        if (document.querySelector('.e-singlemode-layout')) {
-            window.addEventListener('resize', () => this.fitGridSize());
-        } else {
-            window.addEventListener('resize', () => this.fitGridFormSize());
+        // панель грида на странице (не в окне) — до низа окна браузера: высоту считает CSS от верха панели
+        if (!document.querySelector('.e-singlemode-layout')) {
+            const setTop = () => pane.style.setProperty('--e-pane-top',
+                Math.max(0, Math.round(pane.getBoundingClientRect().top + window.scrollY)) + 'px');
+            setTop();
+            window.addEventListener('resize', setTop);
         }
     }
 
@@ -245,45 +247,24 @@ export class Grid {
 
     /**
      * Build the rows: the record selected before (if it is still there) is selected and scrolled into view,
-     * otherwise the first row; then the columns and the height.
+     * otherwise the first row. Columns and heights are CSS (one table, sticky head).
      */
     build() {
         let previouslySelectedRecordKey = this.getSelectedRecordKey();
         this.selectedItem = [];
-        this.gridHeadContainer = /** @type {HTMLElement} */ (this.element.querySelector('.gridHeadContainer'));
-        this.gridHeadContainerTabs = Array.from(this.gridHeadContainer.querySelectorAll('th'));
-        this.paneContent = /** @type {HTMLElement} */ (this.element.closest('.e-pane-item'));
-        this.gridToolbar = /** @type {HTMLElement} */ (this.element.querySelector('.grid_toolbar'));
-        this.gridContainer = /** @type {HTMLElement} */ (this.element.querySelector('.gridContainer'));
 
         if (!this.isEmpty()) {
             if (!this.dataKeyExists(previouslySelectedRecordKey)) {
                 previouslySelectedRecordKey = false;
             }
             this.data.forEach((record, id) => {
-                this.addRecord(this.sortRecordAsHeadersName(record, this.gridHeadContainerTabs), id, previouslySelectedRecordKey);
+                this.addRecord(this.sortRecordAsHeadersName(record, this.headers), id, previouslySelectedRecordKey);
             });
             if (!this.selectedItem.length && !previouslySelectedRecordKey) {
                 this.selectItem(this.tbody.firstElementChild);
             }
         } else {
             this.tbody.appendChild(document.createElement('tr'));
-        }
-
-        this.adjustColumns();
-        // растягиваем gridContainer на высоту родительского элемента минус фильтр и голова грида
-        this.fitGridSize();
-        if (!this.minGridHeight) {
-            const h = Grid.style(this.gridContainer, 'height');
-            //Если грид запустился внутри вкладки формы
-            this.minGridHeight = h ? parseInt(h, 10) : 300;
-        }
-
-        /* растягиваем всю форму до высоты видимого окна */
-        if (!document.querySelector('.e-singlemode-layout')) {
-            this.pane = /** @type {HTMLElement} */ (this.element.closest('.e-pane'));
-            this.gridBodyContainer = /** @type {HTMLElement} */ (this.element.querySelector('.gridBodyContainer'));
-            this.fitGridFormSize();
         }
     }
 
@@ -318,9 +299,10 @@ export class Grid {
 
         if (currentKey == record[this.keyFieldName]) {
             this.selectItem(row);
-            // выбранная прежде запись — в видимой части списка
-            const container = document.body.querySelector('.gridContainer');
-            container.scrollTop += row.getBoundingClientRect().top - container.getBoundingClientRect().top;
+            // выбранная прежде запись — в видимой части списка, под липкой шапкой
+            const container = /** @type {HTMLElement} */ (this.element.querySelector('.gridContainer')),
+                head = /** @type {HTMLElement|null} */ (container.querySelector('thead'));
+            container.scrollTop += row.getBoundingClientRect().top - container.getBoundingClientRect().top - (head ? head.offsetHeight : 0);
         }
 
         row.addEventListener('mouseover', () => {
@@ -403,136 +385,6 @@ export class Grid {
                 }
                 cell.textContent = (fieldValue != '') ? fieldValue : ' ';
             }
-        }
-    }
-
-    /**
-     * Ширины колонок заголовка — по ячейкам первой строки; заголовок шире своей ячейки — колонка по заголовку,
-     * остальные сужаются пропорционально.
-     */
-    adjustColumns() {
-        const headers = [];
-        // Adjust padding-right for '.gridHeadContainer' element.
-        this.gridHeadContainer.style.paddingRight = Grid.scrollBarWidth() + 'px';
-        if (!this.element.querySelector('table.gridTable').classList.contains('fixed_columns')) {
-            const tds = Array.from(this.tbody.querySelector('tr').querySelectorAll('td')),
-                ths = Array.from(this.gridHeadContainer.querySelectorAll('th')),
-                headCols = Array.from(this.gridHeadContainer.querySelectorAll('col')),
-                bodyCols = Array.from(this.element.querySelectorAll('.gridContainer col'));
-            const setWidth = (n) => {
-                if (headCols[n] !== undefined) {
-                    headCols[n].style.width = Math.round(headers[n]) + 'px';
-                }
-                if (bodyCols[n] !== undefined) {
-                    bodyCols[n].style.width = Math.round(headers[n]) + 'px';
-                }
-            };
-
-            // Get the col width from the tbody
-            for (let n = 0; n < tds.length; n++) {
-                headers[n] = Grid.totalWidth(tds[n]);
-            }
-            // Set col width
-            for (let n = 0; n < tds.length; n++) {
-                setWidth(n);
-            }
-
-            const oversizeHead = [];
-            for (let n = 0; n < tds.length; n++) {
-                if (ths[n] !== undefined) {
-                    oversizeHead[n] = Grid.totalWidth(ths[n]) > headers[n];
-                }
-            }
-            if (oversizeHead.length > 0) {
-                const newWidth = [], colWidth = [0, 0];
-                for (let n = 0; n < tds.length; n++) {
-                    if (oversizeHead[n]) {
-                        newWidth[n] = Grid.totalWidth(ths[n]);
-                        colWidth[1] += newWidth[n] - headers[n];
-                    } else {
-                        colWidth[0] += headers[n];
-                    }
-                }
-                colWidth[1] += colWidth[0];
-                const scaleCoef = colWidth[0] / colWidth[1];
-                for (let n = 0; n < tds.length; n++) {
-                    headers[n] = (oversizeHead[n]) ? newWidth[n] : Math.floor(headers[n] * scaleCoef);
-                    // Reset col width
-                    setWidth(n);
-                }
-            }
-        } else {
-            this.tbody.parentElement.style.tableLayout = 'fixed';
-        }
-        this.tbody.parentElement.style.wordWrap = 'break-word';
-    }
-
-    /**
-     * Высота списка — высота панели минус голова грида, фильтр, отступ и нижняя панель окна.
-     */
-    fitGridSize() {
-        if (this.paneContent) {
-            const margin = Grid.style(this.element, 'marginTop'),
-                eBToolbar = /** @type {HTMLElement|null} */ (document.body.querySelector('.e-pane-b-toolbar')),
-                gridHeight = this.paneContent.offsetHeight
-                    - this.gridHeadContainer.offsetHeight
-                    - ((this.gridToolbar) ? this.gridToolbar.offsetHeight : 0)
-                    - ((margin) ? parseInt(margin, 10) : 0)
-                    - ((eBToolbar) ? eBToolbar.offsetHeight : 0);
-            if (gridHeight > 0) {
-                this.gridContainer.style.height = (gridHeight - 9) + 'px';
-            }
-        }
-    }
-
-    /**
-     * Панель грида на странице — по содержимому, но не выше видимой части окна; затем высота списка.
-     */
-    fitGridFormSize() {
-        if (this.pane) {
-            const toolbarH = (this.gridToolbar) ? this.gridToolbar.offsetHeight : 0,
-                gridHeadH = Grid.totalHeight(this.gridHeadContainer),
-                paneToolbarT = /** @type {HTMLElement|null} */ (this.pane.querySelector('.e-pane-t-toolbar')),
-                paneToolbarTH = (paneToolbarT) ? paneToolbarT.offsetHeight : 0,
-                paneToolbarB = /** @type {HTMLElement|null} */ (this.pane.querySelector('.e-pane-b-toolbar')),
-                paneToolbarBH = (paneToolbarB) ? paneToolbarB.offsetHeight : 0,
-                paneH = this.pane.offsetHeight,
-                margin = Grid.style(this.element, 'marginTop'),
-                gridBodyContainer = this.element.querySelector('.gridBodyContainer');
-            let gridBodyHeight = gridBodyContainer.offsetHeight
-                + parseInt(Grid.style(this.gridContainer, 'borderTopWidth'), 10)
-                + parseInt(Grid.style(this.gridContainer, 'borderBottomWidth'), 10);
-
-            if (gridBodyHeight < this.minGridHeight) {
-                gridBodyHeight = this.minGridHeight;
-            }
-
-            /*
-             * +3 at the end is:
-             *   +2 from e-pane-content border
-             *   +1 from somewhere, I do not why this should be
-             */
-            const totalH = toolbarH + gridHeadH + gridBodyHeight + paneToolbarTH + paneToolbarBH
-                + ((margin) ? parseInt(margin, 10) : 0) + 3;
-
-            /*
-             * -81 at the end is:
-             *   -31 from e-topframe height
-             *   -50 from footer
-             * they are not visible from grid
-             */
-            const windowHeight = document.documentElement.clientHeight;
-            let freespace = windowHeight;
-
-            if (document.body.scrollHeight - Grid.scrollBarWidth() < windowHeight) {
-                freespace -= Grid.pageY(this.pane) + Grid.scrollBarWidth();
-            }
-
-            if (totalH > paneH) {
-                this.pane.style.height = Math.round((totalH > freespace) ? freespace : totalH) + 'px';
-            }
-
-            this.fitGridSize();
         }
     }
 
@@ -632,81 +484,6 @@ export class Grid {
      */
     static clean(text) {
         return String(text).replace(/\s+/g, ' ').trim();
-    }
-
-    /**
-     * Стиль элемента: заданный в атрибуте style, иначе вычисленный (getStyle MooTools).
-     *
-     * @param {HTMLElement} element
-     * @param {string} property
-     * @returns {string}
-     */
-    static style(element, property) {
-        return element.style[property] || getComputedStyle(element)[property];
-    }
-
-    /**
-     * Ширина с полями и рамками целыми пикселями (getComputedSize MooTools).
-     *
-     * @param {HTMLElement} element
-     * @returns {number}
-     */
-    static totalWidth(element) {
-        const px = (property) => parseInt(Grid.style(element, property), 10) || 0,
-            width = Grid.style(element, 'width');
-        return ((width === 'auto') ? element.offsetWidth : (parseInt(width, 10) || 0))
-            + px('paddingLeft') + px('paddingRight') + px('borderLeftWidth') + px('borderRightWidth');
-    }
-
-    /**
-     * Высота с полями и рамками целыми пикселями (getComputedSize MooTools).
-     *
-     * @param {HTMLElement} element
-     * @returns {number}
-     */
-    static totalHeight(element) {
-        const px = (property) => parseInt(Grid.style(element, property), 10) || 0,
-            height = Grid.style(element, 'height');
-        return ((height === 'auto') ? element.offsetHeight : (parseInt(height, 10) || 0))
-            + px('paddingTop') + px('paddingBottom') + px('borderTopWidth') + px('borderBottomWidth');
-    }
-
-    /**
-     * Верх элемента от начала документа (getPosition MooTools).
-     *
-     * @param {Element} element
-     * @returns {number}
-     */
-    static pageY(element) {
-        const html = document.documentElement;
-        return Math.trunc(element.getBoundingClientRect().top) + (window.pageYOffset || html.scrollTop) - html.clientTop;
-    }
-
-    /**
-     * Ширина полосы прокрутки: у верхнего окна, если оно её уже измерило, иначе — измеряется здесь, один раз.
-     *
-     * @returns {number}
-     */
-    static scrollBarWidth() {
-        if (typeof window.ScrollBarWidth !== 'number') {
-            let width = null;
-            try {
-                width = window.top.ScrollBarWidth;
-            } catch (e) {
-            }
-            if (!width || typeof width !== 'number') {
-                const outer = document.createElement('div'),
-                    inner = document.createElement('div');
-                outer.style.cssText = 'height: 1px; overflow: scroll; visibility: hidden';
-                inner.style.height = '2px';
-                outer.appendChild(inner);
-                document.body.appendChild(outer);
-                width = outer.offsetWidth - inner.offsetWidth;
-                outer.remove();
-            }
-            window.ScrollBarWidth = width;
-        }
-        return window.ScrollBarWidth;
     }
 };
 

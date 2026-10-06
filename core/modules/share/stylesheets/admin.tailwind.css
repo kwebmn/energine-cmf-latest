@@ -173,11 +173,21 @@ form div.error { display: inline-block; padding: .35rem 0; color: var(--a-color-
 .grid { background: var(--a-color-bg); color: var(--a-color-fg); font-family: var(--a-font-sans); font-size: .875rem; }
 .grid_toolbar { padding: 10px 0; }
 .e-singlemode-layout .grid_toolbar { height: 46px; }
-.gridHeadContainer { padding-right: 17px; background: var(--a-color-bg-soft); border-radius: var(--a-radius-ui) var(--a-radius-ui) 0 0; overflow: hidden; }
-.gridContainer { overflow: scroll; overflow-x: hidden; }
+/* грид — одна таблица (надёжность, этап 5; прежде шапка и строки были двумя таблицами с ширинами и высотами из JS):
+   шапка липкая, длинное значение переносится, список занимает высоту вкладки — колонка flex: фильтр, затем список */
+.e-grid-pane .grid { display: flex; flex-direction: column; height: 100%; }
+.e-grid-pane .grid > .grid_toolbar { flex: none; }
+.gridContainer { overflow: auto; background: var(--a-color-bg); border-radius: var(--a-radius-ui) var(--a-radius-ui) 0 0; }
+.e-grid-pane .gridContainer { flex: 1 1 auto; min-height: 0; }
+.gridTable thead th { position: sticky; top: 0; z-index: 1; }
+.gridTable td { overflow-wrap: anywhere; }
+table.gridTable.fixed_columns { table-layout: fixed; }
+/* панель грида на странице (не в окне) — до низа окна браузера; --e-pane-top (верх панели) ставит GridManager.js */
+body:not(.e-singlemode-layout) .e-pane.e-grid-pane { height: max(500px, calc(100dvh - var(--e-pane-top, 0px) - 1rem)); }
 table.gridTable { width: 100%; margin: 0; border: 0; border-collapse: separate; border-spacing: 0; user-select: none; }
 .gridTable th { padding: .55rem .5rem; border-right: 1px solid var(--a-color-border); background: var(--a-color-bg-soft); font-weight: 600; text-align: center; cursor: default; }
-.gridTable th.asc, .gridTable th.desc { padding-right: 1.6em; position: relative; }
+/* стрелка сортировки (::after) держится за ячейку шапки: она липкая (position: sticky), значит, уже позиционирована */
+.gridTable th.asc, .gridTable th.desc { padding-right: 1.6em; }
 .gridTable th.asc::after, .gridTable th.desc::after {
     content: ""; position: absolute; right: .55em; top: 50%; border: .3em solid transparent; color: var(--a-color-primary);
 }
@@ -204,7 +214,8 @@ a.f_reset { color: var(--a-color-fg); text-decoration: none; }
 /* фильтр грида */
 div.grid div.filters_block { width: 99%; margin: 0 0 0 .5%; padding: 10px; box-sizing: border-box; background: var(--a-color-bg-soft);
     border: 1px solid var(--a-color-border); border-radius: var(--a-radius-ui); }
-.e-singlemode-layout div.grid div.filters_block { position: absolute; top: 10px; left: 0; }
+/* в окне фильтр — выпадающий слой поверх списка: выше липкой шапки грида (z-index 1) */
+.e-singlemode-layout div.grid div.filters_block { position: absolute; top: 10px; left: 0; z-index: 2; }
 div.grid div.filters_block.active { background: #f4f1e6; }
 div.grid div.filters_block .filters_block_inner { display: flex; flex-wrap: wrap; align-items: flex-start; gap: .5rem 1rem; }
 div.grid div.filters_block .filters_block_inner.toggled { overflow: hidden; }
