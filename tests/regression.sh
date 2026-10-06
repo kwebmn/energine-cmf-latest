@@ -50,6 +50,8 @@ echo "### lang-inactive"; php8.5 lang-inactive.php
 echo "### db"; php8.5 db.php
 echo "### queries"; php8.5 queries.php
 echo "### translator"; php8.5 translator.php
+echo "### schema-info"; php8.5 schema-info.php
+echo "### field-type"; php8.5 field-type.php
 
 echo "### mail"
 php8.5 smoke-mail.php

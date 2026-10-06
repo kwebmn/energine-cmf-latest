@@ -433,12 +433,20 @@ class FieldDescription extends Primitive implements \Iterator {
     }
 
     /**
-     * Set visual type.
-     * @param string $type Visual field type.
+     * Визуальный тип поля: FieldType или его строковое значение (константы FIELD_TYPE_* — те же строки).
+     * Неизвестный тип — ошибка разработчика ERR_DEV_UNKNOWN_FIELD_TYPE с именем поля и самим значением: опечатка
+     * в type="…" конфига видна сразу, а не странным полем в форме.
+     *
+     * @param FieldType|string $type
      * @return FieldDescription
+     * @throws SystemException
      */
-    public function setType($type) {
-        $this->type = (string)$type;
+    public function setType(FieldType|string $type) {
+        $known = $type instanceof FieldType ? $type : FieldType::tryFrom((string)$type);
+        if (!$known) {
+            throw new SystemException('ERR_DEV_UNKNOWN_FIELD_TYPE', SystemException::ERR_DEVELOPER, [$this->name, (string)$type]);
+        }
+        $this->type = $known->value;
         $this->setProperty('sort', 0);
         switch ($this->type) {
             case self::FIELD_TYPE_PWD :
@@ -808,7 +816,11 @@ class FieldDescription extends Primitive implements \Iterator {
             case QAL::COLTYPE_SET:
                 $result = self::FIELD_TYPE_MULTI;
                 break;
+            case QAL::COLTYPE_BLOB:
+                $result = self::FIELD_TYPE_TEXT;
+                break;
             default:
+                // не тип колонки базы — визуальный тип из конфига (type="…"); проверит setType()
                 $result = $systemType;
         }
 

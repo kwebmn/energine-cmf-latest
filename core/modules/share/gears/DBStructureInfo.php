@@ -1,372 +1,247 @@
 <?php
 /**
- * @file
- * DBStructureInfo.
+ * Описание схемы базы для форм и гридов: колонки (тип, длина, nullable, default, ключ, индекс, значения SET/ENUM)
+ * и внешние ключи всех таблиц базы.
  *
- * It contains the definition to:
- * @code
-final class DBStructureInfo;
-@endcode
- *
- * @author d.pavka@gmail.com
- * @copyright Energine 2010
- *
- * @version 1.0.0
+ * Читается из information_schema четырьмя запросами на процесс (прежде — SHOW TABLES LIKE и разбор SHOW CREATE TABLE
+ * каждой таблицы); массив тот же, что отдавал прежний разбор — сверка tests/tools/schema-fixture.php. Файловый кэш
+ * схемы (site.cache) — как прежде. Таблицы другой базы не поддерживаются (у форка одна база).
  */
 namespace Energine\share\gears;
-/**
- * Data base structure information.
- *
- * @code
-final class DBStructureInfo;
-@endcode
- *
- * It can holds an information in cache.
- *
- * @final
- */
+
 class DBStructureInfo extends Primitive {
-	/**
-	 * Structure information.
-	 *
-	 * Structure:
-	 * @code
-	array(
-    $tableName => false| null | array(
-        $coulmnName => array(
-            $columnPropName => $columnPropValue
-        )
-    )
-)
-@endcode
-	 *
-	 * @var array $structure
-	 */
-	private $structure;
+    /**
+     * Схема: имя таблицы → (имя колонки → свойства). Свойства колонки: nullable, length, default, key (true — первичный,
+     * массив tableName/fieldName/constraint — внешний), type (QAL::COLTYPE_*), index ('PRI' | 'MUL' | false),
+     * options (значения SET/ENUM), tableName.
+     * @var array<string, array<string, array>>
+     */
+    private $structure = [];
 
-	/**
-	 * PDO (PHP Data Objects).
-	 *
-	 * @var Db $db — соединение: запросы схемы идут через Db::run (общий счётчик и журнал)
-	 */
-	private $db;
+    private bool $loaded = false;
 
-	/**
-	 * @param Db $db
-	 */
-	public function __construct(Db $db) {
-		$this->db = $db;
-		$mc = E()->getCache();
-		if ($mc->isEnabled()) {
-			if (!($this->structure = $mc->retrieve(Cache::DB_STRUCTURE_KEY))) {
-				$mc->store(Cache::DB_STRUCTURE_KEY, $this->structure = $this->collectDBInfo());
-			}
-		}
-	}
+    /**
+     * Соединение: запросы схемы идут через Db::run — общий счётчик и журнал запросов.
+     * @var Db
+     */
+    private $db;
 
-	/**
-	 * Collect the table structure information of all tables in the DB.
-	 *
-	 * This can be called only by using cache.
-	 *
-	 * @return array
-	 */
-	private function collectDBInfo() {
-        $result = array();
-		$res = $this->db->run('/*ms=slave*/SHOW TABLES');
-		if ($res) {
-			while ($tableName = $res->fetchColumn()) {
-				$result[$tableName] = $this->getTableMeta($tableName);
-			}
-		}
+    public function __construct(Db $db) {
+        $this->db = $db;
+        $cached = E()->getCache()->isEnabled() ? E()->getCache()->retrieve(Cache::DB_STRUCTURE_KEY) : null;
+        if (is_array($cached) && $cached) {
+            $this->structure = $cached;
+            $this->loaded = true;
+        }
+    }
 
-		return $result;
-	}
+    /**
+     * Есть ли таблица (имя — без базы; обратные кавычки допустимы).
+     */
+    public function tableExists($tableName) {
+        $name = $this->plainName($tableName);
+        $this->ensureLoaded();
+        return isset($this->structure[$name]);
+    }
 
-	/**
-	 * Check if some table exist.
-	 *
-	 * @param  string $tableName Table name.
-	 * @return bool
-	 */
-	public function tableExists($tableName) {
-		$result = false;
+    /**
+     * Описание колонок таблицы: имя колонки → свойства (см. $structure). Таблица, появившаяся после загрузки схемы
+     * (переход базы в этом же процессе, устаревший кэш), читается заново; неизвестная — ошибка базы, как прежде.
+     *
+     * @throws SystemException BAD_TABLE_NAME
+     */
+    public function getTableMeta($tableName) {
+        $name = $this->plainName($tableName);
+        $this->ensureLoaded();
+        if (!isset($this->structure[$name])) {
+            $this->loadAll();
+        }
+        if (empty($this->structure[$name])) {
+            throw new SystemException('BAD_TABLE_NAME ' . $tableName, SystemException::ERR_DB, $tableName);
+        }
+        return $this->structure[$name];
+    }
 
-		//Если не существует в кеше
-		if (!isset($this->structure[$tableName])) {
+    private function ensureLoaded(): void {
+        if (!$this->loaded) {
+            $this->loadAll();
+        }
+    }
 
-			$FQTableName = QAL::getFQTableName($tableName, true);
+    /**
+     * Имя таблицы без обратных кавычек и без префикса базы (другая база — не поддерживается).
+     *
+     * @throws SystemException
+     */
+    private function plainName($tableName): string {
+        $parts = QAL::getFQTableName($tableName, true);
+        if (count($parts) > 1) {
+            throw new SystemException('BAD_TABLE_NAME ' . $tableName, SystemException::ERR_DB, 'таблицы другой базы не поддерживаются');
+        }
+        return (string)end($parts);
+    }
 
-			$query = '/*ms=slave*/SHOW TABLES '.((sizeof($FQTableName) == 2) ? ' FROM `'.reset($FQTableName).'` ' : '').' LIKE \''.end($FQTableName).'\'';
+    /**
+     * Вся схема текущей базы: индексы, внешние ключи, колонки (с видом таблицы) — три запроса; результат — в кэш.
+     */
+    private function loadAll(): void {
+        $this->loaded = true;
+        $this->structure = [];
+        // индексы: первичный — PRI, остальные (в том числе уникальные и составные, любой столбец) — MUL, как прежде
+        $indexes = [];
+        foreach ($this->db->rows('SELECT TABLE_NAME, INDEX_NAME, COLUMN_NAME FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE()') as $i) {
+            $current = $indexes[$i['TABLE_NAME']][$i['COLUMN_NAME']] ?? false;
+            $indexes[$i['TABLE_NAME']][$i['COLUMN_NAME']] = ($i['INDEX_NAME'] === 'PRIMARY' || $current === 'PRI') ? 'PRI' : 'MUL';
+        }
+        $foreign = [];
+        foreach ($this->db->rows('SELECT TABLE_NAME, COLUMN_NAME, CONSTRAINT_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME '
+            . 'FROM information_schema.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA = DATABASE() AND REFERENCED_TABLE_NAME IS NOT NULL') as $f) {
+            $foreign[$f['TABLE_NAME']][$f['COLUMN_NAME']] = ['tableName' => $f['REFERENCED_TABLE_NAME'],
+                'fieldName' => $f['REFERENCED_COLUMN_NAME'], 'constraint' => $f['CONSTRAINT_NAME']];
+        }
+        $columns = $this->db->rows('SELECT c.TABLE_NAME, c.COLUMN_NAME, c.DATA_TYPE, c.COLUMN_TYPE, c.IS_NULLABLE, c.COLUMN_DEFAULT, t.TABLE_TYPE '
+            . 'FROM information_schema.COLUMNS c JOIN information_schema.TABLES t ON t.TABLE_SCHEMA = c.TABLE_SCHEMA AND t.TABLE_NAME = c.TABLE_NAME '
+            . 'WHERE c.TABLE_SCHEMA = DATABASE() ORDER BY c.TABLE_NAME, c.ORDINAL_POSITION');
+        foreach ($columns as $c) {
+            $table = $c['TABLE_NAME'];
+            $this->structure[$table][$c['COLUMN_NAME']] = ($c['TABLE_TYPE'] === 'VIEW')
+                ? $this->viewColumn($table, $c, count($this->structure[$table] ?? []))
+                : $this->column($table, $c, $indexes[$table][$c['COLUMN_NAME']] ?? false, $foreign[$table][$c['COLUMN_NAME']] ?? null);
+        }
+        if (E()->getCache()->isEnabled()) {
+            E()->getCache()->store(Cache::DB_STRUCTURE_KEY, $this->structure);
+        }
+    }
 
-			//если существует в списке таблиц
-			if ($this->db->run($query)->rowCount()) {
-				$result = true;
-                $this->structure[$tableName] = array();
-            }
-            else {
-				//в списке таблиц  - не значится
-				$this->structure[$tableName] = false;
-			}
-		} else {
-			$result = is_array($this->structure[$tableName]);
+    /**
+     * Свойства колонки таблицы — в прежнем виде.
+     *
+     * @param string|false $index 'PRI' | 'MUL' | false
+     */
+    private function column(string $table, array $c, $index, ?array $foreignKey): array {
+        $type = self::convertType($c['DATA_TYPE']);
+        $inParens = preg_match('/\((.+)\)/', (string)$c['COLUMN_TYPE'], $m) ? $m[1] : '';
+        $options = null;
+        if ($type == QAL::COLTYPE_SET || $type == QAL::COLTYPE_ENUM) {
+            $options = array_map(fn($value) => trim($value, '\'""'), explode(',', $inParens));
+            $length = true;
+        } elseif ($type == QAL::COLTYPE_DECIMAL) {
+            // decimal(10,2): 10 + 2 + 1 (разделитель)
+            $length = array_sum(array_map('intval', array_filter(explode(',', $inParens)))) + 1;
+        } else {
+            $length = (int)$inParens;
+        }
+        return [
+            'nullable' => $c['IS_NULLABLE'] === 'YES',
+            'length' => $length,
+            'default' => self::defaultOf($c['COLUMN_DEFAULT']),
+            'key' => $foreignKey ?? ($index === 'PRI'),
+            'type' => $type,
+            'index' => $index,
+            'options' => $options,
+            'tableName' => $table,
+        ];
+    }
 
-		}
+    /**
+     * Колонка представления (у него нет ключей): первая считается ключом — как прежде.
+     */
+    private function viewColumn(string $table, array $c, int $position): array {
+        $type = self::convertType($c['DATA_TYPE']);
+        return [
+            'key' => $position === 0,
+            'nullable' => $c['IS_NULLABLE'] === 'YES',
+            'type' => $type,
+            'length' => ($type == QAL::COLTYPE_STRING) ? 100 : 10,
+            'index' => ($position === 0) ? 'PRI' : false,
+            'default' => '',
+            'tableName' => $table,
+        ];
+    }
 
-		return $result;
-	}
+    /**
+     * Значение по умолчанию, как его отдавал разбор SHOW CREATE TABLE: без DEFAULT — '', DEFAULT NULL — null,
+     * строка — без кавычек, число — строкой, выражение (current_timestamp()) — ''.
+     */
+    private static function defaultOf(?string $default) {
+        if ($default === null) {
+            return '';
+        }
+        if (strcasecmp($default, 'NULL') === 0) {
+            return null;
+        }
+        if (preg_match('/^\'(.*)\'$/s', $default, $m)) {
+            return str_replace("''", "'", $m[1]);
+        }
+        if (preg_match('/^-?\d+(\.\d+)?$/', $default)) {
+            return $default;
+        }
+        return '';
+    }
 
-	/**
-	 * Get table meta data.
-	 *
-	 * @param string $tableName Table name.
-	 * @return mixed
-	 */
-	public function getTableMeta($tableName) {
-		if (!isset($this->structure[$tableName]) ||
-                ($this->structure[$tableName] === array())) {
-			//@todo тут все нужно свести только к вызову метода анализа таблицы
+    /**
+     * Тип колонки базы → QAL::COLTYPE_*. Отображение полное: редкий тип (uuid, inet6, geometry …) — строка,
+     * чтобы форма над такой таблицей открывалась, а не падала на неизвестном типе поля.
+     */
+    static private function convertType($mysqlType) {
+        $mysqlType = strtoupper((string)$mysqlType);
+        switch ($mysqlType) {
+            case 'TINYINT':
+            case 'MEDIUMINT':
+            case 'SMALLINT':
+            case 'INT':
+            case 'BIGINT':
+            case 'YEAR':
+            case 'BIT':
+                $result = QAL::COLTYPE_INTEGER;
+                break;
+            case 'FLOAT':
+            case 'DOUBLE':
+            case 'REAL':
+                $result = QAL::COLTYPE_FLOAT;
+                break;
+            case 'DECIMAL':
+            case 'NUMERIC':
+                $result = QAL::COLTYPE_DECIMAL;
+                break;
+            case 'DATE':
+                $result = QAL::COLTYPE_DATE;
+                break;
+            case 'TIME':
+                $result = QAL::COLTYPE_TIME;
+                break;
+            case 'TIMESTAMP':
+                $result = QAL::COLTYPE_TIMESTAMP;
+                break;
+            case 'DATETIME':
+                $result = QAL::COLTYPE_DATETIME;
+                break;
+            case 'VARCHAR':
+            case 'CHAR':
+                $result = QAL::COLTYPE_STRING;
+                break;
+            case 'TEXT':
+            case 'TINYTEXT':
+            case 'MEDIUMTEXT':
+            case 'LONGTEXT':
+                $result = QAL::COLTYPE_TEXT;
+                break;
+            case 'BLOB':
+            case 'TINYBLOB':
+            case 'MEDIUMBLOB':
+            case 'LONGBLOB':
+                $result = QAL::COLTYPE_BLOB;
+                break;
+            case 'SET':
+                $result = QAL::COLTYPE_SET;
+                break;
+            case 'ENUM':
+                $result = QAL::COLTYPE_ENUM;
+                break;
+            default:
+                $result = QAL::COLTYPE_STRING;
+        }
 
-			$this->structure[$tableName] = $this->analyzeTable($tableName);
-			if (empty($this->structure[$tableName])) {
-				//Скорее всего это view
-				//анализируем его
-				$this->structure[$tableName] = $this->analyzeView($tableName);
-			}
-
-			$this->structure[$tableName] = array_map(function ($row) use ($tableName) {
-				$row['tableName'] = $tableName;
-
-				return $row;
-			}, $this->structure[$tableName]);
-		}
-
-		return $this->structure[$tableName];
-	}
-
-	//@todo спрятать внутрь analyzeTable
-	/**
-	 * Analyze view structure.
-	 *
-	 * @param string $viewName View name.
-	 * @return array|bool
-	 */
-	private function analyzeView($viewName) {
-		if (!($res = $this->db->run('/*ms=slave*/SHOW COLUMNS FROM `'.$viewName.'`')->fetchAll(\PDO::FETCH_ASSOC))) return false;
-		//Считаем что первое поле - PK
-
-        $result = array();
-
-		foreach ($res as $rowIndex => $fieldData) {
-            $matches = array();
-			preg_match('/\w+/', $fieldData['Type'], $matches);
-			$type = self::convertType($matches[0]);
-            $result[$fieldData['Field']] = array(
-				'key' => ($rowIndex === 0) ? true : false,
-				'nullable' => (strtolower($fieldData['Null']) == 'yes') ? true : false,
-				'type' => $type,
-				'length' => ($type == QAL::COLTYPE_STRING) ? 100 : 10,
-				'index' => ($rowIndex === 0) ? 'PRI' : false,
-				'default' => ''
-            );
-		}
-
-		return $result;
-	}
-
-	/**
-	 * Analyze table structure.
-	 *
-	 * @param string $tableName Table name.
-	 * @return array|\PDOStatement|string
-	 *
-	 * @throws SystemException
-	 */
-	private function analyzeTable($tableName) {
-		$dTableName = QAL::getFQTableName($tableName, true);
-		$query = '/*ms=slave*/SHOW CREATE TABLE '.implode('.', $dTableName);
-
-		$dbName = '';
-		if (sizeof($dTableName) == 2) {
-			$dbName = $dTableName[0];
-		}
-
-		$res = $this->db->run($query);
-
-		if (!$res) {
-			throw new SystemException('BAD_TABLE_NAME '.$tableName, SystemException::ERR_DB, $query);
-		}
-		$sql = $res->fetchColumn(1);
-
-        $res = array();
-		$s = strpos($sql, '(');
-		$l = strrpos($sql, ')') - $s;
-
-		// работаем только с полями и индексами
-		$fields = substr($sql, $s + 1, $l);
-
-		$trimQ = function ($s) {
-			return trim($s, '`');
-		};
-
-		$row = '(?:^\s*`(?<name>\w+)`'. // field name
-			'\s+(?<type>\w+)'. //field type
-			'(?:\((?<len>.+)\))?'. //field len
-			'(?:\s+(?<unsigned>unsigned))?'.
-			'(?:\s*(?<is_null>(?:NOT )?NULL))?'.
-			// MariaDB 10.2+ prints numeric defaults unquoted (DEFAULT 1), MySQL 5 as strings (DEFAULT '1')
-			'(?:\s+DEFAULT (?<default>(?:NULL|\'[^\']+\'|-?\d+(?:\.\d+)?)))?'.
-			'.*$)';
-		$constraint =
-			'(?:^\s*CONSTRAINT `(?<constraint>\w+)` FOREIGN KEY \(`(?<cname>\w+)`\) REFERENCES `(?<tableName>\w+)` \(`(?<fieldName>\w+)`\)'.
-			'.*$)';
-		$mul = '(?:^\s*(?:UNIQUE\s*)?KEY\s+`\w+`\s+\((?<muls>.*)\),?$)';
-
-		$pri = '(?:PRIMARY KEY\s+\((?<pri>[^\)]*)\))';
-
-		$pattern = "/(?:$row|$constraint|$mul|$pri)/im";
-
-		if (preg_match_all($pattern, trim($fields), $matches)) {
-			if ($matches['name']) {
-				// список полей в первичном ключе
-                $pri = array();
-				if (isset($matches['pri'])) {
-					foreach ($matches['pri'] as $priField) {
-						if ($priField) {
-							$pri = array_map($trimQ, explode(',', $priField));
-							break;
-						}
-					}
-				}
-
-				// список полей входящих в индексы
-                $muls = array();
-				if (isset($matches['muls'])) {
-					$mulStr = '';
-					foreach ($matches['muls'] as $s) {
-						if ($s) $mulStr .= ($mulStr ? ',' : '').$s;
-					}
-					$muls = array_map($trimQ, explode(',', $mulStr));
-				}
-
-				foreach ($matches['name'] as $index => $fieldName) {
-					if (!$fieldName) continue;
-					$options = null;
-					$type = self::convertType($matches['type'][$index]);
-
-
-					//for enum or set
-					if (in_array($type, [QAL::COLTYPE_SET, QAL::COLTYPE_ENUM])) {
-						$options = explode(',', $matches['len'][$index]);
-						$options = array_map(function($value){return trim($value, '\'""');}, $options);
-						$length = true;
-
-					}
-					elseif($type == QAL::COLTYPE_DECIMAL){
-						//len = 10,2
-						//length = 10 + 2 + 1 = 13
-						$length = array_sum(array_map('intval', array_filter(explode(',', $matches['len'][$index])))) + 1;
-					}
-					//Normal flow - in length we have length
-					else {
-						$length = (int)$matches['len'][$index];
-					}
-
-					$res[$fieldName] = [
-						'nullable' => (
-							$matches['is_null'][$index] != 'NOT NULL'),
-						'length' => $length,
-						'default' => (strcasecmp(trim($matches['default'][$index], "'"), 'null') == 0) ? null : trim($matches['default'][$index], "'"),
-						'key' => false,
-						'type' => $type,
-						'index' => false,
-					    'options' => $options
-					];
-
-					// входит ли поле в индекс
-					if (in_array($fieldName, $pri)) {
-						$res[$fieldName]['index'] = 'PRI';
-						$res[$fieldName]['key'] = true;
-					} elseif (in_array($fieldName, $muls)) {
-						$res[$fieldName]['index'] = 'MUL';
-					}
-					// внешний ключ
-					$cIndex = array_search($fieldName, $matches['cname']);
-					if ($cIndex !== false) {
-						$res[$fieldName]['key'] = [
-							'tableName' => (($dbName) ? $dbName.'.' : '').$matches['tableName'][$cIndex],
-							'fieldName' => $matches['fieldName'][$cIndex],
-							'constraint' => $matches['constraint'][$cIndex],
-						];
-					}
-				}
-			}
-		}
-
-		return $res;
-	}
-
-	/**
-	 * Convert MySQL field types to the Energine field types.
-	 *
-	 * @param  string $mysqlType MySQL type
-	 * @return string
-	 */
-	static private function convertType($mysqlType) {
-		$result = $mysqlType = strtoupper($mysqlType);
-		switch ($mysqlType) {
-			case 'TINYINT':
-			case 'MEDIUM':
-			case 'SMALLINT':
-			case 'INT':
-			case 'BIGINT':
-				$result = QAL::COLTYPE_INTEGER;
-				break;
-			case 'FLOAT':
-			case 'DOUBLE':
-				$result = QAL::COLTYPE_FLOAT;
-				break;
-			case 'DECIMAL':
-			case 'NUMERIC':
-				$result = QAL::COLTYPE_DECIMAL;
-				break;
-			case 'DATE':
-				$result = QAL::COLTYPE_DATE;
-				break;
-			case 'TIME':
-				$result = QAL::COLTYPE_TIME;
-				break;
-			case 'TIMESTAMP':
-				$result = QAL::COLTYPE_TIMESTAMP;
-				break;
-			case 'DATETIME':
-				$result = QAL::COLTYPE_DATETIME;
-				break;
-			case 'VARCHAR':
-			case 'CHAR':
-				$result = QAL::COLTYPE_STRING;
-				break;
-			case 'TEXT':
-			case 'TINYTEXT':
-			case 'MEDIUMTEXT':
-			case 'LONGTEXT':
-				$result = QAL::COLTYPE_TEXT;
-				break;
-			case 'BLOB':
-			case 'TINYBLOB':
-			case 'MEDIUMBLOB':
-			case 'LONGBLOB':
-				$result = QAL::COLTYPE_BLOB;
-				break;
-			case 'SET':
-				$result = QAL::COLTYPE_SET;
-				break;
-			case 'ENUM':
-				$result = QAL::COLTYPE_ENUM;
-				break;
-			default: // not used
-		}
-
-		return $result;
-	}
+        return $result;
+    }
 }

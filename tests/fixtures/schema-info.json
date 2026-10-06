@@ -1,0 +1,1451 @@
+{
+    "mail_templates": {
+        "template_id": {
+            "nullable": false,
+            "length": 10,
+            "default": "",
+            "key": true,
+            "type": "INT",
+            "index": "PRI",
+            "options": null,
+            "tableName": "mail_templates"
+        },
+        "template_sysname": {
+            "nullable": false,
+            "length": 100,
+            "default": "",
+            "key": false,
+            "type": "VARCHAR",
+            "index": "MUL",
+            "options": null,
+            "tableName": "mail_templates"
+        },
+        "template_is_active": {
+            "nullable": false,
+            "length": 1,
+            "default": "1",
+            "key": false,
+            "type": "INT",
+            "index": "MUL",
+            "options": null,
+            "tableName": "mail_templates"
+        },
+        "template_hints": {
+            "nullable": true,
+            "length": 0,
+            "default": null,
+            "key": false,
+            "type": "TEXT",
+            "index": false,
+            "options": null,
+            "tableName": "mail_templates"
+        }
+    },
+    "mail_templates_translation": {
+        "template_id": {
+            "nullable": false,
+            "length": 10,
+            "default": "",
+            "key": {
+                "tableName": "mail_templates",
+                "fieldName": "template_id",
+                "constraint": "mail_templates_translation_ibfk_1"
+            },
+            "type": "INT",
+            "index": "PRI",
+            "options": null,
+            "tableName": "mail_templates_translation"
+        },
+        "lang_id": {
+            "nullable": false,
+            "length": 10,
+            "default": "",
+            "key": {
+                "tableName": "share_languages",
+                "fieldName": "lang_id",
+                "constraint": "mail_templates_translation_ibfk_2"
+            },
+            "type": "INT",
+            "index": "PRI",
+            "options": null,
+            "tableName": "mail_templates_translation"
+        },
+        "template_name": {
+            "nullable": false,
+            "length": 255,
+            "default": "",
+            "key": false,
+            "type": "VARCHAR",
+            "index": false,
+            "options": null,
+            "tableName": "mail_templates_translation"
+        },
+        "template_subject": {
+            "nullable": true,
+            "length": 255,
+            "default": null,
+            "key": false,
+            "type": "VARCHAR",
+            "index": false,
+            "options": null,
+            "tableName": "mail_templates_translation"
+        },
+        "template_body": {
+            "nullable": true,
+            "length": 0,
+            "default": null,
+            "key": false,
+            "type": "TEXT",
+            "index": false,
+            "options": null,
+            "tableName": "mail_templates_translation"
+        },
+        "template_body_rtf": {
+            "nullable": true,
+            "length": 0,
+            "default": null,
+            "key": false,
+            "type": "TEXT",
+            "index": false,
+            "options": null,
+            "tableName": "mail_templates_translation"
+        }
+    },
+    "share_access_level": {
+        "smap_id": {
+            "nullable": false,
+            "length": 10,
+            "default": "",
+            "key": {
+                "tableName": "share_sitemap",
+                "fieldName": "smap_id",
+                "constraint": "share_access_level_ibfk_4"
+            },
+            "type": "INT",
+            "index": "PRI",
+            "options": null,
+            "tableName": "share_access_level"
+        },
+        "group_id": {
+            "nullable": false,
+            "length": 10,
+            "default": "",
+            "key": {
+                "tableName": "user_groups",
+                "fieldName": "group_id",
+                "constraint": "share_access_level_ibfk_5"
+            },
+            "type": "INT",
+            "index": "PRI",
+            "options": null,
+            "tableName": "share_access_level"
+        },
+        "right_id": {
+            "nullable": false,
+            "length": 10,
+            "default": "",
+            "key": {
+                "tableName": "user_group_rights",
+                "fieldName": "right_id",
+                "constraint": "share_access_level_ibfk_6"
+            },
+            "type": "INT",
+            "index": "PRI",
+            "options": null,
+            "tableName": "share_access_level"
+        }
+    },
+    "share_action_log": {
+        "al_id": {
+            "nullable": false,
+            "length": 10,
+            "default": "",
+            "key": true,
+            "type": "INT",
+            "index": "PRI",
+            "options": null,
+            "tableName": "share_action_log"
+        },
+        "al_date": {
+            "nullable": true,
+            "length": 0,
+            "default": "",
+            "key": false,
+            "type": "TIMESTAMP",
+            "index": false,
+            "options": null,
+            "tableName": "share_action_log"
+        },
+        "u_id": {
+            "nullable": true,
+            "length": 10,
+            "default": null,
+            "key": {
+                "tableName": "user_users",
+                "fieldName": "u_id",
+                "constraint": "share_action_log_uid"
+            },
+            "type": "INT",
+            "index": "MUL",
+            "options": null,
+            "tableName": "share_action_log"
+        },
+        "al_classname": {
+            "nullable": true,
+            "length": 100,
+            "default": null,
+            "key": false,
+            "type": "VARCHAR",
+            "index": false,
+            "options": null,
+            "tableName": "share_action_log"
+        },
+        "al_objectname": {
+            "nullable": true,
+            "length": 100,
+            "default": null,
+            "key": false,
+            "type": "VARCHAR",
+            "index": false,
+            "options": null,
+            "tableName": "share_action_log"
+        },
+        "al_action": {
+            "nullable": true,
+            "length": 20,
+            "default": null,
+            "key": false,
+            "type": "VARCHAR",
+            "index": false,
+            "options": null,
+            "tableName": "share_action_log"
+        },
+        "al_data": {
+            "nullable": true,
+            "length": 0,
+            "default": null,
+            "key": false,
+            "type": "TEXT",
+            "index": false,
+            "options": null,
+            "tableName": "share_action_log"
+        }
+    },
+    "share_languages": {
+        "lang_id": {
+            "nullable": false,
+            "length": 10,
+            "default": "",
+            "key": true,
+            "type": "INT",
+            "index": "PRI",
+            "options": null,
+            "tableName": "share_languages"
+        },
+        "lang_locale": {
+            "nullable": true,
+            "length": 30,
+            "default": null,
+            "key": false,
+            "type": "VARCHAR",
+            "index": false,
+            "options": null,
+            "tableName": "share_languages"
+        },
+        "lang_abbr": {
+            "nullable": false,
+            "length": 2,
+            "default": "",
+            "key": false,
+            "type": "VARCHAR",
+            "index": "MUL",
+            "options": null,
+            "tableName": "share_languages"
+        },
+        "lang_name": {
+            "nullable": false,
+            "length": 20,
+            "default": "",
+            "key": false,
+            "type": "VARCHAR",
+            "index": false,
+            "options": null,
+            "tableName": "share_languages"
+        },
+        "lang_default": {
+            "nullable": false,
+            "length": 1,
+            "default": "0",
+            "key": false,
+            "type": "INT",
+            "index": false,
+            "options": null,
+            "tableName": "share_languages"
+        },
+        "lang_is_active": {
+            "nullable": false,
+            "length": 1,
+            "default": "1",
+            "key": false,
+            "type": "INT",
+            "index": false,
+            "options": null,
+            "tableName": "share_languages"
+        },
+        "lang_order_num": {
+            "nullable": false,
+            "length": 10,
+            "default": "1",
+            "key": false,
+            "type": "INT",
+            "index": false,
+            "options": null,
+            "tableName": "share_languages"
+        }
+    },
+    "share_lang_tags": {
+        "ltag_id": {
+            "nullable": false,
+            "length": 10,
+            "default": "",
+            "key": true,
+            "type": "INT",
+            "index": "PRI",
+            "options": null,
+            "tableName": "share_lang_tags"
+        },
+        "ltag_name": {
+            "nullable": false,
+            "length": 70,
+            "default": "",
+            "key": false,
+            "type": "VARCHAR",
+            "index": "MUL",
+            "options": null,
+            "tableName": "share_lang_tags"
+        }
+    },
+    "share_lang_tags_translation": {
+        "ltag_id": {
+            "nullable": false,
+            "length": 10,
+            "default": "",
+            "key": {
+                "tableName": "share_lang_tags",
+                "fieldName": "ltag_id",
+                "constraint": "FK_Reference_6"
+            },
+            "type": "INT",
+            "index": "PRI",
+            "options": null,
+            "tableName": "share_lang_tags_translation"
+        },
+        "lang_id": {
+            "nullable": false,
+            "length": 10,
+            "default": "",
+            "key": {
+                "tableName": "share_languages",
+                "fieldName": "lang_id",
+                "constraint": "FK_tranaslatelv_language"
+            },
+            "type": "INT",
+            "index": "PRI",
+            "options": null,
+            "tableName": "share_lang_tags_translation"
+        },
+        "ltag_value_rtf": {
+            "nullable": false,
+            "length": 0,
+            "default": "",
+            "key": false,
+            "type": "TEXT",
+            "index": false,
+            "options": null,
+            "tableName": "share_lang_tags_translation"
+        }
+    },
+    "share_session": {
+        "session_id": {
+            "nullable": false,
+            "length": 10,
+            "default": "",
+            "key": true,
+            "type": "INT",
+            "index": "PRI",
+            "options": null,
+            "tableName": "share_session"
+        },
+        "session_native_id": {
+            "nullable": false,
+            "length": 40,
+            "default": "",
+            "key": false,
+            "type": "VARCHAR",
+            "index": "MUL",
+            "options": null,
+            "tableName": "share_session"
+        },
+        "session_last_impression": {
+            "nullable": false,
+            "length": 11,
+            "default": "",
+            "key": false,
+            "type": "INT",
+            "index": false,
+            "options": null,
+            "tableName": "share_session"
+        },
+        "session_created": {
+            "nullable": false,
+            "length": 11,
+            "default": "",
+            "key": false,
+            "type": "INT",
+            "index": false,
+            "options": null,
+            "tableName": "share_session"
+        },
+        "session_expires": {
+            "nullable": false,
+            "length": 11,
+            "default": "",
+            "key": false,
+            "type": "INT",
+            "index": "MUL",
+            "options": null,
+            "tableName": "share_session"
+        },
+        "session_ip": {
+            "nullable": true,
+            "length": 11,
+            "default": null,
+            "key": false,
+            "type": "INT",
+            "index": "MUL",
+            "options": null,
+            "tableName": "share_session"
+        },
+        "session_user_agent": {
+            "nullable": true,
+            "length": 255,
+            "default": null,
+            "key": false,
+            "type": "VARCHAR",
+            "index": false,
+            "options": null,
+            "tableName": "share_session"
+        },
+        "u_id": {
+            "nullable": true,
+            "length": 10,
+            "default": null,
+            "key": false,
+            "type": "INT",
+            "index": "MUL",
+            "options": null,
+            "tableName": "share_session"
+        },
+        "session_data": {
+            "nullable": true,
+            "length": 5000,
+            "default": null,
+            "key": false,
+            "type": "VARCHAR",
+            "index": false,
+            "options": null,
+            "tableName": "share_session"
+        }
+    },
+    "share_sitemap": {
+        "smap_id": {
+            "nullable": false,
+            "length": 10,
+            "default": "",
+            "key": true,
+            "type": "INT",
+            "index": "PRI",
+            "options": null,
+            "tableName": "share_sitemap"
+        },
+        "smap_last_mod": {
+            "nullable": true,
+            "length": 0,
+            "default": "",
+            "key": false,
+            "type": "TIMESTAMP",
+            "index": false,
+            "options": null,
+            "tableName": "share_sitemap"
+        },
+        "smap_layout": {
+            "nullable": false,
+            "length": 200,
+            "default": "",
+            "key": false,
+            "type": "VARCHAR",
+            "index": false,
+            "options": null,
+            "tableName": "share_sitemap"
+        },
+        "smap_layout_xml": {
+            "nullable": true,
+            "length": 0,
+            "default": null,
+            "key": false,
+            "type": "TEXT",
+            "index": false,
+            "options": null,
+            "tableName": "share_sitemap"
+        },
+        "smap_content": {
+            "nullable": false,
+            "length": 200,
+            "default": "",
+            "key": false,
+            "type": "VARCHAR",
+            "index": false,
+            "options": null,
+            "tableName": "share_sitemap"
+        },
+        "smap_content_xml": {
+            "nullable": true,
+            "length": 0,
+            "default": null,
+            "key": false,
+            "type": "TEXT",
+            "index": false,
+            "options": null,
+            "tableName": "share_sitemap"
+        },
+        "smap_pid": {
+            "nullable": true,
+            "length": 10,
+            "default": null,
+            "key": {
+                "tableName": "share_sitemap",
+                "fieldName": "smap_id",
+                "constraint": "share_sitemap_ibfk_8"
+            },
+            "type": "INT",
+            "index": "MUL",
+            "options": null,
+            "tableName": "share_sitemap"
+        },
+        "smap_segment": {
+            "nullable": false,
+            "length": 50,
+            "default": "",
+            "key": false,
+            "type": "VARCHAR",
+            "index": "MUL",
+            "options": null,
+            "tableName": "share_sitemap"
+        },
+        "smap_in_menu": {
+            "nullable": false,
+            "length": 1,
+            "default": "1",
+            "key": false,
+            "type": "INT",
+            "index": false,
+            "options": null,
+            "tableName": "share_sitemap"
+        },
+        "smap_order_num": {
+            "nullable": true,
+            "length": 10,
+            "default": "1",
+            "key": false,
+            "type": "INT",
+            "index": "MUL",
+            "options": null,
+            "tableName": "share_sitemap"
+        },
+        "smap_redirect_url": {
+            "nullable": true,
+            "length": 250,
+            "default": null,
+            "key": false,
+            "type": "VARCHAR",
+            "index": false,
+            "options": null,
+            "tableName": "share_sitemap"
+        },
+        "smap_meta_robots": {
+            "nullable": true,
+            "length": true,
+            "default": null,
+            "key": false,
+            "type": "SET",
+            "index": false,
+            "options": [
+                "NOINDEX",
+                "NOFOLLOW",
+                "NOARCHIVE",
+                "NOSNIPPET",
+                "NOODP"
+            ],
+            "tableName": "share_sitemap"
+        }
+    },
+    "share_sitemap_translation": {
+        "smap_id": {
+            "nullable": false,
+            "length": 10,
+            "default": "",
+            "key": {
+                "tableName": "share_sitemap",
+                "fieldName": "smap_id",
+                "constraint": "share_sitemap_translation_ibfk_2"
+            },
+            "type": "INT",
+            "index": "PRI",
+            "options": null,
+            "tableName": "share_sitemap_translation"
+        },
+        "lang_id": {
+            "nullable": false,
+            "length": 10,
+            "default": "",
+            "key": {
+                "tableName": "share_languages",
+                "fieldName": "lang_id",
+                "constraint": "share_sitemap_translation_ibfk_1"
+            },
+            "type": "INT",
+            "index": "PRI",
+            "options": null,
+            "tableName": "share_sitemap_translation"
+        },
+        "smap_name": {
+            "nullable": true,
+            "length": 200,
+            "default": null,
+            "key": false,
+            "type": "VARCHAR",
+            "index": false,
+            "options": null,
+            "tableName": "share_sitemap_translation"
+        },
+        "smap_title": {
+            "nullable": true,
+            "length": 250,
+            "default": null,
+            "key": false,
+            "type": "VARCHAR",
+            "index": false,
+            "options": null,
+            "tableName": "share_sitemap_translation"
+        },
+        "smap_description_rtf": {
+            "nullable": true,
+            "length": 0,
+            "default": null,
+            "key": false,
+            "type": "TEXT",
+            "index": false,
+            "options": null,
+            "tableName": "share_sitemap_translation"
+        },
+        "smap_html_title": {
+            "nullable": true,
+            "length": 250,
+            "default": null,
+            "key": false,
+            "type": "VARCHAR",
+            "index": false,
+            "options": null,
+            "tableName": "share_sitemap_translation"
+        },
+        "smap_meta_keywords": {
+            "nullable": true,
+            "length": 0,
+            "default": null,
+            "key": false,
+            "type": "TEXT",
+            "index": false,
+            "options": null,
+            "tableName": "share_sitemap_translation"
+        },
+        "smap_meta_description": {
+            "nullable": true,
+            "length": 0,
+            "default": null,
+            "key": false,
+            "type": "TEXT",
+            "index": false,
+            "options": null,
+            "tableName": "share_sitemap_translation"
+        },
+        "smap_is_disabled": {
+            "nullable": false,
+            "length": 1,
+            "default": "0",
+            "key": false,
+            "type": "INT",
+            "index": false,
+            "options": null,
+            "tableName": "share_sitemap_translation"
+        }
+    },
+    "share_sites": {
+        "site_id": {
+            "nullable": false,
+            "length": 11,
+            "default": "",
+            "key": true,
+            "type": "INT",
+            "index": "PRI",
+            "options": null,
+            "tableName": "share_sites"
+        },
+        "site_meta_robots": {
+            "nullable": true,
+            "length": true,
+            "default": null,
+            "key": false,
+            "type": "SET",
+            "index": false,
+            "options": [
+                "NOINDEX",
+                "NOFOLLOW",
+                "NOARCHIVE",
+                "NOSNIPPET",
+                "NOODP"
+            ],
+            "tableName": "share_sites"
+        }
+    },
+    "share_sites_properties": {
+        "prop_id": {
+            "nullable": false,
+            "length": 10,
+            "default": "",
+            "key": true,
+            "type": "INT",
+            "index": "PRI",
+            "options": null,
+            "tableName": "share_sites_properties"
+        },
+        "prop_name": {
+            "nullable": false,
+            "length": 255,
+            "default": "",
+            "key": false,
+            "type": "VARCHAR",
+            "index": "MUL",
+            "options": null,
+            "tableName": "share_sites_properties"
+        },
+        "prop_value": {
+            "nullable": false,
+            "length": 0,
+            "default": "",
+            "key": false,
+            "type": "TEXT",
+            "index": false,
+            "options": null,
+            "tableName": "share_sites_properties"
+        }
+    },
+    "share_sites_translation": {
+        "site_id": {
+            "nullable": false,
+            "length": 11,
+            "default": "",
+            "key": {
+                "tableName": "share_sites",
+                "fieldName": "site_id",
+                "constraint": "share_sites_translation_ibfk_1"
+            },
+            "type": "INT",
+            "index": "PRI",
+            "options": null,
+            "tableName": "share_sites_translation"
+        },
+        "lang_id": {
+            "nullable": false,
+            "length": 11,
+            "default": "",
+            "key": {
+                "tableName": "share_languages",
+                "fieldName": "lang_id",
+                "constraint": "share_sites_translation_ibfk_2"
+            },
+            "type": "INT",
+            "index": "PRI",
+            "options": null,
+            "tableName": "share_sites_translation"
+        },
+        "site_name": {
+            "nullable": false,
+            "length": 200,
+            "default": "",
+            "key": false,
+            "type": "VARCHAR",
+            "index": false,
+            "options": null,
+            "tableName": "share_sites_translation"
+        },
+        "site_meta_keywords": {
+            "nullable": true,
+            "length": 0,
+            "default": null,
+            "key": false,
+            "type": "TEXT",
+            "index": false,
+            "options": null,
+            "tableName": "share_sites_translation"
+        },
+        "site_meta_description": {
+            "nullable": true,
+            "length": 0,
+            "default": null,
+            "key": false,
+            "type": "TEXT",
+            "index": false,
+            "options": null,
+            "tableName": "share_sites_translation"
+        }
+    },
+    "share_textblocks": {
+        "tb_id": {
+            "nullable": false,
+            "length": 10,
+            "default": "",
+            "key": true,
+            "type": "INT",
+            "index": "PRI",
+            "options": null,
+            "tableName": "share_textblocks"
+        },
+        "smap_id": {
+            "nullable": true,
+            "length": 10,
+            "default": null,
+            "key": {
+                "tableName": "share_sitemap",
+                "fieldName": "smap_id",
+                "constraint": "share_textblocks_ibfk_1"
+            },
+            "type": "INT",
+            "index": "MUL",
+            "options": null,
+            "tableName": "share_textblocks"
+        },
+        "tb_num": {
+            "nullable": false,
+            "length": 50,
+            "default": "1",
+            "key": false,
+            "type": "VARCHAR",
+            "index": "MUL",
+            "options": null,
+            "tableName": "share_textblocks"
+        }
+    },
+    "share_textblocks_history": {
+        "tbh_id": {
+            "nullable": false,
+            "length": 10,
+            "default": "",
+            "key": true,
+            "type": "INT",
+            "index": "PRI",
+            "options": null,
+            "tableName": "share_textblocks_history"
+        },
+        "tb_id": {
+            "nullable": false,
+            "length": 10,
+            "default": "",
+            "key": {
+                "tableName": "share_textblocks",
+                "fieldName": "tb_id",
+                "constraint": "share_textblocks_history_ibfk_1"
+            },
+            "type": "INT",
+            "index": "MUL",
+            "options": null,
+            "tableName": "share_textblocks_history"
+        },
+        "lang_id": {
+            "nullable": false,
+            "length": 10,
+            "default": "",
+            "key": {
+                "tableName": "share_languages",
+                "fieldName": "lang_id",
+                "constraint": "share_textblocks_history_ibfk_2"
+            },
+            "type": "INT",
+            "index": "MUL",
+            "options": null,
+            "tableName": "share_textblocks_history"
+        },
+        "tbh_date": {
+            "nullable": false,
+            "length": 0,
+            "default": "",
+            "key": false,
+            "type": "DATETIME",
+            "index": false,
+            "options": null,
+            "tableName": "share_textblocks_history"
+        },
+        "u_id": {
+            "nullable": true,
+            "length": 10,
+            "default": null,
+            "key": false,
+            "type": "INT",
+            "index": false,
+            "options": null,
+            "tableName": "share_textblocks_history"
+        },
+        "tbh_content": {
+            "nullable": false,
+            "length": 0,
+            "default": "",
+            "key": false,
+            "type": "TEXT",
+            "index": false,
+            "options": null,
+            "tableName": "share_textblocks_history"
+        }
+    },
+    "share_textblocks_translation": {
+        "tb_id": {
+            "nullable": false,
+            "length": 10,
+            "default": "",
+            "key": {
+                "tableName": "share_textblocks",
+                "fieldName": "tb_id",
+                "constraint": "share_textblocks_translation_ibfk_1"
+            },
+            "type": "INT",
+            "index": "MUL",
+            "options": null,
+            "tableName": "share_textblocks_translation"
+        },
+        "lang_id": {
+            "nullable": false,
+            "length": 10,
+            "default": "",
+            "key": {
+                "tableName": "share_languages",
+                "fieldName": "lang_id",
+                "constraint": "share_textblocks_translation_ibfk_2"
+            },
+            "type": "INT",
+            "index": "MUL",
+            "options": null,
+            "tableName": "share_textblocks_translation"
+        },
+        "tb_content": {
+            "nullable": false,
+            "length": 0,
+            "default": "",
+            "key": false,
+            "type": "TEXT",
+            "index": false,
+            "options": null,
+            "tableName": "share_textblocks_translation"
+        }
+    },
+    "share_uploads": {
+        "upl_id": {
+            "nullable": false,
+            "length": 10,
+            "default": "",
+            "key": true,
+            "type": "INT",
+            "index": "PRI",
+            "options": null,
+            "tableName": "share_uploads"
+        },
+        "upl_pid": {
+            "nullable": true,
+            "length": 10,
+            "default": null,
+            "key": {
+                "tableName": "share_uploads",
+                "fieldName": "upl_id",
+                "constraint": "share_uploads_ibfk_1"
+            },
+            "type": "INT",
+            "index": "MUL",
+            "options": null,
+            "tableName": "share_uploads"
+        },
+        "upl_childs_count": {
+            "nullable": true,
+            "length": 10,
+            "default": null,
+            "key": false,
+            "type": "INT",
+            "index": "MUL",
+            "options": null,
+            "tableName": "share_uploads"
+        },
+        "upl_path": {
+            "nullable": false,
+            "length": 250,
+            "default": "",
+            "key": false,
+            "type": "VARCHAR",
+            "index": "MUL",
+            "options": null,
+            "tableName": "share_uploads"
+        },
+        "upl_filename": {
+            "nullable": false,
+            "length": 255,
+            "default": "",
+            "key": false,
+            "type": "VARCHAR",
+            "index": "MUL",
+            "options": null,
+            "tableName": "share_uploads"
+        },
+        "upl_name": {
+            "nullable": false,
+            "length": 250,
+            "default": "",
+            "key": false,
+            "type": "VARCHAR",
+            "index": false,
+            "options": null,
+            "tableName": "share_uploads"
+        },
+        "upl_title": {
+            "nullable": false,
+            "length": 250,
+            "default": "",
+            "key": false,
+            "type": "VARCHAR",
+            "index": false,
+            "options": null,
+            "tableName": "share_uploads"
+        },
+        "upl_description": {
+            "nullable": true,
+            "length": 0,
+            "default": null,
+            "key": false,
+            "type": "TEXT",
+            "index": false,
+            "options": null,
+            "tableName": "share_uploads"
+        },
+        "upl_publication_date": {
+            "nullable": true,
+            "length": 0,
+            "default": null,
+            "key": false,
+            "type": "DATETIME",
+            "index": "MUL",
+            "options": null,
+            "tableName": "share_uploads"
+        },
+        "upl_data": {
+            "nullable": true,
+            "length": 0,
+            "default": null,
+            "key": false,
+            "type": "TEXT",
+            "index": false,
+            "options": null,
+            "tableName": "share_uploads"
+        },
+        "upl_internal_type": {
+            "nullable": true,
+            "length": 20,
+            "default": null,
+            "key": false,
+            "type": "VARCHAR",
+            "index": false,
+            "options": null,
+            "tableName": "share_uploads"
+        },
+        "upl_mime_type": {
+            "nullable": true,
+            "length": 50,
+            "default": null,
+            "key": false,
+            "type": "VARCHAR",
+            "index": false,
+            "options": null,
+            "tableName": "share_uploads"
+        },
+        "upl_width": {
+            "nullable": true,
+            "length": 10,
+            "default": null,
+            "key": false,
+            "type": "INT",
+            "index": false,
+            "options": null,
+            "tableName": "share_uploads"
+        },
+        "upl_height": {
+            "nullable": true,
+            "length": 10,
+            "default": null,
+            "key": false,
+            "type": "INT",
+            "index": false,
+            "options": null,
+            "tableName": "share_uploads"
+        },
+        "upl_is_active": {
+            "nullable": true,
+            "length": 10,
+            "default": "1",
+            "key": false,
+            "type": "INT",
+            "index": "MUL",
+            "options": null,
+            "tableName": "share_uploads"
+        }
+    },
+    "user_groups": {
+        "group_id": {
+            "nullable": false,
+            "length": 10,
+            "default": "",
+            "key": true,
+            "type": "INT",
+            "index": "PRI",
+            "options": null,
+            "tableName": "user_groups"
+        },
+        "group_name": {
+            "nullable": false,
+            "length": 100,
+            "default": "",
+            "key": false,
+            "type": "VARCHAR",
+            "index": false,
+            "options": null,
+            "tableName": "user_groups"
+        },
+        "group_default": {
+            "nullable": false,
+            "length": 1,
+            "default": "0",
+            "key": false,
+            "type": "INT",
+            "index": "MUL",
+            "options": null,
+            "tableName": "user_groups"
+        },
+        "group_user_default": {
+            "nullable": false,
+            "length": 1,
+            "default": "0",
+            "key": false,
+            "type": "INT",
+            "index": false,
+            "options": null,
+            "tableName": "user_groups"
+        }
+    },
+    "user_group_rights": {
+        "right_id": {
+            "nullable": false,
+            "length": 10,
+            "default": "",
+            "key": true,
+            "type": "INT",
+            "index": "PRI",
+            "options": null,
+            "tableName": "user_group_rights"
+        },
+        "right_name": {
+            "nullable": false,
+            "length": 20,
+            "default": "",
+            "key": false,
+            "type": "VARCHAR",
+            "index": false,
+            "options": null,
+            "tableName": "user_group_rights"
+        },
+        "right_const": {
+            "nullable": false,
+            "length": 20,
+            "default": "",
+            "key": false,
+            "type": "VARCHAR",
+            "index": false,
+            "options": null,
+            "tableName": "user_group_rights"
+        }
+    },
+    "user_login_attempts": {
+        "la_id": {
+            "nullable": false,
+            "length": 10,
+            "default": "",
+            "key": true,
+            "type": "INT",
+            "index": "PRI",
+            "options": null,
+            "tableName": "user_login_attempts"
+        },
+        "la_ip": {
+            "nullable": false,
+            "length": 45,
+            "default": "",
+            "key": false,
+            "type": "VARCHAR",
+            "index": "MUL",
+            "options": null,
+            "tableName": "user_login_attempts"
+        },
+        "la_login": {
+            "nullable": false,
+            "length": 250,
+            "default": "",
+            "key": false,
+            "type": "VARCHAR",
+            "index": "MUL",
+            "options": null,
+            "tableName": "user_login_attempts"
+        },
+        "la_date": {
+            "nullable": false,
+            "length": 10,
+            "default": "",
+            "key": false,
+            "type": "INT",
+            "index": "MUL",
+            "options": null,
+            "tableName": "user_login_attempts"
+        }
+    },
+    "user_users": {
+        "u_id": {
+            "nullable": false,
+            "length": 10,
+            "default": "",
+            "key": true,
+            "type": "INT",
+            "index": "PRI",
+            "options": null,
+            "tableName": "user_users"
+        },
+        "u_name": {
+            "nullable": false,
+            "length": 50,
+            "default": "",
+            "key": false,
+            "type": "VARCHAR",
+            "index": "MUL",
+            "options": null,
+            "tableName": "user_users"
+        },
+        "u_phone": {
+            "nullable": true,
+            "length": 100,
+            "default": null,
+            "key": false,
+            "type": "VARCHAR",
+            "index": false,
+            "options": null,
+            "tableName": "user_users"
+        },
+        "u_password": {
+            "nullable": false,
+            "length": 255,
+            "default": "",
+            "key": false,
+            "type": "VARCHAR",
+            "index": false,
+            "options": null,
+            "tableName": "user_users"
+        },
+        "u_is_active": {
+            "nullable": false,
+            "length": 1,
+            "default": "1",
+            "key": false,
+            "type": "INT",
+            "index": false,
+            "options": null,
+            "tableName": "user_users"
+        },
+        "u_fullname": {
+            "nullable": false,
+            "length": 250,
+            "default": "",
+            "key": false,
+            "type": "VARCHAR",
+            "index": false,
+            "options": null,
+            "tableName": "user_users"
+        },
+        "u_country": {
+            "nullable": true,
+            "length": 255,
+            "default": null,
+            "key": false,
+            "type": "VARCHAR",
+            "index": false,
+            "options": null,
+            "tableName": "user_users"
+        },
+        "u_city": {
+            "nullable": true,
+            "length": 255,
+            "default": null,
+            "key": false,
+            "type": "VARCHAR",
+            "index": false,
+            "options": null,
+            "tableName": "user_users"
+        },
+        "u_avatar_img": {
+            "nullable": true,
+            "length": 1000,
+            "default": null,
+            "key": false,
+            "type": "VARCHAR",
+            "index": false,
+            "options": null,
+            "tableName": "user_users"
+        },
+        "u_person_name": {
+            "nullable": true,
+            "length": 100,
+            "default": null,
+            "key": false,
+            "type": "VARCHAR",
+            "index": false,
+            "options": null,
+            "tableName": "user_users"
+        },
+        "u_person_family_name": {
+            "nullable": true,
+            "length": 100,
+            "default": null,
+            "key": false,
+            "type": "VARCHAR",
+            "index": false,
+            "options": null,
+            "tableName": "user_users"
+        },
+        "u_person_surname": {
+            "nullable": true,
+            "length": 100,
+            "default": null,
+            "key": false,
+            "type": "VARCHAR",
+            "index": false,
+            "options": null,
+            "tableName": "user_users"
+        },
+        "u_bdate": {
+            "nullable": true,
+            "length": 0,
+            "default": null,
+            "key": false,
+            "type": "DATE",
+            "index": false,
+            "options": null,
+            "tableName": "user_users"
+        },
+        "u_add_phone": {
+            "nullable": true,
+            "length": 100,
+            "default": null,
+            "key": false,
+            "type": "VARCHAR",
+            "index": false,
+            "options": null,
+            "tableName": "user_users"
+        },
+        "u_address": {
+            "nullable": true,
+            "length": 255,
+            "default": null,
+            "key": false,
+            "type": "VARCHAR",
+            "index": false,
+            "options": null,
+            "tableName": "user_users"
+        },
+        "u_sex": {
+            "nullable": true,
+            "length": true,
+            "default": null,
+            "key": false,
+            "type": "ENUM",
+            "index": false,
+            "options": [
+                "M",
+                "F"
+            ],
+            "tableName": "user_users"
+        },
+        "u_restore_hash": {
+            "nullable": true,
+            "length": 64,
+            "default": null,
+            "key": false,
+            "type": "VARCHAR",
+            "index": "MUL",
+            "options": null,
+            "tableName": "user_users"
+        },
+        "u_restore_until": {
+            "nullable": true,
+            "length": 0,
+            "default": null,
+            "key": false,
+            "type": "DATETIME",
+            "index": false,
+            "options": null,
+            "tableName": "user_users"
+        }
+    },
+    "user_user_groups": {
+        "u_id": {
+            "nullable": false,
+            "length": 10,
+            "default": "",
+            "key": {
+                "tableName": "user_users",
+                "fieldName": "u_id",
+                "constraint": "user_user_groups_ibfk_3"
+            },
+            "type": "INT",
+            "index": "PRI",
+            "options": null,
+            "tableName": "user_user_groups"
+        },
+        "group_id": {
+            "nullable": false,
+            "length": 10,
+            "default": "",
+            "key": {
+                "tableName": "user_groups",
+                "fieldName": "group_id",
+                "constraint": "user_user_groups_ibfk_4"
+            },
+            "type": "INT",
+            "index": "PRI",
+            "options": null,
+            "tableName": "user_user_groups"
+        }
+    },
+    "__tableExists": {
+        "share_sitemap": true,
+        "share_sitemap_translation": true,
+        "no_such_table_claude": false,
+        "share_textblocks_translation": true
+    }
+}
