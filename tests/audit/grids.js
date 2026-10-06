@@ -1537,6 +1537,31 @@ const inspect = (page) => page.evaluate(() => {
             await ctx.clearCookies({ name: 'NRGNFRPID' });
         }
 
+        // 5. шаблон новой страницы (идеи xsight): под списком шаблонов — подсказка выбранного (data-hint), выбран не
+        //    выключенный вариант; другой шаблон — другая подсказка. Форма не сохраняется
+        {
+            const p = await ctx.newPage();
+            const errors = watch(p);
+            await p.goto(BASE + `admin/structure/single/divEditor/add/${db('page-root').trim()}/`, { waitUntil: 'networkidle' });
+            await showTab(p, '#smap_content');
+            const state = () => p.evaluate(() => {
+                const s = document.getElementById('smap_content'), h = s && s.parentElement.querySelector('.e-template-hint');
+                const o = s && s.selectedOptions[0];
+                return { value: s ? s.value : null, disabled: !!(o && o.disabled), want: (o && o.getAttribute('data-hint')) || '',
+                    hint: h ? h.textContent.trim() : null, visible: !!(h && !h.hidden && h.getBoundingClientRect().height > 0) };
+            });
+            const first = await state();
+            const other = first.value === 'textblock.content.xml' ? 'map.content.xml' : 'textblock.content.xml';
+            await p.selectOption('#smap_content', other);
+            const second = await state();
+            check('шаблон новой страницы: под списком — подсказка выбранного шаблона, выбран не выключенный вариант',
+                !!first.value && !first.disabled && first.want !== '' && first.hint === first.want && first.visible, JSON.stringify(first));
+            check('шаблон новой страницы: другой шаблон — другая подсказка', second.value === other && second.want !== ''
+                && second.hint === second.want && second.hint !== first.hint && second.visible, JSON.stringify(second));
+            check('шаблон новой страницы: без ошибок JS и 404', !errors.list().length, errors.list().join(' | '));
+            await p.close();
+        }
+
     } finally {
         db('remove');
     }

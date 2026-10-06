@@ -244,8 +244,14 @@ class DivisionEditor extends Grid implements SampleDivisionEditor {
         }
         $d = new \DOMDocument('1.0', 'UTF-8');
         foreach ($r as $path) {
+            // висячая ссылка в web/templates (шаблон удалён из модуля, setup linker не запускали): такой страницы не
+            // построить — вариант не предлагается
+            if (!is_file($path)) {
+                continue;
+            }
             $path = str_replace($dirPath, '', $path);
             list($name, $tp) = explode('.', substr(basename($path), 0, -4));
+            $hintConst = strtoupper('hint_' . $tp . '_' . $name);
             $name = $this->translate(strtoupper($tp . '_' . $name));
 
             $row = [
@@ -271,6 +277,10 @@ class DivisionEditor extends Grid implements SampleDivisionEditor {
                 }
                 if($d->documentElement->hasAttribute('disabled')){
                     continue;
+                }
+                // что это за страница (константа HINT_CONTENT_<ИМЯ>, если есть) — DivForm показывает под списком шаблонов
+                if (($hint = $this->translate($hintConst)) !== $hintConst) {
+                    $row['data-hint'] = $hint;
                 }
             }
             array_push($result, $row);
@@ -435,7 +445,7 @@ class DivisionEditor extends Grid implements SampleDivisionEditor {
                     $this->loadTemplateData($type, $site->folder),
                     'key', 'value');
             }
-
+        $this->presetTemplates((int)$actionParams['pid']);
 
         if ($name = $this->dbh->getScalar(
             $this->getTranslationTableName(),
@@ -452,6 +462,63 @@ class DivisionEditor extends Grid implements SampleDivisionEditor {
                 $field->setRowProperty($i, 'segment', $smapSegment);
             }
         }
+    }
+
+    /**
+     * Заранее выбранные шаблон и макет новой страницы раздела $pid: как у большинства его подстраниц (childTemplates),
+     * иначе текстовая страница и базовый макет. Вариант, которого нет в списке, который выключен («уникальный» шаблон
+     * уже занят) или со своим сегментом, не выбирается; свой макет шаблона (data-layout) важнее — как при выборе
+     * шаблона в форме (DivForm).
+     */
+    private function presetTemplates(int $pid): void {
+        $offered = function (string $type, ?string $key): ?array {
+            $fd = $this->getDataDescription()->getFieldDescriptionByName('smap_' . $type);
+            $av = $fd ? $fd->getAvailableValues() : [];
+            return ($key !== null && is_array($av) && isset($av[$key]) && empty($av[$key]['attributes']['disabled'])) ? $av[$key] : null;
+        };
+        [$layout, $content] = $this->childTemplates($pid);
+        // шаблон со своим постоянным сегментом (data-segment, как robots.txt) в разделе бывает только раз — его сегмент
+        // уже занят, следующей странице он не подходит
+        $option = $offered(Document::TMPL_CONTENT, $content);
+        if (!$option || !empty($option['attributes']['data-segment'])) {
+            [$layout, $content] = [null, 'textblock.content.xml'];
+        }
+        $own = $offered(Document::TMPL_CONTENT, $content)['attributes']['data-layout'] ?? null;
+        if ($own && $own !== '*') {
+            $layout = $own;
+        }
+        if (!$offered(Document::TMPL_LAYOUT, $layout)) {
+            $layout = 'default.layout.xml';
+        }
+        foreach ([Document::TMPL_CONTENT => $content, Document::TMPL_LAYOUT => $layout] as $type => $key) {
+            if ($offered($type, $key) && ($f = $this->getData()->getFieldByName('smap_' . $type))) {
+                $f->setData($key, true);
+            }
+        }
+    }
+
+    /**
+     * Макет и шаблон, которые чаще всего у подстраниц раздела $pid: самый частый шаблон — если он один такой (при ничьей
+     * выбора нет), и самый частый макет у подстраниц с этим шаблоном. У корня служебные страницы (SYSTEM_SEGMENTS) не
+     * считаются. Нет подстраниц или ничья — [null, null].
+     *
+     * @return array{0: ?string, 1: ?string} [макет, шаблон]
+     */
+    private function childTemplates(int $pid): array {
+        $where = 'smap_pid = ?';
+        $args = [$pid];
+        if ($this->dbh->scalar('SELECT smap_pid FROM share_sitemap WHERE smap_id = ?', [$pid]) === null) {
+            $where .= ' AND smap_segment NOT IN (' . implode(', ', array_fill(0, count(self::SYSTEM_SEGMENTS), '?')) . ')';
+            $args = array_merge($args, self::SYSTEM_SEGMENTS);
+        }
+        $top = $this->dbh->rows("SELECT smap_content, COUNT(*) AS n FROM share_sitemap WHERE $where GROUP BY smap_content ORDER BY n DESC LIMIT 2", $args);
+        if (!$top || (isset($top[1]) && (int)$top[1]['n'] === (int)$top[0]['n'])) {
+            return [null, null];
+        }
+        $content = (string)$top[0]['smap_content'];
+        $layout = $this->dbh->scalar("SELECT smap_layout FROM share_sitemap WHERE $where AND smap_content = ? GROUP BY smap_layout "
+            . 'ORDER BY COUNT(*) DESC, MAX(smap_id) DESC LIMIT 1', array_merge($args, [$content]));
+        return [$layout === null ? null : (string)$layout, $content];
     }
 
     /**

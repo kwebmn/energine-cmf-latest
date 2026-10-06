@@ -2,7 +2,8 @@
 // Константы перевода, которые ничто не использует (этап «чистка»). Используемой считается константа:
 //  - чьё имя встречается литералом в коде, шаблонах, конфигах и скриптах (core, site, setup, htdocs);
 //  - собранная в коде из частей: FIELD_/TXT_ + имя колонки, поля, компонента или строкового значения из кода или
-//    базы (права TXT_<right_const>, TXT_<right_name>), CONTENT_/LAYOUT_ + имя файла шаблона, CLASS_* (журнал),
+//    базы (права TXT_<right_const>, TXT_<right_name>), CONTENT_/LAYOUT_ + имя файла шаблона (и HINT_CONTENT_ + имя —
+//    подсказка шаблона в форме раздела), CLASS_* (журнал),
 //    HELP_<класс>_<состояние> (подсказки админки), ERR_WRONG_*, TXT_WEEKDAY_*, TXT_MONTH_*, *_ENUM_* (значения перечней), TXT_SECTION_SAMPLE_*;
 // с запасом: при сомнении константа считается используемой.
 //   php8.5 tests/tools/unused-constants.php          — список неиспользуемых (по строке), итог в конце
@@ -34,7 +35,10 @@ foreach (q("SELECT TABLE_NAME, COLUMN_NAME FROM information_schema.COLUMNS WHERE
     }
 }
 foreach (array_merge(glob(ROOT . '/core/modules/*/templates/*/*.xml'), glob(ROOT . '/site/modules/*/templates/*/*.xml')) as $t) {
-    if (preg_match('~/([a-z0-9_]+)\.(content|layout)\.xml$~', $t, $m)) $used[strtoupper($m[2] . '_' . $m[1])] = 1;
+    if (preg_match('~/([a-z0-9_]+)\.(content|layout)\.xml$~', $t, $m)) {
+        $used[strtoupper($m[2] . '_' . $m[1])] = 1;
+        $used[strtoupper('hint_' . $m[2] . '_' . $m[1])] = 1;
+    }
 }
 $prefixes = ['CLASS_', 'ERR_WRONG_', 'TXT_WEEKDAY_', 'TXT_MONTH_', 'TXT_SECTION_SAMPLE_', 'HELP_'];
 $unused = [];

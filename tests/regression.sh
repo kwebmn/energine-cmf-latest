@@ -61,6 +61,7 @@ suite page-aliases php8.5 page-aliases.php
 suite resizer php8.5 resizer.php
 suite text-links php8.5 text-links.php
 suite file-guard php8.5 file-guard.php
+suite page-templates php8.5 page-templates.php
 
 suite mail php8.5 smoke-mail.php
 suite antispam php8.5 smoke-antispam.php

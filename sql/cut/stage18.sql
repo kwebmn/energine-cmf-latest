@@ -25,3 +25,35 @@ INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_va
         'Этот файл используется в текстах страниц — ссылки и картинки там станут битыми. Удалить всё равно? Страницы:')
       FROM `share_lang_tags` t JOIN `share_languages` l
      WHERE t.`ltag_name` = 'MSG_FILE_LINKED';
+
+-- 3. Шаблон новой страницы: подсказка «что это за страница» под списком шаблонов (DivisionEditor::loadTemplateData —
+--    атрибут data-hint варианта, DivForm — строка .e-template-hint).
+INSERT IGNORE INTO `share_lang_tags` (`ltag_name`) VALUES ('HINT_CONTENT_LANDING'), ('HINT_CONTENT_SERVICE'), ('HINT_CONTENT_CONTACTS'),
+    ('HINT_CONTENT_TEXTBLOCK'), ('HINT_CONTENT_CHILDS'), ('HINT_CONTENT_MAP'), ('HINT_CONTENT_MAIN');
+INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`)
+    SELECT t.`ltag_id`, l.`lang_id`, CASE t.`ltag_name`
+        WHEN 'HINT_CONTENT_LANDING' THEN IF(l.`lang_abbr` = 'ua',
+            'Вітрина: перший екран, послуги, відгуки й заклик до дії. Кожну секцію правте прямо на сторінці.',
+            'Витрина: первый экран, услуги, отзывы и призыв к действию. Каждую секцию правьте прямо на странице.')
+        WHEN 'HINT_CONTENT_SERVICE' THEN IF(l.`lang_abbr` = 'ua',
+            'Послуга: перший екран, опис, ціни та питання й відповіді.',
+            'Услуга: первый экран, описание, цены и вопросы с ответами.')
+        WHEN 'HINT_CONTENT_CONTACTS' THEN IF(l.`lang_abbr` = 'ua',
+            'Контакти: текст і блок з адресою, телефоном, поштою та посиланням на мапу.',
+            'Контакты: текст и блок с адресом, телефоном, почтой и ссылкой на карту.')
+        WHEN 'HINT_CONTENT_TEXTBLOCK' THEN IF(l.`lang_abbr` = 'ua',
+            'Звичайна сторінка: заголовок і текст.',
+            'Обычная страница: заголовок и текст.')
+        WHEN 'HINT_CONTENT_CHILDS' THEN IF(l.`lang_abbr` = 'ua',
+            'Розділ: текст і список його підсторінок, список оновлюється сам.',
+            'Раздел: текст и список его подстраниц, список обновляется сам.')
+        WHEN 'HINT_CONTENT_MAP' THEN IF(l.`lang_abbr` = 'ua',
+            'Карта сайту: усі сторінки сайту деревом, оновлюється сама.',
+            'Карта сайта: все страницы сайта деревом, обновляется сама.')
+        WHEN 'HINT_CONTENT_MAIN' THEN IF(l.`lang_abbr` = 'ua',
+            'Проста головна: текст і бічний блок.',
+            'Простая главная: текст и боковой блок.')
+        END
+      FROM `share_lang_tags` t JOIN `share_languages` l
+     WHERE t.`ltag_name` IN ('HINT_CONTENT_LANDING', 'HINT_CONTENT_SERVICE', 'HINT_CONTENT_CONTACTS', 'HINT_CONTENT_TEXTBLOCK',
+         'HINT_CONTENT_CHILDS', 'HINT_CONTENT_MAP', 'HINT_CONTENT_MAIN');

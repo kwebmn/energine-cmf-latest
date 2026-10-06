@@ -107,6 +107,8 @@ $tpl2 = ROOT . '/site/modules/main/templates/content/claude_dash.content.xml';
 register_shutdown_function(fn() => @unlink($tpl2));
 $out = $setup('page', '--name=claude_dash', '--title=Цены -- услуги', '--sections=hero');
 check('setup page: «--» в названии — шаблон остаётся правильным XML', is_file($tpl2) && @simplexml_load_file($tpl2) !== false, substr((string)$out, -200));
+// файл — сразу, до setup linker в уборке выше: иначе в web/templates остаётся висячая ссылка на него
+@unlink($tpl2);
 q("DELETE tr FROM share_lang_tags_translation tr JOIN share_lang_tags t USING (ltag_id) WHERE t.ltag_name = 'CONTENT_CLAUDE_DASH'");
 q("DELETE FROM share_lang_tags WHERE ltag_name = 'CONTENT_CLAUDE_DASH'");
 file_put_contents($trFile, $trOrig);

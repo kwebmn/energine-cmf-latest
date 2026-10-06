@@ -99,6 +99,10 @@ switch ($cmd) {
     case 'user-active':
         echo scalar('SELECT u_is_active FROM user_users WHERE u_id = ?', [(int)$argv[2]]);
         break;
+    case 'page-root':
+        // корневая страница сайта (окно новой страницы верхнего уровня)
+        echo (int)scalar('SELECT smap_id FROM share_sitemap WHERE smap_pid IS NULL');
+        break;
     default:
         fwrite(STDERR, "неизвестная команда\n");
         exit(2);

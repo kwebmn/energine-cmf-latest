@@ -34,8 +34,20 @@ export class DivForm extends Form {
             layoutSelector = /** @type {HTMLSelectElement} */ (this.element.querySelector('#smap_layout')),
             segmentInput = /** @type {HTMLInputElement} */ (this.element.querySelector('#smap_segment'));
 
+        // подсказка «что это за страница» (data-hint выбранного шаблона) — строкой под списком, меняется при выборе
+        const hint = document.createElement('p');
+        hint.className = 'e-template-hint';
+        contentSelector.after(hint);
+        const showHint = () => {
+            const option = contentSelector.selectedOptions[0];
+            hint.textContent = (option && option.getAttribute('data-hint')) || '';
+            hint.hidden = !hint.textContent;
+        };
+        showHint();
+
         // шаблон со своим сегментом закрепляет сегмент, со своим макетом — выбирает макет; XML раздела сбрасывается
         contentSelector.addEventListener('change', () => {
+            showHint();
             const option = contentSelector.selectedOptions[0];
             let segment, layout;
             if (segmentInput) {
