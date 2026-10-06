@@ -479,6 +479,8 @@ INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2916,'HINT_CONTEN
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2917,'HINT_CONTENT_CHILDS');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2918,'HINT_CONTENT_MAP');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2919,'HINT_CONTENT_MAIN');
+INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2930,'BTN_PICK_PAGE');
+INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2931,'BTN_PICK_FILE');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (15,1,'Выйти');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (15,2,'Вийти');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (42,1,'Сохранить');
@@ -1363,8 +1365,8 @@ INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2860,2,'Спочатку видаліть або перенесіть підсторінки цієї сторінки.');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2861,1,'Это служебная страница сайта (вход, админка, карта сайта): её нельзя удалить.');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2861,2,'Це службова сторінка сайту (вхід, адмінка, мапа сайту): її не можна видалити.');
-INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2862,1,'На эту страницу ссылаются тексты других страниц — ссылки станут битыми. Удалить всё равно? Страницы со ссылками:');
-INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2862,2,'На цю сторінку посилаються тексти інших сторінок — посилання стануть битими. Все одно видалити? Сторінки з посиланнями:');
+INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2862,1,'На эту страницу ссылаются другие страницы (тексты или страницы-ссылки) — ссылки станут битыми. Удалить всё равно? Страницы со ссылками:');
+INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2862,2,'На цю сторінку посилаються інші сторінки (тексти або сторінки-посилання) — посилання стануть битими. Все одно видалити? Сторінки з посиланнями:');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2866,1,'Нельзя удалить папку вместе с её содержимым одним выделением: снимите выделение со строки «..» и повторите.');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2866,2,'Не можна видалити теку разом із її вмістом одним виділенням: зніміть виділення з рядка «..» і повторіть.');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2867,1,'История');
@@ -1399,8 +1401,8 @@ INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2905,2,'Бите посилання: такої сторінки немає. Відвідувачі бачать тут просто текст.');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2906,1,'Битая ссылка: такого файла нет. Посетители его не видят.');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2906,2,'Бите посилання: такого файлу немає. Відвідувачі його не бачать.');
-INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2909,1,'Этот файл используется в текстах страниц — ссылки и картинки там станут битыми. Удалить всё равно? Страницы:');
-INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2909,2,'Цей файл використовується в текстах сторінок — посилання і картинки там стануть битими. Все одно видалити? Сторінки:');
+INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2909,1,'Этот файл используется на страницах сайта (в текстах или как адрес страницы-ссылки) — ссылки и картинки на него станут битыми. Удалить всё равно? Страницы:');
+INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2909,2,'Цей файл використовується на сторінках сайту (у текстах або як адреса сторінки-посилання) — посилання і картинки на нього стануть битими. Все одно видалити? Сторінки:');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2913,1,'Витрина: первый экран, услуги, отзывы и призыв к действию. Каждую секцию правьте прямо на странице.');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2913,2,'Вітрина: перший екран, послуги, відгуки й заклик до дії. Кожну секцію правте прямо на сторінці.');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2914,1,'Услуга: первый экран, описание, цены и вопросы с ответами.');
@@ -1415,6 +1417,10 @@ INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2918,2,'Карта сайту: усі сторінки сайту деревом, оновлюється сама.');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2919,1,'Простая главная: текст и боковой блок.');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2919,2,'Проста головна: текст і бічний блок.');
+INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2930,1,'Страница…');
+INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2930,2,'Сторінка…');
+INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2931,1,'Файл…');
+INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2931,2,'Файл…');
 INSERT INTO `mail_templates` (`template_id`, `template_sysname`, `template_is_active`, `template_hints`) VALUES (1,'user_registration',1,'[user_name] - имя пользователя, [user_login] - логин (e-mail), [password_link] - ссылка установки пароля (действует час), [site_name] - название сайта, [site_url] - адрес сайта');
 INSERT INTO `mail_templates` (`template_id`, `template_sysname`, `template_is_active`, `template_hints`) VALUES (2,'user_restore_password',1,'[sex_suffix_hello] - окончание обращения по полу пользователя (константы TXT_EMAIL_SUFFIX_SEX_M/F/UNKNOWN), [user_name] - имя, [user_login] - логин (e-mail), [restore_link] - ссылка для смены пароля (действует час), [site_name] - название сайта, [site_url] - адрес сайта');
 INSERT INTO `mail_templates_translation` (`template_id`, `lang_id`, `template_name`, `template_subject`, `template_body`, `template_body_rtf`) VALUES (1,1,'Регистрация пользователя','Регистрация на сайте [site_name]','Здравствуйте, [user_name]!\n\nВы зарегистрированы на сайте [site_name] ([site_url]). Логин: [user_login]\n\nЗадайте пароль по ссылке (действует час): [password_link]\nЕсли ссылка устарела, воспользуйтесь «Забыли пароль?» на странице входа.\n\nПисьмо отправлено автоматически, отвечать на него не нужно.','<p>Здравствуйте, [user_name]!</p>\n<p>Вы зарегистрированы на сайте <a href=\"[site_url]\">[site_name]</a>. Логин: <strong>[user_login]</strong></p>\n<p><a href=\"[password_link]\">Задайте пароль</a> — ссылка действует час. Если она устарела, воспользуйтесь «Забыли пароль?» на странице входа.</p>\n<p>Письмо отправлено автоматически, отвечать на него не нужно.</p>');

@@ -93,6 +93,28 @@
         </xsl:if>
     </xsl:template>
 
+    <!-- адрес переадресации на другой сайт (http(s):// или //, хост не этого сайта) — пункт открывается в новой вкладке;
+         адрес от корня или полный адрес этого сайта — в той же -->
+    <xsl:template name="external-link-target">
+        <xsl:param name="url"/>
+        <xsl:variable name="rest">
+            <xsl:choose>
+                <xsl:when test="starts-with($url, 'http://') or starts-with($url, 'https://')"><xsl:value-of select="substring-after($url, '://')"/></xsl:when>
+                <xsl:when test="starts-with($url, '//')"><xsl:value-of select="substring($url, 3)"/></xsl:when>
+            </xsl:choose>
+        </xsl:variable>
+        <xsl:variable name="upper" select="'ABCDEFGHIJKLMNOPQRSTUVWXYZ'"/>
+        <xsl:variable name="lower" select="'abcdefghijklmnopqrstuvwxyz'"/>
+        <xsl:variable name="h1" select="substring-before(concat($rest, '/'), '/')"/>
+        <xsl:variable name="h2" select="substring-before(concat($h1, '?'), '?')"/>
+        <xsl:variable name="host" select="translate(substring-before(concat($h2, '#'), '#'), $upper, $lower)"/>
+        <xsl:variable name="own" select="translate(substring-before(concat(substring-after($BASE, '://'), '/'), '/'), $upper, $lower)"/>
+        <xsl:if test="$host != '' and $host != $own">
+            <xsl:attribute name="target">_blank</xsl:attribute>
+            <xsl:attribute name="rel">noopener</xsl:attribute>
+        </xsl:if>
+    </xsl:template>
+
     <xsl:template match="record[ancestor::component[@name='mainMenu']]" priority="1">
         <li>
             <xsl:attribute name="class">main_menu_item relative<xsl:if test="field[@name='Id'] = $ID"> active</xsl:if></xsl:attribute>
@@ -101,6 +123,9 @@
                     <xsl:when test="field[@name='Redirect'] = ''"><xsl:value-of select="$LANG_ABBR"/><xsl:value-of select="field[@name='Segment']"/></xsl:when>
                     <xsl:otherwise><xsl:value-of select="field[@name='Redirect']"/></xsl:otherwise>
                 </xsl:choose></xsl:attribute>
+                <xsl:call-template name="external-link-target">
+                    <xsl:with-param name="url" select="field[@name='Redirect']"/>
+                </xsl:call-template>
                 <xsl:if test="field[@name='Id'] = $ID">
                     <xsl:attribute name="aria-current">page</xsl:attribute>
                 </xsl:if>
@@ -242,6 +267,9 @@
                                 <xsl:otherwise><xsl:value-of select="field[@name='Redirect']"/></xsl:otherwise>
                             </xsl:choose>
                         </xsl:attribute>
+                        <xsl:call-template name="external-link-target">
+                            <xsl:with-param name="url" select="field[@name='Redirect']"/>
+                        </xsl:call-template>
                     </xsl:if>
                     <xsl:value-of select="field[@name='Name']"/>
                 </a>

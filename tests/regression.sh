@@ -63,6 +63,7 @@ suite text-links php8.5 text-links.php
 suite file-guard php8.5 file-guard.php
 suite page-templates php8.5 page-templates.php
 suite lang-switcher php8.5 lang-switcher.php
+suite page-link php8.5 page-link.php
 
 suite mail php8.5 smoke-mail.php
 suite antispam php8.5 smoke-antispam.php

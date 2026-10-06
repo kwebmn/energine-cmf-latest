@@ -2,8 +2,9 @@
 // Безопасное удаление страницы (DivisionEditor::deleteData):
 //  1. страница с подстраницами не удаляется (ERR_DIV_HAS_CHILDREN) — иначе каскад снёс бы поддерево с текстами;
 //  2. системные страницы (под admin/ и служебные сегменты корня) не удаляются (ERR_DIV_SYSTEM);
-//  3. страница, на которую ссылаются тексты: без подтверждения — ответ с полем confirm и списком страниц, страница
-//     на месте (result true, mode confirm — это вопрос, а не ошибка); с ?confirm=1 — удалена.
+//  3. страница, на которую ссылаются тексты или страница-ссылка (адрес переадресации): без подтверждения — ответ с полем
+//     confirm и списком страниц, страница на месте (result true, mode confirm — это вопрос, а не ошибка); с ?confirm=1 —
+//     удалена.
 // Стенды claude-del-* создаются и удаляются здесь; системная проверка — на стенде внутри admin/, живые страницы не трогаются.
 require __DIR__ . '/testlib.php';
 
@@ -36,6 +37,9 @@ $referrer = stand('claude-del-referrer', $root);
 q("INSERT INTO share_textblocks (smap_id, tb_num) VALUES (?, '1')", [$referrer]);
 q('INSERT INTO share_textblocks_translation (tb_id, lang_id, tb_content) VALUES (?, 1, ?)', [pdo()->lastInsertId(), '<p><a href="claude-del-linked/">см.</a></p>']);
 $sys = stand('claude-del-sys', $admin);
+$target = stand('claude-del-target', $root);
+$pageLink = stand('claude-del-pagelink', $root);
+q('UPDATE share_sitemap SET smap_redirect_url = ? WHERE smap_id = ?', ['/claude-del-target/', $pageLink]);
 $exists = fn($id) => (int)scalar('SELECT COUNT(*) FROM share_sitemap WHERE smap_id = ?', [$id]) === 1;
 $del = fn($id, $q = '') => json("/admin/structure/single/divEditor/$id/delete/$q", '');
 
@@ -58,6 +62,10 @@ check('страница, на которую ссылается текст: бе
     "HTTP $c " . substr($raw, 0, 200));
 [$c, $j, $raw] = $del($linked, '?confirm=1');
 check('с ?confirm=1 — удалена', !empty($j['result']) && ($j['mode'] ?? '') === 'delete' && !$exists($linked), "HTTP $c " . substr($raw, 0, 200));
+[$c, $j, $raw] = $del($target);
+check('страница, на которую ведёт страница-ссылка: без подтверждения — вопрос с её адресом, страница на месте',
+    is_array($j) && ($j['mode'] ?? '') === 'confirm' && str_contains((string)($j['confirm'] ?? ''), 'claude-del-pagelink/') && $exists($target),
+    "HTTP $c " . substr($raw, 0, 200));
 [$c, $j, $raw] = $del($child);
 check('обычная страница без ссылок и подстраниц — удаляется сразу', !empty($j['result']) && !$exists($child), "HTTP $c " . substr($raw, 0, 200));
 logout();

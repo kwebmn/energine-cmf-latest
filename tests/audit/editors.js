@@ -1243,6 +1243,83 @@ const showTabOf = (page, selector) => page.evaluate((sel) => {
         await p.close();
     }
 
+    // 26. страница-ссылка (идеи xsight): у адреса переадресации формы раздела «Страница…» — окно дерева разделов,
+    //     выбор страницы ставит адрес от корня сайта; «Файл…» — библиотека файлов (ответ окна подменён), выбор файла
+    //     ставит «/uploads/…»; окно без выбора поле не меняет; форма сохраняется с выбранным адресом. Адрес переадресации
+    //     страницы возвращается как был
+    {
+        const redirectSnap = db('page-redirect', pageId).trim();
+        try {
+            const p = await ctx.newPage();
+            const errors = watch(p);
+            await p.goto(BASE + `admin/structure/single/divEditor/${pageId}/edit/`, { waitUntil: 'networkidle' });
+            await showTabOf(p, '#smap_redirect_url');
+            const value = () => p.inputValue('#smap_redirect_url');
+            const pageBtn = p.locator('button.pick-redirect-page'), fileBtn = p.locator('button.pick-redirect-file');
+            if (check('форма раздела: у адреса переадресации кнопки «Страница…» и «Файл…»', await pageBtn.count() === 1
+                && await fileBtn.count() === 1 && await pageBtn.isVisible() && await fileBtn.isVisible())) {
+                await p.fill('#smap_redirect_url', '');
+                // «Страница…»: окно, закрытое без выбора, поле не меняет; выбор quick-start — «/info/quick-start/»
+                await pageBtn.click();
+                let frameEl = await p.waitForSelector('.e-modalbox iframe', { timeout: 10000 }).catch(() => null);
+                let frame = frameEl ? await frameEl.contentFrame() : null;
+                const node = frame ? await frame.waitForSelector('.e-divtree-select li a', { timeout: 15000 }).catch(() => null) : null;
+                if (check('«Страница…»: окно дерева разделов открылось', !!node)) {
+                    await frame.click('ul.toolbar li.close_btn');
+                    await p.waitForSelector('.e-modalbox iframe', { state: 'detached', timeout: 10000 }).catch(() => null);
+                    const untouched = await value();
+                    check('«Страница…»: окно закрыто без выбора — поле как было (пустое)', untouched === '', untouched);
+                    await pageBtn.click();
+                    frameEl = await p.waitForSelector('.e-modalbox iframe', { timeout: 10000 });
+                    frame = await frameEl.contentFrame();
+                    await frame.waitForSelector('.e-divtree-select li a', { timeout: 15000 });
+                    const picked = await frame.evaluate(() => {
+                        const a = [...document.querySelectorAll('.e-divtree-select li a')].find((el) => /quick-start\/?$/.test(el.getAttribute('href') || ''));
+                        if (a) a.click();
+                        return !!a;
+                    });
+                    if (check('в дереве есть страница quick-start', picked)) {
+                        await frame.click('ul.toolbar li.select_btn');
+                        await p.waitForSelector('.e-modalbox iframe', { state: 'detached', timeout: 10000 }).catch(() => null);
+                        const chosen = await value();
+                        check('«Страница…»: выбор страницы ставит адрес от корня сайта — /info/quick-start/', chosen === '/info/quick-start/', chosen);
+                    }
+                }
+                // «Файл…»: окно библиотеки (ответ подменён) — путь файла от корня сайта; отмена поле не меняет
+                await p.evaluate(() => {
+                    window.claudeOpened = [];
+                    window.claudeAnswer = null;
+                    ModalBox.open = function (o) {
+                        window.claudeOpened.push(o.url);
+                        setTimeout(() => o.onClose(window.claudeAnswer), 0);
+                    };
+                });
+                const before = await value();
+                await fileBtn.click();
+                await p.waitForTimeout(300);
+                const afterCancel = await value();
+                check('«Файл…»: окно закрыто без выбора — адрес прежний', afterCancel === before, JSON.stringify({ before, afterCancel }));
+                await p.evaluate(() => { window.claudeAnswer = { upl_path: 'uploads/public/claude-pl.pdf', upl_title: 'claude-pl.pdf' }; });
+                await fileBtn.click();
+                await p.waitForTimeout(300);
+                const opened = await p.evaluate(() => window.claudeOpened.slice());
+                const file = await value();
+                check('«Файл…»: библиотека файлов, выбор файла ставит /uploads/…', opened.length === 2
+                    && opened.every((u) => /\/file-library\/$/.test(u)) && file === '/uploads/public/claude-pl.pdf', JSON.stringify({ opened, file }));
+                const [resp] = await Promise.all([
+                    p.waitForResponse((r) => /\/save\/?(\?|$)/.test(r.url()) && r.request().method() === 'POST', { timeout: 15000 }),
+                    p.click('li.save_btn'),
+                ]);
+                const saved = JSON.parse(db('page-redirect', pageId));
+                check('форма сохраняется с выбранным адресом', resp.ok() && saved === '/uploads/public/claude-pl.pdf', String(saved));
+            }
+            check('страница-ссылка: без ошибок JS и 404', !errors.length, errors.join(' | '));
+            await p.close();
+        } finally {
+            db('page-redirect-set', pageId, redirectSnap);
+        }
+    }
+
     await browser.close();
     console.log(`== editors failures: ${fail}`);
     process.exit(fail ? 1 : 0);

@@ -79,7 +79,8 @@ class LinkChecker {
     }
 
     /**
-     * Страницы, в текстах которых есть ссылки на страницу $pageId (по пути; язык ссылки не важен).
+     * Страницы, в текстах которых есть ссылки на страницу $pageId или которые сами — страницы-ссылки на неё (адрес
+     * переадресации), по пути; язык ссылки не важен.
      * @return string[] пути страниц-источников ('' — главная), без повторов
      */
     public function referrers(int $pageId): array {
@@ -93,27 +94,41 @@ class LinkChecker {
         $pathOf = [];
         foreach ($this->pages as $path => $p) { $pathOf[$p['id']] = $path; }
         $result = [];
-        $sources = $this->pdo->query(
-            'SELECT t.smap_id AS page, tt.tb_content AS html FROM share_textblocks t JOIN share_textblocks_translation tt ON tt.tb_id = t.tb_id
-             UNION ALL SELECT smap_id, smap_description_rtf FROM share_sitemap_translation WHERE smap_description_rtf IS NOT NULL'
-        );
-        foreach ($sources as $row) {
-            if ($row['page'] == $pageId || !preg_match_all('~\b(?:href|src)\s*=\s*(["\'])(.*?)\1~is', (string)$row['html'], $m)) {
-                continue;
-            }
-            foreach ($m[2] as $link) {
-                if ($this->pageKeyOf(html_entity_decode($link, ENT_QUOTES | ENT_HTML5, 'UTF-8')) === $target) {
-                    $result[$row['page'] === null ? '(общий блок)' : ($pathOf[$row['page']] ?? '?')] = true;
-                    break;
-                }
+        foreach ($this->links() as [$page, $link]) {
+            if ($page !== $pageId && $this->pageKeyOf($link) === $target) {
+                $result[$page === null ? '(общий блок)' : ($pathOf[$page] ?? '?')] = true;
             }
         }
         return array_keys($result);
     }
 
     /**
+     * Ссылки сайта по страницам-источникам: [страница (null — общий текстовый блок), адрес] — href и src текстов
+     * (блоки и описания страниц; сущности раскрыты) и адреса переадресации страниц-ссылок.
+     *
+     * @return \Generator<int, array{0: ?int, 1: string}>
+     */
+    private function links(): \Generator {
+        $sources = $this->pdo->query(
+            'SELECT t.smap_id AS page, tt.tb_content AS html FROM share_textblocks t JOIN share_textblocks_translation tt ON tt.tb_id = t.tb_id
+             UNION ALL SELECT smap_id, smap_description_rtf FROM share_sitemap_translation WHERE smap_description_rtf IS NOT NULL'
+        );
+        foreach ($sources as $row) {
+            if (preg_match_all('~\b(?:href|src)\s*=\s*(["\'])(.*?)\1~is', (string)$row['html'], $m)) {
+                foreach ($m[2] as $link) {
+                    yield [$row['page'] === null ? null : (int)$row['page'], html_entity_decode($link, ENT_QUOTES | ENT_HTML5, 'UTF-8')];
+                }
+            }
+        }
+        foreach ($this->pdo->query("SELECT smap_id, smap_redirect_url FROM share_sitemap WHERE smap_redirect_url <> ''") as $row) {
+            yield [(int)$row['smap_id'], (string)$row['smap_redirect_url']];
+        }
+    }
+
+    /**
      * Где используются файлы: путь файла или папки от корня сайта (как upl_path: uploads/…) → пути страниц, в текстах
-     * которых на него ссылка или картинка ('' — главная, «(общий блок)» — общий текстовый блок). Вид адреса любой:
+     * которых на него ссылка или картинка или которые сами — страницы-ссылки на него ('' — главная, «(общий блок)» —
+     * общий текстовый блок). Вид адреса любой:
      * полный адрес своего сайта, от корня, относительный, через ресайзер (resizer/wШ-hВ/…), с %-кодами; у папки — файлы
      * внутри. Неиспользуемые пути — пустой список.
      *
@@ -126,24 +141,15 @@ class LinkChecker {
         foreach ($this->pages as $path => $p) {
             $pathOf[$p['id']] = $path;
         }
-        $sources = $this->pdo->query(
-            'SELECT t.smap_id AS page, tt.tb_content AS html FROM share_textblocks t JOIN share_textblocks_translation tt ON tt.tb_id = t.tb_id
-             UNION ALL SELECT smap_id, smap_description_rtf FROM share_sitemap_translation WHERE smap_description_rtf IS NOT NULL'
-        );
-        foreach ($sources as $row) {
-            if (!preg_match_all('~\b(?:href|src)\s*=\s*(["\'])(.*?)\1~is', (string)$row['html'], $m)) {
+        foreach ($this->links() as [$pageId, $link]) {
+            if (($file = $this->fileOf($link)) === null) {
                 continue;
             }
-            $page = $row['page'] === null ? '(общий блок)' : ($pathOf[$row['page']] ?? '?');
-            foreach ($m[2] as $link) {
-                if (($file = $this->fileOf(html_entity_decode($link, ENT_QUOTES | ENT_HTML5, 'UTF-8'))) === null) {
-                    continue;
-                }
-                foreach ($paths as $path) {
-                    $path = trim($path, '/');
-                    if (($file === $path || str_starts_with($file, $path . '/')) && !in_array($page, $result[$path] ?? [], true)) {
-                        $result[$path][] = $page;
-                    }
+            $page = $pageId === null ? '(общий блок)' : ($pathOf[$pageId] ?? '?');
+            foreach ($paths as $path) {
+                $path = trim($path, '/');
+                if (($file === $path || str_starts_with($file, $path . '/')) && !in_array($page, $result[$path] ?? [], true)) {
+                    $result[$path][] = $page;
                 }
             }
         }

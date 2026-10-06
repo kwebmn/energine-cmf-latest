@@ -50,6 +50,13 @@ switch ($cmd) {
     case 'page-rtf':
         q('UPDATE share_sitemap_translation SET smap_description_rtf = ? WHERE smap_id = ?', [json_decode($argv[3]), (int)$argv[2]]);
         break;
+    case 'page-redirect':
+        // адрес переадресации страницы (страница-ссылка) — JSON: null или строка
+        echo json_encode(scalar('SELECT smap_redirect_url FROM share_sitemap WHERE smap_id = ?', [(int)$argv[2]]), JSON_UNESCAPED_UNICODE);
+        break;
+    case 'page-redirect-set':
+        q('UPDATE share_sitemap SET smap_redirect_url = ? WHERE smap_id = ?', [json_decode($argv[3], true), (int)$argv[2]]);
+        break;
     case 'tb-home':
         echo scalar("SELECT tb_id FROM share_textblocks WHERE smap_id = " . TEXT_PAGE . " AND tb_num = '1'");
         break;

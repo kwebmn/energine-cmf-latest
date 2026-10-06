@@ -2,8 +2,9 @@
 // Используемый файл не удаляется молча (идея xsight): удаление из репозитория файла, на который ссылается текст страницы
 // (любой вид адреса, в том числе через ресайзер; у папки — файлы внутри), — вопрос со списком страниц
 // ({result: true, mode: 'confirm', confirm}), ничего не удалено; повтор с ?confirm=1 удаляет; неиспользуемый файл
-// удаляется сразу, как прежде. Стенд: папка uploads/public/claude-fg (записи репозитория и файлы), страница claude-fg
-// с текстом; всё удаляется в конце.
+// удаляется сразу, как прежде. Файл, на который ведёт страница-ссылка (адрес переадресации), — тоже используемый.
+// Стенд: папка uploads/public/claude-fg (записи репозитория и файлы), страница claude-fg с текстом, страница-ссылка
+// claude-fg-link на linked.pdf; всё удаляется в конце.
 require __DIR__ . '/testlib.php';
 require ROOT . '/vendor/autoload.php';
 
@@ -30,7 +31,7 @@ $exists = fn(string $name) => is_file("$DIR/$name") && (int)scalar('SELECT COUNT
 
 @mkdir($DIR, 0755, true);
 chown($DIR, SITE_USER);
-foreach (['used.pdf', 'pic.jpg', 'free.pdf', 'free2.pdf', 'with space.pdf'] as $f) {
+foreach (['used.pdf', 'pic.jpg', 'free.pdf', 'free2.pdf', 'with space.pdf', 'linked.pdf'] as $f) {
     file_put_contents("$DIR/$f", "claude\n");
     chmod("$DIR/$f", 0644);
     chown("$DIR/$f", SITE_USER); // удаляет сайт: файлы и каталог — владельца площадки
@@ -39,11 +40,13 @@ login();
 try {
     $folder = addUpload($REPO, $REL, 'folder');
     $ids = [];
-    foreach (['used.pdf' => 'file', 'pic.jpg' => 'image', 'free.pdf' => 'file', 'free2.pdf' => 'file', 'with space.pdf' => 'file'] as $f => $t) {
+    foreach (['used.pdf' => 'file', 'pic.jpg' => 'image', 'free.pdf' => 'file', 'free2.pdf' => 'file', 'with space.pdf' => 'file',
+                 'linked.pdf' => 'file'] as $f => $t) {
         $ids[$f] = addUpload($folder, "$REL/$f", $t);
     }
     $page = savePage(null, $ROOT, 'claude-fg');
-    if (!check('стенд: папка с файлами и страница с текстом', $page && count(array_filter($ids)) === 5)) {
+    $pageLink = savePage(null, $ROOT, 'claude-fg-link', ['redirect' => "/$REL/linked.pdf"]);
+    if (!check('стенд: папка с файлами, страница с текстом, страница-ссылка на файл', $page && $pageLink && count(array_filter($ids)) === 6)) {
         throw new RuntimeException('стенд не создан');
     }
     q('INSERT INTO share_textblocks (smap_id, tb_num) VALUES (?, ?)', [$page, '1']);
@@ -61,6 +64,8 @@ try {
         check('fileReferrers: относительный адрес с %20', in_array('claude-fg/', $refs["$REL/with space.pdf"] ?? [], true));
         check('fileReferrers: неиспользуемый файл — нет страниц', empty($refs["$REL/free.pdf"]));
         check('fileReferrers: папка — по файлам внутри', in_array('claude-fg/', $refs[$REL] ?? [], true));
+        check('fileReferrers: страница-ссылка на файл (адрес переадресации)', in_array('claude-fg-link/', $lc->fileReferrers(["$REL/linked.pdf"])["$REL/linked.pdf"] ?? [], true),
+            json_encode($lc->fileReferrers(["$REL/linked.pdf"]), JSON_UNESCAPED_UNICODE));
         pdo()->beginTransaction();
         try {
             q('UPDATE share_textblocks_translation SET tb_content = ? WHERE tb_id = ? AND lang_id = 1', ['<p><a href="/' . "$REL/free.pdf" . '?v=2#p">от корня</a></p>', $tb]);
@@ -85,6 +90,9 @@ try {
     [$c, $j] = del($ids['pic.jpg'] . ',' . $ids['free2.pdf']);
     check('выделение с используемым файлом — вопрос, ничего не удалено', ($j['mode'] ?? '') === 'confirm' && $exists('pic.jpg') && $exists('free2.pdf'),
         json_encode($j, JSON_UNESCAPED_UNICODE));
+    [$c, $j] = del((string)$ids['linked.pdf']);
+    check('файл, на который ведёт страница-ссылка: вопрос с её адресом, файл на месте', ($j['mode'] ?? '') === 'confirm'
+        && str_contains((string)($j['confirm'] ?? ''), 'claude-fg-link') && $exists('linked.pdf'), json_encode($j, JSON_UNESCAPED_UNICODE));
     [$c, $j] = del((string)$folder);
     check('папка с используемым файлом внутри — вопрос, папка на месте', ($j['mode'] ?? '') === 'confirm' && is_dir($DIR)
         && (int)scalar('SELECT COUNT(*) FROM share_uploads WHERE upl_id = ?', [$folder]) === 1, json_encode($j, JSON_UNESCAPED_UNICODE));
@@ -92,7 +100,7 @@ try {
     echo "  ({$e->getMessage()})\n";
 } finally {
     q("DELETE FROM share_uploads WHERE upl_path LIKE 'uploads/public/claude-fg%'");
-    q("DELETE FROM share_sitemap WHERE smap_segment = 'claude-fg'");
+    q("DELETE FROM share_sitemap WHERE smap_segment IN ('claude-fg', 'claude-fg-link')");
     $st = pdo()->prepare('UPDATE share_sitemap SET smap_order_num = ? WHERE smap_id = ?');
     foreach ($order as $o) {
         $st->execute([$o['smap_order_num'], $o['smap_id']]);

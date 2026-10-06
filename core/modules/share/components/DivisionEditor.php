@@ -348,7 +348,8 @@ class DivisionEditor extends Grid implements SampleDivisionEditor {
     protected function prepare() {
         parent::prepare();
         if (in_array($this->getState(), ['add', 'edit'])) {
-            $this->addTranslation('ERR_NO_DIV_NAME');
+            // кнопки выбора цели у адреса переадресации (divisionEditor.xslt)
+            $this->addTranslation('ERR_NO_DIV_NAME', 'BTN_PICK_PAGE', 'BTN_PICK_FILE');
             $this->getDataDescription()->getFieldDescriptionByName('smap_pid')
                 ->setProperty('base', E()->getSiteManager()->getCurrentSite()->base);
         }

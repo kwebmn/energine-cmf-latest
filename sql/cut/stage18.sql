@@ -16,15 +16,29 @@ INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_va
       FROM `share_lang_tags` t JOIN `share_languages` l
      WHERE t.`ltag_name` IN ('TXT_BROKEN_LINK_PAGE', 'TXT_BROKEN_LINK_FILE');
 
--- 2. Используемый файл не удаляется молча: вопрос при удалении файла (папки), на который ссылаются тексты страниц
---    (FileRepository::delete, LinkChecker::fileReferrers); после текста — список страниц.
+-- 2. Используемый файл не удаляется молча: вопрос при удалении файла (папки), на который ссылаются тексты страниц или
+--    страницы-ссылки (FileRepository::delete, LinkChecker::fileReferrers); после текста — список страниц. Вопрос при
+--    удалении страницы (MSG_DIV_LINKED, stage14) теперь называет и страницы-ссылки: текст по умолчанию заменяется,
+--    исправленный владельцем остаётся (так же — первый текст MSG_FILE_LINKED, «в текстах страниц»).
 INSERT IGNORE INTO `share_lang_tags` (`ltag_name`) VALUES ('MSG_FILE_LINKED');
 INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`)
     SELECT t.`ltag_id`, l.`lang_id`, IF(l.`lang_abbr` = 'ua',
-        'Цей файл використовується в текстах сторінок — посилання і картинки там стануть битими. Все одно видалити? Сторінки:',
-        'Этот файл используется в текстах страниц — ссылки и картинки там станут битыми. Удалить всё равно? Страницы:')
+        'Цей файл використовується на сторінках сайту (у текстах або як адреса сторінки-посилання) — посилання і картинки на нього стануть битими. Все одно видалити? Сторінки:',
+        'Этот файл используется на страницах сайта (в текстах или как адрес страницы-ссылки) — ссылки и картинки на него станут битыми. Удалить всё равно? Страницы:')
       FROM `share_lang_tags` t JOIN `share_languages` l
      WHERE t.`ltag_name` = 'MSG_FILE_LINKED';
+UPDATE `share_lang_tags_translation` tr JOIN `share_lang_tags` t ON t.`ltag_id` = tr.`ltag_id`
+    SET tr.`ltag_value_rtf` = CASE tr.`ltag_value_rtf`
+        WHEN 'На цю сторінку посилаються тексти інших сторінок — посилання стануть битими. Все одно видалити? Сторінки з посиланнями:'
+            THEN 'На цю сторінку посилаються інші сторінки (тексти або сторінки-посилання) — посилання стануть битими. Все одно видалити? Сторінки з посиланнями:'
+        WHEN 'На эту страницу ссылаются тексты других страниц — ссылки станут битыми. Удалить всё равно? Страницы со ссылками:'
+            THEN 'На эту страницу ссылаются другие страницы (тексты или страницы-ссылки) — ссылки станут битыми. Удалить всё равно? Страницы со ссылками:'
+        WHEN 'Цей файл використовується в текстах сторінок — посилання і картинки там стануть битими. Все одно видалити? Сторінки:'
+            THEN 'Цей файл використовується на сторінках сайту (у текстах або як адреса сторінки-посилання) — посилання і картинки на нього стануть битими. Все одно видалити? Сторінки:'
+        WHEN 'Этот файл используется в текстах страниц — ссылки и картинки там станут битыми. Удалить всё равно? Страницы:'
+            THEN 'Этот файл используется на страницах сайта (в текстах или как адрес страницы-ссылки) — ссылки и картинки на него станут битыми. Удалить всё равно? Страницы:'
+        ELSE tr.`ltag_value_rtf` END
+  WHERE t.`ltag_name` IN ('MSG_DIV_LINKED', 'MSG_FILE_LINKED');
 
 -- 3. Шаблон новой страницы: подсказка «что это за страница» под списком шаблонов (DivisionEditor::loadTemplateData —
 --    атрибут data-hint варианта, DivForm — строка .e-template-hint).
@@ -57,3 +71,13 @@ INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_va
       FROM `share_lang_tags` t JOIN `share_languages` l
      WHERE t.`ltag_name` IN ('HINT_CONTENT_LANDING', 'HINT_CONTENT_SERVICE', 'HINT_CONTENT_CONTACTS', 'HINT_CONTENT_TEXTBLOCK',
          'HINT_CONTENT_CHILDS', 'HINT_CONTENT_MAP', 'HINT_CONTENT_MAIN');
+
+-- 4. Страница-ссылка: кнопки выбора цели у поля «адрес переадресации» формы раздела (divisionEditor.xslt, DivForm).
+INSERT IGNORE INTO `share_lang_tags` (`ltag_name`) VALUES ('BTN_PICK_PAGE'), ('BTN_PICK_FILE');
+INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`)
+    SELECT t.`ltag_id`, l.`lang_id`, CASE t.`ltag_name`
+        WHEN 'BTN_PICK_PAGE' THEN IF(l.`lang_abbr` = 'ua', 'Сторінка…', 'Страница…')
+        WHEN 'BTN_PICK_FILE' THEN 'Файл…'
+        END
+      FROM `share_lang_tags` t JOIN `share_languages` l
+     WHERE t.`ltag_name` IN ('BTN_PICK_PAGE', 'BTN_PICK_FILE');

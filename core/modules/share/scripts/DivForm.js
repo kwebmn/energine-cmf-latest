@@ -15,6 +15,7 @@
 
 import {Energine} from 'Energine';
 import {Form} from 'Form';
+import {ModalBox} from 'ModalBox';
 
 /**
  * Форма раздела: выбор родителя (Form.Label), шаблон содержимого задаёт сегмент и макет, сброс изменённого шаблона,
@@ -63,6 +64,57 @@ export class DivForm extends Form {
             }
             this.clearContentXML();
         });
+
+        // страница-ссылка: цель переадресации — страница сайта из дерева или файл из библиотеки
+        const pickPage = this.element.querySelector('button.pick-redirect-page'),
+            pickFile = this.element.querySelector('button.pick-redirect-file');
+        if (pickPage) {
+            pickPage.addEventListener('click', () => this.pickRedirectPage());
+        }
+        if (pickFile) {
+            pickFile.addEventListener('click', () => this.pickRedirectFile());
+        }
+    }
+
+    /**
+     * «Страница…» у адреса переадресации: окно дерева разделов; выбранная страница — адрес от корня сайта
+     * («/info/»; поле общее для всех языков — без языка). Окно без выбора поле не меняет.
+     */
+    pickRedirectPage() {
+        ModalBox.open({
+            url: this.singlePath + 'page-tree/list/',
+            onClose: (page) => {
+                if (page && typeof page.smap_segment === 'string') {
+                    this.setRedirectUrl('/' + page.smap_segment.replace(/^\/+/, ''));
+                }
+            }
+        });
+    }
+
+    /**
+     * «Файл…» у адреса переадресации: библиотека файлов; выбранный файл — его адрес от корня сайта («/uploads/…»).
+     * Окно без выбора поле не меняет.
+     */
+    pickRedirectFile() {
+        ModalBox.open({
+            url: this.singlePath + 'file-library/',
+            onClose: (file) => {
+                if (file && file.upl_path) {
+                    this.setRedirectUrl('/' + String(file.upl_path).replace(/^\/+/, ''));
+                }
+            }
+        });
+    }
+
+    /**
+     * @param {string} url
+     */
+    setRedirectUrl(url) {
+        const input = /** @type {HTMLInputElement|null} */ (this.element.querySelector('#smap_redirect_url'));
+        if (input) {
+            input.value = url;
+            input.dispatchEvent(new Event('change', {bubbles: true}));
+        }
     }
 
     /**

@@ -182,6 +182,20 @@
     </xsl:template>
 
 
+    <!-- адрес переадресации (страница-ссылка): поле и выбор цели — страница сайта из дерева или файл из библиотеки
+         (DivForm.pickRedirectPage, pickRedirectFile); адрес можно и вписать -->
+    <xsl:template match="field[@name='smap_redirect_url'][@mode='2'][ancestor::component[@sample='DivisionEditor' and @type='form']]" mode="field_input">
+        <div class="with_append">
+            <xsl:call-template name="field-input">
+                <xsl:with-param name="class" select="'text inp_string'"/>
+            </xsl:call-template>
+            <div class="appended_block">
+                <button type="button" class="pick-redirect-page"><xsl:value-of select="$TRANSLATION[@const='BTN_PICK_PAGE']"/></button>
+                <button type="button" class="pick-redirect-file"><xsl:value-of select="$TRANSLATION[@const='BTN_PICK_FILE']"/></button>
+            </div>
+        </div>
+    </xsl:template>
+
     <xsl:template match="record[parent::recordset[parent::component[@sample='DivisionEditor'][@type='list']]]"/>
     <!-- /компонент DivisionEditor -->
 
