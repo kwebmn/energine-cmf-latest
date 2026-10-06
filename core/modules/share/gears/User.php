@@ -267,7 +267,8 @@ class User extends Primitive {
         $password = '';
         $max = strlen($chars) - 1; // $max = count($chars) - 1;
         for ($i = 0; $i < $length; $i++) {
-            $password .= $chars[mt_rand(0, $max)];
+            // криптостойкий генератор: случайный пароль регистрации не должен угадываться
+            $password .= $chars[random_int(0, $max)];
         }
         return $password;
     }

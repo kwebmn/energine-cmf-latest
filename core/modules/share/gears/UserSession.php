@@ -150,8 +150,10 @@ final class UserSession implements \SessionHandlerInterface {
      * @throws SystemException
      */
     public function start($UID = NULL) {
+        // сессия уже была открыта (cookie пришла до входа) — при смене пользователя ей нужен новый номер
+        $existing = $this->init()->isStarted;
         //if session not started
-        if (!$this->init()->isStarted) {
+        if (!$existing) {
             //Inserts session info into DB
             $data['session_created'] = $data['session_last_impression'] = time();
             $data['session_expires'] = $data['session_last_impression'] + $this->lifespan;
@@ -167,9 +169,34 @@ final class UserSession implements \SessionHandlerInterface {
             // u_id строки сессии записывает write(): по нему закрываются сессии пользователя при смене пароля
             // (раньше колонка оставалась пустой)
             $this->UID = $UID;
+            // вход в уже открытой сессии — новый номер: номер, известный до входа (например, подложенный чужой
+            // cookie), не становится номером сессии вошедшего (фиксация сессии)
+            if ($existing && $UID) {
+                $this->renew();
+            }
         }
 
         return $this;
+    }
+
+    /**
+     * Новый номер открытой сессии: данные записываются под прежним номером, строка получает новый, сессия
+     * поднимается с ним — PHP отдаёт cookie с новым номером; прежний номер больше ни к чему не ведёт.
+     */
+    private function renew(): void {
+        session_write_close();
+        $new = self::createIdentifier();
+        $this->dbh->modify(QAL::UPDATE, self::$tableName, ['session_native_id' => $new], ['session_native_id' => $this->phpSessId]);
+        $this->phpSessId = $new;
+        session_id($new);
+        session_start();
+        // прежняя cookie могла быть только для этого хоста (без Domain): рядом с новой она уходила бы первой, и вход
+        // выглядел бы несостоявшимся — такую браузер удаляет. После session_start: он вычищает прежние заголовки своей
+        // cookie. У сайта без Domain (порт, IP) новая cookie и так заменяет прежнюю
+        if (E()->getSiteManager()->getCurrentSite()->cookieDomain) {
+            setcookie(self::DEFAULT_SESSION_NAME, '', ['expires' => 1, 'path' => '/', 'httponly' => true, 'samesite' => 'Lax',
+                'secure' => E()->getRequest()->getURI()->getScheme() == 'https']);
+        }
     }
 
 
