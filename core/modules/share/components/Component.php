@@ -280,10 +280,8 @@ class Component extends Primitive implements IBlock {
                 }
             }
 
-        } // если имя действия указано в POST-запросе - используем его
-        elseif (isset($_POST[$this->getName()]['state'])) {
-            $this->state = $_POST[$this->getName()]['state'];
         }
+        // состояние из POST (имя[state]) не принимается: интерфейс его не шлёт, а чужое имя роняло страницу
 
         // устанавливаем права на действие из конфигурации, если определены
         if (!$this->getConfig()->isEmpty()) {

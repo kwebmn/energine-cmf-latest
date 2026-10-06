@@ -702,11 +702,30 @@ class DBDataSet extends DataSet {
         if (!$this->previousState) {
             if (!isset($_POST['componentAction'])) {
                 return self::DEFAULT_STATE_NAME;
-            } else {
-                $this->previousState = $_POST['componentAction'];
             }
+            $this->previousState = $this->formState((string)$_POST['componentAction']);
         }
 
         return $this->previousState;
+    }
+
+    /**
+     * Форма, из которой пришло сохранение, — решает сервер, componentAction из запроса — лишь подсказка: «правка»
+     * или «добавление» — по ключу записи в форме (есть — правка), если такое состояние есть в конфиге; другое имя —
+     * только состояние конфига со своими полями; иначе — состояние по умолчанию.
+     */
+    private function formState(string $claimed): string {
+        if (!preg_match('~^[A-Za-z][A-Za-z0-9_]*$~', $claimed)) {
+            return self::DEFAULT_STATE_NAME;
+        }
+        if (in_array($claimed, ['add', 'edit'], true)) {
+            $pk = $this->getPK();
+            $derived = ($pk && !empty($_POST[$this->getTableName()][$pk])) ? 'edit' : 'add';
+            if ($this->getConfig()->getStateConfig($derived)) {
+                return $derived;
+            }
+        }
+        $state = $this->getConfig()->getStateConfig($claimed);
+        return ($state && isset($state->fields)) ? $claimed : self::DEFAULT_STATE_NAME;
     }
 }

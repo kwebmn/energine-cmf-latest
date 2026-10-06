@@ -153,41 +153,44 @@ class Saver extends Primitive {
      * @todo возможность передачи в объект callback функции для пользовательской валидации
      */
     public function validate() {
-        $result = false;
-
         if (!$this->getData() || !$this->getDataDescription()) {
             throw new SystemException('ERR_DEV_BAD_DATA', SystemException::ERR_DEVELOPER);
         }
 
+        // ошибки — все сразу, а не до первой; необязательное поле проверяется (длина, шаблон), когда в нём что-то есть
+        $this->errors = [];
         foreach ($this->getDataDescription() as $fieldName => $fieldDescription) {
             $fieldData = $this->getData()->getFieldByName($fieldName);
             if ($fieldDescription->getType() == FieldDescription::FIELD_TYPE_BOOL ||
                 $fieldDescription->getType() == FieldDescription::FIELD_TYPE_PHONE ||
-                //$fieldDescription->getType() == FieldDescription::FIELD_TYPE_PFILE ||
                 $fieldDescription->getType() == FieldDescription::FIELD_TYPE_FILE ||
                 $fieldName == 'lang_id' ||
                 !is_null($fieldDescription->getPropertyValue('customField'))
-                || $fieldDescription->getPropertyValue('nullable')
             ) {
                 continue;
-            } // если нет данных в POST-запросе для какого-либо из полей
-            elseif ($fieldData == false && $fieldName != 'lang_id') {
-                $this->addError($fieldName);
-                $result = false;
-                break;
-            } else {
-                for ($i = 0; $i < $fieldData->getRowCount(); $i++) {
-                    if (!$fieldDescription->validate($fieldData->getRowData($i))) {
-                        $this->addError($fieldName);
-                        $result = false;
-                        break 2;
-                    }
+            }
+            $nullable = (bool)$fieldDescription->getPropertyValue('nullable');
+            if ($fieldData == false) {
+                // нет данных в POST-запросе: ошибка только у обязательного поля
+                if (!$nullable) {
+                    $this->addError($fieldName);
                 }
-                $result = true;
+                continue;
+            }
+            for ($i = 0; $i < $fieldData->getRowCount(); $i++) {
+                $value = $fieldData->getRowData($i);
+                // необязательное: пустое не проверяется; набор значений (множественный выбор) — как прежде, без проверки
+                if ($nullable && ($value === null || $value === '' || is_array($value))) {
+                    continue;
+                }
+                if (!$fieldDescription->validate($value)) {
+                    $this->addError($fieldName);
+                    break;
+                }
             }
         }
 
-        return $result;
+        return !$this->errors;
     }
 
     /**
