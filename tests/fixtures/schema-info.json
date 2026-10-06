@@ -365,6 +365,132 @@
             "tableName": "share_lang_tags_translation"
         }
     },
+    "share_search_index": {
+        "smap_id": {
+            "nullable": false,
+            "length": 10,
+            "default": "",
+            "key": {
+                "tableName": "share_sitemap",
+                "fieldName": "smap_id",
+                "constraint": "share_search_index_ibfk_1"
+            },
+            "type": "INT",
+            "index": "PRI",
+            "options": null,
+            "tableName": "share_search_index"
+        },
+        "lang_id": {
+            "nullable": false,
+            "length": 10,
+            "default": "",
+            "key": {
+                "tableName": "share_languages",
+                "fieldName": "lang_id",
+                "constraint": "share_search_index_ibfk_2"
+            },
+            "type": "INT",
+            "index": "PRI",
+            "options": null,
+            "tableName": "share_search_index"
+        },
+        "title": {
+            "nullable": false,
+            "length": 250,
+            "default": "",
+            "key": false,
+            "type": "VARCHAR",
+            "index": false,
+            "options": null,
+            "tableName": "share_search_index"
+        },
+        "body": {
+            "nullable": false,
+            "length": 0,
+            "default": "",
+            "key": false,
+            "type": "TEXT",
+            "index": false,
+            "options": null,
+            "tableName": "share_search_index"
+        },
+        "title_stems": {
+            "nullable": false,
+            "length": 0,
+            "default": "",
+            "key": false,
+            "type": "TEXT",
+            "index": "MUL",
+            "options": null,
+            "tableName": "share_search_index"
+        },
+        "body_stems": {
+            "nullable": false,
+            "length": 0,
+            "default": "",
+            "key": false,
+            "type": "TEXT",
+            "index": "MUL",
+            "options": null,
+            "tableName": "share_search_index"
+        }
+    },
+    "share_search_log": {
+        "log_query": {
+            "nullable": false,
+            "length": 200,
+            "default": "",
+            "key": true,
+            "type": "VARCHAR",
+            "index": "PRI",
+            "options": null,
+            "tableName": "share_search_log"
+        },
+        "lang_id": {
+            "nullable": false,
+            "length": 10,
+            "default": "",
+            "key": {
+                "tableName": "share_languages",
+                "fieldName": "lang_id",
+                "constraint": "share_search_log_ibfk_1"
+            },
+            "type": "INT",
+            "index": "PRI",
+            "options": null,
+            "tableName": "share_search_log"
+        },
+        "log_count": {
+            "nullable": false,
+            "length": 10,
+            "default": "1",
+            "key": false,
+            "type": "INT",
+            "index": false,
+            "options": null,
+            "tableName": "share_search_log"
+        },
+        "log_results": {
+            "nullable": false,
+            "length": 10,
+            "default": "0",
+            "key": false,
+            "type": "INT",
+            "index": false,
+            "options": null,
+            "tableName": "share_search_log"
+        },
+        "log_last": {
+            "nullable": false,
+            "length": 0,
+            "default": "",
+            "key": false,
+            "type": "DATETIME",
+            "index": "MUL",
+            "options": null,
+            "tableName": "share_search_log"
+        }
+    },
     "share_session": {
         "session_id": {
             "nullable": false,

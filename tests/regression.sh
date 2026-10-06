@@ -69,6 +69,7 @@ suite error-status php8.5 error-status.php
 suite html-cleanup php8.5 html-cleanup.php
 suite session-fixation php8.5 session-fixation.php
 suite form-state php8.5 form-state.php
+suite search php8.5 search.php
 
 suite mail php8.5 smoke-mail.php
 suite antispam php8.5 smoke-antispam.php

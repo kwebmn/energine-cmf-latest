@@ -342,7 +342,36 @@ final class Setup {
                     . 'Исправьте причину и запустите от владельца площадки: php web/index.php setup linker');
             }
         }
+        // индекс поиска по сайту (sql/cut/stage20.sql): установка без него — поиск пуст до первой правки
+        $this->config = include $configFile;
+        $this->indexAfter('установка');
         $this->text('Готово: ', $address['scheme'], '://', $address['domain'], $address['root']);
+    }
+
+    /**
+     * Индекс поиска по сайту заново (SearchIndex::all) — после установки, переноса базы, правки шаблонов и текстов
+     * в обход сайта:
+     * @code
+     * php web/index.php setup reindex
+     * @endcode
+     */
+    private function reindexAction() {
+        $this->title('Индекс поиска по сайту');
+        $this->checkDBConnection();
+        $n = (new \Energine\share\gears\SearchIndex($this->dbConnect))->all();
+        $this->text('В индексе поиска страниц (по языкам): ', $n);
+    }
+
+    /** индекс после установки или демо: сбой — не отказ (сайт готов), а подсказка запустить setup reindex */
+    private function indexAfter(string $what): void {
+        try {
+            $this->checkDBConnection();
+            $n = (new \Energine\share\gears\SearchIndex($this->dbConnect))->all();
+            $this->text('Индекс поиска: страниц (по языкам) ', $n);
+        } catch (\Throwable $e) {
+            $this->text($what, ' готова, но индекс поиска не построен: ', $e->getMessage(), PHP_EOL,
+                'Запустите от владельца площадки: php web/index.php setup reindex');
+        }
     }
 
     /**
@@ -388,6 +417,7 @@ final class Setup {
             }
             $this->text('Файлы демо: ', $n, ' в ', HTDOCS_DIR, '/uploads');
         }
+        $this->indexAfter('демо');
     }
 
     /**
@@ -717,6 +747,15 @@ final class Setup {
         is_file(HTDOCS_DIR . '/robots.txt') && !is_link(HTDOCS_DIR . '/robots.txt')
             ? $say('FAIL', 'web/robots.txt — обычный файл: он перекрывает страницу robots.txt сайта (запрет индексации из настроек не действует); удалите его')
             : $say('OK', 'страницу robots.txt отдаёт сайт');
+
+        // поиск по сайту: индекс есть и не пуст (sql/cut/stage20.sql, setup reindex)
+        try {
+            $indexed = (int)$db->query('SELECT COUNT(*) FROM share_search_index')->fetchColumn();
+            $indexed > 0 ? $say('OK', 'поиск по сайту: в индексе ' . $indexed . ' страниц (по языкам)')
+                : $say('WARN', 'поиск по сайту: индекс пуст — php web/index.php setup reindex');
+        } catch (\Throwable) {
+            $say('WARN', 'поиск по сайту: таблицы индекса нет — примените sql/cut/stage20.sql и запустите setup reindex');
+        }
 
         // демо-пользователи
         $demo = $db->query("SELECT u_name FROM user_users WHERE u_name LIKE '%@example.com' OR u_name LIKE '%@example.org'")->fetchAll(\PDO::FETCH_COLUMN);

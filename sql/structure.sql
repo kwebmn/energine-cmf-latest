@@ -1,5 +1,5 @@
--- Energine Simple: схема базы — 23 таблицы и хранимые процедуры. Ставится в пустую базу установщиком:
--- php web/index.php setup install (docs/INSTALL.md). Получена из установки полной системы и sql/cut/stage1–19.sql.
+-- Energine Simple: схема базы — 25 таблиц и хранимые процедуры. Ставится в пустую базу установщиком:
+-- php web/index.php setup install (docs/INSTALL.md). Получена из установки полной системы и sql/cut/stage1–20.sql.
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -98,6 +98,38 @@ CREATE TABLE `share_languages` (
   `lang_order_num` int(10) unsigned NOT NULL DEFAULT 1,
   PRIMARY KEY (`lang_id`),
   KEY `idx_abbr` (`lang_abbr`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `share_search_index` (
+  `smap_id` int(10) unsigned NOT NULL,
+  `lang_id` int(10) unsigned NOT NULL,
+  `title` varchar(250) NOT NULL DEFAULT '',
+  `body` mediumtext NOT NULL,
+  `title_stems` text NOT NULL,
+  `body_stems` mediumtext NOT NULL,
+  PRIMARY KEY (`smap_id`,`lang_id`),
+  KEY `i_search_index_lang` (`lang_id`),
+  FULLTEXT KEY `ft_search_title` (`title_stems`),
+  FULLTEXT KEY `ft_search_body` (`body_stems`),
+  FULLTEXT KEY `ft_search_all` (`title_stems`,`body_stems`),
+  CONSTRAINT `share_search_index_ibfk_1` FOREIGN KEY (`smap_id`) REFERENCES `share_sitemap` (`smap_id`) ON DELETE CASCADE,
+  CONSTRAINT `share_search_index_ibfk_2` FOREIGN KEY (`lang_id`) REFERENCES `share_languages` (`lang_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `share_search_log` (
+  `log_query` varchar(200) NOT NULL,
+  `lang_id` int(10) unsigned NOT NULL,
+  `log_count` int(10) unsigned NOT NULL DEFAULT 1,
+  `log_results` int(10) unsigned NOT NULL DEFAULT 0,
+  `log_last` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`log_query`,`lang_id`),
+  KEY `i_search_log_last` (`log_last`),
+  KEY `share_search_log_ibfk_1` (`lang_id`),
+  CONSTRAINT `share_search_log_ibfk_1` FOREIGN KEY (`lang_id`) REFERENCES `share_languages` (`lang_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;

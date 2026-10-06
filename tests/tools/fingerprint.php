@@ -15,7 +15,7 @@ if ($socket = getenv('FP_SOCKET')) {
         [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
 }
 // журнал и сессии живут своей жизнью
-$skipTables = ['share_session', 'share_action_log', 'share_textblocks_history', 'share_sitemap_aliases']; // служебное: сессии, журнал, история правок текста, старые адреса страниц
+$skipTables = ['share_session', 'share_action_log', 'share_textblocks_history', 'share_sitemap_aliases', 'share_search_index', 'share_search_log']; // служебное: сессии, журнал, история правок текста, старые адреса страниц; индекс поиска (производный — строит setup reindex) и журнал поиска (пишут посетители)
 // даты демо-контента считаются от момента импорта; пароль администратора случайный;
 // телефон нормализуется при первом сохранении формы пользователя (smoke-roundtrip)
 $skipCols = ['vote_date', 'smap_last_mod', 'upl_publication_date', 'u_password', 'u_phone'];
