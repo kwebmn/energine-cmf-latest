@@ -87,9 +87,13 @@ try {
             linkAttrs($uaHome, MENU, '/claude-pl-ruonly/') !== null);
         check('второй язык, меню: внешний адрес — как есть, новая вкладка', $newTab(linkAttrs($uaHome, MENU, 'https://example.com/claude')));
         [$c, $loc] = redirectOf("/$abbr/claude-pl-int/");
-        check("второй язык: заход на страницу-ссылку — переадресация на /$abbr/info/", in_array($c, [301, 302]) && $loc === "/$abbr/info/", "HTTP $c → $loc");
+        check("второй язык: заход на страницу-ссылку — переадресация 302 на /$abbr/info/", $c == 302 && $loc === "/$abbr/info/", "HTTP $c → $loc");
         [$c, $loc] = redirectOf('/claude-pl-int/');
-        check('основной язык: заход на страницу-ссылку — переадресация на /info/', in_array($c, [301, 302]) && $loc === '/info/', "HTTP $c → $loc");
+        // 302 осознанно: цель владелец может сменить, а 301 браузер запомнил бы навсегда
+        check('основной язык: заход на страницу-ссылку — переадресация 302 на /info/', $c == 302 && $loc === '/info/', "HTTP $c → $loc");
+        $doc = (string)file_get_contents(ROOT . '/core/modules/share/gears/Document.php');
+        check("по коду: перед переадресацией страницы-ссылки нет вводящего в заблуждение setStatus('301')",
+            !preg_match("~setStatus\\('301'\\);\\s*(//[^\\n]*\\n\\s*)*E\\(\\)->getResponse\\(\\)->setRedirect\\(Response::pageLinkURL~", $doc));
     }
     [$c, $list] = http('/claude-pl/');
     check('список подразделов: внешний адрес — новая вкладка', $c == 200 && $newTab(linkAttrs($list, LIST_ITEMS, 'https://example.com/claude2')),

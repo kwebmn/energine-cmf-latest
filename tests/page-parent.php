@@ -63,6 +63,14 @@ try {
 } catch (RuntimeException $e) {
     echo "  ({$e->getMessage()})\n";
 } finally {
+    // 4. по коду — по HTTP не наблюдаемо без сбоя базы посреди записи: сохранение страницы — транзакция с откатом при
+    //    ошибке (иначе открытая транзакция до конца запроса), обмен номерами порядка — в одной транзакции
+    $src = (string)file_get_contents(ROOT . '/core/modules/share/components/DivisionEditor.php');
+    preg_match('~protected function save\(\).*?\n    }~s', $src, $save);
+    preg_match('~protected function changeOrder\(.*?\n    }~s', $src, $swap);
+    check('по коду: сохранение страницы — транзакция с откатом при ошибке', isset($save[0]) && str_contains($save[0], '->rollback()')
+        && str_contains($save[0], 'catch (\\Throwable'));
+    check('по коду: смена порядка — оба обновления в одной транзакции', isset($swap[0]) && str_contains($swap[0], '->transaction('));
     // петля (если осталась) — разорвать до удаления: каскад по кругу
     q("UPDATE share_sitemap SET smap_pid = ? WHERE smap_pid IS NOT NULL AND smap_segment IN ('claude-pp', 'claude-pp2')", [$ROOT]);
     q("DELETE FROM share_sitemap WHERE smap_pid = ? AND smap_segment IN ('claude-pp', 'claude-pp2')", [$ROOT]);

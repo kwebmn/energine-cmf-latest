@@ -364,43 +364,50 @@ class DivisionEditor extends Grid implements SampleDivisionEditor {
         );
         $this->setBuilder(new JSONCustomBuilder());
 
-        $transactionStarted = $this->dbh->beginTransaction();
+        // всё сохранение — одна транзакция: при ошибке (отказ проверки, цикл в дереве, сбой базы) откат, а не
+        // открытая транзакция до конца запроса
+        $this->dbh->beginTransaction();
+        try {
 
-        // флажки smap_meta_robots — набор (SET): снятые флажки браузер не отправляет. Если поле есть в форме
-        // (по конфигу её состояния), а в запросе его нет — пустой набор; формы без поля его не стирают
-        $table = $this->getTableName();
-        $formState = $this->getConfig()->getStateConfig($this->getPreviousState());
-        // (у главной поля нет вовсе — её флажки не трогаются)
-        if (isset($_POST[$table]) && is_array($_POST[$table]) && !isset($_POST[$table]['smap_meta_robots'])
-            && !empty($_POST[$table]['smap_pid']) && $formState && isset($formState->fields) && $formState->fields->xpath("field[@name='smap_meta_robots']")) {
-            $_POST[$table]['smap_meta_robots'] = [];
-        }
-
-        // прежние адреса страницы и её подразделов (сегмент или родитель изменились) — в share_sitemap_aliases,
-        // в той же транзакции: со старого адреса страница отвечает переадресацией 301 (DocumentController)
-        $aliases = new PageAliases(E()->getDB());
-        $pathsBefore = $aliases->paths();
-        $result = $this->saveData();
-        $aliases->remember($pathsBefore);
-        if (is_int($result)) {
-            $mode = 'insert';
-            $id = $result;
-            /*Тут пришлось пойти на извращаения для получения УРЛа страницы, поскольку новосозданная страница еще не присоединена к дереву*/
-            //$smapPID = simplifyDBResult($this->dbh->select('share_sitemap', 'smap_pid', array('smap_id'=>$id)), 'smap_pid', true);
-            $smapPID =
-                $this->getSaver()->getData()->getFieldByName('smap_pid')->getRowData(0);
-            $url = $_POST[$this->getTableName()]['smap_segment'] . '/';
-            if ($smapPID) {
-                $url = E()->getMap()->getURLByID($smapPID) . $url;
+            // флажки smap_meta_robots — набор (SET): снятые флажки браузер не отправляет. Если поле есть в форме
+            // (по конфигу её состояния), а в запросе его нет — пустой набор; формы без поля его не стирают
+            $table = $this->getTableName();
+            $formState = $this->getConfig()->getStateConfig($this->getPreviousState());
+            // (у главной поля нет вовсе — её флажки не трогаются)
+            if (isset($_POST[$table]) && is_array($_POST[$table]) && !isset($_POST[$table]['smap_meta_robots'])
+                && !empty($_POST[$table]['smap_pid']) && $formState && isset($formState->fields) && $formState->fields->xpath("field[@name='smap_meta_robots']")) {
+                $_POST[$table]['smap_meta_robots'] = [];
             }
-        } else {
-            $mode = 'update';
-            $id = $this->getFilter();
-            $id = $id['smap_id'];
-            $url = E()->getMap()->getURLByID($id);
-        }
 
-        $transactionStarted = !($this->dbh->commit());
+            // прежние адреса страницы и её подразделов (сегмент или родитель изменились) — в share_sitemap_aliases,
+            // в той же транзакции: со старого адреса страница отвечает переадресацией 301 (DocumentController)
+            $aliases = new PageAliases(E()->getDB());
+            $pathsBefore = $aliases->paths();
+            $result = $this->saveData();
+            $aliases->remember($pathsBefore);
+            if (is_int($result)) {
+                $mode = 'insert';
+                $id = $result;
+                /*Тут пришлось пойти на извращаения для получения УРЛа страницы, поскольку новосозданная страница еще не присоединена к дереву*/
+                //$smapPID = simplifyDBResult($this->dbh->select('share_sitemap', 'smap_pid', array('smap_id'=>$id)), 'smap_pid', true);
+                $smapPID =
+                    $this->getSaver()->getData()->getFieldByName('smap_pid')->getRowData(0);
+                $url = $_POST[$this->getTableName()]['smap_segment'] . '/';
+                if ($smapPID) {
+                    $url = E()->getMap()->getURLByID($smapPID) . $url;
+                }
+            } else {
+                $mode = 'update';
+                $id = $this->getFilter();
+                $id = $id['smap_id'];
+                $url = E()->getMap()->getURLByID($id);
+            }
+
+            $this->dbh->commit();
+        } catch (\Throwable $e) {
+            $this->dbh->rollback();
+            throw $e;
+        }
         if($this->logClass){
             $logger = new $this->logClass(get_class($this), $this->getName());
             $logger->write($this->getSaver()->getMode(), $this->getSaver()->getData()->asArray(true));
@@ -933,13 +940,16 @@ class DivisionEditor extends Grid implements SampleDivisionEditor {
         $data[current($keys)] = $result[next($keys)];
         $data[current($keys)] = $c;
 
-        foreach ($data as $id2 => $value) {
-            $order = $value['smap_order_num'];
-            $this->dbh->modify(QAL::UPDATE, $this->getTableName(), [$orderFieldName => $order], [$this->getPK() => $id2]);
-            if ($id2 != $id) {
-                $result = $id2;
+        // обмен номерами — два обновления в одной транзакции: сбой между ними не оставит двух страниц с одним номером
+        $this->dbh->transaction(function () use ($data, $orderFieldName, $id, &$result) {
+            foreach ($data as $id2 => $value) {
+                $order = $value['smap_order_num'];
+                $this->dbh->modify(QAL::UPDATE, $this->getTableName(), [$orderFieldName => $order], [$this->getPK() => $id2]);
+                if ($id2 != $id) {
+                    $result = $id2;
+                }
             }
-        }
+        });
         $b = new JSONCustomBuilder();
         $b->setProperties([
             'result' => true,
