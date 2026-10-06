@@ -1320,6 +1320,51 @@ const showTabOf = (page, selector) => page.evaluate((sel) => {
         }
     }
 
+    // 27. чистая вставка (надёжность 6, по образцу порта xSight): текст из Word и с чужих сайтов вставляется без их
+    //     стилей и классов (Jodit insert_clear_html); жирный и ссылка остаются. Форма не сохраняется
+    {
+        const p = await ctx.newPage();
+        const errors = watch(p);
+        await p.goto(BASE + `admin/structure/single/divEditor/${pageId}/edit/`, { waitUntil: 'networkidle' });
+        const descr = '#smap_description_rtf_1';
+        if (check('чистая вставка: у описания раздела редактор Jodit', await isJodit(p, descr))) {
+            await showTabOf(p, descr);
+            const html = '<p class="MsoNormal" style="color:red;mso-line-height-alt:12pt"><b>Жирный</b> '
+                + '<a href="https://example.com/claude-paste" style="color:blue">ссылка</a><o:p></o:p></p>';
+            await p.evaluate(([sel, h]) => {
+                const ed = Object.values(Jodit.instances).find((e) => e.element === document.querySelector(sel));
+                ed.value = '<p>claude-before</p>';
+                ed.s.focus();
+                ed.s.setCursorIn(ed.editor, false);
+                const dt = new DataTransfer();
+                dt.setData('text/html', h);
+                dt.setData('text/plain', 'Жирный ссылка');
+                ed.editor.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
+            }, [descr, html]);
+            await p.waitForTimeout(600);
+            const value = await p.evaluate((sel) => Object.values(Jodit.instances).find((e) => e.element === document.querySelector(sel)).value, descr);
+            check('чистая вставка из Word: без стилей, классов и <o:p>; жирный и ссылка на месте', !/style=|class=|o:p|mso-/i.test(value)
+                && /<(b|strong)>Жирный<\/(b|strong)>/.test(value) && value.includes('href="https://example.com/claude-paste"'), value.slice(0, 300));
+            // с обычного сайта (не Word): тоже без чужих стилей и классов
+            await p.evaluate(([sel, h]) => {
+                const ed = Object.values(Jodit.instances).find((e) => e.element === document.querySelector(sel));
+                ed.value = '<p>claude-before</p>';
+                ed.s.focus();
+                ed.s.setCursorIn(ed.editor, false);
+                const dt = new DataTransfer();
+                dt.setData('text/html', h);
+                dt.setData('text/plain', 'Сайт ссылка');
+                ed.editor.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
+            }, [descr, '<div class="article__lead" style="font-family:Georgia;color:#333"><strong>Сайт</strong> <a href="https://example.com/claude-site" class="link" style="color:red">ссылка</a></div>']);
+            await p.waitForTimeout(600);
+            const site = await p.evaluate((sel) => Object.values(Jodit.instances).find((e) => e.element === document.querySelector(sel)).value, descr);
+            check('чистая вставка с сайта: без чужих стилей и классов; жирный и ссылка на месте', !/style=|class=/i.test(site)
+                && /<(b|strong)>Сайт<\/(b|strong)>/.test(site) && site.includes('href="https://example.com/claude-site"'), site.slice(0, 300));
+        }
+        check('чистая вставка: без ошибок JS и 404', !errors.length, errors.join(' | '));
+        await p.close();
+    }
+
     await browser.close();
     console.log(`== editors failures: ${fail}`);
     process.exit(fail ? 1 : 0);

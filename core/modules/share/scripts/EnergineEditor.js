@@ -82,6 +82,12 @@ export const EnergineEditor = {
             showXPathInStatusbar: false,
             askBeforePasteHTML: false,
             askBeforePasteFromWord: false,
+            // вставка из Word и с чужих сайтов — без их стилей и классов (как в порте xSight): разметка страницы не
+            // плывёт от чужого оформления; жирный, курсив, списки, ссылки остаются. У Jodit 4 очистка Word — действие
+            // insert_as_text (cleanFromWord, HTML остаётся); insert_clear_html вставку из Word не чистит, а для обычной
+            // вставки insert_as_text экранировал бы весь HTML
+            defaultActionOnPaste: 'insert_clear_html',
+            defaultActionOnPasteFromWord: 'insert_as_text',
             disablePlugins: EnergineEditor.disabledPlugins,
             cleanHTML: EnergineEditor.cleanHTML,
             uploader: {insertImageAsBase64URI: false},
