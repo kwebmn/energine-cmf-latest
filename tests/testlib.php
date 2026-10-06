@@ -129,9 +129,8 @@ function savePage(?int $id, int $pid, string $segment, array $o = []): ?int {
             $f["share_sitemap_translation[$l][$k]"] = '';
         }
         $f["share_sitemap_translation[$l][smap_name]"] = $o['names'][$l] ?? 'Стенд ' . $segment;
-        if (!empty($o['disabled'][$l])) {
-            $f["share_sitemap_translation[$l][smap_is_disabled]"] = '1';
-        }
+        // как форма: скрытый 0 перед флажком на каждом языке (без него сервер получает пустое значение — ошибка 500)
+        $f["share_sitemap_translation[$l][smap_is_disabled]"] = empty($o['disabled'][$l]) ? '0' : '1';
     }
     [$c, $b] = http('/admin/structure/single/divEditor/save', $f, ['X-Request: JSON']);
     $j = json_decode($b, true);

@@ -36,6 +36,9 @@ final class Response extends Primitive {
      */
     private $statusLine;
 
+    /** код ответа (setStatus): страница ошибки знает его до сборки — переключатель языка по нему ведёт на главную */
+    private int $statusCode = 200;
+
     /**
      * Response header.
      * @var array $headers
@@ -92,12 +95,18 @@ final class Response extends Primitive {
      * @param string $reasonPhrase Reason phrase.
      */
     public function setStatus($statusCode, $reasonPhrase = null) {
+        $this->statusCode = (int)$statusCode;
         if (is_null($reasonPhrase)) {
             $reasonPhrase =
                 (isset($this->reasonPhrases[$statusCode]) ? $this->reasonPhrases[$statusCode] : '');
         }
         $this->statusLine =
             ((isset($_SERVER['SERVER_PROTOCOL'])) ? $_SERVER['SERVER_PROTOCOL'] : 'UNKNOWN') . " $statusCode $reasonPhrase";
+    }
+
+    /** код ответа, заданный setStatus (по умолчанию 200) */
+    public function getStatusCode(): int {
+        return $this->statusCode;
     }
 
     /**

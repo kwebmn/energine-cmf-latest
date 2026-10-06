@@ -47,6 +47,10 @@ class LangSwitcher extends DataSet {
         $lang = E()->getLanguage();
         $data = $lang->getLanguages();
         $result = [];
+        // ссылка на ту же страницу (с хвостом пути) — только на язык, где она открыта; иначе и на странице ошибки —
+        // на главную языка, а не на адрес, который там ответит 404
+        $available = $this->availableLanguages();
+        $path = E()->getRequest()->getPath(Request::PATH_WHOLE, true);
         // Language отдаёт языки «в подготовке» только редакторам — здесь они помечаются (lang_is_active = 0)
         foreach ($data as $langID => $langInfo) {
             $abbr = $langInfo['lang_abbr'];
@@ -61,9 +65,26 @@ class LangSwitcher extends DataSet {
                 $this->document->addTranslation('TXT_LANG_INACTIVE', $this);
             }
             $result[$langID]['lang_url'] = $result[$langID]['lang_abbr'] . (($result[$langID]['lang_abbr']) ? '/' : '') .
-                E()->getRequest()->getPath(Request::PATH_WHOLE, true);
+                (in_array((int)$langID, $available, true) ? $path : '');
         }
         return $result;
+    }
+
+    /**
+     * Языки, на которых открыта текущая страница: ответ не ошибка (2xx), сама страница и все её родители не выключены
+     * на языке (один запрос). На странице ошибки (404, 403, 422…) — ни одного.
+     *
+     * @return int[]
+     */
+    private function availableLanguages(): array {
+        $status = E()->getResponse()->getStatusCode();
+        if ($status < 200 || $status >= 300 || !($id = (int)$this->document->getID())) {
+            return [];
+        }
+        $chain = array_merge([$id], array_map('intval', array_keys(E()->getMap()->getParents($id))));
+        return array_map('intval', $this->dbh->column(
+            'SELECT lang_id FROM share_sitemap_translation WHERE smap_id IN (' . implode(', ', array_fill(0, count($chain), '?')) . ')'
+            . ' AND smap_is_disabled = 0 GROUP BY lang_id HAVING COUNT(*) = ?', array_merge($chain, [count($chain)])));
     }
 
     /**
