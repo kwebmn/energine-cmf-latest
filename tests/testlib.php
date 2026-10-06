@@ -113,3 +113,36 @@ function singleTemplate($html, $contains = '') {
     foreach (array_unique($m[1]) as $s) if ($contains === '' || str_contains($s, $contains)) return $s;
     return null;
 }
+// раздел через форму раздела администратора (как редактор структуры), нужен вход администратора: добавить ($id = null)
+// или изменить; ответ — id раздела или null. $o: layout, content, redirect, menu ('0'/'1'), rights (группа → право; по
+// умолчанию администратор 3, гость 1, пользователь 1), names (язык → название), disabled (язык → 1 — выключена на языке)
+function savePage(?int $id, int $pid, string $segment, array $o = []): ?int {
+    $f = ['componentAction' => $id ? 'edit' : 'add', 'share_sitemap[smap_id]' => (string)$id, 'share_sitemap[smap_pid]' => $pid,
+        'share_sitemap[smap_layout]' => $o['layout'] ?? 'default.layout.xml', 'share_sitemap[smap_content]' => $o['content'] ?? 'textblock.content.xml',
+        'share_sitemap[smap_segment]' => $segment, 'share_sitemap[smap_redirect_url]' => $o['redirect'] ?? '',
+        'share_sitemap[smap_in_menu]' => $o['menu'] ?? '0'];
+    foreach ($o['rights'] ?? [1 => 3, 3 => 1, 4 => 1] as $g => $r) {
+        $f["right_id[$g]"] = $r;
+    }
+    foreach ([1, 2] as $l) {
+        foreach (['smap_title', 'smap_html_title', 'smap_meta_keywords', 'smap_meta_description', 'smap_description_rtf'] as $k) {
+            $f["share_sitemap_translation[$l][$k]"] = '';
+        }
+        $f["share_sitemap_translation[$l][smap_name]"] = $o['names'][$l] ?? 'Стенд ' . $segment;
+        if (!empty($o['disabled'][$l])) {
+            $f["share_sitemap_translation[$l][smap_is_disabled]"] = '1';
+        }
+    }
+    [$c, $b] = http('/admin/structure/single/divEditor/save', $f, ['X-Request: JSON']);
+    $j = json_decode($b, true);
+    if ($c != 200 || empty($j['result'])) {
+        echo "  (сохранение раздела $segment: HTTP $c " . substr($b, 0, 200) . ")\n";
+        return null;
+    }
+    return (int)scalar('SELECT smap_id FROM share_sitemap WHERE smap_pid = ? AND smap_segment = ?', [$pid, $segment]);
+}
+// удаление раздела через редактор структуры (подтверждение ссылок — сразу); true — раздела больше нет
+function deletePage(int $id): bool {
+    [$c, $b] = http('/admin/structure/single/divEditor/' . $id . '/delete/?confirm=1', '', ['X-Request: JSON']);
+    return $c == 200 && !empty(json_decode($b, true)['result']) && !(int)scalar('SELECT COUNT(*) FROM share_sitemap WHERE smap_id = ?', [$id]);
+}

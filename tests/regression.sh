@@ -59,6 +59,7 @@ suite registry php8.5 registry.php
 suite urls php8.5 urls.php
 suite page-aliases php8.5 page-aliases.php
 suite resizer php8.5 resizer.php
+suite text-links php8.5 text-links.php
 
 suite mail php8.5 smoke-mail.php
 suite antispam php8.5 smoke-antispam.php

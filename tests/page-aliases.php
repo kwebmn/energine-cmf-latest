@@ -12,7 +12,6 @@ use Energine\share\gears\Db;
 $ROOT = (int)scalar('SELECT smap_id FROM share_sitemap WHERE smap_pid IS NULL');
 $INFO = (int)scalar("SELECT smap_id FROM share_sitemap WHERE smap_pid = ? AND smap_segment = 'info'", [$ROOT]);
 $GUEST = (int)scalar('SELECT group_id FROM user_groups WHERE group_default = 1');
-$S = '/admin/structure/single/divEditor/';
 $base = rtrim(BASE, '/');
 $hasTable = (bool)scalar("SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'share_sitemap_aliases'");
 check('таблица share_sitemap_aliases есть', $hasTable);
@@ -39,30 +38,6 @@ function moved(string $label, string $from, string $to): void {
         $code .= " → $next";
     }
     check($label, $ok, "$code $loc");
-}
-// форма раздела (как в smoke-write.sh): добавить или изменить; ответ — id раздела
-function savePage(?int $id, int $pid, string $segment): ?int {
-    $f = ['componentAction' => $id ? 'edit' : 'add', 'share_sitemap[smap_id]' => (string)$id, 'share_sitemap[smap_pid]' => $pid,
-        'share_sitemap[smap_layout]' => 'default.layout.xml', 'share_sitemap[smap_content]' => 'textblock.content.xml',
-        'share_sitemap[smap_segment]' => $segment, 'share_sitemap[smap_redirect_url]' => '', 'share_sitemap[smap_in_menu]' => '0',
-        'right_id[1]' => 3, 'right_id[3]' => 1, 'right_id[4]' => 1];
-    foreach ([1, 2] as $l) {
-        foreach (['smap_title', 'smap_html_title', 'smap_meta_keywords', 'smap_meta_description', 'smap_description_rtf'] as $k) {
-            $f["share_sitemap_translation[$l][$k]"] = '';
-        }
-        $f["share_sitemap_translation[$l][smap_name]"] = 'Адрес ' . $segment;
-    }
-    [$c, $b] = http($GLOBALS['S'] . 'save', $f, ['X-Request: JSON']);
-    $j = json_decode($b, true);
-    if ($c != 200 || empty($j['result'])) {
-        echo "  (сохранение $segment: HTTP $c " . substr($b, 0, 200) . ")\n";
-        return null;
-    }
-    return (int)scalar('SELECT smap_id FROM share_sitemap WHERE smap_pid = ? AND smap_segment = ?', [$pid, $segment]);
-}
-function deletePage(int $id): bool {
-    [$c, $b] = http($GLOBALS['S'] . $id . '/delete/', '', ['X-Request: JSON']);
-    return $c == 200 && !empty(json_decode($b, true)['result']) && !(int)scalar('SELECT COUNT(*) FROM share_sitemap WHERE smap_id = ?', [$id]);
 }
 $aliasesOf = fn(array $ids) => $GLOBALS['hasTable'] && $ids ? (int)scalar('SELECT COUNT(*) FROM share_sitemap_aliases WHERE smap_id IN (' . implode(',', array_map('intval', $ids)) . ')') : 0;
 

@@ -253,6 +253,35 @@ final class Sitemap extends Primitive {
     }
 
     /**
+     * Страница по полному пути без языка (сегменты), если она есть в дереве посетителя (видна ему и включена на языке);
+     * иначе null. В отличие от getIDByURI запрос не меняет и хвост пути (параметры компонентов) не принимает: путь —
+     * ровно путь страницы. Пустой путь — главная.
+     *
+     * @param string[] $segments
+     */
+    public function findIDByPath(array $segments): ?int {
+        $id = $this->getDefault();
+        if (!$id || !$this->tree) {
+            return null;
+        }
+        foreach ($segments as $segment) {
+            $found = null;
+            foreach ($this->info as $pageID => $pageInfo) {
+                if ((string)$pageInfo['Segment'] === (string)$segment && (string)$pageInfo['Pid'] === (string)$id
+                    && $this->tree->getNodeById($pageID)) {
+                    $found = $pageID;
+                    break;
+                }
+            }
+            if ($found === null) {
+                return null;
+            }
+            $id = $found;
+        }
+        return $this->tree->getNodeById($id) ? (int)$id : null;
+    }
+
+    /**
      * Get page ID by his URL.
      *
      * @param array $segments URL.

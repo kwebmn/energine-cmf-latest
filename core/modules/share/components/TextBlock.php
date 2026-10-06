@@ -14,7 +14,7 @@ final class TextBlock;
  * @version 1.0.0
  */
 namespace Energine\share\components;
-use Energine\share\gears\DataDescription, Energine\share\gears\FieldDescription, Energine\share\gears\Data, Energine\share\gears\Field, Energine\share\gears\SystemException, Energine\share\gears\QAL, Energine\share\gears\TextHistory;
+use Energine\share\gears\DataDescription, Energine\share\gears\FieldDescription, Energine\share\gears\Data, Energine\share\gears\Field, Energine\share\gears\SystemException, Energine\share\gears\QAL, Energine\share\gears\TextHistory, Energine\share\gears\TextLinks;
 /**
  * Text block.
  *
@@ -155,6 +155,12 @@ class TextBlock extends DataSet implements SampleTextBlock{
             $this->content = $res['content'];
         } elseif ($this->getParam('text')) {
             $this->content = $this->getParam('text');
+        }
+        // битые ссылки текста (TextLinks): посетителю — текст без перехода на 404, администратору — пометка с причиной;
+        // в режиме правки текст не трогается — редактор сохранил бы изменения
+        if (!$this->isEditable && is_string($this->content) && $this->content !== '') {
+            $this->content = TextLinks::forRequest()->filter($this->content, $this->document->getRights() > ACCESS_EDIT,
+                ['page' => $this->translate('TXT_BROKEN_LINK_PAGE'), 'file' => $this->translate('TXT_BROKEN_LINK_FILE')]);
         }
 
         $this->setProperty('num', $this->getParam('num'));

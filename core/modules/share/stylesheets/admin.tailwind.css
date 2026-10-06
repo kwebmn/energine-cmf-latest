@@ -311,6 +311,9 @@ code { white-space: pre; }
 .nrgnEditor { outline: 1px dashed var(--a-color-danger); outline-offset: 2px; }
 .nrgnEditor:focus { outline: 2px dashed #1a7f37; }
 .nrgnEditor.nrgnEditorError { outline: 2px solid var(--a-color-danger); }
+/* битые ссылки и картинки в тексте (TextLinks): пометку видит только администратор вне режима правки, причина — в title */
+.e-broken-link { outline: 2px dashed var(--a-color-danger); outline-offset: 2px; cursor: help; }
+.e-broken-image { outline: 2px dashed var(--a-color-danger); outline-offset: 2px; min-width: 1.5rem; min-height: 1.5rem; }
 
 /* окно single (форма, грид в окне) */
 html:has(body.e-singlemode-layout) { height: 100%; }
