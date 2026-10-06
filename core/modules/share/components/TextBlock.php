@@ -147,17 +147,10 @@ class TextBlock extends DataSet implements SampleTextBlock{
             $this->setProperty('global', 'global');
         }
 
-        $res = $this->dbh->select(
-            'SELECT st.tb_id as id, stt.tb_content as content ' .
-            'FROM `share_textblocks`  st ' .
-            'LEFT JOIN share_textblocks_translation stt ON st.tb_id = stt.tb_id and lang_id = %s ' .
-            'WHERE smap_id ' . (($docID) ? ' = ' . $docID : ' IS NULL ') . ' AND tb_num = %s ',
-            $this->document->getLang(),
-            $this->getParam('num')
-        );
-
-        if ($res) {
-            list($res) = $res;
+        // все блоки страницы (или все глобальные) на языке читаются одним запросом на запрос — у секций визитки
+        // блоков на странице несколько, прежде каждый делал свой запрос
+        $blocks = self::pageBlocks($docID ? (int)$docID : null, (int)$this->document->getLang());
+        if ($res = $blocks[(string)$this->getParam('num')] ?? null) {
             $this->id = $res['id'];
             $this->content = $res['content'];
         } elseif ($this->getParam('text')) {
@@ -210,6 +203,27 @@ class TextBlock extends DataSet implements SampleTextBlock{
      */
     protected function getContent() {
         return $this->content;
+    }
+
+    /**
+     * Блоки страницы (smap_id; null — глобальные) на языке: tb_num → [id, content]; один запрос на страницу и язык
+     * за время запроса (статический кэш живёт один запрос PHP).
+     *
+     * @return array<string, array{id: string, content: string|null}>
+     */
+    protected static function pageBlocks(?int $smapId, int $langId): array {
+        static $cache = [];
+        $key = ($smapId ?? 'global') . ':' . $langId;
+        if (!isset($cache[$key])) {
+            $cache[$key] = [];
+            $rows = E()->getDB()->rows('SELECT st.tb_num, st.tb_id AS id, stt.tb_content AS content FROM share_textblocks st '
+                . 'LEFT JOIN share_textblocks_translation stt ON st.tb_id = stt.tb_id AND stt.lang_id = ? '
+                . 'WHERE smap_id ' . ($smapId === null ? 'IS NULL' : '= ?'), $smapId === null ? [$langId] : [$langId, $smapId]);
+            foreach ($rows as $row) {
+                $cache[$key][(string)$row['tb_num']] = ['id' => $row['id'], 'content' => $row['content']];
+            }
+        }
+        return $cache[$key];
     }
 
     /**

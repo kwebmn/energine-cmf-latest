@@ -62,6 +62,8 @@ class TranslationEditor extends Grid {
         if ($c->isEnabled()) {
             $c->dispose(Cache::TRANSLATIONS_KEY);
         }
+        // переводы правили в этом процессе — Translator перечитает их при следующем обращении
+        E()->getTranslator()->forget();
         return $result;
     }
 }

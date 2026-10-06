@@ -49,6 +49,7 @@ echo "### text-history"; php8.5 text-history.php
 echo "### lang-inactive"; php8.5 lang-inactive.php
 echo "### db"; php8.5 db.php
 echo "### queries"; php8.5 queries.php
+echo "### translator"; php8.5 translator.php
 
 echo "### mail"
 php8.5 smoke-mail.php

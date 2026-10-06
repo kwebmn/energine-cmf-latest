@@ -302,6 +302,18 @@ namespace Energine\share\gears {
         }
 
         /**
+         * Переводы констант (одним запросом на язык).
+         *
+         * @return Translator
+         */
+        public function getTranslator() {
+            if (!isset($this->entities['Translator'])) {
+                $this->entities['Translator'] = new Translator($this->getDB());
+            }
+            return $this->entities['Translator'];
+        }
+
+        /**
          * Get Cache.
          *
          * @return Cache

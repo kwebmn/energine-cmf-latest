@@ -262,40 +262,11 @@ namespace Energine\share\gears {
          * @return string
          */
         function translate($const, $langId = null) {
-            static $translationsCache, $findTranslationSQL;
+            // переводы языка загружаются одним запросом (Translator), дальше — из памяти процесса
             if (empty($const)) {
                 return $const;
             }
-            if (is_null($findTranslationSQL)) {
-                $findTranslationSQL = E()->getDB()->getPDO()->prepare('SELECT trans.ltag_value_rtf AS translation FROM share_lang_tags ltag  LEFT JOIN share_lang_tags_translation trans ON trans.ltag_id = ltag.ltag_id  WHERE (ltag.ltag_name = ?) AND (lang_id = ?)');
-            }
-
-            $const = strtoupper($const);
-            if (is_null($langId)) {
-                $langId = intval(E()->getLanguage()->getCurrent());
-            }
-            $result = $const;
-
-            //Мы еще не обращались за этим переводом
-            if (!isset($translationsCache[$langId][$const])) {
-                //Если что то пошло не так - нет смысл генерить ошибку, отдадим просто константу
-                if ($findTranslationSQL->execute([$const, $langId])) {
-                    //записали в кеш
-                    if ($result = $findTranslationSQL->fetchColumn()) {
-                        $translationsCache[$langId][$const] = $result;
-                    } else {
-                        $result = $translationsCache[$langId][$const] = $const;
-                    }
-                }
-
-            } //За переводом уже обращались  Он есть
-            elseif ($translationsCache[$langId][$const]) {
-                $result = $translationsCache[$langId][$const];
-            }
-            //Неявный случай - за переводом уже обращались но его нету
-            //Отдаем константу
-
-            return $result;
+            return E()->getTranslator()->translate((string)$const, (int)($langId ?? E()->getLanguage()->getCurrent()));
         }
 
         /**
