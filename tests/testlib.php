@@ -134,6 +134,8 @@ function savePage(?int $id, int $pid, string $segment, array $o = []): ?int {
     }
     [$c, $b] = http('/admin/structure/single/divEditor/save', $f, ['X-Request: JSON']);
     $j = json_decode($b, true);
+    // полный ответ последнего сохранения — тестам отказов (текст ошибки)
+    $GLOBALS['lastSave'] = ['code' => $c, 'json' => $j];
     if ($c != 200 || empty($j['result'])) {
         echo "  (сохранение раздела $segment: HTTP $c " . substr($b, 0, 200) . ")\n";
         return null;

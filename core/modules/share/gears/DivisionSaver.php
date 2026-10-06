@@ -57,6 +57,16 @@ class DivisionSaver extends ExtendedSaver {
         $pidField = $this->getData()->getFieldByName('smap_pid');
         $pid = $pidField ? $pidField->getRowData(0)
             : ($id ? $this->dbh->getScalar('share_sitemap', 'smap_pid', ['smap_id' => $id]) : null);
+        // родитель — не сама страница и не её подраздел: иначе петля в дереве (сама себе — дерево не загрузится ни на
+        // одном запросе, длиннее — поддерево пропадёт с сайта). Окно выбора родителя этого не даёт, сервер — тоже
+        if ($id && $pid) {
+            for ($cur = (int)$pid, $depth = 0; $cur && $depth < 64; $depth++) {
+                if ($cur === $id) {
+                    throw new SystemException('ERR_DIV_PARENT_LOOP', SystemException::ERR_WARNING);
+                }
+                $cur = (int)$this->dbh->getScalar('share_sitemap', 'smap_pid', ['smap_id' => $cur]);
+            }
+        }
         if ($f && $pid && $this->dbh->getScalar('SELECT COUNT(*) FROM share_sitemap WHERE smap_pid = %s AND smap_segment = %s AND smap_id <> %s',
                 $pid, $f->getRowData(0), $id)) {
             throw new SystemException('ERR_SEGMENT_EXISTS', SystemException::ERR_WARNING);
