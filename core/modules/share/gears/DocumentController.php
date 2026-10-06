@@ -233,9 +233,13 @@ class DocumentController extends Primitive {
                 $document->build();
             }
         } catch (\Throwable $e) {
-            // и ошибки PHP (TypeError …) — на страницу ошибки, а не посетителю с путями сервера; код ответа — 500
-            // (у SystemException код ставит она сама: 403, 404, 422 или 200 для отказов формы)
-            if (!($e instanceof SystemException)) {
+            // и ошибки PHP (TypeError …) — на страницу ошибки, а не посетителю с путями сервера; код ответа — 500.
+            // У SystemException код ставит она сама (403, 404, 503; 422 — ниже); страница, которую не удалось построить
+            // (ошибка базы, разработчика, критическая — например, испорченный XML страницы), — тоже 500, а не 200:
+            // иначе поисковик примет её за страницу. Ответы JSON админки и отказы-предупреждения — как прежде
+            if (!($e instanceof SystemException)
+                || ($this->getViewMode() != self::TRANSFORM_JSON && E()->getResponse()->getStatusCode() === 200
+                    && !in_array($e->getCode(), [SystemException::ERR_WARNING, SystemException::ERR_NOTICE], true))) {
                 E()->getResponse()->setStatus(500);
             }
             $document = E()->getErrorDocument();
