@@ -165,7 +165,7 @@ class FileRepositoryLocal extends Primitive implements IFileRepository {
     }
 
     public function analyze($filename) {
-        return E()->FileRepoInfo->analyze($filename, true);
+        return E()->getFileRepoInfo()->analyze($filename, true);
 
     }
 

@@ -91,10 +91,10 @@ class DataDescription extends Primitive implements \Iterator {
      */
     public function addFieldDescription(FieldDescription $fieldDescription, $location = 'bottom', $targetFDName = null) {
         if($location == self::FIELD_POSITION_AFTER && $targetFDName && array_key_exists($targetFDName, $this->fieldDescriptions)){
-            $this->fieldDescriptions = E()->Utils->arrayPushAfter($this->fieldDescriptions, [$fieldDescription->getName() => $fieldDescription], $targetFDName);
+            $this->fieldDescriptions = E()->getUtils()->arrayPushAfter($this->fieldDescriptions, [$fieldDescription->getName() => $fieldDescription], $targetFDName);
         }
         elseif($location == 'before' ){
-            $this->fieldDescriptions = E()->Utils->arrayPushBefore($this->fieldDescriptions, [$fieldDescription->getName() => $fieldDescription], $targetFDName);
+            $this->fieldDescriptions = E()->getUtils()->arrayPushBefore($this->fieldDescriptions, [$fieldDescription->getName() => $fieldDescription], $targetFDName);
         }
         else {
             $this->fieldDescriptions[$fieldDescription->getName()] = $fieldDescription;    

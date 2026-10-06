@@ -33,21 +33,11 @@ namespace Energine\share\gears {
     require('Primitive.php');
 
     /**
-     * Application registry.
+     * Реестр приложения: по одному экземпляру объектов ядра на запрос.
      *
-     * @property \Energine\share\gears\Utils $Utils
-     * @property-read \Energine\share\gears\UserSession $UserSession
-     * @property-read \Energine\share\gears\Request $Request
-     * @property \Energine\share\gears\Response $Response
-     * @property \Energine\share\gears\ErrorDocument $ErrorDocument
-     * @property \Energine\share\gears\PageStructureDocument $PageStructureDocument
-     * @property-read \Energine\share\gears\FileRepoInfo $FileRepoInfo
-     * @property-read \Energine\share\gears\UserGroup $UserGroup
-     *
-     *
-     * Such Registry & Service Locator hybrid.
-     * Any injected object here become a singleton.
-     * In addition there is a set of methods, that returns an objects for commonly used classes.
+     * Объекты берутся типизированными методами (getDB(), getLanguage(), getUtils(), getUserGroup() …) — IDE и PHPStan
+     * видят типы, опечатка в имени — ошибка, а не новый пустой объект. Магических __get/__set нет (надёжность, этап 4;
+     * tests/registry.php следит, что обращений вида E()->Имя не осталось).
      *
      * @see Singleton
      *
@@ -104,56 +94,51 @@ namespace Energine\share\gears {
         }
 
         /**
-         * Magic get.
-         *
-         * @param string $className Class name.
-         * @return FileRepoInfo|ComponentManager|mixed
-         *
-         * @throws \Exception 'Use Registry::getMap() instead.'
+         * Утилиты: перевод, формат дат, работа с массивами.
          */
-        public function __get($className) {
-            if ($className == 'Sitemap') {
-                throw new \Exception('Use Registry::getMap() instead.');
-            }
-
-            return $this->offsetGet($className);
+        public function getUtils(): Utils {
+            return $this->offsetGet(Utils::class);
         }
 
         /**
-         * Magic set.
-         *
-         * @param string $className Class name.
-         * @param mixed $object Primitive.
+         * Группы пользователей и их права.
          */
-        public function __set($className, $object) {
-            $this->offsetSet($className, $object);
+        public function getUserGroup(): UserGroup {
+            return $this->offsetGet(UserGroup::class);
         }
 
         /**
-         * Check if some entity name is set.
-         *
-         * @param string $entityName
-         * @return bool
+         * Сведения о файлах репозитория (тип, размеры).
          */
-        public function __isset($entityName) {
-            return $this->offsetExists($entityName);
+        public function getFileRepoInfo(): FileRepoInfo {
+            return $this->offsetGet(FileRepoInfo::class);
         }
 
         /**
-         * Disable manual unsetting.
-         *
-         * @param string $entityName Entity name.
+         * Документ страницы ошибки.
          */
-        public function __unset($entityName) {
-            $this->offsetUnset($entityName);
+        public function getErrorDocument(): ErrorDocument {
+            return $this->offsetGet(ErrorDocument::class);
+        }
+
+        /**
+         * Документ структуры страницы (?struct).
+         */
+        public function getPageStructureDocument(): PageStructureDocument {
+            return $this->offsetGet(PageStructureDocument::class);
+        }
+
+        /**
+         * Сессия пользователя (cookie, хранилище сессий).
+         */
+        public function getUserSession(): UserSession {
+            return $this->offsetGet(UserSession::class);
         }
 
         /**
          * Get AuthUser.
-         *
-         * @return AuthUser
          */
-        public function getUser() {
+        public function getUser(): AuthUser {
             return $this->offsetGet('Energine\\share\\gears\\AuthUser');
         }
 
@@ -176,7 +161,7 @@ namespace Energine\share\gears {
          *
          * @return Request
          */
-        public function getRequest() {
+        public function getRequest(): Request {
             return $this->offsetGet('Energine\\share\\gears\\Request');
         }
 
@@ -185,7 +170,7 @@ namespace Energine\share\gears {
          *
          * @return Response
          */
-        public function getResponse() {
+        public function getResponse(): Response {
             return $this->offsetGet('Energine\\share\\gears\\Response');
         }
 
@@ -194,7 +179,7 @@ namespace Energine\share\gears {
          *
          * @return Document
          */
-        public function getDocument() {
+        public function getDocument(): Document {
             return $this->offsetGet('Energine\\share\\gears\\Document');
         }
 
@@ -203,7 +188,7 @@ namespace Energine\share\gears {
          *
          * @return Language
          */
-        public function getLanguage() {
+        public function getLanguage(): Language {
             return $this->offsetGet('Energine\\share\\gears\\Language');
         }
 
@@ -212,7 +197,7 @@ namespace Energine\share\gears {
          *
          * @return SiteManager
          */
-        public function getSiteManager() {
+        public function getSiteManager(): SiteManager {
             return $this->offsetGet('Energine\\share\\gears\\SiteManager');
         }
 
@@ -221,7 +206,7 @@ namespace Energine\share\gears {
          *
          * @return Sitemap
          */
-        public function getMap() {
+        public function getMap(): Sitemap {
             if (!isset($this->entities['Sitemap'])) {
                 $this->entities['Sitemap'] = new Sitemap();
             }
@@ -233,7 +218,7 @@ namespace Energine\share\gears {
          *
          * @return DocumentController
          */
-        public function getController() {
+        public function getController(): DocumentController {
             if (!isset($this->entities['DocumentController'])) {
                 return $this->setController();
             }
@@ -245,7 +230,7 @@ namespace Energine\share\gears {
          *
          * @return DocumentController
          */
-        public function setController($newDocumentController = NULL) {
+        public function setController($newDocumentController = NULL): DocumentController {
             $path = 'Energine\\share\\gears\\';
             if ($newDocumentController && isset($this->entities['DocumentController'])) {
                 throw new \InvalidArgumentException('Document controller is already defined.');
@@ -270,7 +255,7 @@ namespace Energine\share\gears {
          *
          * @return QAL
          */
-        public function getDB() {
+        public function getDB(): QAL {
             if (!isset($this->entities['QAL'])) {
                 // сокет сервера базы (database.socket) — если задан, иначе хост и порт
                 $socket = $this->getConfigValue('database.socket');
@@ -306,7 +291,7 @@ namespace Energine\share\gears {
          *
          * @return Translator
          */
-        public function getTranslator() {
+        public function getTranslator(): Translator {
             if (!isset($this->entities['Translator'])) {
                 $this->entities['Translator'] = new Translator($this->getDB());
             }
@@ -318,7 +303,7 @@ namespace Energine\share\gears {
          *
          * @return Cache
          */
-        public function getCache() {
+        public function getCache(): Cache {
             return $this->offsetGet('Energine\\share\\gears\\Cache');
         }
 

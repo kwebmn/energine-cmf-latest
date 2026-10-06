@@ -39,7 +39,7 @@ class ErrorComponent extends DataSet {
                 $statusCode = 500;
         }
         // особая причина отказа (например, ERR_CSRF, ответ 422) — без кода: «Ошибка 403» посетителя только запутала бы
-        $this->title = E()->Utils->translate('TXT_ERROR') . ($this->specialReason() ? '' : ' ' . $statusCode);
+        $this->title = E()->getUtils()->translate('TXT_ERROR') . ($this->specialReason() ? '' : ' ' . $statusCode);
         // ссылка «на главную» в шаблоне error.xslt
         $this->addTranslation('TXT_ERROR_GO_HOME');
         // иначе в <title> остаётся имя страницы, найденной до ошибки (для неизвестного адреса - главной)
@@ -77,11 +77,11 @@ class ErrorComponent extends DataSet {
 
         switch ($this->exception->getCode()) {
             case SystemException::ERR_404:
-                $message = E()->Utils->translate("TXT_ERROR_404");
+                $message = E()->getUtils()->translate("TXT_ERROR_404");
                 break;
             case SystemException::ERR_403:
                 // особая причина отказа (например, ERR_CSRF) показывается своим текстом, обычный 403 — общим
-                $message = $this->specialReason() ? $this->exception->getMessage() : E()->Utils->translate("TXT_ERROR_403");
+                $message = $this->specialReason() ? $this->exception->getMessage() : E()->getUtils()->translate("TXT_ERROR_403");
                 break;
             default:
                 $message = $this->exception->getMessage();
@@ -89,7 +89,7 @@ class ErrorComponent extends DataSet {
 
         // «проверьте адрес» — не о форме, отклонённой по токену: там текст причины уже говорит, что делать
         $txt_error_hint = $this->specialReason() ? ''
-            : str_replace('%site_name%', E()->getSiteManager()->getCurrentSite()->name, E()->Utils->translate('TXT_ERROR_HINT'));
+            : str_replace('%site_name%', E()->getSiteManager()->getCurrentSite()->name, E()->getUtils()->translate('TXT_ERROR_HINT'));
         return [
             [
                 'title'=>$this->title,
@@ -106,7 +106,7 @@ class ErrorComponent extends DataSet {
      */
     private function specialReason() {
         return $this->exception->getCode() == SystemException::ERR_403
-            && $this->exception->getMessage() !== E()->Utils->translate('ERR_403');
+            && $this->exception->getMessage() !== E()->getUtils()->translate('ERR_403');
     }
 
 }

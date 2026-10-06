@@ -119,7 +119,7 @@ final class URI extends Primitive {
 			$host       = explode( ':', (string) Primitive::getConfigValue( 'site.domain' ) );
 			$protocol   = 'http';
 			$requestURI = '/';
-			if ( ! E()->Utils->is_PHP_CLI() ) {
+			if ( ! E()->getUtils()->is_PHP_CLI() ) {
 				$host       = explode( ':',
 					( ( isset( $_SERVER['HTTP_HOST'] ) ) ? $_SERVER['HTTP_HOST'] : $_SERVER['SERVER_NAME'] ) );
 				$protocol   = ( ( isset( $_SERVER['HTTPS'] ) &&

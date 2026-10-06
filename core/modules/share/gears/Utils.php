@@ -288,7 +288,7 @@ namespace Energine\share\gears {
             if($type == FieldDescription::FIELD_TYPE_STRING){
                 $result = $date;
                 if($format == 'translate(%s)'){
-                    $result = E()->Utils->translate($date);
+                    $result = E()->getUtils()->translate($date);
                 }
                 return $result;
             }
@@ -418,7 +418,7 @@ namespace {
      * It directly prints the information about input arguments to the output stream formatted with HTML.
      */
     function inspect() {
-        call_user_func_array([E()->Utils, 'inspect'], func_get_args());
+        call_user_func_array([E()->getUtils(), 'inspect'], func_get_args());
     }
 
     /**
@@ -443,7 +443,7 @@ namespace {
      * @return mixed
      */
     function simplifyDBResult($dbResult, $fieldName, $singleRow = false) {
-        return call_user_func_array([E()->Utils, 'simplify'], func_get_args());
+        return call_user_func_array([E()->getUtils(), 'simplify'], func_get_args());
     }
 
     /**
@@ -470,7 +470,7 @@ namespace {
      * @return array
      */
     function transpose(array $r) {
-        return E()->Utils->transpose($r);
+        return E()->getUtils()->transpose($r);
     }
 
     /**
@@ -484,7 +484,7 @@ namespace {
      * @deprecated
      */
     function convertDBResult(array $dbResult, $pkName, $deletePK = false) {
-        return call_user_func_array([E()->Utils, 'reindex'], func_get_args());
+        return call_user_func_array([E()->getUtils(), 'reindex'], func_get_args());
     }
 
     /**
@@ -496,7 +496,7 @@ namespace {
      * @deprecated
      */
     function convertFieldNames(array $fields, $prefix = '') {
-        return E()->Utils->convertFieldNames($fields, $prefix);
+        return E()->getUtils()->convertFieldNames($fields, $prefix);
     }
 
 //todo VZ: I think the using of $key is bad.
@@ -512,7 +512,7 @@ namespace {
      * @deprecated
      */
     function arrayPush(array &$array, $var, $key = null) {
-        return E()->Utils->arrayPush($array, $var, $key);
+        return E()->getUtils()->arrayPush($array, $var, $key);
     }
 
     /**
@@ -525,7 +525,7 @@ namespace {
      * @deprecated
      */
     function array_push_before(array $array, $var, $pos) {
-        return E()->Utils->arrayPushBefore($array, $var, $pos);
+        return E()->getUtils()->arrayPushBefore($array, $var, $pos);
     }
 
     /**
@@ -537,7 +537,7 @@ namespace {
      * @deprecated
      */
     function str_replace_opt($from, $to, $src) {
-        return E()->Utils->strReplaceOpt($from, $to, $src);
+        return E()->getUtils()->strReplaceOpt($from, $to, $src);
     }
 
     /**
@@ -560,7 +560,7 @@ namespace {
      * @deprecated
      */
     function translate($const, $langId = null) {
-        return E()->Utils->translate($const, $langId);
+        return E()->getUtils()->translate($const, $langId);
     }
 
     /**

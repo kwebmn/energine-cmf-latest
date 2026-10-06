@@ -63,7 +63,7 @@ class User extends Primitive {
     public function __construct($id = false) {
         parent::__construct();
         $this->id = $id;
-        $this->userGroup = E()->UserGroup;
+        $this->userGroup = E()->getUserGroup();
         //Если пользователь существует  - загружаем его информацию
         if ($this->id) {
             $this->loadInfo($this->id);
@@ -168,7 +168,7 @@ class User extends Primitive {
         //Check if user exists
         if($this->dbh->getScalar('user_users', 'COUNT(*)', ['u_name' => $data['u_name']])){
             // без логина в тексте: сообщение выводится на странице, а логин — ввод посетителя
-            throw new \InvalidArgumentException(E()->Utils->translate('ERR_USER_EXISTS'));
+            throw new \InvalidArgumentException(E()->getUtils()->translate('ERR_USER_EXISTS'));
         }
         $this->id = $this->dbh->modify(QAL::INSERT, self::USER_TABLE_NAME, $data);
         $this->setGroups([$this->userGroup->getDefaultUserGroup()]);

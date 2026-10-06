@@ -146,8 +146,8 @@ class DocumentController extends Primitive {
                 $response->setHeader('Content-Type', 'text/javascript; charset=utf-8');
                 $response->write(json_encode([
                     'result' => false,
-                    'title' => E()->Utils->translate('TXT_ERROR') . "\n",
-                    'errors' => [['message' => E()->Utils->translate('ERR_CSRF')]],
+                    'title' => E()->getUtils()->translate('TXT_ERROR') . "\n",
+                    'errors' => [['message' => E()->getUtils()->translate('ERR_CSRF')]],
                 ], JSON_UNESCAPED_UNICODE));
                 return;
             }
@@ -169,7 +169,7 @@ class DocumentController extends Primitive {
                 /**
                  * @var PageStructureDocument $document
                  */
-                $document = E()->PageStructureDocument;
+                $document = E()->getPageStructureDocument();
                 $document->setStructure($int->getStructure());
                 $document->build();
             } catch (SystemException $e) {
@@ -231,7 +231,7 @@ class DocumentController extends Primitive {
             if (!($e instanceof SystemException)) {
                 E()->getResponse()->setStatus(500);
             }
-            $document = E()->ErrorDocument;
+            $document = E()->getErrorDocument();
             $document->attachException($e)->build();
         }
         // отказ по токену или изменяющее действие не POST-ом (Csrf::refuse) — 422, каким бы путём ни строилась
@@ -243,7 +243,7 @@ class DocumentController extends Primitive {
             $output = $this->transform($document);
         } catch (\Throwable $e) {
             // сбой самого преобразования (нет результата для JSON, битый XSLT) — тоже страница ошибки, а не пустой ответ
-            $document = E()->ErrorDocument;
+            $document = E()->getErrorDocument();
             $document->attachException($e)->build();
             $output = $this->transform($document);
         }

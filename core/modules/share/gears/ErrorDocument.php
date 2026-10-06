@@ -79,7 +79,7 @@ class ErrorDocument extends Primitive implements IDocument {
             && (!($this->e instanceof SystemException)
                 || in_array($this->e->getCode(), [SystemException::ERR_DB, SystemException::ERR_DEVELOPER], true))) {
             error_log('Energine: ' . get_class($this->e) . ': ' . $message . ' @ ' . $this->e->getFile() . ':' . $this->e->getLine());
-            $message = E()->Utils->translate('ERR_SERVER');
+            $message = E()->getUtils()->translate('ERR_SERVER');
         }
         // в отладке — подробности ошибки разработчика (имя класса, секции, файла …) прямо в сообщении
         if ($this->getConfigValue('site.debug') && $this->e instanceof SystemException) {

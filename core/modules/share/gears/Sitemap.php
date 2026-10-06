@@ -91,7 +91,7 @@ final class Sitemap extends Primitive {
     public function __construct() {
         parent::__construct();
         $this->langID = E()->getLanguage()->getCurrent();
-        $userGroups = array_keys(E()->UserGroup->asArray());
+        $userGroups = array_keys(E()->getUserGroup()->asArray());
 
         //Загружаем идентификаторы для последующего формирования древовидной стркутуры
 

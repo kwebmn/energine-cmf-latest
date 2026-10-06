@@ -14,7 +14,7 @@ if (!isset($_SERVER['HTTP_REFERER']) && !isset($_GET['return'])) {
 $response = E()->getResponse();
 $response->disableCache();
 // сессия вошедшего пользователя поднимается до проверки: токен выхода привязан к ней
-E()->UserSession->init();
+E()->getUserSession()->init();
 
 if (!Csrf::verify()) {
     // форма без токена посетителя или с чужого сайта: ни входа, ни выхода
@@ -30,7 +30,7 @@ if (!Csrf::verify()) {
         $response->addCookie(UserSession::FAILED_LOGIN_COOKIE_NAME, 'ERR_TOO_MANY_ATTEMPTS', time() + 60, false, '/', true);
     } elseif ($UID = AuthUser::authenticate($login, (string)$_POST['user']['password'])) {
         AuthUser::clearFailures($login, $ip);
-        E()->UserSession->start($UID);
+        E()->getUserSession()->start($UID);
     } else {
         AuthUser::registerFailure($login, $ip);
         $response->addCookie(UserSession::FAILED_LOGIN_COOKIE_NAME, 'ERR_BAD_AUTH', time() + 60, false, '/', true);
@@ -39,6 +39,6 @@ if (!Csrf::verify()) {
 } elseif (isset($_POST['user']['logout'])) {
     $_GET['return'] = '/';
 
-    E()->UserSession->kill();
+    E()->getUserSession()->kill();
 }
 $response->goBack();

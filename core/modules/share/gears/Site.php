@@ -54,7 +54,7 @@ class Site extends Primitive {
      */
     public function __construct($data, array $translations = []) {
         parent::__construct();
-        $this->data = E()->Utils->convertFieldNames($data, 'site_');
+        $this->data = E()->getUtils()->convertFieldNames($data, 'site_');
         $this->data['folder'] = self::FOLDER;
         $this->translations = $translations;
     }
@@ -76,7 +76,7 @@ class Site extends Primitive {
         foreach (E()->getDB()->select('share_sites_translation', true, ['site_id' => $siteData['site_id']]) ?: [] as $row) {
             $lang = $row['lang_id'];
             unset($row['lang_id'], $row['site_id']);
-            $translations[$lang] = E()->Utils->convertFieldNames($row, 'site_');
+            $translations[$lang] = E()->getUtils()->convertFieldNames($row, 'site_');
         }
 
         return new Site($siteData, $translations);

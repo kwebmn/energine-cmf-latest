@@ -93,8 +93,8 @@ class LoginForm extends DataSet implements SampleLoginForm {
 		//$this->setAction(E()->getSiteManager()->getCurrentSite()->base, true);
 		$this->prepare();
 		$data = [ ];
-		foreach ( E()->UserGroup->getUserGroups( $this->document->user->getID() ) as $roleID ) {
-			$tmp    = E()->UserGroup->getInfo( $roleID );
+		foreach ( E()->getUserGroup()->getUserGroups( $this->document->user->getID() ) as $roleID ) {
+			$tmp    = E()->getUserGroup()->getInfo( $roleID );
 			$data[] = $tmp['group_name'];
 		}
 		if (!$this->getData()->isEmpty() && $this->getData()->getFieldByName( 'role_name' )) {

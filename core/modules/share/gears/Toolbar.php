@@ -162,7 +162,7 @@ class Toolbar extends Primitive {
                     $propName = (string)$property['name'];
                     $propValue = (string)$property;
 
-                    if($propName == 'title') $propValue = E()->Utils->translate($propValue);
+                    if($propName == 'title') $propValue = E()->getUtils()->translate($propValue);
 
                     $this->setProperty($propName, $propValue);
                 }

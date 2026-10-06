@@ -83,14 +83,14 @@ class JSONBuilder implements  IBuilder {
                         switch ($fieldType) {
                             case FieldDescription::FIELD_TYPE_STRING:
                                 if($fieldInfo->getPropertyValue('outputFormat')){
-                                    $fieldValue =E()->Utils->formatDate($fieldValue, $fieldInfo->getPropertyValue('outputFormat'), $fieldType);
+                                    $fieldValue =E()->getUtils()->formatDate($fieldValue, $fieldInfo->getPropertyValue('outputFormat'), $fieldType);
                                 }
                                 break;
                             case FieldDescription::FIELD_TYPE_DATETIME:
                             case FieldDescription::FIELD_TYPE_DATE:
                             case FieldDescription::FIELD_TYPE_TIME:
                                 if (!empty($fieldValue)) {
-                                    $fieldValue =E()->Utils->formatDate($fieldValue, $fieldInfo->getPropertyValue('outputFormat'), $fieldType);
+                                    $fieldValue =E()->getUtils()->formatDate($fieldValue, $fieldInfo->getPropertyValue('outputFormat'), $fieldType);
                                 }
                                 break;
                             case FieldDescription::FIELD_TYPE_SELECT:

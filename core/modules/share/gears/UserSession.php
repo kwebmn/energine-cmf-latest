@@ -220,7 +220,7 @@ final class UserSession implements \SessionHandlerInterface {
         if (isset($_COOKIE[UserSession::DEFAULT_SESSION_NAME])) {
             $sessionID = $_COOKIE[UserSession::DEFAULT_SESSION_NAME];
             unset($_COOKIE[UserSession::DEFAULT_SESSION_NAME]);
-            E()->Response->deleteCookie(UserSession::DEFAULT_SESSION_NAME);
+            E()->getResponse()->deleteCookie(UserSession::DEFAULT_SESSION_NAME);
         }
         if (session_status() == PHP_SESSION_ACTIVE) {
             session_destroy();

@@ -10,7 +10,7 @@
 try {
     require_once('bootstrap.php');
 
-    E()->UserSession->init();
+    E()->getUserSession()->init();
 
     E()->getController()->run();
 

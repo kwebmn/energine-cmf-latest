@@ -64,7 +64,7 @@ final class SiteManager extends Primitive {
      * @return string|null адрес для переадресации 301 или null — запрос уже на адресе сайта
      */
     public function canonicalLocation() {
-        if (E()->Utils->is_PHP_CLI() || !in_array($_SERVER['REQUEST_METHOD'] ?? 'GET', ['GET', 'HEAD'], true)) {
+        if (E()->getUtils()->is_PHP_CLI() || !in_array($_SERVER['REQUEST_METHOD'] ?? 'GET', ['GET', 'HEAD'], true)) {
             return null;
         }
         $uri = URI::create();

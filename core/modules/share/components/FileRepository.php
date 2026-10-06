@@ -72,7 +72,7 @@ class FileRepository extends Grid implements SampleFileRepository {
      */
     public function __construct($name, ?array $params = null) {
         parent::__construct($name, $params);
-        $this->repoinfo = E()->FileRepoInfo;
+        $this->repoinfo = E()->getFileRepoInfo();
         $this->setTableName('share_uploads');
         $this->setFilter(['upl_is_active' => 1]);
 
@@ -424,7 +424,7 @@ class FileRepository extends Grid implements SampleFileRepository {
                 $fd = new FieldDescription($name);
                 $fd->setType(FieldDescription::FIELD_TYPE_THUMB);
                 $this->getDataDescription()->addFieldDescription($fd);
-                $fd->setProperty('tabName', E()->Utils->translate('TXT_THUMBS'));
+                $fd->setProperty('tabName', E()->getUtils()->translate('TXT_THUMBS'));
                 $fd->setProperty('tableName', 'thumbs');
                 foreach ($data as $attrName => $attrValue) {
                     $fd->setProperty($attrName, $attrValue);
@@ -910,10 +910,10 @@ class FileRepository extends Grid implements SampleFileRepository {
         $tooBig = ($file && in_array($file['error'], [UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE], true))
             || (!$file && empty($_POST) && $limit && (int)($_SERVER['CONTENT_LENGTH'] ?? 0) > $limit);
         if ($tooBig) {
-            return str_replace('%size%', (string)round($limit / 1048576), E()->Utils->translate('ERR_UPLOAD_TOO_BIG'));
+            return str_replace('%size%', (string)round($limit / 1048576), E()->getUtils()->translate('ERR_UPLOAD_TOO_BIG'));
         }
 
-        return E()->Utils->translate(($file && $file['error'] !== UPLOAD_ERR_NO_FILE) ? 'ERR_UPLOAD_FAILED' : 'ERR_NO_FILE');
+        return E()->getUtils()->translate(($file && $file['error'] !== UPLOAD_ERR_NO_FILE) ? 'ERR_UPLOAD_FAILED' : 'ERR_NO_FILE');
     }
 
     /**

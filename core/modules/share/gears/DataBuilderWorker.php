@@ -45,6 +45,6 @@ trait DataBuilderWorker {
 		$placeholder = $fieldInfo->getPropertyValue( 'phonePlaceholder' );
 		$countryCode = $fieldInfo->getPropertyValue( 'phoneCode' );
 
-		return E()->Utils->formatPhone($placeholder, $countryCode, $fieldValue);
+		return E()->getUtils()->formatPhone($placeholder, $countryCode, $fieldValue);
 	}
 }
