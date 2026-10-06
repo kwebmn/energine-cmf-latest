@@ -95,7 +95,8 @@ class JSONBuilder implements  IBuilder {
                                 break;
                             case FieldDescription::FIELD_TYPE_SELECT:
                                 $value = $fieldInfo->getAvailableValues();
-                                if (isset($value[$fieldValue])) {
+                                // NULL (внешний ключ без значения) — не индекс: на PHP 8.5 это предупреждение в журнале; ниже NULL станет пустой строкой
+                                if ($fieldValue !== null && isset($value[$fieldValue])) {
                                     $fieldValue = $value[$fieldValue]['value'];
                                 }
                                 break;
