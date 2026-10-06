@@ -15,3 +15,13 @@ INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_va
         END
       FROM `share_lang_tags` t JOIN `share_languages` l
      WHERE t.`ltag_name` IN ('TXT_BROKEN_LINK_PAGE', 'TXT_BROKEN_LINK_FILE');
+
+-- 2. Используемый файл не удаляется молча: вопрос при удалении файла (папки), на который ссылаются тексты страниц
+--    (FileRepository::delete, LinkChecker::fileReferrers); после текста — список страниц.
+INSERT IGNORE INTO `share_lang_tags` (`ltag_name`) VALUES ('MSG_FILE_LINKED');
+INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`)
+    SELECT t.`ltag_id`, l.`lang_id`, IF(l.`lang_abbr` = 'ua',
+        'Цей файл використовується в текстах сторінок — посилання і картинки там стануть битими. Все одно видалити? Сторінки:',
+        'Этот файл используется в текстах страниц — ссылки и картинки там станут битыми. Удалить всё равно? Страницы:')
+      FROM `share_lang_tags` t JOIN `share_languages` l
+     WHERE t.`ltag_name` = 'MSG_FILE_LINKED';

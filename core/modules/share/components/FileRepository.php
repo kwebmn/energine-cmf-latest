@@ -21,6 +21,7 @@ use Energine\share\gears\FileUploader;
 use Energine\share\gears\IFileRepository;
 use Energine\share\gears\JSONCustomBuilder;
 use Energine\share\gears\JSONRepoBuilder;
+use Energine\share\gears\LinkChecker;
 use Energine\share\gears\QAL;
 use Energine\share\gears\SystemException;
 use Energine\share\gears\Translit;
@@ -314,6 +315,24 @@ class FileRepository extends Grid implements SampleFileRepository {
                     throw new SystemException('ERR_FILE_DELETE_PARENT', SystemException::ERR_CRITICAL);
                 }
                 $pid = $this->dbh->getScalar($this->getTableName(), 'upl_pid', array($this->getPK() => (int)$pid));
+            }
+        }
+        // файл (или файл внутри папки) используется в текстах страниц — без ?confirm=1 только вопрос со списком страниц
+        // {result: true, mode: 'confirm', confirm}, ничего не удалено; GridManager.del спрашивает и повторяет запрос
+        if (empty($_GET['confirm'])) {
+            $site = E()->getSiteManager()->getCurrentSite();
+            $checker = new LinkChecker(E()->getDB()->getPDO(), HTDOCS_DIR, (string)parse_url($site->base, PHP_URL_HOST), (string)$site->root);
+            $used = [];
+            foreach ($checker->fileReferrers(array_column($rows, 'upl_path')) as $pages) {
+                $used = array_merge($used, $pages);
+            }
+            if ($used) {
+                $b = new JSONCustomBuilder();
+                // result true: это вопрос, а не ошибка (Energine.request зовёт onSuccess только при result true)
+                $b->setProperty('result', true)->setProperty('mode', 'confirm')->setProperty('confirm',
+                    $this->translate('MSG_FILE_LINKED') . ' ' . implode(', ', array_map(fn($p) => $p === '' ? '/' : $p, array_unique($used))));
+                $this->setBuilder($b);
+                return;
             }
         }
         parent::delete();

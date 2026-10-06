@@ -855,16 +855,30 @@ export class GridManager {
                 return;
             }
             delstr += '/delete/';
+            const done = () => {
+                this.overlay.hide();
+                this.loadPage(this.pageList.currentPage);
+            };
+            const failed = (responseText) => {
+                alert(responseText);
+                this.overlay.hide();
+            };
             Energine.request(this.singlePath + delstr, null,
-                () => {
-                    this.overlay.hide();
-                    this.loadPage(this.pageList.currentPage);
+                (response) => {
+                    // сервер спрашивает (mode: confirm): запись используется — например, файл в текстах страниц;
+                    // «ОК» — тот же запрос с ?confirm=1, «Отмена» — ничего не удаляется
+                    if (response && response.mode === 'confirm' && response.confirm) {
+                        if (confirm(response.confirm)) {
+                            Energine.request(this.singlePath + delstr + '?confirm=1', null, done, () => this.overlay.hide(), failed);
+                        } else {
+                            this.overlay.hide();
+                        }
+                        return;
+                    }
+                    done();
                 },
                 () => this.overlay.hide(),
-                (responseText) => {
-                    alert(responseText);
-                    this.overlay.hide();
-                }
+                failed
             );
         } else {
             this.delConfirmCounter = 0;

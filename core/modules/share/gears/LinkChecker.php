@@ -112,7 +112,85 @@ class LinkChecker {
     }
 
     /**
-     * Путь страницы сайта, на которую ведёт ссылка ('' — главная), или null — ссылка не на страницу этого сайта
+     * Где используются файлы: путь файла или папки от корня сайта (как upl_path: uploads/…) → пути страниц, в текстах
+     * которых на него ссылка или картинка ('' — главная, «(общий блок)» — общий текстовый блок). Вид адреса любой:
+     * полный адрес своего сайта, от корня, относительный, через ресайзер (resizer/wШ-hВ/…), с %-кодами; у папки — файлы
+     * внутри. Неиспользуемые пути — пустой список.
+     *
+     * @param string[] $paths
+     * @return array<string, string[]>
+     */
+    public function fileReferrers(array $paths): array {
+        $result = array_fill_keys($paths, []);
+        $pathOf = [];
+        foreach ($this->pages as $path => $p) {
+            $pathOf[$p['id']] = $path;
+        }
+        $sources = $this->pdo->query(
+            'SELECT t.smap_id AS page, tt.tb_content AS html FROM share_textblocks t JOIN share_textblocks_translation tt ON tt.tb_id = t.tb_id
+             UNION ALL SELECT smap_id, smap_description_rtf FROM share_sitemap_translation WHERE smap_description_rtf IS NOT NULL'
+        );
+        foreach ($sources as $row) {
+            if (!preg_match_all('~\b(?:href|src)\s*=\s*(["\'])(.*?)\1~is', (string)$row['html'], $m)) {
+                continue;
+            }
+            $page = $row['page'] === null ? '(общий блок)' : ($pathOf[$row['page']] ?? '?');
+            foreach ($m[2] as $link) {
+                if (($file = $this->fileOf(html_entity_decode($link, ENT_QUOTES | ENT_HTML5, 'UTF-8'))) === null) {
+                    continue;
+                }
+                foreach ($paths as $path) {
+                    $path = trim($path, '/');
+                    if (($file === $path || str_starts_with($file, $path . '/')) && !in_array($page, $result[$path] ?? [], true)) {
+                        $result[$path][] = $page;
+                    }
+                }
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * Файл сайта, на который ведёт ссылка (путь от корня сайта: uploads/…; адрес ресайзера — файл-источник), или null —
+     * ссылка не на файл этого сайта.
+     */
+    private function fileOf(string $link): ?string {
+        $link = trim($link);
+        if ($link === '' || $link[0] === '#' || preg_match('~^(mailto|tel|javascript|data|sms|skype|callto):~i', $link)) {
+            return null;
+        }
+        if (preg_match('~^(?:https?:)?//([^/?#]+)(.*)$~i', $link, $m)) {
+            if (self::host($m[1]) !== $this->domain) {
+                return null;
+            }
+            $link = $m[2] === '' ? '/' : $m[2];
+        } elseif (preg_match('~^[a-z][a-z0-9+.-]*:~i', $link)) {
+            return null;
+        }
+        $path = rawurldecode((string)preg_replace('~[?#].*$~s', '', $link));
+        if (str_starts_with($path, '/')) {
+            if (!str_starts_with($path . '/', $this->root)) {
+                return null;
+            }
+            $path = substr($path, strlen($this->root));
+        }
+        $parts = [];
+        foreach (explode('/', $path) as $part) {
+            if ($part === '..') {
+                array_pop($parts);
+            } elseif ($part !== '.' && $part !== '') {
+                $parts[] = $part;
+            }
+        }
+        if (($parts[0] ?? '') === 'resizer' && isset($parts[1]) && preg_match('~^w\d+-h\d+$~', $parts[1])) {
+            $parts = array_slice($parts, 2);
+        }
+        $last = end($parts);
+        return ($last !== false && str_contains($last, '.') && !str_ends_with($path, '/')) ? implode('/', $parts) : null;
+    }
+
+    /**
+     * Путь страницы сайта, на которую ведёт ссылка ('' — главная), или null — ссылка не на страницуэтого сайта
      * (внешняя, файл, якорь, mailto …). Префикс языка снимается.
      */
     public function pageKeyOf(string $link): ?string {

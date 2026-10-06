@@ -1021,6 +1021,43 @@ const inspect = (page) => page.evaluate(() => {
             await ctx.clearCookies({ name: 'after_add_default_action' });
         }
 
+        // 5b. удаление с вопросом сервера (mode: confirm — используемый файл, страница со ссылками на неё): GridManager.del
+        //     показывает вопрос с текстом ответа, «ОК» — повтор с ?confirm=1, «Отмена» — второго запроса нет. Ответы
+        //     удаления подменены — ничего не удаляется
+        {
+            const p = await ctx.newPage();
+            const errors = watch(p);
+            const reqs = [];
+            await p.route(/\/delete\/(\?confirm=1)?$/, (route) => {
+                const url = route.request().url();
+                reqs.push(url);
+                route.fulfill({ status: 200, contentType: 'application/json', body: url.includes('confirm=1')
+                    ? '{"result":true,"mode":"delete"}' : '{"result":true,"mode":"confirm","confirm":"Файл используется: claude-fg/"}' });
+            });
+            await p.goto(BASE + 'admin/users/single/userEditor/', { waitUntil: 'networkidle' });
+            await p.waitForSelector('.gridContainer tbody tr td', { timeout: 10000 });
+            await p.locator('.gridContainer tbody tr').nth(1).click();
+            const dialogs = [];
+            let acceptServer = true;
+            p.on('dialog', (d) => {
+                dialogs.push(d.message());
+                (dialogs.length === 1 || acceptServer) ? d.accept() : d.dismiss();
+            });
+            await p.click('ul.toolbar li.delete_btn');
+            await p.waitForTimeout(1500);
+            check('удаление с вопросом сервера: вопрос с его текстом, «ОК» — повтор с ?confirm=1', dialogs.length === 2
+                && dialogs[1].includes('claude-fg/') && reqs.length === 2 && reqs[1].endsWith('/delete/?confirm=1'), JSON.stringify({ dialogs, reqs }));
+            dialogs.length = 0;
+            reqs.length = 0;
+            acceptServer = false;
+            await p.click('ul.toolbar li.delete_btn');
+            await p.waitForTimeout(1500);
+            check('удаление с вопросом сервера: «Отмена» — второго запроса нет', dialogs.length === 2 && reqs.length === 1,
+                JSON.stringify({ dialogs, reqs }));
+            check('удаление с вопросом сервера: без ошибок JS и 404', !errors.list().length, errors.list().join(' | '));
+            await p.close();
+        }
+
         // 6. the file repository: a double click opens the repository and the folder; the crumbs lead back; the
         //    folder is remembered in a cookie and opened after a reload; file sizes (also of a file under 1 KiB);
         //    hovering a preview shows a bigger picture, leaving it removes it
