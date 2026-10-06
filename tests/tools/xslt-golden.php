@@ -22,7 +22,7 @@ if ($cmd === 'capture') {
     $guest = ['', 'info/quick-start/', 'service/', 'contacts/', 'login/', 'register/', 'restore-password/', 'sitemap/', 'ua/'];
     $admin = ['', 'info/quick-start/', 'admin/users/', 'admin/users/single/userEditor/add/', "admin/users/single/userEditor/$user/edit/",
         "admin/structure/single/divEditor/$page/edit/", "admin/structure/single/divEditor/add/$page/", 'admin/mail-templates/single/mailTemplateEditor/1/edit/',
-        'admin/translations/', 'admin/settings/single/siteSettings/1/edit/', 'admin/users/single/adminPanel/file-library/'];
+        'admin/translations/', 'admin/settings/single/settings/1/edit/', 'admin/users/single/adminPanel/file-library/'];
     $n = 0;
     foreach (['guest' => $guest, 'admin' => $admin] as $who => $urls) {
         $who === 'admin' ? login() : logout();

@@ -196,7 +196,8 @@ class ComponentContainer extends Primitive implements IBlock, \Iterator {
                 &&
                 ($this->document->getRights() >= $block->getCurrentStateRights())
             ) {
-                $blockDOM = $block->build();
+                // время и запросы каждого компонента — при отладке в XML страницы (Document::timed)
+                $blockDOM = $this->document->timed($block, 'build', fn() => $block->build());
                 if ($blockDOM instanceof \DOMDocument) {
                     $blockDOM =
                         $doc->importNode($blockDOM->documentElement, true);
@@ -216,7 +217,7 @@ class ComponentContainer extends Primitive implements IBlock, \Iterator {
             if ($block->enabled()
                 && ($this->document->getRights() >= $block->getCurrentStateRights())
             ) {
-                $block->run();
+                $this->document->timed($block, 'run', fn() => $block->run());
             }
         }
     }

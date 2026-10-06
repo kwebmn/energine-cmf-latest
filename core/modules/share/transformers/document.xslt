@@ -260,6 +260,8 @@
     <xsl:template match="/document/javascript"/>
     <!-- запросы к базе (?debug): только для чтения в XML -->
     <xsl:template match="/document/queries"/>
+    <!-- время блоков при отладке (Document::timing) — только в XML страницы -->
+    <xsl:template match="/document/timings"/>
 
 
 </xsl:stylesheet>

@@ -279,7 +279,7 @@ final class Document extends Primitive implements IDocument {
                 &&
                 ($this->getRights() >= $component->getCurrentStateRights())
             ) {
-                $componentResult = $component->build();
+                $componentResult = $this->timed($component, 'build', fn() => $component->build());
             }
 
             if (!empty($componentResult)) {
@@ -333,6 +333,19 @@ final class Document extends Primitive implements IDocument {
                 $dom_queries->appendChild($this->doc->createElement('query'))->appendChild($this->doc->createTextNode($sql));
             }
             $dom_root->appendChild($dom_queries);
+            // время блоков (по образцу ?speed xSight): какой компонент тормозит и сколько запросов делает. Элемент
+            // timing, а не component: шаблоны собирают все //component[@name]
+            $dom_timings = $this->doc->createElement('timings');
+            foreach ($this->timings as $name => $t) {
+                $el = $this->doc->createElement('timing');
+                $el->setAttribute('name', $name);
+                $el->setAttribute('class', $t['class']);
+                $el->setAttribute('run', sprintf('%.2f', $t['run']));
+                $el->setAttribute('build', sprintf('%.2f', $t['build']));
+                $el->setAttribute('queries', (string)$t['queries']);
+                $dom_timings->appendChild($el);
+            }
+            $dom_root->appendChild($dom_timings);
         }
     }
 
@@ -465,6 +478,33 @@ final class Document extends Primitive implements IDocument {
     /**
      * Run all components.
      */
+    /**
+     * Время и запросы к базе каждого компонента: имя → class, run, build (мс), queries. При site.debug — <timings> в XML.
+     * @var array<string, array>
+     */
+    private array $timings = [];
+
+    /**
+     * Выполнить этап блока (run, build) с замером времени и запросов к базе. Контейнер не замеряется — его компоненты
+     * замеряет он сам (ComponentContainer), иначе время считалось бы дважды.
+     */
+    public function timed($block, string $stage, callable $fn): mixed {
+        if ($block instanceof ComponentContainer) {
+            return $fn();
+        }
+        $started = hrtime(true);
+        $queries = E()->getDB()->queryCount();
+        try {
+            return $fn();
+        } finally {
+            $name = method_exists($block, 'getName') ? (string)$block->getName() : '#' . spl_object_id($block);
+            $t = $this->timings[$name] ?? ['class' => get_class($block), 'run' => 0.0, 'build' => 0.0, 'queries' => 0];
+            $t[$stage] += (hrtime(true) - $started) / 1e6;
+            $t['queries'] += E()->getDB()->queryCount() - $queries;
+            $this->timings[$name] = $t;
+        }
+    }
+
     public function runComponents() {
         foreach ($this->componentManager as $block) {
             //$block->run();
@@ -473,7 +513,7 @@ final class Document extends Primitive implements IDocument {
                 &&
                 ($this->getRights() >= $block->getCurrentStateRights())
             ) {
-                $block->run();
+                $this->timed($block, 'run', fn() => $block->run());
             } elseif ($block->enabled() && $this->getProperty('single')) {
                 // окно (single): запрошенный компонент — единственный на странице; прав на его состояние нет —
                 // отказ 403, а не пустая страница 200

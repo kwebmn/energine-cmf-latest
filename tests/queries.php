@@ -36,5 +36,23 @@ check('администратор, пользователи: не больше '
 $again = queriesOf('/admin/users/');
 check('повторный запрос — то же число запросов', $again && $users && abs($again['count'] - $users['count']) <= 1, ($again['count'] ?? -1) . ' vs ' . ($users['count'] ?? -1));
 logout();
+// время блоков (надёжность 6, по образцу ?speed xSight): <timings> — на каждый компонент время запуска и сборки (мс)
+// и число запросов к базе; сумма запросов компонентов не больше запросов страницы
+[$c, $b] = http('/?debug');
+$x = str_starts_with(ltrim($b), '<?xml') ? @simplexml_load_string($b) : null;
+$timings = $x && isset($x->timings) ? iterator_to_array($x->timings->timing ?? new ArrayIterator([]), false) : [];
+$num = fn($v) => is_numeric((string)$v) && (float)$v >= 0;
+$ok = count($timings) >= 3;
+$sum = 0;
+foreach ($timings as $t) {
+    $ok = $ok && (string)$t['name'] !== '' && $num($t['run']) && $num($t['build']) && ctype_digit((string)$t['queries']);
+    $sum += (int)$t['queries'];
+}
+check('?debug: <timings> — у каждого компонента (элемент timing) имя, время запуска и сборки, число запросов', $ok,
+    'компонентов: ' . count($timings) . ($timings ? ' | ' . $timings[0]->asXML() : ''));
+check('сумма запросов компонентов не больше запросов страницы', $x && $timings && $sum <= (int)$x['queries'], "$sum из " . ($x['queries'] ?? '?'));
+$classes = array_map(fn($t) => (string)$t['class'], $timings);
+check('в <timings> — сами компоненты (есть текстовый блок), а не контейнеры', (bool)preg_grep('~TextBlock$~', $classes)
+    && !preg_grep('~ComponentContainer$~', $classes), implode(', ', array_unique($classes)));
 echo "queries: guest / = {$home['count']}, admin /admin/users/ = " . ($users['count'] ?? -1) . "\n";
 done('queries');
