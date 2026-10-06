@@ -1,7 +1,7 @@
 <?php
 // Периметр (надёжность, этап 1):
 //  1. ошибки PHP не показывают посетителю сервер: index.php и DocumentController ловят \Throwable; display_errors
-//     включается только при отладке (ini.func.php); у timthumb выключены внешние источники и вывод ошибок;
+//     включается только при отладке (ini.func.php); ресайзер — свой (ImageResizer, этап 5): ни timthumb, ни его конфига;
 //  2. ?struct (XML структуры страницы) — только при отладке: гость получает обычную страницу;
 //  3. данные адреса и запроса не попадают в SQL строкой: заполнители адресов по типам ([int] — только число),
 //     поле и направление сортировки грида — только известные, иначе 404 или обычный ответ, без текста ошибки SQL.
@@ -15,14 +15,16 @@ check('index.php ловит \Throwable', preg_match('~catch\s*\(\s*\\\\?Throwabl
 check('DocumentController::run ловит \Throwable', preg_match('~catch\s*\(\s*\\\\?Throwable~', $src('core/modules/share/gears/DocumentController.php')));
 check('ini.func.php: display_errors только при отладке', !preg_match("~ini_set\('display_errors',\s*1\)~", $src('core/modules/share/gears/ini.func.php'))
     && preg_match("~display_errors~", $src('core/modules/share/gears/ini.func.php')));
-$tt = $src('htdocs/resizer/timthumb-config.php');
-check('timthumb: внешние источники и вывод ошибок выключены', preg_match("~ALLOW_EXTERNAL',\s*false~i", $tt) && preg_match("~DISPLAY_ERROR_MESSAGES',\s*false~i", $tt));
+$entry = $src('htdocs/resizer/timthumb.php');
+check('ресайзер — свой (ImageResizer): ни кода timthumb, ни его конфига (в репозитории и в web/)', str_contains($entry, 'ImageResizer')
+    && !preg_match('~class\s+timthumb|TimThumb by|ALLOW_EXTERNAL~i', $entry) && !file_exists(ROOT . '/htdocs/resizer/timthumb-config.php')
+    && !file_exists(WEB . '/resizer/timthumb-config.php'));
 $ed = $src('core/modules/share/gears/ErrorDocument.php');
 check('ErrorDocument: вне отладки предупреждения PHP (SystemException ERR_DEVELOPER) скрыты, как и прочие ошибки',
     preg_match("~site\\.debug'\\)\\s*&&[^{]*ERR_DEVELOPER~s", $ed));
 check('DocumentController: ошибка PHP на странице — ответ 500, а не 200', preg_match('~setStatus\\(500\\)~', $src('core/modules/share/gears/DocumentController.php')));
 check('копии в web/ совпадают с репозиторием (index.php, resizer)', file_get_contents(WEB . '/index.php') === $src('htdocs/index.php')
-    && file_get_contents(WEB . '/resizer/timthumb-config.php') === $tt);
+    && file_get_contents(WEB . '/resizer/timthumb.php') === $src('htdocs/resizer/timthumb.php'));
 
 // 2. ?struct — как ?debug: только при включённой отладке (на рабочем сайте она выключена). Статически — в коде есть
 //    условие site.debug; на площадке с выключенной отладкой гость получает обычную страницу

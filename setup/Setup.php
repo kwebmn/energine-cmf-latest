@@ -811,6 +811,14 @@ final class Setup {
         (empty($mail['from']) || $mail['from'] === 'noreply@energine.org') ? $say('WARN', 'адрес отправителя писем (mail.from) не задан или из шаблона')
             : $say('OK', 'адрес отправителя писем: ' . $mail['from']);
 
+        // ресайзер картинок (resizer/, ImageResizer) — на GD: без него картинки в текстах и миниатюры не уменьшаются
+        $gd = function_exists('gd_info') ? gd_info() : [];
+        $gdMissing = array_keys(array_filter(['JPEG' => !empty($gd['JPEG Support']), 'PNG' => !empty($gd['PNG Support']),
+            'WebP' => !empty($gd['WebP Support'])], fn($ok) => !$ok));
+        !$gd ? $say('FAIL', 'ресайзер картинок: нет расширения PHP GD — картинки не уменьшаются (resizer/ отвечает 404)')
+            : ($gdMissing ? $say('WARN', 'ресайзер картинок: GD без ' . implode(', ', $gdMissing) . ' — такие картинки не уменьшаются')
+            : $say('OK', 'ресайзер картинок: GD с JPEG, PNG, WebP'));
+
         $this->text('Итог: OK ', $counts['OK'], ', WARN ', $counts['WARN'], ', FAIL ', $counts['FAIL']);
         if ($counts['FAIL']) {
             exit(1);

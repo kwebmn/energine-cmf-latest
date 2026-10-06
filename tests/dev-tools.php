@@ -137,6 +137,9 @@ $hasFail = (bool)preg_match('/^FAIL /m', $out);
 check('setup check: строки OK/WARN/FAIL по пунктам (отладка, адрес, robots, демо, языки, страницы, ссылки, переводы, почта)',
     preg_match_all('/^(OK|WARN|FAIL) /m', $out) >= 9 && preg_match('/отладк/u', $out) && preg_match('/robots/u', $out)
     && preg_match('/ссыл/u', $out) && preg_match('/перевед/u', $out) && preg_match('/почт/u', $out), substr($out, 0, 300));
+// надёжность, этап 5: ресайзер картинок — свой на GD; без GD с JPEG, PNG, WebP картинки на сайте не уменьшаются
+check('setup check: строка ресайзера (GD с JPEG, PNG, WebP) — OK на площадке', (bool)preg_match('/^OK +ресайзер картинок: GD/mu', $out),
+    implode(' | ', preg_grep('/ресайзер/u', $lines)) ?: 'строки ресайзера нет');
 check('setup check: код выхода 1 ровно при строке FAIL', ($code === 1) === $hasFail, "code=$code fail=" . var_export($hasFail, true));
 check('setup check: база не изменилась', $snap() === $before, json_encode([$before, $snap()]));
 check('setup check: итоговая строка', (bool)preg_match('/^Итог: OK \d+, WARN \d+, FAIL \d+/m', $out), substr($out, -200));

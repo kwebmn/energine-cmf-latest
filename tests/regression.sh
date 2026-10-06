@@ -56,6 +56,7 @@ echo "### json-builder"; php8.5 json-builder.php
 echo "### registry"; php8.5 registry.php
 echo "### urls"; php8.5 urls.php
 echo "### page-aliases"; php8.5 page-aliases.php
+echo "### resizer"; php8.5 resizer.php
 
 echo "### mail"
 php8.5 smoke-mail.php
