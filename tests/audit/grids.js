@@ -673,20 +673,33 @@ const inspect = (page) => page.evaluate(() => {
             }
             check('панель страницы: «Настройки сайта» — окно с гридом одной записи', /site-settings\/$/.test(src) && rows === 1,
                 `src=${src} rows=${rows}`);
-            // окна (ModalBox, Overlay): Esc окно не закрывает (клиент просил не закрывать окно случайно); «Редактировать»
-            // открывает второе окно поверх первого, его «Закрыть» оставляет первое и затемнение; «Закрыть» первого
-            // убирает и окно, и затемнение; стили окон подключены один раз
-            const boxes = () => sp.evaluate(() => ({
-                boxes: document.querySelectorAll('.e-modalbox').length,
-                overlays: [...document.querySelectorAll('.e-overlay')].map((o) => +getComputedStyle(o).opacity),
-                css: [...document.querySelectorAll('link[rel="stylesheet"]')].map((l) => l.href).filter((h, i, a) => a.indexOf(h) !== i).length,
-            }));
+            // окна (ModalBox — <dialog>, надёжность, этап 5): Esc окно не закрывает (клиент просил не закрывать окно случайно) —
+            // ни с фокусом внутри окна, ни с фокусом на странице, ни повторный; «Редактировать» открывает второе окно поверх
+            // первого, его «Закрыть» оставляет первое и затемнение; «Закрыть» первого убирает и окно, и затемнение;
+            // затемнение — ::backdrop окна, слоя Overlay при окнах нет; стили окон подключены один раз
+            const boxes = () => sp.evaluate(() => {
+                const all = [...document.querySelectorAll('.e-modalbox')];
+                const alpha = (c) => { const m = c.match(/rgba\(\s*\d+,\s*\d+,\s*\d+,\s*([\d.]+)\)/); return m ? +m[1] : (c.startsWith('rgb(') ? 1 : 0); };
+                return {
+                    boxes: all.filter((b) => b.open).length,
+                    tags: [...new Set(all.map((b) => b.tagName))].join(),
+                    backdrop: all[0] ? alpha(getComputedStyle(all[0], '::backdrop').backgroundColor) : 0,
+                    overlays: document.querySelectorAll('.e-overlay').length,
+                    css: [...document.querySelectorAll('link[rel="stylesheet"]')].map((l) => l.href).filter((h, i, a) => a.indexOf(h) !== i).length,
+                };
+            });
             if (frame) {
                 await sp.waitForTimeout(700);
                 await sp.keyboard.press('Escape');
                 await sp.waitForTimeout(300);
+                await sp.evaluate(() => { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); });
+                await sp.keyboard.press('Escape');
+                await sp.waitForTimeout(200);
+                await sp.keyboard.press('Escape');
+                await sp.waitForTimeout(300);
                 const esc = await boxes();
-                check('окно: Esc его не закрывает', esc.boxes === 1 && esc.overlays.length === 1 && esc.overlays[0] > 0.4, JSON.stringify(esc));
+                check('окно: Esc (и повторный) его не закрывает; окно — <dialog>, затемнение — ::backdrop, слоя Overlay нет',
+                    esc.boxes === 1 && esc.tags === 'DIALOG' && esc.backdrop > 0.4 && esc.overlays === 0, JSON.stringify(esc));
                 await frame.click('li.edit_btn');
                 await sp.waitForFunction(() => document.querySelectorAll('.e-modalbox').length === 2, null, { timeout: 10000 }).catch(() => null);
                 const innerEl = (await sp.$$('.e-modalbox iframe'))[1];
@@ -697,13 +710,13 @@ const inspect = (page) => page.evaluate(() => {
                     await sp.waitForTimeout(800);
                     const one = await boxes();
                     check('окно в окне: «Закрыть» второго оставляет первое и затемнение',
-                        one.boxes === 1 && one.overlays.length === 1 && one.overlays[0] > 0.4, JSON.stringify(one));
+                        one.boxes === 1 && one.backdrop > 0.4 && one.overlays === 0, JSON.stringify(one));
                 }
                 await frame.click('li.close_btn');
                 await sp.waitForTimeout(900);
                 const none = await boxes();
                 check('окно: «Закрыть» убирает окно и затемнение; стили окон подключены один раз',
-                    none.boxes === 0 && !none.overlays.length && none.css === 0, JSON.stringify(none));
+                    none.boxes === 0 && none.tags === '' && none.overlays === 0 && none.css === 0, JSON.stringify(none));
             }
         }
         check('панель страницы, «Настройки сайта»: без ошибок JS и 404', !spErrors.list().length, spErrors.list().join(' | '));

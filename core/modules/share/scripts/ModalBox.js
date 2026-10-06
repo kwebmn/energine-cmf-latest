@@ -6,23 +6,27 @@
  * Чистый JavaScript, без MooTools.
  *
  * @requires Energine
- * @requires Overlay
  *
  * @author Pavel Dubenko
  *
- * @version 1.1.0
+ * @version 1.2.0
  */
 
 import {Energine} from 'Energine';
-import {Overlay} from 'Overlay';
 
 /** @typedef {{url?: string, onClose?: Function, extraData?: *, post?: string, code?: Element}} ModalBoxOptions */
-/** @typedef {HTMLDivElement & {options?: ModalBoxOptions, iframe?: HTMLIFrameElement}} ModalBoxElement окно: div с настройками и iframe */
+/**
+ * Окно: элемент <dialog> с настройками, iframe и результатом. Результат — в своём свойстве result: у <dialog> есть
+ * строковое returnValue, объект в нём стал бы строкой «[object Object]».
+ * @typedef {HTMLDialogElement & {options?: ModalBoxOptions, iframe?: HTMLIFrameElement, result?: *, closing?: boolean}} ModalBoxElement
+ */
 
 /**
- * Окна админки: страница в iframe поверх текущей. Объект общий для вложенных окон: внутри окна работает объект
- * верхнего окна (window.top.ModalBox), и окна открываются друг над другом в одном документе. Щелчок по затемнению и
- * Esc окно не закрывают — клиент просил не закрывать окно случайно.
+ * Окна админки: страница в iframe поверх текущей, в элементе <dialog> (надёжность, этап 5). Окно открывается
+ * showModal(): оно в верхнем слое браузера (без z-index), страница под ним недоступна мыши и клавиатуре, затемнение —
+ * ::backdrop (у вложенных окон прозрачное: затемнение одно, admin.tailwind.css). Объект общий для вложенных окон:
+ * внутри окна работает объект верхнего окна (window.top.ModalBox), и окна открываются друг над другом в одном
+ * документе. Щелчок по затемнению и Esc окно не закрывают — клиент просил не закрывать окно случайно.
  *
  * @namespace
  */
@@ -32,17 +36,6 @@ export const ModalBox = window.top.ModalBox || /** @lends ModalBox */{
      * @type {ModalBoxElement[]}
      */
     boxes: [],
-
-    /**
-     * @type {boolean}
-     */
-    initialized: false,
-
-    // стили окон и общее затемнение (без знака загрузки)
-    init: function () {
-        this.overlay = new Overlay(null, {indicator: false});
-        this.initialized = true;
-    },
 
     /**
      * Открыть окно.
@@ -55,12 +48,27 @@ export const ModalBox = window.top.ModalBox || /** @lends ModalBox */{
      * @param {*} [options.extraData] Данные для страницы окна (getExtraData).
      */
     open: function (options) {
-        var box = /** @type {ModalBoxElement} */ (document.createElement('div'));
-        // окно поверх страницы: по высоте 90% экрана, по ширине — от 95% на узком экране до 60% на широком
-        box.className = 'e-modalbox a:fixed a:top-[5%] a:left-1/2 a:z-[1001] a:h-[90%] a:w-[95%] a:-translate-x-1/2 a:overflow-hidden'
-            + ' a:rounded-lg a:bg-white a:shadow-2xl a:min-[900px]:w-[90%] a:min-[1200px]:w-[80%] a:min-[1400px]:w-[64rem]';
-        document.body.appendChild(box);
+        var box = /** @type {ModalBoxElement} */ (document.createElement('dialog'));
+        // по высоте 90% экрана, по ширине — от 95% на узком экране до 64rem на широком; по центру — сам <dialog>
+        box.className = 'e-modalbox a:m-auto a:h-[90%] a:max-h-none a:w-[95%] a:max-w-none a:overflow-hidden a:rounded-lg'
+            + ' a:border-0 a:bg-white a:p-0 a:shadow-2xl a:min-[900px]:w-[90%] a:min-[1200px]:w-[80%] a:min-[1400px]:w-[64rem]';
         box.options = Object.assign({url: null, onClose: function () {}, extraData: null, post: null}, options);
+        // Esc окно не закрывает: клавиша гасится, отмена (cancel) — тоже; если браузер всё же закрыл окно (повторный Esc
+        // без действия пользователя отмену не спрашивает), оно открывается снова — закрывает его только close()
+        box.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                event.preventDefault();
+            }
+        });
+        box.addEventListener('cancel', function (event) {
+            event.preventDefault();
+        });
+        box.addEventListener('close', function () {
+            if (!box.closing && box.isConnected) {
+                box.showModal();
+            }
+        });
+        document.body.appendChild(box);
 
         if (box.options.url) {
             var name = 'modalBoxIframe' + this.boxes.length,
@@ -97,13 +105,11 @@ export const ModalBox = window.top.ModalBox || /** @lends ModalBox */{
         }
 
         this.boxes.push(box);
-        if (this.boxes.length === 1) {
-            this.overlay.show();
-        }
+        box.showModal();
     },
 
     /**
-     * @returns {Element|null} Верхнее окно.
+     * @returns {ModalBoxElement|null} Верхнее окно.
      */
     getCurrent: function () {
         return this.boxes.length ? this.boxes[this.boxes.length - 1] : null;
@@ -118,7 +124,7 @@ export const ModalBox = window.top.ModalBox || /** @lends ModalBox */{
     setReturnValue: function (value) {
         var box = this.getCurrent();
         if (box) {
-            box.returnValue = value;
+            box.result = value;
         }
     },
 
@@ -127,26 +133,19 @@ export const ModalBox = window.top.ModalBox || /** @lends ModalBox */{
             return;
         }
         var box = this.boxes.pop();
-        box.options.onClose(box.returnValue);
-        // окно убирается после обработчика: он ещё может читать страницу окна
+        box.options.onClose(box.result);
+        // окно убирается после обработчика: он ещё может читать страницу окна; фокус браузер вернёт сам
         setTimeout(function () {
+            box.closing = true;
             if (box.iframe) {
                 box.iframe.src = 'about:blank';
                 box.iframe.remove();
             }
+            box.close();
             box.remove();
         }, 1);
-        if (!this.boxes.length) {
-            this.overlay.hide();
-        }
     }
 };
-
-if (!ModalBox.initialized) {
-    document.addEventListener('DOMContentLoaded', function () {
-        ModalBox.init();
-    });
-}
 
 // окна страницы ищут общую очередь окон в window.top.ModalBox
 window.ModalBox = ModalBox;

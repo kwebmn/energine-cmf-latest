@@ -297,6 +297,10 @@ code { white-space: pre; }
 
 /* затемнение и знак загрузки (крутится рамка — без картинки) */
 .e-overlay { position: fixed; inset: 0; z-index: 1000; background: #000; line-height: 0; font-size: 0; }
+/* окна (ModalBox.js) — <dialog> в верхнем слое: затемнение — его ::backdrop (как прежний слой Overlay: чёрный на 50%), у
+   вложенных окон прозрачное — затемнение одно */
+.e-modalbox::backdrop { background: rgb(0 0 0 / .5); }
+.e-modalbox ~ .e-modalbox::backdrop { background: transparent; }
 .e-overlay-loading::after {
     content: ""; position: absolute; left: 50%; top: 50%; width: 2.5rem; height: 2.5rem; margin: -1.25rem 0 0 -1.25rem;
     border: 3px solid rgb(255 255 255 / .35); border-top-color: #fff; border-radius: 50%; animation: e-spin .8s linear infinite;

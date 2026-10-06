@@ -119,16 +119,24 @@ const SCREENS = [
             await p.setViewportSize({ width: w, height: 900 });
             await p.goto(BASE + 'admin/users/', { waitUntil: 'networkidle' });
             const open = (url) => p.evaluate((u) => window.top.ModalBox.open({ url: u }), url);
+            // фокус до окна — на ссылке страницы: после закрытия окон он возвращается туда
+            await p.evaluate(() => { const a = document.querySelector('header a[href]'); if (a) { a.focus(); window.claudeFocusBefore = a; } });
             await open(BASE + 'admin/users/single/userEditor/add/');
             await p.waitForTimeout(2500);
+            // окно — <dialog> в верхнем слое (надёжность, этап 5): затемнение — ::backdrop, страница под окном недоступна мыши
             const box = await p.evaluate(() => {
                 const b = document.querySelector('.e-modalbox'); const cs = b && getComputedStyle(b);
                 const r = b && b.getBoundingClientRect();
-                return b && { position: cs.position, z: +cs.zIndex, shadow: cs.boxShadow !== 'none', radius: parseFloat(cs.borderTopLeftRadius),
-                    inView: r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight, frame: getComputedStyle(b.querySelector('iframe')).borderTopWidth };
+                const under = document.elementFromPoint(2, innerHeight - 2);
+                return b && { tag: b.tagName, modal: b.matches(':modal'), position: cs.position, backdrop: getComputedStyle(b, '::backdrop').backgroundColor,
+                    shadow: cs.boxShadow !== 'none', radius: parseFloat(cs.borderTopLeftRadius),
+                    inView: r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight, frame: getComputedStyle(b.querySelector('iframe')).borderTopWidth,
+                    pageBlocked: !!under && (under === b || b.contains(under)), pageScroll: getComputedStyle(document.documentElement).overflow };
             });
-            check(`окно формы, ${w}px: поверх страницы, в пределах окна, рамка и тень`, !!box && box.position === 'fixed' && box.z > 1000 && box.shadow
-                && box.radius > 0 && box.inView && box.frame === '0px', JSON.stringify(box));
+            check(`окно формы, ${w}px: <dialog> в верхнем слое, затемнение, в пределах окна, рамка и тень`, !!box && box.tag === 'DIALOG' && box.modal
+                && box.position === 'fixed' && /^rgba\(0, 0, 0, 0\.[4-9]/.test(box.backdrop) && box.shadow && box.radius > 0 && box.inView
+                && box.frame === '0px', JSON.stringify(box));
+            check(`окно формы, ${w}px: страница под окном недоступна мыши`, !!box && box.pageBlocked, JSON.stringify(box));
             const f = p.frameLocator('.e-modalbox iframe').first();
             const tabs = await f.locator('ul.e-tabs').evaluate((ul) => {
                 const cur = ul.querySelector('li.current'); const other = ul.querySelector('li:not(.current)');
@@ -161,14 +169,22 @@ const SCREENS = [
                 const boxes = [...document.querySelectorAll('.e-modalbox')];
                 const r = boxes[1] && boxes[1].getBoundingClientRect();
                 const top = r && document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
-                return { n: boxes.length, topIsSecond: !!top && boxes[1].contains(top) };
+                return { n: boxes.length, open: boxes.filter((b) => b.open).length, topIsSecond: !!top && boxes[1].contains(top),
+                    backdrop2: boxes[1] ? getComputedStyle(boxes[1], '::backdrop').backgroundColor : '' };
             });
             await p.evaluate(() => window.top.ModalBox.close());
             await p.waitForTimeout(500);
             const left = await p.evaluate(() => document.querySelectorAll('.e-modalbox').length);
-            check(`окно в окне, ${w}px: верхнее окно выше нижнего, закрытие верхнего оставляет нижнее`, stack.n === 2 && stack.topIsSecond && left === 1,
+            check(`окно в окне, ${w}px: верхнее окно выше нижнего, затемнение одно, закрытие верхнего оставляет нижнее`, stack.n === 2
+                && stack.open === 2 && stack.topIsSecond && /^rgba\(0, 0, 0, 0\)$|^transparent$/.test(stack.backdrop2) && left === 1,
                 JSON.stringify({ ...stack, left }));
             await shot(p, `окно-формы-${w}`);
+            // закрытие последнего окна: окон нет, фокус — там, где был до окна
+            await p.evaluate(() => window.top.ModalBox.close());
+            await p.waitForTimeout(500);
+            const after = await p.evaluate(() => ({ boxes: document.querySelectorAll('.e-modalbox').length,
+                focusBack: !!window.claudeFocusBefore && document.activeElement === window.claudeFocusBefore }));
+            check(`окна закрыты, ${w}px: окон нет, фокус вернулся`, after.boxes === 0 && after.focusBack, JSON.stringify(after));
             await p.close();
         }
 
