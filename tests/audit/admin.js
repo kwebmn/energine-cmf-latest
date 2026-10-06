@@ -374,7 +374,10 @@ const SCREENS = [
             const pageId = 3629;
             for (const [label, url, want] of [['форма раздела', `admin/structure/single/divEditor/${pageId}/edit/`, true],
                 ['грид пользователей', 'admin/users/single/userEditor/', true], ['файлы', 'admin/users/single/adminPanel/file-library/', true],
-                ['грид языков', 'admin/translations/languages/single/langEditor/', false]]) {
+                // у грида языков подсказка есть с этапа 3 надёжности (HELP_LANGUAGEEDITOR_MAIN — язык «в подготовке»);
+                // без подсказки — грид ролей
+                ['грид языков', 'admin/translations/languages/single/langEditor/', true],
+                ['грид ролей', 'admin/users/roles/single/roleEditor/', false]]) {
                 const p = await ctx.newPage();
                 await p.setViewportSize({ width: 1280, height: 900 });
                 await p.goto(BASE + url, { waitUntil: 'networkidle' });

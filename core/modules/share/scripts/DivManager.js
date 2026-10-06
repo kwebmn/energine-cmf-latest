@@ -227,7 +227,7 @@ export class DivManager {
     edit() {
         const nodeId = this.tree.getSelectedNode().getId();
         ModalBox.open({
-            url: this.singlePath + nodeId + '/edit',
+            url: this.singlePath + nodeId + '/edit/',
             onClose: () => this.refreshNode(),
             extraData: this.tree.getSelectedNode()
         });

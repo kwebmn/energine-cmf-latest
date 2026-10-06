@@ -29,6 +29,13 @@ const NO_EDIT = [/actionsList\/$/];
         page.on('requestfailed', (r) => errors.push(`failed: ${r.url()} ${r.failure() ? r.failure().errorText : ''}`));
         // этап 8: MooTools не запрашивается ни одним окном страницы и нигде не определена
         page.on('request', (r) => { if (/mootools|moocompat/i.test(r.url())) errors.push('mootools: ' + r.url()); });
+        // надёжность, этап 5: у страницы один адрес — переадресация внутри сайта (адрес без «/», старый адрес) на пути
+        // страницы, её окон, скриптов и данных — лишний переход, значит, где-то собран не тот адрес
+        page.on('response', (r) => {
+            if ([301, 302, 303, 307, 308].includes(r.status()) && r.url().startsWith(BASE)) {
+                errors.push(`redirect ${r.status()}: ${r.url()} → ${r.headers().location || '?'}`);
+            }
+        });
         let status = 0;
         try {
             const resp = await page.goto(url, { waitUntil: 'networkidle', timeout: 60000 });
@@ -38,6 +45,14 @@ const NO_EDIT = [/actionsList\/$/];
                 if (await frame.evaluate(() => typeof window.MooTools !== 'undefined').catch(() => false)) {
                     errors.push('mootools: defined in ' + frame.url());
                 }
+                // ссылки на страницы сайта — со слешем на конце (кроме «файлов» с точкой в последнем сегменте)
+                const noSlash = await frame.evaluate((origin) => [...document.querySelectorAll('a[href]')].map((a) => a.href).filter((h) => {
+                    let u;
+                    try { u = new URL(h); } catch (e) { return false; }
+                    const last = u.pathname.slice(u.pathname.lastIndexOf('/') + 1);
+                    return u.origin === origin && !u.pathname.endsWith('/') && !last.includes('.');
+                }), new URL(BASE).origin).catch(() => []);
+                for (const h of new Set(noSlash)) errors.push('link without /: ' + h + ' (' + frame.url() + ')');
             }
         } catch (e) {
             errors.push('goto: ' + e.message.split('\n')[0]);

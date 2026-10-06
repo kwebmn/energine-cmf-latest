@@ -56,24 +56,57 @@ final class SiteManager extends Primitive {
     }
 
     /**
-     * Та же страница по адресу сайта, если GET или HEAD пришёл по другому имени или порту (www, IP, поддельный Host).
-     * У сайта один адрес: формы страницы, открытой по другому имени, уходили бы на адрес из конфига с чужим Origin
-     * и отклонялись проверкой Csrf, а поисковики видели бы копии сайта. POST не переадресуется (его отклонит Csrf),
-     * консоль — тоже.
+     * Канонический адрес текущего запроса (canonicalURL) — для переадресации 301 до разбора адреса; консоль — null.
      *
-     * @return string|null адрес для переадресации 301 или null — запрос уже на адресе сайта
+     * @return string|null адрес для переадресации 301 или null — запрос уже на своём адресе
      */
     public function canonicalLocation() {
-        if (E()->getUtils()->is_PHP_CLI() || !in_array($_SERVER['REQUEST_METHOD'] ?? 'GET', ['GET', 'HEAD'], true)) {
+        if (E()->getUtils()->is_PHP_CLI()) {
             return null;
         }
         $uri = URI::create();
-        $domain = (string)$this->getConfigValue('site.domain');
-        $port = (int)(explode(':', $domain, 2)[1] ?? ($uri->getScheme() == 'https' ? 443 : 80));
-        if (strcasecmp($uri->getHost(), Site::hostOf($domain)) === 0 && (int)$uri->getPort() === $port) {
+        return self::canonicalURL(
+            (string)($_SERVER['REQUEST_METHOD'] ?? 'GET'),
+            $uri->getScheme(),
+            $uri->getHost(),
+            (int)$uri->getPort(),
+            (string)($_SERVER['REQUEST_URI'] ?? '/'),
+            strcasecmp((string)($_SERVER['HTTP_X_REQUEST'] ?? ''), 'json') === 0,
+            (string)Primitive::getConfigValue('site.domain')
+        );
+    }
+
+    /**
+     * Канонический адрес запроса GET или HEAD — у сайта один адрес на страницу:
+     *  - имя и порт — из site.domain: страница, открытая по другому имени (www, IP, поддельный Host), уходила бы формами
+     *    на адрес из конфига с чужим Origin (их отклоняет Csrf), а поисковики видели бы копии сайта;
+     *  - путь страницы кончается на «/»: /about и /about/ были одной страницей с кодом 200 (дубль). Без слеша остаются
+     *    запросы JSON админки (их адреса не индексируются, ответ — данные) и «файлы» — точка в последнем сегменте
+     *    (robots.txt, index.php, картинка).
+     * Оба отличия — одна переадресация. Путь и строка запроса — как пришли (без декодирования). POST не переадресуется
+     * (его отклонил бы Csrf, а 301 сменил бы метод на GET).
+     *
+     * @param string $requestUri путь со строкой запроса, как в REQUEST_URI
+     * @param bool $json запрос JSON (заголовок X-Request: JSON)
+     * @param string $domain site.domain (имя, возможно с портом)
+     * @return string|null адрес для 301 или null — адрес уже канонический
+     */
+    public static function canonicalURL(string $method, string $scheme, string $host, int $port, string $requestUri, bool $json, string $domain): ?string {
+        if (!in_array(strtoupper($method), ['GET', 'HEAD'], true)) {
+            return null;
+        }
+        [$path, $query] = explode('?', $requestUri, 2) + [1 => null];
+        if ($path === '') {
+            $path = '/';
+        }
+        $expectedPort = (int)(explode(':', $domain, 2)[1] ?? ($scheme == 'https' ? 443 : 80));
+        $sameHost = strcasecmp($host, Site::hostOf($domain)) === 0 && $port === $expectedPort;
+        $last = substr($path, strrpos($path, '/') + 1);
+        $addSlash = !$json && !str_ends_with($path, '/') && !str_contains($last, '.');
+        if ($sameHost && !$addSlash) {
             return null;
         }
 
-        return $uri->getScheme() . '://' . $domain . ($_SERVER['REQUEST_URI'] ?? '/');
+        return $scheme . '://' . $domain . $path . ($addSlash ? '/' : '') . ($query === null ? '' : '?' . $query);
     }
 }

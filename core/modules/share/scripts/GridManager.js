@@ -965,7 +965,7 @@ export class GridManager {
 
     // Actions:
     view() {
-        ModalBox.open({url: this.singlePath + this.grid.getSelectedRecordKey()});
+        ModalBox.open({url: this.singlePath + this.grid.getSelectedRecordKey() + '/'});
     }
 
     add() {
@@ -980,7 +980,7 @@ export class GridManager {
             id = this.grid.getSelectedRecordKey();
         }
         ModalBox.open({
-            url: this.singlePath + id + '/edit',
+            url: this.singlePath + id + '/edit/',
             onClose: (returnValue) => this.processAfterCloseAction(returnValue)
         });
     }
@@ -991,7 +991,7 @@ export class GridManager {
         }
         this.setMvElementId(id);
         ModalBox.open({
-            url: this.singlePath + 'move/' + id,
+            url: this.singlePath + 'move/' + id + '/',
             onClose: (returnValue) => this.processAfterCloseAction(returnValue)
         });
     }

@@ -301,7 +301,7 @@ export class Form {
             return;
         }
         ModalBox.open({
-            url: this.singlePath + 'file-library/' + pid + '/add',
+            url: this.singlePath + 'file-library/' + pid + '/add/',
             extraData: path,
             onClose: (result) => {
                 if (!(result && result.data)) {

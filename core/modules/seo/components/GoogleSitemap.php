@@ -69,7 +69,7 @@ class GoogleSitemap extends SitemapTree {
 
         $sitePath = $siteinfo->base;
         $fullPath = $this->request->getPath(1, true);
-        array_push($sitemaps, ['path' => $sitePath . $fullPath . 'map']);
+        array_push($sitemaps, ['path' => $sitePath . $fullPath . 'map/']);
 
         $d->load($sitemaps);
         $this->setData($d);

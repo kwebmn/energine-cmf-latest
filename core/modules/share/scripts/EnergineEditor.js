@@ -157,7 +157,7 @@ export const EnergineEditor = {
                     return;
                 }
                 ModalBox.open({
-                    url: singlePath + 'imagemanager',
+                    url: singlePath + 'imagemanager/',
                     extraData: imageData,
                     onClose: function (image) {
                         if (!image) {

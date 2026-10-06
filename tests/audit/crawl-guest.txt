@@ -15,5 +15,5 @@ restore-password/
 robots.txt/
 sitemap/
 google-sitemap/
-google-sitemap/map
+google-sitemap/map/
 robots.txt/

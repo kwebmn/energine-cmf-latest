@@ -54,6 +54,7 @@ echo "### schema-info"; php8.5 schema-info.php
 echo "### field-type"; php8.5 field-type.php
 echo "### json-builder"; php8.5 json-builder.php
 echo "### registry"; php8.5 registry.php
+echo "### urls"; php8.5 urls.php
 
 echo "### mail"
 php8.5 smoke-mail.php

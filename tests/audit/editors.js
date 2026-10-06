@@ -878,7 +878,7 @@ const showTabOf = (page, selector) => page.evaluate((sel) => {
     const openImageWindow = async (page) => {
         await page.goto(BASE + `admin/structure/single/divEditor/${pageId}/edit/`, { waitUntil: 'networkidle' });
         await page.evaluate(() => ModalBox.open({
-            url: document.querySelector('[single_template]').getAttribute('single_template') + 'imagemanager',
+            url: document.querySelector('[single_template]').getAttribute('single_template') + 'imagemanager/',
             extraData: { upl_path: 'uploads/public/13662314846.png', upl_width: 90, upl_height: 68, upl_title: 'claude' },
         }));
         return waitFrame(page, /imagemanager/);
@@ -985,7 +985,7 @@ const showTabOf = (page, selector) => page.evaluate((sel) => {
             const quick = await p.evaluate(() => window.claudeOpened.slice());
             const overlays = await p.evaluate(() => document.querySelectorAll('.e-overlay').length);
             check('быстрая загрузка: окно добавления файла в папку быстрой загрузки', quick.length === 1
-                && quick[0].url.endsWith(`/file-library/${formData.pid}/add`), JSON.stringify(quick));
+                && quick[0].url.endsWith(`/file-library/${formData.pid}/add/`), JSON.stringify(quick));
             check('быстрая загрузка: файл найден по id и подставлен — путь и превью, затемнение снято', resp.ok()
                 && st.value === formData.path && st.src === MEDIA + formData.path && st.shown && !overlays,
                 JSON.stringify({ st, overlays, body: resp.request().postData() }));

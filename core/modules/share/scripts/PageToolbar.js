@@ -99,11 +99,11 @@ export class PageToolbar extends Toolbar {
     }
 
     add() {
-        ModalBox.open({url: this.componentPath + 'add/' + this.documentId});
+        ModalBox.open({url: this.componentPath + 'add/' + this.documentId + '/'});
     }
 
     edit() {
-        ModalBox.open({url: this.componentPath + this.documentId + '/edit'});
+        ModalBox.open({url: this.componentPath + this.documentId + '/edit/'});
     }
 
     // боковая панель: открыть или закрыть и запомнить это в cookie на 30 дней (домен — главного сайта, если адрес
@@ -121,27 +121,27 @@ export class PageToolbar extends Toolbar {
     }
 
     showTmplEditor() {
-        ModalBox.open({url: this.componentPath + 'template'});
+        ModalBox.open({url: this.componentPath + 'template/'});
     }
 
     showTransEditor() {
-        ModalBox.open({url: this.componentPath + 'translation'});
+        ModalBox.open({url: this.componentPath + 'translation/'});
     }
 
     showUserEditor() {
-        ModalBox.open({url: this.componentPath + 'user'});
+        ModalBox.open({url: this.componentPath + 'user/'});
     }
 
     showRoleEditor() {
-        ModalBox.open({url: this.componentPath + 'role'});
+        ModalBox.open({url: this.componentPath + 'role/'});
     }
 
     showLangEditor() {
-        ModalBox.open({url: this.componentPath + 'languages'});
+        ModalBox.open({url: this.componentPath + 'languages/'});
     }
 
     showFileRepository() {
-        ModalBox.open({url: this.componentPath + 'file-library'});
+        ModalBox.open({url: this.componentPath + 'file-library/'});
     }
 
     showSiteSettings() {

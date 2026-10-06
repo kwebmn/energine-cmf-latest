@@ -804,7 +804,7 @@ const inspect = (page) => page.evaluate(() => {
             await rows.nth(1).dblclick();
             const win = await p.waitForSelector('.e-modalbox iframe', { timeout: 10000 }).catch(() => null);
             const src = win ? await win.evaluate((f) => f.src) : '';
-            check('двойной щелчок по строке — окно правки этой записи', src.endsWith(`/${s3.rows[1].key}/edit`), src);
+            check('двойной щелчок по строке — окно правки этой записи', src.endsWith(`/${s3.rows[1].key}/edit/`), src);
             await p.evaluate(() => ModalBox.close());
             await p.waitForTimeout(600);
 
@@ -939,8 +939,8 @@ const inspect = (page) => page.evaluate(() => {
             await p.waitForFunction((url) => [...document.querySelectorAll('.e-modalbox iframe')]
                 .some((f) => f.src !== url && /\/edit\/?$/.test(f.src)), first, { timeout: 15000 }).catch(() => null);
             const next = await p.evaluate(() => [...document.querySelectorAll('.e-modalbox iframe')].map((f) => f.src));
-            check('«Править предыдущий»: окно закрыто, открыта правка предыдущей записи', first.endsWith(`/${keys[1]}/edit`)
-                && next.length === 1 && next[0].endsWith(`/${keys[0]}/edit`), JSON.stringify({ keys, first, next }));
+            check('«Править предыдущий»: окно закрыто, открыта правка предыдущей записи', first.endsWith(`/${keys[1]}/edit/`)
+                && next.length === 1 && next[0].endsWith(`/${keys[0]}/edit/`), JSON.stringify({ keys, first, next }));
             check('«Править предыдущий»: шаблон без правки не изменился', mailAll() === was);
             check('«Править предыдущий»: без ошибок JS и 404', !errors.list().length, errors.list().join(' | '));
             await p.close();
@@ -1255,7 +1255,7 @@ const inspect = (page) => page.evaluate(() => {
             await Promise.all([p.waitForRequest((r) => /get-node-data$/.test(r.url()), { timeout: 10000 }), p.evaluate(() => ModalBox.close())]);
             await p.waitForTimeout(400);
             const renamed = await p.evaluate(([k, id]) => window[k].tree.getNodeById(id).element.querySelector('a').textContent, [key, pick.x]);
-            check('структура: «Править» — окно правки раздела, после него имя узла обновлено', src.endsWith(`/${pick.x}/edit`)
+            check('структура: «Править» — окно правки раздела, после него имя узла обновлено', src.endsWith(`/${pick.x}/edit/`)
                 && renamed === 'Claude renamed', JSON.stringify({ src, renamed }));
             const kept = await p.evaluate(([k, id]) => window[k].tree.getNodeById(id).getData().smap_segment, [key, pick.x]);
             check('структура: после «Править» данные узла на месте (сегмент — для перехода)', kept === pick.segment, String(kept));

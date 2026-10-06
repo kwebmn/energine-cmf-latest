@@ -80,7 +80,7 @@ for u in structure/single/divEditor/80/edit/ structure/single/divEditor/$page/ed
   users/single/userEditor/$user/edit/ users/single/userEditor/add/ users/roles/single/roleEditor/1/edit/ \
   settings/single/settings/1/edit/ translations/single/transEditor/$tag/edit/ translations/single/transEditor/add/ \
   translations/languages/single/langEditor/1/edit/ \
-  users/single/adminPanel/file-library users/single/adminPanel/file-library/1/add/; do
+  users/single/adminPanel/file-library/ users/single/adminPanel/file-library/1/add/; do
   check "form" "$A/$u" 200
 done
 
