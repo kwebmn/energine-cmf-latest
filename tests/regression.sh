@@ -66,6 +66,7 @@ suite lang-switcher php8.5 lang-switcher.php
 suite page-link php8.5 page-link.php
 suite page-parent php8.5 page-parent.php
 suite error-status php8.5 error-status.php
+suite html-cleanup php8.5 html-cleanup.php
 
 suite mail php8.5 smoke-mail.php
 suite antispam php8.5 smoke-antispam.php

@@ -16,6 +16,7 @@ abstract class DataSet;
 
 namespace Energine\share\components;
 
+use Energine\share\gears\HtmlCleaner;
 use Energine\share\gears\Request;
 use Energine\share\gears\XSLTTransformer;
 use Energine\share\gears\Toolbar, Energine\share\gears\QAL, Energine\share\gears\SystemException, Energine\share\gears\DataDescription, Energine\share\gears\FieldDescription, Energine\share\gears\Data, Energine\share\gears\Builder, Energine\share\gears\Primitive, Energine\share\gears\SimpleBuilder, Energine\share\gears\DataSetConfig, Energine\share\gears\Pager;
@@ -652,43 +653,11 @@ abstract class DataSet extends Component
      */
     public static function cleanupHTML($data)
     {
-        $aggressive = Primitive::getConfigValue('site.aggressive_cleanup', false);
-
-        //Если подключено расширение tidy
-        if (function_exists('tidy_get_output') && $aggressive) {
-            try {
-                $tidy = new \tidy();
-                $config = [
-                    'bare' => true,
-                    'drop-font-tags' => true,
-                    'drop-proprietary-attributes' => true,
-                    'hide-comments' => true,
-                    'logical-emphasis' => true,
-                    'numeric-entities' => true,
-                    'show-body-only' => true,
-                    'quote-nbsp' => false,
-                    'preserve-entities' => true,
-                    'indent' => 'auto',
-                    'wrap' => 72,
-                    'output-html' => true,
-                ];
-                //if ($aggressive) {
-                $config = array_merge(
-                    $config,
-                    [
-                        //'clean' => true,
-                        'word-2000' => true,
-                        'drop-empty-paras' => true
-                    ]
-                );
-                //}
-                $data = $tidy->repairString($data, $config, 'utf8');
-
-            } catch (\Exception $dummyError) {
-                //inspect($dummyError);
-            }
-            unset($tidy);
-
+        // агрессивная очистка (site.aggressive_cleanup) — мусор Office/Word своим очистителем на Dom\HTMLDocument:
+        // расширения tidy на сервере нет, прежняя ветка на нём молча ничего не делала. Текст без признаков Office —
+        // байт в байт (HtmlCleaner)
+        if (Primitive::getConfigValue('site.aggressive_cleanup', false)) {
+            $data = HtmlCleaner::clean((string)$data);
         }
 
         $base = E()->getSiteManager()->getCurrentSite()->base;
