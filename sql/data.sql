@@ -482,6 +482,13 @@ INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2919,'HINT_CONTEN
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2930,'BTN_PICK_PAGE');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2931,'BTN_PICK_FILE');
 INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2932,'ERR_DIV_PARENT_LOOP');
+INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2933,'CONTENT_SEARCH');
+INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2934,'TXT_SEARCH');
+INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2935,'BTN_SEARCH');
+INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2936,'TXT_SEARCH_FOUND');
+INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2937,'TXT_SEARCH_HINT');
+INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2938,'TXT_SEARCH_NOTHING');
+INSERT INTO `share_lang_tags` (`ltag_id`, `ltag_name`) VALUES (2939,'TXT_SEARCH_PAGES');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (15,1,'Выйти');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (15,2,'Вийти');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (42,1,'Сохранить');
@@ -1424,6 +1431,20 @@ INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2931,2,'Файл…');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2932,1,'Раздел нельзя перенести в самого себя или в свой подраздел: выберите другого родителя.');
 INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2932,2,'Розділ не можна перенести в самого себе або у свій підрозділ: виберіть іншого батька.');
+INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2933,1,'Поиск по сайту');
+INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2933,2,'Пошук по сайту');
+INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2934,1,'Поиск по сайту');
+INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2934,2,'Пошук по сайту');
+INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2935,1,'Найти');
+INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2935,2,'Знайти');
+INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2936,1,'Найдено страниц');
+INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2936,2,'Знайдено сторінок');
+INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2937,1,'Введите слова, которые есть на нужной странице: найдутся страницы со всеми этими словами в любой форме.');
+INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2937,2,'Введіть слова, які є на потрібній сторінці: знайдуться сторінки з усіма цими словами в будь-якій формі.');
+INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2938,1,'Ничего не найдено. Попробуйте другие слова или меньше слов.');
+INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2938,2,'Нічого не знайдено. Спробуйте інші слова або менше слів.');
+INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2939,1,'Страницы результатов');
+INSERT INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`) VALUES (2939,2,'Сторінки результатів');
 INSERT INTO `mail_templates` (`template_id`, `template_sysname`, `template_is_active`, `template_hints`) VALUES (1,'user_registration',1,'[user_name] - имя пользователя, [user_login] - логин (e-mail), [password_link] - ссылка установки пароля (действует час), [site_name] - название сайта, [site_url] - адрес сайта');
 INSERT INTO `mail_templates` (`template_id`, `template_sysname`, `template_is_active`, `template_hints`) VALUES (2,'user_restore_password',1,'[sex_suffix_hello] - окончание обращения по полу пользователя (константы TXT_EMAIL_SUFFIX_SEX_M/F/UNKNOWN), [user_name] - имя, [user_login] - логин (e-mail), [restore_link] - ссылка для смены пароля (действует час), [site_name] - название сайта, [site_url] - адрес сайта');
 INSERT INTO `mail_templates_translation` (`template_id`, `lang_id`, `template_name`, `template_subject`, `template_body`, `template_body_rtf`) VALUES (1,1,'Регистрация пользователя','Регистрация на сайте [site_name]','Здравствуйте, [user_name]!\n\nВы зарегистрированы на сайте [site_name] ([site_url]). Логин: [user_login]\n\nЗадайте пароль по ссылке (действует час): [password_link]\nЕсли ссылка устарела, воспользуйтесь «Забыли пароль?» на странице входа.\n\nПисьмо отправлено автоматически, отвечать на него не нужно.','<p>Здравствуйте, [user_name]!</p>\n<p>Вы зарегистрированы на сайте <a href=\"[site_url]\">[site_name]</a>. Логин: <strong>[user_login]</strong></p>\n<p><a href=\"[password_link]\">Задайте пароль</a> — ссылка действует час. Если она устарела, воспользуйтесь «Забыли пароль?» на странице входа.</p>\n<p>Письмо отправлено автоматически, отвечать на него не нужно.</p>');
@@ -1448,6 +1469,7 @@ INSERT INTO `share_sitemap` (`smap_id`, `smap_last_mod`, `smap_layout`, `smap_la
 INSERT INTO `share_sitemap` (`smap_id`, `smap_last_mod`, `smap_layout`, `smap_layout_xml`, `smap_content`, `smap_content_xml`, `smap_pid`, `smap_segment`, `smap_in_menu`, `smap_order_num`, `smap_redirect_url`, `smap_meta_robots`) VALUES (3724,'2026-09-26 14:46:30','default.layout.xml',NULL,'user_profile.content.xml',NULL,80,'profile',1,120,NULL,NULL);
 INSERT INTO `share_sitemap` (`smap_id`, `smap_last_mod`, `smap_layout`, `smap_layout_xml`, `smap_content`, `smap_content_xml`, `smap_pid`, `smap_segment`, `smap_in_menu`, `smap_order_num`, `smap_redirect_url`, `smap_meta_robots`) VALUES (3725,'2026-09-26 14:46:30','default.layout.xml',NULL,'log.content.xml',NULL,1275,'action-log',1,102,NULL,NULL);
 INSERT INTO `share_sitemap` (`smap_id`, `smap_last_mod`, `smap_layout`, `smap_layout_xml`, `smap_content`, `smap_content_xml`, `smap_pid`, `smap_segment`, `smap_in_menu`, `smap_order_num`, `smap_redirect_url`, `smap_meta_robots`) VALUES (3726,'2026-10-05 17:42:41','default.layout.xml',NULL,'broken_links.content.xml',NULL,1275,'links',1,103,NULL,NULL);
+INSERT INTO `share_sitemap` (`smap_id`, `smap_last_mod`, `smap_layout`, `smap_layout_xml`, `smap_content`, `smap_content_xml`, `smap_pid`, `smap_segment`, `smap_in_menu`, `smap_order_num`, `smap_redirect_url`, `smap_meta_robots`) VALUES (3732,'2026-10-06 21:04:26','default.layout.xml',NULL,'search.content.xml',NULL,80,'search',0,220,NULL,'NOINDEX');
 INSERT INTO `share_sitemap_translation` (`smap_id`, `lang_id`, `smap_name`, `smap_title`, `smap_description_rtf`, `smap_html_title`, `smap_meta_keywords`, `smap_meta_description`, `smap_is_disabled`) VALUES (80,1,'Главная страница',NULL,NULL,NULL,NULL,NULL,0);
 INSERT INTO `share_sitemap_translation` (`smap_id`, `lang_id`, `smap_name`, `smap_title`, `smap_description_rtf`, `smap_html_title`, `smap_meta_keywords`, `smap_meta_description`, `smap_is_disabled`) VALUES (330,1,'Войти',NULL,NULL,'Вход',NULL,NULL,0);
 INSERT INTO `share_sitemap_translation` (`smap_id`, `lang_id`, `smap_name`, `smap_title`, `smap_description_rtf`, `smap_html_title`, `smap_meta_keywords`, `smap_meta_description`, `smap_is_disabled`) VALUES (1275,1,'Административная часть',NULL,NULL,NULL,NULL,NULL,0);
@@ -1466,6 +1488,7 @@ INSERT INTO `share_sitemap_translation` (`smap_id`, `lang_id`, `smap_name`, `sma
 INSERT INTO `share_sitemap_translation` (`smap_id`, `lang_id`, `smap_name`, `smap_title`, `smap_description_rtf`, `smap_html_title`, `smap_meta_keywords`, `smap_meta_description`, `smap_is_disabled`) VALUES (3724,1,'Профиль пользователя',NULL,NULL,NULL,NULL,NULL,0);
 INSERT INTO `share_sitemap_translation` (`smap_id`, `lang_id`, `smap_name`, `smap_title`, `smap_description_rtf`, `smap_html_title`, `smap_meta_keywords`, `smap_meta_description`, `smap_is_disabled`) VALUES (3725,1,'Журнал действий',NULL,NULL,NULL,NULL,NULL,0);
 INSERT INTO `share_sitemap_translation` (`smap_id`, `lang_id`, `smap_name`, `smap_title`, `smap_description_rtf`, `smap_html_title`, `smap_meta_keywords`, `smap_meta_description`, `smap_is_disabled`) VALUES (3726,1,'Битые ссылки',NULL,NULL,NULL,NULL,NULL,0);
+INSERT INTO `share_sitemap_translation` (`smap_id`, `lang_id`, `smap_name`, `smap_title`, `smap_description_rtf`, `smap_html_title`, `smap_meta_keywords`, `smap_meta_description`, `smap_is_disabled`) VALUES (3732,1,'Поиск по сайту',NULL,NULL,NULL,NULL,NULL,0);
 INSERT INTO `share_sitemap_translation` (`smap_id`, `lang_id`, `smap_name`, `smap_title`, `smap_description_rtf`, `smap_html_title`, `smap_meta_keywords`, `smap_meta_description`, `smap_is_disabled`) VALUES (80,2,'Головна сторінка',NULL,NULL,NULL,NULL,NULL,0);
 INSERT INTO `share_sitemap_translation` (`smap_id`, `lang_id`, `smap_name`, `smap_title`, `smap_description_rtf`, `smap_html_title`, `smap_meta_keywords`, `smap_meta_description`, `smap_is_disabled`) VALUES (330,2,'Увійти',NULL,NULL,'Вхід',NULL,NULL,0);
 INSERT INTO `share_sitemap_translation` (`smap_id`, `lang_id`, `smap_name`, `smap_title`, `smap_description_rtf`, `smap_html_title`, `smap_meta_keywords`, `smap_meta_description`, `smap_is_disabled`) VALUES (1275,2,'Адміністративна частина',NULL,NULL,NULL,NULL,NULL,0);
@@ -1484,6 +1507,7 @@ INSERT INTO `share_sitemap_translation` (`smap_id`, `lang_id`, `smap_name`, `sma
 INSERT INTO `share_sitemap_translation` (`smap_id`, `lang_id`, `smap_name`, `smap_title`, `smap_description_rtf`, `smap_html_title`, `smap_meta_keywords`, `smap_meta_description`, `smap_is_disabled`) VALUES (3724,2,'Профіль користувача',NULL,NULL,NULL,NULL,NULL,0);
 INSERT INTO `share_sitemap_translation` (`smap_id`, `lang_id`, `smap_name`, `smap_title`, `smap_description_rtf`, `smap_html_title`, `smap_meta_keywords`, `smap_meta_description`, `smap_is_disabled`) VALUES (3725,2,'Журнал дій',NULL,NULL,NULL,NULL,NULL,0);
 INSERT INTO `share_sitemap_translation` (`smap_id`, `lang_id`, `smap_name`, `smap_title`, `smap_description_rtf`, `smap_html_title`, `smap_meta_keywords`, `smap_meta_description`, `smap_is_disabled`) VALUES (3726,2,'Биті посилання',NULL,NULL,NULL,NULL,NULL,0);
+INSERT INTO `share_sitemap_translation` (`smap_id`, `lang_id`, `smap_name`, `smap_title`, `smap_description_rtf`, `smap_html_title`, `smap_meta_keywords`, `smap_meta_description`, `smap_is_disabled`) VALUES (3732,2,'Пошук по сайту',NULL,NULL,NULL,NULL,NULL,0);
 INSERT INTO `share_access_level` (`smap_id`, `group_id`, `right_id`) VALUES (80,1,3);
 INSERT INTO `share_access_level` (`smap_id`, `group_id`, `right_id`) VALUES (80,3,1);
 INSERT INTO `share_access_level` (`smap_id`, `group_id`, `right_id`) VALUES (80,4,1);
@@ -1517,5 +1541,8 @@ INSERT INTO `share_access_level` (`smap_id`, `group_id`, `right_id`) VALUES (372
 INSERT INTO `share_access_level` (`smap_id`, `group_id`, `right_id`) VALUES (3724,4,2);
 INSERT INTO `share_access_level` (`smap_id`, `group_id`, `right_id`) VALUES (3725,1,3);
 INSERT INTO `share_access_level` (`smap_id`, `group_id`, `right_id`) VALUES (3726,1,3);
+INSERT INTO `share_access_level` (`smap_id`, `group_id`, `right_id`) VALUES (3732,1,3);
+INSERT INTO `share_access_level` (`smap_id`, `group_id`, `right_id`) VALUES (3732,3,1);
+INSERT INTO `share_access_level` (`smap_id`, `group_id`, `right_id`) VALUES (3732,4,1);
 INSERT INTO `share_uploads` (`upl_id`, `upl_pid`, `upl_childs_count`, `upl_path`, `upl_filename`, `upl_name`, `upl_title`, `upl_description`, `upl_publication_date`, `upl_data`, `upl_internal_type`, `upl_mime_type`, `upl_width`, `upl_height`, `upl_is_active`) VALUES (1,NULL,0,'uploads/public','public','public','Локальный репозиторий',NULL,NULL,NULL,'repo','repo/local',NULL,NULL,1);
 SET FOREIGN_KEY_CHECKS = 1;

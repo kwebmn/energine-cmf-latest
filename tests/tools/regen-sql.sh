@@ -52,7 +52,7 @@ BASE=$(Q "WITH RECURSIVE b AS (
   UNION ALL
   SELECT s.smap_id FROM share_sitemap s JOIN b ON s.smap_pid = b.smap_id
    WHERE b.smap_id <> (SELECT smap_id FROM share_sitemap WHERE smap_pid IS NULL)
-      OR s.smap_segment IN ('admin', 'login', 'register', 'restore-password', 'profile', 'sitemap', 'google-sitemap', 'robots.txt')
+      OR s.smap_segment IN ('admin', 'login', 'register', 'restore-password', 'profile', 'sitemap', 'google-sitemap', 'robots.txt', 'search')
 ) SELECT GROUP_CONCAT(smap_id ORDER BY smap_id) FROM b")
 # администраторы (полный доступ к корню) — их создаёт установщик, в файлах их нет
 ADMINS=$(Q "SELECT IFNULL(GROUP_CONCAT(DISTINCT ug.u_id), 0) FROM user_user_groups ug WHERE ug.group_id IN (

@@ -17,3 +17,5 @@ sitemap/
 google-sitemap/
 google-sitemap/map/
 robots.txt/
+search/
+search/?q=%D1%81%D0%B0%D0%B9%D1%82

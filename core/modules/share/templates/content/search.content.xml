@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- «Поиск по сайту»: поле, найденные страницы с отрывками, листалка (SearchResults) -->
+<content>
+    <container name="searchContainer" block="alfa">
+        <component name="searchResults" class="Energine\share\components\SearchResults"/>
+    </container>
+</content>

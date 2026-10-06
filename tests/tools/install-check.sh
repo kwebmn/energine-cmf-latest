@@ -122,7 +122,7 @@ php8.5 -r 'define("ROOT_DIR", $argv[2]); $c = include $argv[1]; exit(empty($c["s
   "$S/web/system.config.php" "$R" 2>/dev/null && ok "конфиг: режим отладки выключен" || bad "конфиг: режим отладки включён"
 is "служебные страницы" "$(Q "SELECT GROUP_CONCAT(smap_segment ORDER BY smap_segment) FROM share_sitemap WHERE smap_pid IS NULL
   OR smap_pid = (SELECT smap_id FROM share_sitemap WHERE smap_pid IS NULL)")" \
-  ",admin,google-sitemap,login,profile,register,restore-password,robots.txt,sitemap"
+  ",admin,google-sitemap,login,profile,register,restore-password,robots.txt,search,sitemap"
 is "демо-строк нет (тексты, файлы кроме корня репозитория)" "$(Q 'SELECT CONCAT_WS(" ",
   (SELECT COUNT(*) FROM share_textblocks), (SELECT COUNT(*) FROM share_uploads))')" "0 1"
 

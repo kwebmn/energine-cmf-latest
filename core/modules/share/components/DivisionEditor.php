@@ -637,8 +637,8 @@ class DivisionEditor extends Grid implements SampleDivisionEditor {
      *
      * @throws SystemException 'ERR_DEV_BAD_DATA'
      */
-    /** служебные страницы корня: без них сайт не работает (вход, админка, карта, robots) */
-    const SYSTEM_SEGMENTS = ['admin', 'login', 'register', 'restore-password', 'profile', 'sitemap', 'google-sitemap', 'robots.txt'];
+    /** служебные страницы корня: без них сайт не работает (вход, админка, карта, robots, поиск) */
+    const SYSTEM_SEGMENTS = ['admin', 'login', 'register', 'restore-password', 'profile', 'sitemap', 'google-sitemap', 'robots.txt', 'search'];
 
     /**
      * Удаление страницы: на страницу ссылаются тексты других страниц — без подтверждения (?confirm=1) ответ

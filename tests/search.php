@@ -30,6 +30,11 @@ if (check('класс Stemmer есть', class_exists(Stemmer::class))) {
     check('короткие слова и числа — как есть', Stemmer::stem('IT') === 'it' && Stemmer::stem('2024') === '2024');
     check('words: слова текста, знаки и пробелы — разделители', Stemmer::words('Наши «услуги»: доставка, 24/7!') === ['наши', 'услуги', 'доставка', '24', '7'],
         json_encode(Stemmer::words('Наши «услуги»: доставка, 24/7!'), JSON_UNESCAPED_UNICODE));
+    // апостроф внутри слова — часть слова и убирается: FULLTEXT делит слово по апострофу («п» и «ять» не в индексе)
+    check("words: апостроф — часть слова и убирается: П'ять м’ясних комп'ютерів", Stemmer::words("П'ять м’ясних комп'ютерів") === ['пять', 'мясних', 'компютерів'],
+        json_encode(Stemmer::words("П'ять м’ясних комп'ютерів"), JSON_UNESCAPED_UNICODE));
+    check("ua: комп'ютери, комп’ютерів, компютер — одна основа", $same(["комп'ютери", 'комп’ютерів', 'компютер']));
+    check('слова через дефис — два слова: интернет-магазин', Stemmer::words('Интернет-магазин') === ['интернет', 'магазин']);
 }
 
 // 2. текст страницы из HTML
@@ -47,7 +52,8 @@ $info = (int)scalar("SELECT smap_id FROM share_sitemap WHERE smap_segment = 'inf
 $langs = q('SELECT lang_id, lang_abbr, lang_default FROM share_languages ORDER BY lang_default DESC, lang_id')->fetchAll();
 [$L1, $L2] = [(int)$langs[0]['lang_id'], (int)($langs[1]['lang_id'] ?? 0)];
 function unstand(): void {
-    q("DELETE FROM share_sitemap WHERE smap_segment IN ('claude-sr-child', 'claude-sr', 'claude-sr-link', 'claude-sr-ruonly')");
+    // все стенды claude-sr…; подразделы стендов уходят каскадом
+    q("DELETE FROM share_sitemap WHERE smap_segment LIKE 'claude-sr%'");
 }
 unstand();
 register_shutdown_function('unstand');
@@ -161,5 +167,116 @@ check('по коду: сохранение раздела обновляет и�
     str_contains((string)file_get_contents(ROOT . '/core/modules/share/components/DivisionEditor.php'), 'SearchIndex::refresh('));
 check('по коду: refresh — сбой в журнал, взаимная блокировка (40001) — вызывающему',
     preg_match("~getCode\(\) === '40001'\)\s*\{\s*throw \\\$e;~", $si) === 1 && str_contains($si, "error_log('Energine: индекс поиска: '"));
+
+// 5. поиск: страница результатов (/search/?q=), видимость, порядок, отрывок, языки, листалка, служебные знаки, бюджет
+//    запросов, поле в шапке. Стенды со словом «флюгер» в разных формах: в названии (claude-sr-title) и в тексте
+//    (claude-sr-text, с «<script>» в тексте), закрытый гостю (claude-sr-closed), только на втором языке (claude-sr-ua, с
+//    апострофом), страница-ссылка (claude-sr-flink), служебный (claude-sr-sys — в профиле), подраздел выключенного на
+//    языке раздела (claude-sr-hidden/claude-sr-kid), листалка — ещё одиннадцать (claude-sr-p01…p11).
+$admins = (int)scalar('SELECT group_id FROM share_access_level WHERE smap_id = ? AND right_id = 3 ORDER BY group_id LIMIT 1', [$root]);
+$ss = [
+    'title' => $stand('claude-sr-title', ['names' => ['ru' => 'Флюгеры для крыш', 'ua' => 'Флюгери для дахів'], 'texts' => ['ru' => '<p>Мастерская делает разные вещи</p>']]),
+    'text' => $stand('claude-sr-text', ['names' => ['ru' => 'Стенд текста', 'ua' => 'Стенд тексту'],
+        'texts' => ['ru' => '<p>Кованые флюгерами украшают крыши: флюгер на каждом доме. Пример кода: &lt;script&gt;alert(1)&lt;/script&gt; и &amp;nbsp; в тексте.</p>']]),
+    'closed' => $stand('claude-sr-closed', ['texts' => ['ru' => '<p>Закрытый флюгер</p>']]),
+    'ua' => $stand('claude-sr-ua', ['disabled' => ['ru' => 1], 'names' => ['ua' => 'Мідь'], 'texts' => ['ua' => '<p>Мідні флюгери для комп’ютерів</p>', 'ru' => '<p>Медные флюгеры</p>']]),
+    'flink' => $stand('claude-sr-flink', ['redirect' => '/info/', 'texts' => ['ru' => '<p>Ссылка на флюгеры</p>']]),
+    'sys' => $stand('claude-sr-sys', ['pid' => $profile, 'texts' => ['ru' => '<p>Служебный флюгер</p>']]),
+    'hidden' => $stand('claude-sr-hidden', ['disabled' => ['ru' => 1]]),
+];
+$ss['kid'] = $stand('claude-sr-kid', ['pid' => $ss['hidden'], 'texts' => ['ru' => '<p>Флюгер в скрытом разделе</p>']]);
+for ($i = 1; $i <= 11; $i++) {
+    $ss[sprintf('p%02d', $i)] = $stand(sprintf('claude-sr-p%02d', $i), ['texts' => ['ru' => "<p>Флюгер номер $i</p>"]]);
+}
+// закрытый — только администраторам
+q('DELETE FROM share_access_level WHERE smap_id = ? AND group_id <> ?', [$ss['closed'], $admins]);
+q('REPLACE INTO share_access_level (smap_id, group_id, right_id) VALUES (?, ?, 3)', [$ss['closed'], $admins]);
+foreach ($ss as $id) {
+    (new SearchIndex(pdo()))->page($id);
+}
+$find = function (string $q, string $lang = '', string $extra = ''): array {
+    [$c, $b] = http('/' . $lang . 'search/?q=' . rawurlencode($q) . $extra);
+    preg_match_all('~<li class="search-result[^"]*">\s*<a[^>]*href="[^"]*?/((?:ua/)?claude-sr[a-z0-9-]*)/"~', $b, $m);
+    return [$c, $b, $m[1]];
+};
+$has = fn(array $links, string $segment) => in_array($segment, array_map(fn($l) => preg_replace('~^ua/~', '', $l), $links), true);
+logout();
+[$c, $b, $links] = $find('флюгеры');
+$found = (string)translation('TXT_SEARCH_FOUND');
+check('гость /search/?q=флюгеры — 200, «Найдено страниц: 13», на первой странице 10', $c == 200 && $found !== ''
+    && str_contains($b, $found . ': 13') && count($links) === 10, "HTTP $c " . implode(' ', $links));
+check('другие формы слова: «флюгеры» находит «флюгерами» (текст) и «Флюгеры» (название)', $has($links, 'claude-sr-text') && $has($links, 'claude-sr-title'),
+    implode(' ', $links));
+check('совпадение в названии — выше совпадения в тексте; два совпадения в тексте — выше одного', ($links[0] ?? '') === 'claude-sr-title'
+    && ($links[1] ?? '') === 'claude-sr-text', implode(' ', $links));
+check('не находятся: закрытая гостю, выключенная на языке, страница-ссылка, служебная, подраздел выключенного раздела',
+    !array_intersect(['claude-sr-closed', 'claude-sr-ua', 'claude-sr-flink', 'claude-sr-sys', 'claude-sr-kid'], $links)
+    && !preg_match('~claude-sr-(closed|ua|flink|sys|kid)/~', $b), implode(' ', $links));
+check('отрывок: найденное слово в <mark>', str_contains($b, '<mark>флюгерами</mark>') && str_contains($b, '<mark>Флюгер</mark>'), substr($b, (int)strpos($b, 'search-results'), 600));
+check('отрывок: «<script>» и «&nbsp;» из текста страницы — текстом (экранированы)', str_contains($b, '&lt;script&gt;alert(1)&lt;/script&gt;')
+    && str_contains($b, '&amp;nbsp;') && !str_contains($b, '<script>alert(1)'), substr($b, (int)strpos($b, 'claude-sr-text'), 500));
+[$c, $b, $links2] = $find('флюгеры', '', '&page=2');
+check('листалка: вторая страница — остальные 3, номер 2 текущий, ссылка на первую', $c == 200 && count($links2) === 3 && !array_intersect($links, $links2)
+    && preg_match('~aria-current="page"[^>]*>2<~', $b) && preg_match('~href="[^"]*search/\?q=[^"&]*&amp;page=1"~', $b), "HTTP $c " . implode(' ', $links2));
+[$c, , $links3] = $find('флюгеры', '', '&page=99');
+check('листалка: номер за последней — последняя страница', $c == 200 && $links3 === $links2, implode(' ', $links3));
+if ($L2) {
+    [$c, $b, $ua] = $find('флюгери', 'ua/');
+    check('второй язык /ua/search/ — страницы этого языка: только на нём (claude-sr-ua) и название (claude-sr-title); нет текста первого',
+        $c == 200 && $has($ua, 'claude-sr-ua') && $has($ua, 'claude-sr-title') && !$has($ua, 'claude-sr-text') && !$has($ua, 'claude-sr-p01')
+        && str_contains($b, 'href="' . BASE . '/ua/claude-sr-ua/"'), "HTTP $c " . implode(' ', $ua));
+    [$c, , $ua] = $find("комп'ютери", 'ua/');
+    check("апостроф: «комп'ютери» находит «комп’ютерів»", $c == 200 && $has($ua, 'claude-sr-ua'), implode(' ', $ua));
+}
+[$c, $b] = $find('');
+check('пустой запрос — поле и подсказка, без «Найдено»', $c == 200 && str_contains($b, 'id="search-q"') && str_contains($b, (string)translation('TXT_SEARCH_HINT'))
+    && !str_contains($b, 'search-total'), "HTTP $c");
+[$c, $b] = $find('зюзюзюзяблик');
+check('ничего не найдено — совет', $c == 200 && str_contains($b, (string)translation('TXT_SEARCH_NOTHING')), "HTTP $c");
+[$c, $b] = $find('IT 24 я');
+check('запрос из одних коротких слов — «ничего не найдено», не ошибка', $c == 200 && str_contains($b, (string)translation('TXT_SEARCH_NOTHING')), "HTTP $c");
+[$c, , $links] = $find('+флюгеры -"(<>~@*)');
+check('служебные знаки FULLTEXT в запросе — 200, ищутся слова', $c == 200 && $has($links, 'claude-sr-title'), "HTTP $c " . implode(' ', $links));
+[$c, $b] = $find('+-*"()<>~@');
+check('запрос из одних знаков — 200, подсказка или «ничего»', $c == 200 && (str_contains($b, (string)translation('TXT_SEARCH_NOTHING'))
+    || str_contains($b, (string)translation('TXT_SEARCH_HINT'))), "HTTP $c");
+[$c, $b] = $find('<script>alert(1)</script>');
+check('запрос с <script> — только в значении поля (экранирован), не разметкой', $c == 200
+    && preg_match_all('~<script>alert\(1\)</script>~', $b) === preg_match_all('~value="[^"]*<script>alert\(1\)</script>[^"]*"~', $b)
+    && !str_contains($b, '"><script>'), "HTTP $c");
+[$c, $b] = $find(str_repeat('флюгер ', 100));
+check('очень длинный запрос — 200, в поле не длиннее 200 знаков', $c == 200 && preg_match('~<input id="search-q"[^>]*\bvalue="([^"]*)"~', $b, $m)
+    && mb_strlen(html_entity_decode($m[1])) <= 200, "HTTP $c " . mb_strlen(html_entity_decode($m[1] ?? '')));
+[$c, , $links] = $find('флюгеры 😀 𝐀');
+check('символы вне BMP (эмодзи) — 200, ищутся остальные слова', $c == 200 && $has($links, 'claude-sr-title'), "HTTP $c");
+[$c] = http('/search/?q=%FF%FE');
+[$c2] = http('/search/?q[]=x&page[]=2');
+[$c3] = http('/search/?q=' . rawurlencode('флюгеры') . '&page=abc');
+check('неверный UTF-8, массив вместо строки, page не число — 200', $c == 200 && $c2 == 200 && $c3 == 200, "$c $c2 $c3");
+// бюджет запросов страницы результатов (при отладке — document/@queries)
+[$c, $b] = http('/search/?q=' . rawurlencode('флюгеры') . '&debug');
+if ($c == 200 && str_starts_with(ltrim($b), '<?xml') && ($x = @simplexml_load_string($b)) && isset($x['queries'])) {
+    check('страница результатов — не больше 20 запросов к базе (сейчас ' . (int)$x['queries'] . ')', (int)$x['queries'] <= 20);
+} else {
+    echo "SKIP бюджет запросов: отладка выключена\n";
+}
+// администратору видна и закрытая гостю страница
+login();
+[$c, $b] = $find('флюгеры');
+check('администратору — и закрытая гостю страница (всего 14)', str_contains($b, $found . ': 14'), "HTTP $c");
+logout();
+// поле поиска в шапке — на странице своего языка
+[$c, $b] = http('/');
+check('шапка главной: поле поиска (форма GET на /search/, поле q)', $c == 200
+    && preg_match('~<form class="site-search[^"]*"[^>]*method="get"[^>]*action="' . preg_quote(BASE, '~') . '/search/"~', $b)
+    && preg_match('~<input id="site-search-q"[^>]*name="q"~', $b), "HTTP $c");
+if ($L2) {
+    [$c, $b] = http('/ua/');
+    check('шапка /ua/: поиск на /ua/search/', $c == 200 && str_contains($b, 'action="' . BASE . '/ua/search/"'), "HTTP $c");
+}
+// сама страница поиска — служебная: в индексе её нет, её сегмент — в списках служебных
+$searchId = (int)scalar("SELECT smap_id FROM share_sitemap WHERE smap_segment = 'search' AND smap_pid = ?", [$root]);
+check('страница search есть у корня, служебная (SYSTEM_SEGMENTS), не в индексе', $searchId && in_array('search', SearchIndex::SYSTEM_SEGMENTS, true)
+    && !(int)scalar('SELECT COUNT(*) FROM share_search_index WHERE smap_id = ?', [$searchId]));
 
 done('search');

@@ -27,9 +27,20 @@ final class Stemmer {
     /** самая короткая основа */
     private const MIN = 3;
 
+    /** слово текста: буквы и цифры; апостроф внутри слова (п'ять, м’ясо, комп'ютер) — часть слова */
+    const WORD = "~[\\p{L}\\p{N}]+(?:['’ʼ][\\p{L}]+)*~u";
+
+    /**
+     * Слово для основы: нижний регистр, ё → е, без апострофов — FULLTEXT делит слово по апострофу («п'ять» — «п» и
+     * «ять», обе части короче трёх букв и в индекс не попадают), а «пять» — одно слово.
+     */
+    public static function normal(string $word): string {
+        return str_replace(['ё', "'", '’', 'ʼ'], ['е', '', '', ''], mb_strtolower($word));
+    }
+
     /** основа слова */
     public static function stem(string $word): string {
-        $word = str_replace('ё', 'е', mb_strtolower($word));
+        $word = self::normal($word);
         if (mb_strlen($word) <= self::MIN || preg_match('~\d~', $word)) {
             return $word;
         }
@@ -50,14 +61,13 @@ final class Stemmer {
     }
 
     /**
-     * Слова текста (буквы и цифры, апостроф внутри слова — часть слова: «п'ять»), в нижнем регистре, ё → е.
+     * Слова текста (WORD) в виде normal(): нижний регистр, ё → е, без апострофов («П'ять» — «пять»).
      *
      * @return string[]
      */
     public static function words(string $text): array {
-        $text = str_replace(['ё', 'Ё', '’', 'ʼ'], ['е', 'е', "'", "'"], $text);
-        preg_match_all("~[\\p{L}\\p{N}]+(?:'[\\p{L}]+)*~u", mb_strtolower($text), $m);
-        return $m[0];
+        preg_match_all(self::WORD, $text, $m);
+        return array_map([self::class, 'normal'], $m[0]);
     }
 
     /**

@@ -12,6 +12,8 @@
                 <translation const="TXT_REGISTRATION"/>
                 <translation const="TXT_PROFILE"/>
                 <translation const="BTN_LOGOUT"/>
+                <translation const="TXT_SEARCH"/>
+                <translation const="BTN_SEARCH"/>
             </translations>
             <fields>
                 <field name="Id" type="integer" key="1"/>

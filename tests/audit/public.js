@@ -99,6 +99,22 @@ const fieldError = (p, selector) => p.evaluate((sel) => {
                 && JSON.stringify(r.sections) === JSON.stringify(want) && !r.empty && r.h1 === 1, JSON.stringify(r));
             await p.close();
         }
+        // 1d. поиск по сайту: поле в шапке (Enter) ведёт на страницу результатов своего языка — найденное и запрос в
+        //     поле; без ошибок JS
+        for (const lang of ['', 'ua/']) {
+            const [p, log] = await open(guest, lang);
+            const field = await p.$('header form.site-search input[name="q"]');
+            if (check(`поиск /${lang}: поле в шапке`, !!field)) {
+                await field.fill('сайт');
+                await Promise.all([p.waitForNavigation({ waitUntil: 'networkidle' }), field.press('Enter')]);
+                const r = await p.evaluate(() => ({ url: location.href, total: !!document.querySelector('.search-total'),
+                    items: document.querySelectorAll('.search-result').length, value: (document.getElementById('search-q') || {}).value }));
+                check(`поиск /${lang}: Enter в поле шапки — результаты своего языка, запрос в поле`,
+                    r.url.startsWith(BASE + lang + 'search/?q=') && r.total && r.items > 0 && r.value === 'сайт', JSON.stringify(r));
+            }
+            check(`поиск /${lang}: без ошибок JS и 404`, !log.errors.length, log.errors.join(' | '));
+            await p.close();
+        }
         // 1a. the MooTools files are gone from the site (stage 8, step 7)
         for (const file of ['scripts/mootools.min.js', 'scripts/MooCompat.js']) {
             const r = await guest.request.get(BASE + file);

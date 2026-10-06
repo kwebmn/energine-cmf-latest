@@ -55,7 +55,7 @@ check('страница внутри admin/: отказ ERR_DIV_SYSTEM (пере
 // служебные сегменты корня — в списке класса
 $src = file_get_contents(ROOT . '/core/modules/share/components/DivisionEditor.php');
 check('список служебных сегментов корня в DivisionEditor::SYSTEM_SEGMENTS', preg_match("~SYSTEM_SEGMENTS = \\[([^\\]]+)\\]~", $src, $m)
-    && !array_diff(['admin', 'login', 'register', 'restore-password', 'profile', 'sitemap', 'google-sitemap', 'robots.txt'], array_map(fn($x) => trim($x, " '"), explode(',', $m[1]))));
+    && !array_diff(['admin', 'login', 'register', 'restore-password', 'profile', 'sitemap', 'google-sitemap', 'robots.txt', 'search'], array_map(fn($x) => trim($x, " '"), explode(',', $m[1]))));
 [$c, $j, $raw] = $del($linked);
 check('страница, на которую ссылается текст: без подтверждения — поле confirm со списком, страница на месте',
     is_array($j) && ($j['mode'] ?? '') === 'confirm' && !empty($j['confirm']) && str_contains($j['confirm'], 'claude-del-referrer/') && $exists($linked),

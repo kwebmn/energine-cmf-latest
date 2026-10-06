@@ -16,10 +16,11 @@ final class SearchIndex {
     const TABLE = 'share_search_index';
 
     /**
-     * Служебные сегменты корня — тот же список, что DivisionEditor::SYSTEM_SEGMENTS (tests/search.php сверяет): компонент
-     * в setup не загрузить (интерфейсы ядра объявлены в файлах контроллера), а индекс строит и setup reindex.
+     * Служебные сегменты корня — тот же список, что DivisionEditor::SYSTEM_SEGMENTS (tests/search.php сверяет): индекс
+     * строит и setup reindex, а компонент в setup грузится только после файлов контроллера и менеджера компонентов (в них
+     * объявлены интерфейсы ядра) — гир индекса от компонента не зависит.
      */
-    const SYSTEM_SEGMENTS = ['admin', 'login', 'register', 'restore-password', 'profile', 'sitemap', 'google-sitemap', 'robots.txt'];
+    const SYSTEM_SEGMENTS = ['admin', 'login', 'register', 'restore-password', 'profile', 'sitemap', 'google-sitemap', 'robots.txt', 'search'];
 
     /** подключение — PDO, как у LinkChecker: индекс строят и сайт, и setup reindex (у него своё подключение) */
     public function __construct(private \PDO $pdo) {

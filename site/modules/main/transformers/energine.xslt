@@ -44,6 +44,12 @@
                 </a>
                 <xsl:apply-templates select="$COMPONENTS[@name='mainMenu']"/>
                 <div class="site-tools print:hidden flex flex-wrap items-center gap-x-4 gap-y-2 md:order-2">
+                    <!-- поиск по сайту: страница search своего языка (SearchResults) -->
+                    <form class="site-search flex items-center gap-1" role="search" method="get" action="{$BASE}{$LANG_ABBR}search/">
+                        <label class="sr-only" for="site-search-q"><xsl:value-of select="$TRANSLATION[@const='TXT_SEARCH']"/></label>
+                        <input id="site-search-q" class="w-36 rounded-ui border border-border bg-field px-2 py-1 font-[inherit] text-sm text-fg focus-visible:border-primary" type="search" name="q" maxlength="200" placeholder="{$TRANSLATION[@const='TXT_SEARCH']}"/>
+                        <button type="submit" class="cursor-pointer rounded-ui border border-border bg-bg px-2 py-1 font-[inherit] text-sm text-fg hover:border-primary"><xsl:value-of select="$TRANSLATION[@const='BTN_SEARCH']"/></button>
+                    </form>
                     <xsl:apply-templates select="$COMPONENTS[@class='LangSwitcher']"/>
                     <xsl:apply-templates select="$COMPONENTS[@name='userMenu']"/>
                 </div>
@@ -312,5 +318,77 @@
 
     <xsl:template match="field[ancestor::component[@class='SitemapTree']]"/>
     <!-- /SitemapTree -->
+
+    <!-- SearchResults: поиск по сайту — поле, «Найдено: N», страницы с отрывками (найденные слова — mark), листалка.
+         Отрывок — текст и mark узлами XML (SiteSearch::snippet), копируется как есть: текст экранирует вывод -->
+    <xsl:template match="component[@class='SearchResults']">
+        <xsl:variable name="S" select="search"/>
+        <xsl:variable name="ACTION" select="concat($BASE, $LANG_ABBR, 'search/')"/>
+        <form class="search-form mb-6 flex max-w-[38rem] flex-wrap gap-2" role="search" method="get" action="{$ACTION}">
+            <label class="sr-only" for="search-q"><xsl:value-of select="$TRANSLATION[@const='TXT_SEARCH']"/></label>
+            <input id="search-q" class="min-w-0 flex-1 rounded-ui border border-border bg-field px-3 py-2 font-[inherit] text-fg focus-visible:border-primary" type="search" name="q" maxlength="200" value="{$S/@query}"/>
+            <xsl:call-template name="ui-button">
+                <xsl:with-param name="text" select="$TRANSLATION[@const='BTN_SEARCH']"/>
+            </xsl:call-template>
+        </form>
+        <xsl:choose>
+            <xsl:when test="$S/@query = ''">
+                <p class="search-hint text-muted"><xsl:value-of select="$TRANSLATION[@const='TXT_SEARCH_HINT']"/></p>
+            </xsl:when>
+            <xsl:when test="$S/@total = 0">
+                <p class="search-nothing"><xsl:value-of select="$TRANSLATION[@const='TXT_SEARCH_NOTHING']"/></p>
+            </xsl:when>
+            <xsl:otherwise>
+                <p class="search-total text-muted"><xsl:value-of select="$TRANSLATION[@const='TXT_SEARCH_FOUND']"/>: <xsl:value-of select="$S/@total"/></p>
+                <ol class="search-results m-0 list-none p-0">
+                    <xsl:for-each select="$S/item">
+                        <li class="search-result mb-5">
+                            <a class="text-lg font-semibold" href="{$BASE}{$LANG_ABBR}{@url}"><xsl:value-of select="@title"/></a>
+                            <xsl:if test="snippet/node()">
+                                <p class="mt-1 mb-0 text-sm text-muted"><xsl:copy-of select="snippet/node()"/></p>
+                            </xsl:if>
+                        </li>
+                    </xsl:for-each>
+                </ol>
+                <xsl:if test="$S/@pages &gt; 1">
+                    <nav class="search-pages mt-6" aria-label="{$TRANSLATION[@const='TXT_SEARCH_PAGES']}">
+                        <ul class="m-0 flex flex-wrap list-none items-center gap-3 p-0">
+                            <xsl:if test="$S/@page &gt; 1">
+                                <li><a rel="prev" href="{$ACTION}?q={$S/@q}&amp;page={$S/@page - 1}"><xsl:value-of select="$TRANSLATION[@const='TXT_PREVIOUS_PAGE']"/></a></li>
+                            </xsl:if>
+                            <xsl:call-template name="search-page-links">
+                                <xsl:with-param name="S" select="$S"/>
+                                <xsl:with-param name="ACTION" select="$ACTION"/>
+                            </xsl:call-template>
+                            <xsl:if test="$S/@page &lt; $S/@pages">
+                                <li><a rel="next" href="{$ACTION}?q={$S/@q}&amp;page={$S/@page + 1}"><xsl:value-of select="$TRANSLATION[@const='TXT_NEXT_PAGE']"/></a></li>
+                            </xsl:if>
+                        </ul>
+                    </nav>
+                </xsl:if>
+            </xsl:otherwise>
+        </xsl:choose>
+    </xsl:template>
+
+    <!-- номера страниц выдачи с n по pages: текущая — без ссылки -->
+    <xsl:template name="search-page-links">
+        <xsl:param name="S"/>
+        <xsl:param name="ACTION"/>
+        <xsl:param name="n" select="1"/>
+        <xsl:if test="$n &lt;= $S/@pages">
+            <li>
+                <xsl:choose>
+                    <xsl:when test="$n = $S/@page"><span aria-current="page" class="font-semibold"><xsl:value-of select="$n"/></span></xsl:when>
+                    <xsl:otherwise><a href="{$ACTION}?q={$S/@q}&amp;page={$n}"><xsl:value-of select="$n"/></a></xsl:otherwise>
+                </xsl:choose>
+            </li>
+            <xsl:call-template name="search-page-links">
+                <xsl:with-param name="S" select="$S"/>
+                <xsl:with-param name="ACTION" select="$ACTION"/>
+                <xsl:with-param name="n" select="$n + 1"/>
+            </xsl:call-template>
+        </xsl:if>
+    </xsl:template>
+    <!-- /SearchResults -->
 
 </xsl:stylesheet>
