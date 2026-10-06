@@ -26,6 +26,7 @@ use Energine\share\gears\Field;
 use Energine\share\gears\FieldDescription;
 use Energine\share\gears\JSONCustomBuilder;
 use Energine\share\gears\JSONDivBuilder;
+use Energine\share\gears\PageAliases;
 use Energine\share\gears\QAL;
 use Energine\share\gears\SystemException;
 
@@ -365,7 +366,12 @@ class DivisionEditor extends Grid implements SampleDivisionEditor {
             $_POST[$table]['smap_meta_robots'] = [];
         }
 
+        // прежние адреса страницы и её подразделов (сегмент или родитель изменились) — в share_sitemap_aliases,
+        // в той же транзакции: со старого адреса страница отвечает переадресацией 301 (DocumentController)
+        $aliases = new PageAliases(E()->getDB());
+        $pathsBefore = $aliases->paths();
         $result = $this->saveData();
+        $aliases->remember($pathsBefore);
         if (is_int($result)) {
             $mode = 'insert';
             $id = $result;

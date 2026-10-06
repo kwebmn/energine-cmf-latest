@@ -589,6 +589,42 @@
             "tableName": "share_sitemap"
         }
     },
+    "share_sitemap_aliases": {
+        "alias_path": {
+            "nullable": false,
+            "length": 255,
+            "default": "",
+            "key": true,
+            "type": "VARCHAR",
+            "index": "PRI",
+            "options": null,
+            "tableName": "share_sitemap_aliases"
+        },
+        "smap_id": {
+            "nullable": false,
+            "length": 10,
+            "default": "",
+            "key": {
+                "tableName": "share_sitemap",
+                "fieldName": "smap_id",
+                "constraint": "share_sitemap_aliases_ibfk_1"
+            },
+            "type": "INT",
+            "index": "MUL",
+            "options": null,
+            "tableName": "share_sitemap_aliases"
+        },
+        "alias_date": {
+            "nullable": false,
+            "length": 0,
+            "default": "",
+            "key": false,
+            "type": "DATETIME",
+            "index": false,
+            "options": null,
+            "tableName": "share_sitemap_aliases"
+        }
+    },
     "share_sitemap_translation": {
         "smap_id": {
             "nullable": false,

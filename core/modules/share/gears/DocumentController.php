@@ -181,6 +181,11 @@ class DocumentController extends Primitive {
                 if ($this->getViewMode() == self::TRANSFORM_JSON) {
                     throw $e;
                 }
+                // старый адрес переименованной или перенесённой страницы — 301 на нынешний (PageAliases); setRedirect
+                // отдаёт ответ и завершает запрос
+                if ($e->getCode() == SystemException::ERR_404 && ($location = $this->oldAddress())) {
+                    E()->getResponse()->setRedirect($location, 301);
+                }
                 /**
                  * Errors 404 & 403 goes here
                  */
@@ -248,6 +253,46 @@ class DocumentController extends Primitive {
             $output = $this->transform($document);
         }
         E()->getResponse()->write($output);
+    }
+
+    /**
+     * Нынешний адрес страницы для старого адреса запроса (PageAliases) — с языком, хвостом пути и строкой запроса.
+     * Только GET и HEAD; страница должна быть видна посетителю: есть в его дереве разделов (включена на его языке)
+     * с правом не ниже чтения, и её путь в этом дереве совпадает с путём в базе (видны и все родители). Иначе — null:
+     * посетитель видит 404, как прежде, и не узнаёт о странице, которую не может открыть.
+     */
+    private function oldAddress(): ?string {
+        if (!in_array($_SERVER['REQUEST_METHOD'] ?? 'GET', ['GET', 'HEAD'], true)) {
+            return null;
+        }
+        $request = E()->getRequest();
+        $segments = $request->getPath();
+        if (!$segments || $segments[0] == Document::SINGLE_SEGMENT) {
+            return null;
+        }
+        $aliases = new PageAliases(E()->getDB());
+        if (!($hit = $aliases->find($segments))) {
+            return null;
+        }
+        $id = $hit['id'];
+        $map = E()->getMap();
+        $tree = $map->getTree();
+        if (!$tree || !$tree->getNodeById($id) || $map->getDocumentRights($id) < ACCESS_READ) {
+            return null;
+        }
+        $path = $map->getURLByID($id);
+        $dbPath = $aliases->paths()[$id] ?? null;
+        if ($dbPath === null || $path !== ($dbPath === '' ? '' : $dbPath . '/')) {
+            return null;
+        }
+        $target = $path . ($hit['rest'] ? implode('/', $hit['rest']) . '/' : '');
+        // псевдоним не ведёт на сам запрошенный адрес (их не бывает — PageAliases убирает пути страниц; на всякий случай)
+        if ($target === implode('/', $segments) . '/') {
+            return null;
+        }
+        $query = (string)$request->getURI()->getQuery();
+
+        return E()->getSiteManager()->getCurrentSite()->base . $request->getLangSegment() . $target . ($query !== '' ? '?' . $query : '');
     }
 
     public function getXMLStructure($documentID) {

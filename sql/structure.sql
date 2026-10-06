@@ -1,5 +1,5 @@
--- Energine Simple: схема базы — 22 таблицы и хранимые процедуры. Ставится в пустую базу установщиком:
--- php web/index.php setup install (docs/INSTALL.md). Получена из установки полной системы и sql/cut/stage1–16.sql.
+-- Energine Simple: схема базы — 23 таблицы и хранимые процедуры. Ставится в пустую базу установщиком:
+-- php web/index.php setup install (docs/INSTALL.md). Получена из установки полной системы и sql/cut/stage1–17.sql.
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -138,6 +138,17 @@ CREATE TABLE `share_sitemap` (
   UNIQUE KEY `smap_pid_segment` (`smap_pid`,`smap_segment`),
   KEY `smap_order_num` (`smap_order_num`),
   CONSTRAINT `share_sitemap_ibfk_8` FOREIGN KEY (`smap_pid`) REFERENCES `share_sitemap` (`smap_id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `share_sitemap_aliases` (
+  `alias_path` varchar(255) NOT NULL,
+  `smap_id` int(10) unsigned NOT NULL,
+  `alias_date` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`alias_path`),
+  KEY `smap_id` (`smap_id`),
+  CONSTRAINT `share_sitemap_aliases_ibfk_1` FOREIGN KEY (`smap_id`) REFERENCES `share_sitemap` (`smap_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;

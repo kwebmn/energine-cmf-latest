@@ -1,4 +1,7 @@
-#!/bin/bash
+  [ "$(curl -sS -o /dev/null -w '%{http_code}' $B/claude-test/)" = 404 ] && [ "$(q "SELECT COUNT(*) FROM share_sitemap_aliases WHERE smap_id=$ID")" = 0 ] \
+    && ok "deleted page: old address gone (404)" || bad "deleted page: old address"
+    && [ "$(curl -sS -o /dev/null -w '%{http_code} %{redirect_url}' $B/claude-test/)" = "301 $B/info/claude-test/" ] \
+    && ok "page move (old address → 301 to the new one)" || bad "page move"#!/bin/bash
 # Write-path smoke test: every created record is deleted again. Prints OK/FAIL per step.
 SCR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 envsh=$(php8.5 "$SCR/env.php" --shell) || exit 1; eval "$envsh"
@@ -71,14 +74,18 @@ if [ -n "$ID" ]; then
     --data-urlencode "share_sitemap_translation[1][smap_name]=Тест установки (ред.)" --data-urlencode "share_sitemap_translation[2][smap_name]=Тест"
   isok && [ -z "$(q "SELECT IFNULL(smap_meta_robots, '') FROM share_sitemap WHERE smap_id=$ID")" ] \
     && ! curl -sS $B/claude-test/ | grep -q 'content="NOINDEX' && ok "page robots cleared by the form" || bad "page robots cleared by the form"
-  # перенос к другому родителю (демо-раздел info): адрес страницы меняется
+  # перенос к другому родителю (демо-раздел info): адрес страницы меняется, старый отвечает 301 на новый (этап 5)
   INFO=$(q "SELECT s.smap_id FROM share_sitemap s JOIN share_sitemap r ON s.smap_pid = r.smap_id WHERE r.smap_pid IS NULL AND s.smap_segment='info'")
   post "${S}save" --data-urlencode "componentAction=edit" --data-urlencode "share_sitemap[smap_id]=$ID" $(pagefields "$INFO") "${TR[@]}" \
     --data-urlencode "share_sitemap_translation[1][smap_name]=Тест установки (ред.)" --data-urlencode "share_sitemap_translation[2][smap_name]=Тест"
   isok && [ "$(curl -sS -o /dev/null -w '%{http_code}' $B/info/claude-test/)" = 200 ] \
-    && [ "$(curl -sS -o /dev/null -w '%{http_code}' $B/claude-test/)" = 404 ] && ok "page move" || bad "page move"
+    && [ "$(curl -sS -o /dev/null -w '%{http_code} %{redirect_url}' $B/claude-test/)" = "301 $B/info/claude-test/" ] \
+    && ok "page move (old address → 301 to the new one)" || bad "page move"
   post "${S}${ID}/delete/"
   isok && [ "$(q "SELECT COUNT(*) FROM share_sitemap WHERE smap_id=$ID")" = 0 ] && ok "page delete" || bad "page delete"
+  # удаление уносит и старые адреса страницы
+  [ "$(curl -sS -o /dev/null -w '%{http_code}' $B/claude-test/)" = 404 ] && [ "$(q "SELECT COUNT(*) FROM share_sitemap_aliases WHERE smap_id=$ID")" = 0 ] \
+    && ok "deleted page: old address gone (404)" || bad "deleted page: old address"
 fi
 
 # --- translation: add, delete
