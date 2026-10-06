@@ -211,8 +211,8 @@ bash tests/regression.sh
   - `json-builder.php` — данные грида с `NULL` в select-поле собираются без предупреждений PHP 8.5; `NULL` → пустая
     строка, известное значение — подпись.
   - `registry.php` — у `Registry` нет `__get/__set/__isset/__unset` и `@property`, есть типизированные `getUtils()`,
-    `getUserGroup()`, `getFileRepoInfo()`, `getErrorDocument()`, `getPageStructureDocument()`; обращений `E()->Имя`
-    нет в core, site, setup, tests.
+    `getUserGroup()`, `getFileRepoInfo()`, `getErrorDocument()`, `getPageStructureDocument()`, `getUserSession()`;
+    обращений `E()->Имя` нет в core, htdocs (исходники `web/index.php`, `web/auth.php`), site, setup, tests.
 - `setup-linker.sh` проверяет, что `setup linker` не трогает модули в `core/modules`.
 - `env-guard.sh` — bash-наборы останавливаются, если `env.php` не собрал настройки.
 - `hook-selftest.sh` — хук `pre-commit` ловит пароль в коммите (во временном репозитории).

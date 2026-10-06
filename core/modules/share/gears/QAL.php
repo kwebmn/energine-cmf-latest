@@ -27,11 +27,6 @@ final class QAL;
  */
 final class QAL extends Db {
     /**
-     * Instance of PDO class (PHP Data Objects).
-     * @var \PDO $pdo
-     */
-
-    /**
      * Last query to the data base.
      * @var string $lastQuery
      */
@@ -410,34 +405,7 @@ final class QAL extends Db {
         return $this->lastQuery;
     }
 
-    /**
-     * Begin an transaction.
-     *
-     * @return boolean
-     */
-    public function beginTransaction() {
-        return $this->pdo->beginTransaction();
-    }
-
-    /**
-     * Execute @c commit transaction.
-     *
-     * @return boolean
-     */
-    public function commit() {
-        // DDL (CREATE/ALTER/DROP TABLE) commits implicitly in MySQL; since PHP 8.0 PDO knows that
-        // and commit() throws "There is no active transaction" instead of doing nothing
-        return $this->pdo->inTransaction() ? $this->pdo->commit() : true;
-    }
-
-    /**
-     * Rollback transaction.
-     *
-     * @return boolean
-     */
-    public function rollback() {
-        return $this->pdo->inTransaction() ? $this->pdo->rollBack() : false;
-    }
+    // beginTransaction(), commit(), rollback() — у Db (общая вложенность с transaction()).
 
     /**
      * Get columns info of the table.

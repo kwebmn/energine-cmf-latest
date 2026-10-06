@@ -18,11 +18,18 @@ class Db extends Primitive {
     private int $queryCount = 0;
 
     /**
-     * Журнал запросов (включается logQueries(true) — отладка): текст запроса с параметрами.
+     * Журнал запросов (включается logQueries(true) — отладка): текст запроса с «?» и число параметров — без значений,
+     * чтобы в XML ?debug не попадали идентификатор сессии, пароли и прочие данные запросов.
      * @var string[]
      */
     private array $queryLog = [];
     private bool $logging = false;
+
+    /** Вложенность beginTransaction()/commit(): транзакция PDO одна — внешняя. */
+    private int $txDepth = 0;
+
+    /** Транзакцию PDO открыл этот объект (а не внешний код через getPDO()) — ему её и завершать. */
+    private bool $txOwned = false;
 
     public function __construct(\PDO $pdo) {
         parent::__construct();
@@ -41,7 +48,7 @@ class Db extends Primitive {
     public function run(string $sql, array $params = []): \PDOStatement {
         $this->queryCount++;
         if ($this->logging) {
-            $this->queryLog[] = $params ? $sql . ' -- ' . json_encode(array_values($params), JSON_UNESCAPED_UNICODE | JSON_PARTIAL_OUTPUT_ON_ERROR) : $sql;
+            $this->queryLog[] = $params ? $sql . ' -- ?×' . count($params) : $sql;
         }
         if (!$params) {
             return $this->pdo->query($sql);
@@ -78,7 +85,8 @@ class Db extends Primitive {
     }
 
     /**
-     * INSERT одной строки; результат — id (0 у таблицы без автоинкремента).
+     * INSERT одной строки; результат — сгенерированный id, 0 — если таблица без автоинкремента или id задан явно
+     * (LAST_INSERT_ID() в MySQL хранит значение прошлой вставки — потому сравнение «до и после»).
      *
      * @param array $row колонка => значение (null — NULL)
      */
@@ -87,12 +95,15 @@ class Db extends Primitive {
             throw new \InvalidArgumentException('insert: нет данных для ' . $table);
         }
         $columns = implode(', ', array_map([$this, 'quoteName'], array_keys($row)));
+        $before = $this->pdo->lastInsertId();
         $this->run('INSERT INTO ' . $this->quoteName($table) . ' (' . $columns . ') VALUES (' . rtrim(str_repeat('?, ', count($row)), ', ') . ')', array_values($row));
-        return (int)$this->pdo->lastInsertId();
+        $after = $this->pdo->lastInsertId();
+        return $after === $before ? 0 : (int)$after;
     }
 
     /**
-     * UPDATE по условию (колонка => значение, И между ними; массив значений — IN); результат — число строк.
+     * UPDATE по условию (колонка => значение, И между ними; массив значений — IN); результат — число изменённых
+     * строк (MySQL считает изменённые, а не все подошедшие под условие).
      */
     public function update(string $table, array $data, array $where): int {
         if (!$data || !$where) {
@@ -103,7 +114,7 @@ class Db extends Primitive {
         return $this->exec('UPDATE ' . $this->quoteName($table) . ' SET ' . $set . $condition, array_merge(array_values($data), $params));
     }
 
-    /** DELETE по условию (как у update); результат — число строк. */
+    /** DELETE по условию (как у update); результат — число удалённых строк. */
     public function delete(string $table, array $where): int {
         if (!$where) {
             throw new \InvalidArgumentException('delete: нужно условие для ' . $table);
@@ -113,22 +124,60 @@ class Db extends Primitive {
     }
 
     /**
-     * Транзакция: функция выполняется целиком или откатывается при исключении (исключение идёт дальше). Внутри уже
-     * открытой транзакции (своей или QAL::beginTransaction) — просто выполняется: одна внешняя.
+     * Начать транзакцию — или войти во вложенную: транзакция PDO одна, внешняя. Этот же метод — у QAL (прежний API),
+     * так что beginTransaction/commit/rollback и transaction() считают вложенность вместе. Если транзакцию PDO уже
+     * открыл внешний код (через getPDO()), ему её и завершать — здесь только счёт.
+     */
+    public function beginTransaction(): bool {
+        if ($this->txDepth === 0) {
+            $this->txOwned = !$this->pdo->inTransaction();
+            if ($this->txOwned) {
+                $this->pdo->beginTransaction();
+            }
+        }
+        $this->txDepth++;
+        return true;
+    }
+
+    /**
+     * Завершить транзакцию: вложенная — только выход на уровень выше; внешняя — commit PDO, если транзакция ещё
+     * открыта (DDL в MySQL завершает её сам — тогда без ошибки, как и раньше в QAL).
+     */
+    public function commit(): bool {
+        if ($this->txDepth === 0) {
+            return true;
+        }
+        if (--$this->txDepth > 0) {
+            return true;
+        }
+        $owned = $this->txOwned;
+        $this->txOwned = false;
+        return ($owned && $this->pdo->inTransaction()) ? $this->pdo->commit() : true;
+    }
+
+    /**
+     * Откатить транзакцию целиком — вложенность сбрасывается (частичного отката без savepoint нет);
+     * результат — был ли откат PDO.
+     */
+    public function rollback(): bool {
+        $this->txDepth = 0;
+        $owned = $this->txOwned;
+        $this->txOwned = false;
+        return ($owned && $this->pdo->inTransaction()) ? $this->pdo->rollBack() : false;
+    }
+
+    /**
+     * Транзакция функцией: выполняется целиком или откатывается при исключении (исключение идёт дальше).
+     * Вложенная (внутри transaction() или beginTransaction()) — часть внешней.
      */
     public function transaction(callable $fn): mixed {
-        if ($this->pdo->inTransaction()) {
-            return $fn($this);
-        }
-        $this->pdo->beginTransaction();
+        $this->beginTransaction();
         try {
             $result = $fn($this);
-            $this->pdo->commit();
+            $this->commit();
             return $result;
         } catch (\Throwable $e) {
-            if ($this->pdo->inTransaction()) {
-                $this->pdo->rollBack();
-            }
+            $this->rollback();
             throw $e;
         }
     }
