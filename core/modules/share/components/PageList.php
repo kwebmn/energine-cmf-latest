@@ -166,7 +166,8 @@ class PageList extends DataSet {
                     $data[$key]['Id'] = $key;
                     $data[$key]['Segment'] = $sitemap->getURLByID($key);
                     $data[$key]['Name'] = $value['Name'];
-                    $data[$key]['Redirect'] = Response::prepareRedirectURL($value['RedirectUrl']);
+                    // страница-ссылка на страницу сайта — на её версию языка посетителя
+                    $data[$key]['Redirect'] = Response::pageLinkURL($value['RedirectUrl']);
                     if ($hasDescriptionRtf) $data[$key]['DescriptionRtf'] =
                         $value['DescriptionRtf'];
                 }

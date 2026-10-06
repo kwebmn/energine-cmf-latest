@@ -83,9 +83,35 @@ final class PageAliases {
             // сравнение в базе — без учёта регистра (utf8mb3_general_ci), здесь — так же
             $hits[mb_strtolower($row['alias_path'])] = (int)$row['smap_id'];
         }
-        foreach ($candidates as $n => $path) {
-            if (isset($hits[mb_strtolower($path)])) {
-                return ['id' => $hits[mb_strtolower($path)], 'rest' => array_slice($segments, $n)];
+        return self::match($hits, $segments);
+    }
+
+    /**
+     * Все прежние адреса одним запросом — для проверки многих ссылок сразу (TextLinks).
+     *
+     * @return array<string, int> путь в нижнем регистре → страница
+     */
+    public function all(): array {
+        $hits = [];
+        foreach ($this->db->rows('SELECT alias_path, smap_id FROM share_sitemap_aliases') as $row) {
+            $hits[mb_strtolower($row['alias_path'])] = (int)$row['smap_id'];
+        }
+        return $hits;
+    }
+
+    /**
+     * Самый длинный префикс сегментов среди уже прочитанных прежних адресов (find, all).
+     *
+     * @param array<string, int> $aliases путь в нижнем регистре → страница
+     * @param string[] $segments сегменты пути без языка
+     * @return array{id: int, rest: string[]}|null
+     */
+    public static function match(array $aliases, array $segments): ?array {
+        $segments = array_values(array_filter(array_map('strval', $segments), fn(string $s) => $s !== ''));
+        for ($n = count($segments); $n > 0; $n--) {
+            $path = mb_strtolower(implode('/', array_slice($segments, 0, $n)));
+            if (isset($aliases[$path])) {
+                return ['id' => $aliases[$path], 'rest' => array_slice($segments, $n)];
             }
         }
         return null;

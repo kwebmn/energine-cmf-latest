@@ -6,10 +6,13 @@
  * пометкой (класс e-broken-link / e-broken-image) и причиной в подсказке. Отчёт «Битые ссылки» (LinkChecker) по-прежнему
  * собирает их для владельца по всему сайту.
  *
- * Рабочими считаются: страницы из дерева посетителя, старые адреса (301 на видимую ему страницу), ссылки на другой
- * язык (его дерево не загружено — не проверяются), внешние, якоря, mailto:, tel:, существующие файлы (адрес ресайзера —
- * по файлу-источнику). HTML без находок возвращается тем же — разбор DOM только когда есть что менять. Запросов к базе
- * нет: дерево посетителя уже загружено, старые адреса читаются только для ссылок, не найденных в дереве.
+ * Рабочими считаются: страницы из дерева посетителя (и с явным префиксом своего языка, и с точкой в сегменте —
+ * robots.txt), старые адреса (301 на видимую ему страницу, с хвостом пути), ссылки на другой язык (его дерево не
+ * загружено — не проверяются), внешние, якоря, mailto:, tel:, существующие файлы (адрес ресайзера — по файлу-источнику).
+ * HTML без находок возвращается тем же и не разбирается вовсе: адреса сначала собираются регулярным выражением, DOM —
+ * только когда есть что менять; текст, который разбор перестроил бы (непарный закрывающий тег), — тоже как есть.
+ * Запросов к базе почти нет: дерево посетителя уже загружено, старые адреса читаются одним запросом и только если
+ * какая-то ссылка не нашлась в дереве.
  */
 namespace Energine\share\gears;
 
@@ -19,15 +22,18 @@ final class TextLinks {
 
     /**
      * @param \Closure $pageOf (string[] сегменты без языка): ?int — страница по полному пути, видимая посетителю
-     * @param \Closure $isOldAddress (string[]): bool — старый адрес, который ведёт 301 на видимую посетителю страницу
+     * @param \Closure $oldTarget (string[]): ?string[] — старый адрес: путь (сегменты, с хвостом), на который он ведёт 301;
+     *     null — не старый адрес
      * @param string $webDir корень сайта на диске (web/)
      * @param string $root корень сайта в адресе (site.root: /, /sub/)
      * @param string $host имя сайта (ссылки на него с полным адресом — свои)
      * @param string[] $langPrefixes префиксы языков в адресе (у языка по умолчанию префикса нет)
      * @param string $currentPrefix префикс текущего языка ('' — язык по умолчанию)
+     * @param string $defaultAbbr сокращение языка по умолчанию: адрес с ним явно (/ru/info/) — тот же, что без него
      */
-    public function __construct(private \Closure $pageOf, private \Closure $isOldAddress, private string $webDir,
-        private string $root, private string $host, private array $langPrefixes, private string $currentPrefix = '') {
+    public function __construct(private \Closure $pageOf, private \Closure $oldTarget, private string $webDir,
+        private string $root, private string $host, private array $langPrefixes, private string $currentPrefix = '',
+        private string $defaultAbbr = '') {
     }
 
     /**
@@ -43,13 +49,15 @@ final class TextLinks {
         $site = E()->getSiteManager()->getCurrentSite();
         $language = E()->getLanguage();
         $prefixes = [];
-        $current = '';
+        $current = $default = '';
         foreach ($language->getLanguages() as $id => $lang) {
             if (empty($lang['lang_default'])) {
                 $prefixes[] = (string)$lang['lang_abbr'];
                 if ((int)$id === (int)$language->getCurrent()) {
                     $current = (string)$lang['lang_abbr'];
                 }
+            } else {
+                $default = (string)$lang['lang_abbr'];
             }
         }
         $visible = fn(int $id): bool => $map->getTree() && $map->getTree()->getNodeById($id) && $map->getDocumentRights($id) > ACCESS_NONE;
@@ -57,12 +65,18 @@ final class TextLinks {
             $id = $map->findIDByPath($segments);
             return ($id !== null && $visible($id)) ? $id : null;
         };
-        $isOldAddress = function (array $segments) use ($aliases, $visible): bool {
-            $hit = $segments ? $aliases->find($segments) : null;
-            return $hit !== null && !$hit['rest'] && $visible($hit['id']);
+        // старые адреса — одним запросом на весь запрос и только при первой ссылке, не найденной в дереве
+        $all = null;
+        $oldTarget = function (array $segments) use ($aliases, $map, &$all): ?array {
+            $hit = $segments ? PageAliases::match($all ??= $aliases->all(), $segments) : null;
+            if ($hit === null || !$map->getTree() || !$map->getTree()->getNodeById($hit['id'])) {
+                return null;
+            }
+            return array_merge(array_values(array_filter(explode('/', (string)$map->getURLByID($hit['id'])), fn(string $s) => $s !== '')),
+                $hit['rest']);
         };
-        return $instance = new self($pageOf, $isOldAddress, HTDOCS_DIR, (string)$site->root, (string)parse_url($site->base, PHP_URL_HOST),
-            $prefixes, $current);
+        return $instance = new self($pageOf, $oldTarget, HTDOCS_DIR, (string)$site->root, (string)parse_url($site->base, PHP_URL_HOST),
+            $prefixes, $current, $default);
     }
 
     /**
@@ -83,7 +97,9 @@ final class TextLinks {
      * @param array{page?: string, file?: string} $titles подсказки по причинам
      */
     public function filter(string $html, bool $mark, array $titles): string {
-        if ($html === '' || (stripos($html, 'href') === false && stripos($html, '<img') === false)) {
+        // сначала адреса — регулярным выражением: без находок текст не разбирается вовсе
+        if (!preg_match_all('~\b(?:href|src)\s*=\s*(["\'])(.*?)\1~is', $html, $m)
+            || !array_filter(array_unique($m[2]), fn(string $link) => $this->reason($link) !== null)) {
             return $html;
         }
         $doc = new \DOMDocument('1.0', 'UTF-8');
@@ -94,8 +110,16 @@ final class TextLinks {
         libxml_use_internal_errors($errors);
         $xp = new \DOMXPath($doc);
         $root = $loaded ? $xp->query('//div[@id="e-text-links-root"]')->item(0) : null;
-        if (!$root) {
+        // непарный закрывающий тег (</div>) закрыл бы обёртку раньше конца текста — остаток лёг бы рядом с ней и пропал:
+        // такой текст отдаётся как есть (рядом с обёрткой бывает только инструкция xml encoding разбора)
+        if (!$root || $root !== $doc->documentElement) {
             return $html;
+        }
+        for ($node = $doc->firstChild; $node; $node = $node->nextSibling) {
+            if ($node !== $root && $node->nodeType !== XML_PI_NODE
+                && !($node->nodeType === XML_TEXT_NODE && trim($node->textContent) === '')) {
+                return $html;
+            }
         }
         $changed = false;
         foreach (iterator_to_array($xp->query('.//a[@href]', $root)) as $a) {
@@ -165,21 +189,46 @@ final class TextLinks {
             }
         }
         $last = end($parts);
-        if (!($path === '' || str_ends_with($path, '/')) && $last !== false && str_contains($last, '.')) {
+        $isFile = !($path === '' || str_ends_with($path, '/')) && $last !== false && str_contains($last, '.');
+        if ($isFile) {
             // файл; адрес ресайзера (resizer/wШ-hВ/путь) — по файлу-источнику
-            if (($parts[0] ?? '') === 'resizer' && isset($parts[1]) && preg_match('~^w\d+-h\d+$~', $parts[1])) {
-                $parts = array_slice($parts, 2);
+            $file = $parts;
+            if (($file[0] ?? '') === 'resizer' && isset($file[1]) && preg_match('~^w\d+-h\d+$~', $file[1])) {
+                $file = array_slice($file, 2);
             }
-            return is_file($this->webDir . '/' . implode('/', $parts)) ? null : 'file';
+            if (is_file($this->webDir . '/' . implode('/', $file))) {
+                return null;
+            }
         }
-        $prefix = ($parts && in_array($parts[0], $this->langPrefixes, true)) ? array_shift($parts) : '';
+        // страница; файла нет — может, это страница с точкой в сегменте (robots.txt, sitemap.xml)
+        $page = $this->page($parts);
+        if ($isFile) {
+            return $page === 'found' ? null : 'file';
+        }
+        return $page === 'missing' ? 'page' : null;
+    }
+
+    /**
+     * Страница по сегментам адреса: 'found' — видна посетителю (сразу или по старому адресу), 'other' — другой язык
+     * (не проверяется), 'missing' — нет.
+     *
+     * @param string[] $parts
+     */
+    private function page(array $parts): string {
+        if ($parts && $this->defaultAbbr !== '' && $parts[0] === $this->defaultAbbr) {
+            array_shift($parts); // язык по умолчанию явно: /ru/info/ — та же страница, что /info/
+            $prefix = '';
+        } else {
+            $prefix = ($parts && in_array($parts[0], $this->langPrefixes, true)) ? array_shift($parts) : '';
+        }
         if ($prefix !== $this->currentPrefix) {
-            return null; // другой язык: его дерево не загружено
+            return 'other'; // другой язык: его дерево не загружено
         }
         if (($this->pageOf)($parts) !== null) {
-            return null;
+            return 'found';
         }
-        return ($this->isOldAddress)($parts) ? null : 'page';
+        $target = ($this->oldTarget)($parts);
+        return ($target !== null && ($this->pageOf)($target) !== null) ? 'found' : 'missing';
     }
 
     private static function markAs(\DOMElement $el, string $class, string $title): void {

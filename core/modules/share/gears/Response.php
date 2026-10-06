@@ -89,6 +89,32 @@ final class Response extends Primitive {
     }
 
     /**
+     * Адрес страницы-ссылки (smap_redirect_url) для текущего посетителя: заполнители — как prepareRedirectURL; адрес
+     * страницы этого сайта от корня («/info/» — его ставит «Страница…» формы раздела; поле одно на все языки) на другом
+     * языке ведёт на ту же страницу этого языка («/ua/info/»), если она на нём открыта. Файл, адрес с языком, внешний
+     * адрес и страница, которой на этом языке нет, — как есть.
+     *
+     * @param string|null $url
+     * @return string|null
+     */
+    public static function pageLinkURL($url) {
+        $url = self::prepareRedirectURL($url);
+        $lang = E()->getLanguage();
+        $current = (int)$lang->getCurrent();
+        $root = (string)E()->getSiteManager()->getCurrentSite()->root;
+        if (!is_string($url) || $current === (int)$lang->getDefault() || !preg_match('~^/(?!/)~', $url) || !str_starts_with($url, $root)) {
+            return $url;
+        }
+        preg_match('~^([^?#]*)(.*)$~s', substr($url, strlen($root)), $m);
+        $segments = array_values(array_filter(explode('/', $m[1]), fn(string $s) => $s !== ''));
+        $abbrs = array_map(fn(array $l) => (string)$l['lang_abbr'], $lang->getLanguages());
+        if (($segments && in_array($segments[0], $abbrs, true)) || E()->getMap()->findIDByPath($segments) === null) {
+            return $url;
+        }
+        return $root . $lang->getAbbrByID($current) . '/' . ltrim($m[1], '/') . $m[2];
+    }
+
+    /**
      * Set response status.
      *
      * @param int $statusCode Status code.

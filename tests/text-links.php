@@ -15,7 +15,8 @@ $html = '<p class="lead">Ссылки: <a href="/info/">рабочая</a> <a hr
     . '<a href="/claude-tl-closed/">закрытая</a> <a href="/claude-tl-old/">старый адрес</a> '
     . '<a href="/uploads/claude-tl-missing.pdf">нет файла</a> <a href="/uploads/claude-tl/ok.pdf">есть файл</a> '
     . '<a href="https://example.com/">внешняя</a> <a href="mailto:a@example.com">почта</a> <a href="#top">якорь</a> '
-    . '<a href="/ua/claude-tl-nope/">другой язык</a> <a href="/info/?x=1#y">с запросом</a> <a href="info/">относительная</a></p>'
+    . '<a href="/ua/claude-tl-nope/">другой язык</a> <a href="/info/?x=1#y">с запросом</a> <a href="info/">относительная</a> '
+    . '<a href="/claude-tl-old/quick-start/">старый адрес с хвостом</a> <a href="/ru/info/">с префиксом основного языка</a></p>'
     . '<p><img src="/uploads/claude-tl-missing.jpg" alt="нет картинки"> <img src="/resizer/w10-h10/uploads/claude-tl/ok.jpg" alt="есть картинка"></p>'
     . '<p>Кириллица &amp; сущности&nbsp;тут<br>строка</p>';
 
@@ -50,7 +51,7 @@ try {
     // 1. гость
     $g = page('/claude-tl/', false);
     foreach (['/info/', '/claude-tl-old/', '/uploads/claude-tl/ok.pdf', 'https://example.com/', 'mailto:a@example.com', '#top',
-                 '/ua/claude-tl-nope/', '/info/?x=1#y', 'info/'] as $href) {
+                 '/ua/claude-tl-nope/', '/info/?x=1#y', 'info/', '/claude-tl-old/quick-start/', '/ru/info/'] as $href) {
         check("гость: рабочая ссылка остаётся ссылкой — $href", str_contains($g, 'href="' . htmlspecialchars($href) . '"'));
     }
     foreach (['/claude-tl-nope/', '/claude-tl-closed/', '/uploads/claude-tl-missing.pdf'] as $href) {
@@ -83,22 +84,53 @@ try {
         echo "SKIP режим правки: отладка выключена, XML страницы недоступен\n";
     }
 
+    // 4а. старые адреса читаются одним запросом, сколько бы ссылок ни нашлось вне дерева (бюджет запросов на страницу)
+    $queries = function (string $content) use ($tb): int {
+        q('UPDATE share_textblocks_translation SET tb_content = ? WHERE tb_id = ? AND lang_id = 1', [$content, $tb]);
+        $ch = curl_init(BASE . '/claude-tl/?debug');
+        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 60]);
+        $b = (string)curl_exec($ch);
+        $x = str_starts_with(ltrim($b), '<?xml') ? @simplexml_load_string($b) : null;
+        return $x && isset($x['queries']) ? (int)$x['queries'] : -1;
+    };
+    $one = $queries('<p><a href="/claude-tl-nope1/">a</a></p>');
+    $three = $queries('<p><a href="/claude-tl-nope1/">a</a> <a href="/claude-tl-nope2/">b</a> <a href="/claude-tl-nope3/">c</a></p>');
+    if ($one === -1) {
+        echo "SKIP запросы: отладка выключена, XML страницы недоступен\n";
+    } else {
+        check('старые адреса — один запрос на страницу: три ссылки вне дерева стоят столько же, сколько одна', $three === $one,
+            "одна: $one, три: $three");
+    }
+
     // 4. TextLinks в консоли: причины по адресам и строка без находок — та же
     if (class_exists('Energine\share\gears\TextLinks')) {
-        $pages = ['' => 1, 'info' => 2, 'info/quick-start' => 3];
-        $tl = new Energine\share\gears\TextLinks(fn(array $s) => $pages[implode('/', $s)] ?? null, fn(array $s) => implode('/', $s) === 'old',
-            WEB, '/', parse_url(BASE, PHP_URL_HOST), ['ua']);
+        $pages = ['' => 1, 'info' => 2, 'info/quick-start' => 3, 'claude-seg.xml' => 4];
+        // старый адрес old → info: замыкание отдаёт нынешний путь (с хвостом), его проверяет дерево
+        $tl = new Energine\share\gears\TextLinks(fn(array $s) => $pages[implode('/', $s)] ?? null,
+            fn(array $s) => ($s && $s[0] === 'old') ? array_merge(['info'], array_slice($s, 1)) : null,
+            WEB, '/', parse_url(BASE, PHP_URL_HOST), ['ua'], '', 'ru');
         $cases = ['/' => null, '/info/' => null, 'info/quick-start/' => null, '/info/quick-start/?a=1#b' => null, BASE . '/info/' => null,
             '/nope/' => 'page', '/old/' => null, '/old/deeper/' => 'page', '/ua/nope/' => null, 'https://example.com/x/' => null, '#a' => null,
             'mailto:x@y.z' => null, 'tel:+1' => null, 'javascript:void(0)' => null, '/uploads/claude-tl/ok.pdf' => null,
             '/uploads/claude-tl/nope.pdf' => 'file', '/resizer/w1-h1/uploads/claude-tl/ok.jpg' => null, '/resizer/w1-h1/uploads/nope.jpg' => 'file',
-            '/info/../nope/' => 'page', '' => null];
+            '/info/../nope/' => 'page', '' => null,
+            // ревью этапа: старый адрес с хвостом, явный префикс основного языка, страница с точкой в сегменте
+            '/old/quick-start/' => null, '/ru/info/' => null, '/ru/nope/' => 'page', '/claude-seg.xml' => null, '/nope.xml' => 'file'];
         foreach ($cases as $link => $want) {
             check('TextLinks::reason(' . var_export($link, true) . ') = ' . var_export($want, true), $tl->reason($link) === $want, var_export($tl->reason($link), true));
         }
         $clean = '<p>Нет <a href="/info/">ссылок</a> на ничто &amp; всё<br>хорошо</p>';
         check('filter без находок — строка та же', $tl->filter($clean, false, []) === $clean);
         check('filter без ссылок и картинок — строка та же', $tl->filter('<p>текст</p>', true, []) === '<p>текст</p>');
+        // непарный </div> закрыл бы обёртку разбора — всё после него пропало бы: такой текст отдаётся как есть
+        $unbalanced = '<p>до <a href="/nope/">битая</a></p></div><p>ПОСЛЕ</p><h2>Заголовок</h2>';
+        $out = $tl->filter($unbalanced, false, []);
+        check('filter: непарный </div> в тексте — ничего не теряется (текст как есть)', $out === $unbalanced, $out);
+        // с находкой текст собирается заново: неразрывный пробел, <br />, сущности и кириллица — те же по смыслу
+        $out = $tl->filter('<p><a href="/nope/">x</a> a&nbsp;b<br /> &amp; Ёж</p>', false, []);
+        check('filter с находкой: &nbsp;, <br />, &amp; и кириллица сохранены', !str_contains($out, 'href')
+            && (str_contains($out, "a\u{00A0}b") || str_contains($out, 'a&nbsp;b')) && (bool)preg_match('~<br\s*/?>~', $out)
+            && str_contains($out, '&amp; Ёж'), $out);
     } else {
         check('гир TextLinks есть', false);
     }

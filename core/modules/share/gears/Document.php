@@ -158,7 +158,8 @@ final class Document extends Primitive implements IDocument {
         //Если URL редиректа не пустой  - осуществляем редирект по нему
         if (!empty($this->documentInfo['RedirectUrl'])) {
             E()->getResponse()->setStatus('301');
-            E()->getResponse()->setRedirect($this->documentInfo['RedirectUrl']);
+            // страница-ссылка на страницу сайта — на её версию языка посетителя (Response::pageLinkURL)
+            E()->getResponse()->setRedirect(Response::pageLinkURL($this->documentInfo['RedirectUrl']));
         }
         // загружаем компоненты страницы
         //$this->loadComponents($this->documentInfo['templateID']);

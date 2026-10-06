@@ -63,6 +63,8 @@ try {
     // как после удаления шаблона из site/modules без setup linker: ссылка ведёт в каталог шаблонов сайта, файла нет
     symlink(ROOT . '/site/modules/main/templates/content/claude_pt_gone.content.xml', $gone);
     @lchown($gone, SITE_USER);
+    // страница, чей шаблон стал такой висячей ссылкой (в разделе с подстраницами: «Услуга» там по-прежнему чаще)
+    $gonePage = savePage(null, $section, 'gone', ['content' => 'main/claude_pt_gone.content.xml']);
 
     $f = addForm($section);
     check('раздел с подстраницами: заранее выбран самый частый шаблон подстраниц — «Услуга», и его макет',
@@ -95,6 +97,14 @@ try {
     check('заранее выбранный вариант не выключен', $f['content'] !== null && !in_array($f['content'], $f['disabled'], true), (string)$f['content']);
     check('шаблона без файла (висячая ссылка в web/templates) в списке нет', !array_key_exists('main/claude_pt_gone.content.xml', $f['hints']),
         implode(', ', array_keys($f['hints'])));
+    // ревью этапа: в форме правки страницы с таким шаблоном он остаётся в списке выбранным (выключенным) — иначе браузер
+    // выбрал бы первый вариант, и «Сохранить» молча сменило бы шаблон
+    [$c, $html] = http("/admin/structure/single/divEditor/$gonePage/edit/");
+    $d = new DOMDocument();
+    @$d->loadHTML('<?xml encoding="UTF-8">' . $html);
+    $opt = (new DOMXPath($d))->query("//select[@id='smap_content']/option[@value='main/claude_pt_gone.content.xml']")->item(0);
+    check('форма правки страницы с шаблоном без файла: её шаблон в списке и выбран', $c == 200 && $opt && $opt->hasAttribute('selected'),
+        "HTTP $c " . ($opt ? 'вариант есть, selected: ' . var_export($opt->hasAttribute('selected'), true) : 'варианта нет'));
     foreach (['main/landing.content.xml', 'main/service.content.xml', 'main/contacts.content.xml', 'textblock.content.xml', 'childs.content.xml',
                  'map.content.xml', 'main.content.xml'] as $tpl) {
         $hint = $f['hints'][$tpl] ?? '';

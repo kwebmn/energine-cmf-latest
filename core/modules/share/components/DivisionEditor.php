@@ -242,13 +242,12 @@ class DivisionEditor extends Grid implements SampleDivisionEditor {
                 $r[basename($folderPath)] = $folderPath;
             }
         }
+        // висячая ссылка в web/templates (шаблон удалён из модуля, setup linker не запускали): такой страницы не построить —
+        // вариант не предлагается; у страницы с таким шаблоном он остаётся текущим выключенным вариантом ($oldValue ниже),
+        // иначе браузер выбрал бы первый вариант и сохранение молча сменило бы шаблон
+        $r = array_filter($r, 'is_file');
         $d = new \DOMDocument('1.0', 'UTF-8');
         foreach ($r as $path) {
-            // висячая ссылка в web/templates (шаблон удалён из модуля, setup linker не запускали): такой страницы не
-            // построить — вариант не предлагается
-            if (!is_file($path)) {
-                continue;
-            }
             $path = str_replace($dirPath, '', $path);
             list($name, $tp) = explode('.', substr(basename($path), 0, -4));
             $hintConst = strtoupper('hint_' . $tp . '_' . $name);
