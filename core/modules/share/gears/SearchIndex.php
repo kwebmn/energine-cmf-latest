@@ -80,6 +80,28 @@ final class SearchIndex {
     }
 
     /**
+     * Обновить индекс при сохранении (правка текста, откат, сохранение раздела) — внутри транзакции сохранения, тем же
+     * подключением: индекс видит её ещё не записанные изменения. Сбой индекса сохранение не отменяет — ошибка в журнал.
+     * Кроме взаимной блокировки (SQLSTATE 40001): InnoDB откатывает при ней всю транзакцию, сохранения уже нет — ошибка
+     * уходит вызывающему (его откат и сообщение об ошибке вместо ложного «сохранено»).
+     *
+     * @param int[] $smapIds страницы
+     */
+    public static function refresh(\PDO $pdo, array $smapIds, ?int $langId = null): void {
+        try {
+            $index = new self($pdo);
+            foreach (array_unique(array_map('intval', $smapIds)) as $id) {
+                $index->page($id, $langId);
+            }
+        } catch (\Throwable $e) {
+            if ($e instanceof \PDOException && $e->getCode() === '40001') {
+                throw $e;
+            }
+            error_log('Energine: индекс поиска: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Переиндексировать весь сайт.
      *
      * @return int строк в индексе

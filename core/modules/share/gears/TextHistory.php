@@ -56,6 +56,11 @@ class TextHistory {
             }
         }
         $this->event($block['smap_id'] ? (int)$block['smap_id'] : null, (string)$block['tb_num'], $langId, $content, $log);
+        // индекс поиска по сайту — страница блока на этом языке (общий блок без страницы не индексируется); сбой индекса
+        // не отменяет сохранение текста — в журнал ошибок (SearchIndex::refresh)
+        if ($block['smap_id']) {
+            SearchIndex::refresh($this->dbh->getPDO(), [(int)$block['smap_id']], $langId);
+        }
     }
 
     /**

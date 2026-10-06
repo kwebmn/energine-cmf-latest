@@ -28,6 +28,7 @@ use Energine\share\gears\JSONCustomBuilder;
 use Energine\share\gears\JSONDivBuilder;
 use Energine\share\gears\PageAliases;
 use Energine\share\gears\QAL;
+use Energine\share\gears\SearchIndex;
 use Energine\share\gears\SystemException;
 
 /**
@@ -402,6 +403,9 @@ class DivisionEditor extends Grid implements SampleDivisionEditor {
                 $id = $id['smap_id'];
                 $url = E()->getMap()->getURLByID($id);
             }
+            // индекс поиска — страница и подразделы, чей адрес изменился (перенос в служебный раздел и обратно); служебная
+            // страница и страница-ссылка уходят из индекса. Сбой индекса не отменяет сохранение — в журнал ошибок
+            SearchIndex::refresh($this->dbh->getPDO(), [(int)$id, ...array_keys(array_diff_assoc($aliases->paths(), $pathsBefore))]);
 
             $this->dbh->commit();
         } catch (\Throwable $e) {
