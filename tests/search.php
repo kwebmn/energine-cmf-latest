@@ -194,7 +194,7 @@ for ($i = 1; $i <= 11; $i++) {
 q('DELETE FROM share_access_level WHERE smap_id = ? AND group_id <> ?', [$ss['closed'], $admins]);
 q('REPLACE INTO share_access_level (smap_id, group_id, right_id) VALUES (?, ?, 3)', [$ss['closed'], $admins]);
 foreach ($ss as $id) {
-    (new SearchIndex(pdo()))->page($id);
+    (new SearchIndex(pdo(), WEB . '/templates/'))->page($id);
 }
 // запросы теста — строки журнала поиска (SiteSearch::log) убираются в конце
 $searched = [];
@@ -319,5 +319,56 @@ logout();
 check('страница админки «Поиск по сайту» — под admin/ (служебная), не в индексе', !(int)scalar('SELECT COUNT(*) FROM share_search_index i
     JOIN share_sitemap s USING (smap_id) JOIN share_sitemap a ON a.smap_id = s.smap_pid WHERE a.smap_segment = ? AND s.smap_segment = ?', ['admin', 'search'])
     && (int)scalar("SELECT COUNT(*) FROM share_sitemap s JOIN share_sitemap a ON a.smap_id = s.smap_pid WHERE a.smap_segment = 'admin' AND s.smap_segment = 'search'") === 1);
+
+// 7. ревью этапа: совпадение в названии выше любого числа совпадений в тексте; короткая основа (до четырёх букв) не
+//    находит другие слова («цены» — не «центр», «кот» — не «который»), длинная — по началу («калибр» — «калибровка»);
+//    в индексе только блоки, которые страница показывает (блок прежнего шаблона — нет); символ вне BMP из сущности
+//    (&#128222;) не мешает индексу (таблицы utf8mb3)
+if (defined(SearchIndex::class . '::SECTIONS')) {
+    preg_match('~const SECTIONS = (\[[^\]]+\])~', (string)file_get_contents(ROOT . '/core/modules/share/components/TextBlock.php'), $m);
+    check('SearchIndex::SECTIONS — те же номера секций, что TextBlock::SECTIONS', isset($m[1]) && eval('return ' . $m[1] . ';') === SearchIndex::SECTIONS,
+        $m[1] ?? 'нет');
+} else {
+    check('SearchIndex::SECTIONS есть (номера секций визитки для блоков шаблона)', false);
+}
+$idx = new SearchIndex(pdo(), WEB . '/templates/');
+$rv = [
+    'ord-title' => $stand('claude-sr-ord-title', ['names' => ['ru' => 'Веретено', 'ua' => 'Веретено'], 'texts' => ['ru' => '<p>Мастерская</p>']]),
+    'ord-text' => $stand('claude-sr-ord-text', ['names' => ['ru' => 'Стенд порядка'],
+        'texts' => ['ru' => '<p>Веретено, веретено, веретено, веретено и ещё раз веретено.</p>']]),
+    'center' => $stand('claude-sr-center', ['texts' => ['ru' => '<p>Сервисный центр в центре города</p>']]),
+    'price' => $stand('claude-sr-price', ['texts' => ['ru' => '<p>Работаем по доступным ценам, калибровка бесплатно</p>']]),
+    'orphan' => $stand('claude-sr-orphan', ['texts' => ['ru' => '<p>Видимый текст: глобус</p>']]),
+    'emoji' => $stand('claude-sr-emoji', ['texts' => ['ru' => '<p>&#128222; Позвоните: телескопы в наличии</p>']]),
+];
+// блок прежнего шаблона: номера 7 в шаблоне страницы (textblock.content.xml) нет — на странице его не видно
+q("INSERT INTO share_textblocks (smap_id, tb_num) VALUES (?, '7')", [$rv['orphan']]);
+q('INSERT INTO share_textblocks_translation (tb_id, lang_id, tb_content) VALUES (?, ?, ?)', [(int)pdo()->lastInsertId(), $L1, '<p>Скрытый текст: астролябия</p>']);
+$failed = [];
+foreach ($rv as $key => $id) {
+    try {
+        $idx->page($id);
+    } catch (\Throwable $e) {
+        $failed[$key] = $e->getMessage();
+    }
+}
+$r = $row($rv['emoji'], $L1);
+check('символ вне BMP из сущности (&#128222;) — страница в индексе, без ошибки', !isset($failed['emoji']) && $r && str_contains($r['body'], 'телескопы'),
+    json_encode($failed, JSON_UNESCAPED_UNICODE));
+[, , $links] = $find('веретено');
+check('совпадение в названии — выше пяти совпадений в тексте', ($links[0] ?? '') === 'claude-sr-ord-title' && ($links[1] ?? '') === 'claude-sr-ord-text',
+    implode(' ', $links));
+[, $b, $links] = $find('цены');
+check('«цены» находит «ценам», но не «центр»', $has($links, 'claude-sr-price') && !$has($links, 'claude-sr-center') && !str_contains($b, '<mark>центр'),
+    implode(' ', $links));
+[, $b] = $find('кот');
+check('«кот» не находит «который» (нет подсветки «котор…»)', !preg_match('~<mark>[Кк]отор~u', $b));
+[, , $links] = $find('калибр');
+check('длинная основа — по началу слова: «калибр» находит «калибровка»', $has($links, 'claude-sr-price'), implode(' ', $links));
+$r = $row($rv['orphan'], $L1);
+[, , $links] = $find('астролябия');
+check('блок, которого нет в шаблоне страницы (прежний шаблон), — не в индексе и не находится; видимый — в индексе',
+    $r && str_contains($r['body'], 'глобус') && !str_contains($r['body'], 'астролябия') && !$has($links, 'claude-sr-orphan'),
+    json_encode($r, JSON_UNESCAPED_UNICODE));
 
 done('search');

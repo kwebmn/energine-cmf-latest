@@ -246,6 +246,9 @@ is "setup install --domain — код 0" "$rc" 0
 out=$(setup demo --config="$S/web/system2.config.php" --no-static); rc=$?
 is "setup demo — код 0" "$rc" 0
 [ $rc -eq 0 ] || echo "$out" | tail -5 | sed 's/^/     /'
+# setup demo строит индекс поиска (stage20): демо-страница — в индексе на двух языках
+is "индекс поиска после демо — демо-страница на двух языках" \
+  "$(TM -N site2 -e "SELECT COUNT(*) FROM share_search_index i JOIN share_sitemap s USING (smap_id) WHERE s.smap_segment = 'quick-start'" 2>/dev/null)" 2
 out=$(setup demo --config="$S/web/system2.config.php" --no-static); rc=$?
 [ $rc -ne 0 ] && grep -q "свежую установку" <<< "$out" && ok "повторное демо — отказ" || bad "повторное демо" "код $rc: $(tail -2 <<< "$out")"
 (cd "$R" && php8.5 tests/tools/fingerprint.php) > "$T/live.txt" \

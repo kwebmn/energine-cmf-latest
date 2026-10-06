@@ -20,11 +20,20 @@
 //   php8.5 editors-db.php page-xml-snap ID      — XML раздела (содержимое и макет), JSON
 //   php8.5 editors-db.php page-xml-set ID       — XML содержимого раздела — копия его шаблона (раздел «изменён»)
 //   php8.5 editors-db.php page-xml-restore ID JSON — вернуть XML раздела из page-xml-snap
+//   php8.5 editors-db.php index-fresh           — индекс поиска против построенного заново: {"stale": N, "rows": [...]}
+//                                                   (после — индекс свежий)
 require dirname(__DIR__) . '/testlib.php';
+require ROOT . '/vendor/autoload.php';
+
+use Energine\share\gears\SearchIndex;
 
 // раздел с текстовым блоком num 1, на котором проверяется правка на странице
 const TEXT_PAGE = "(SELECT q.smap_id FROM share_sitemap q JOIN share_sitemap i ON i.smap_id = q.smap_pid WHERE q.smap_segment = 'quick-start' AND i.smap_segment = 'info')";
 const FORM_FILE = 'uploads/public/claude-form-file.png';
+
+// возврат страницы или текста прямо в базе — мимо сохранения сайта, которое обновляет индекс поиска: строки индекса
+// этой страницы строятся заново (иначе посетитель находил бы тексты аудита, а правленая страница выпадала из поиска)
+$reindex = fn(int $smapId) => (new SearchIndex(pdo(), WEB . '/templates/'))->page($smapId);
 
 [, $cmd] = $argv + [null, null];
 switch ($cmd) {
@@ -46,9 +55,11 @@ switch ($cmd) {
                 [$r['smap_name'], $r['smap_title'], $r['smap_description_rtf'], $r['smap_html_title'], $r['smap_meta_keywords'],
                     $r['smap_meta_description'], $r['smap_is_disabled'], (int)$argv[2], $r['lang_id']]);
         }
+        $reindex((int)$argv[2]);
         break;
     case 'page-rtf':
         q('UPDATE share_sitemap_translation SET smap_description_rtf = ? WHERE smap_id = ?', [json_decode($argv[3]), (int)$argv[2]]);
+        $reindex((int)$argv[2]);
         break;
     case 'page-redirect':
         // адрес переадресации страницы (страница-ссылка) — JSON: null или строка
@@ -56,6 +67,7 @@ switch ($cmd) {
         break;
     case 'page-redirect-set':
         q('UPDATE share_sitemap SET smap_redirect_url = ? WHERE smap_id = ?', [json_decode($argv[3], true), (int)$argv[2]]);
+        $reindex((int)$argv[2]);
         break;
     case 'tb-home':
         echo scalar("SELECT tb_id FROM share_textblocks WHERE smap_id = " . TEXT_PAGE . " AND tb_num = '1'");
@@ -65,6 +77,7 @@ switch ($cmd) {
         break;
     case 'tb-set':
         q('UPDATE share_textblocks_translation SET tb_content = ? WHERE tb_id = ? AND lang_id = 1', [json_decode($argv[3]), (int)$argv[2]]);
+        $reindex((int)scalar('SELECT smap_id FROM share_textblocks WHERE tb_id = ?', [(int)$argv[2]]));
         break;
     case 'tb-history-clear':
         // версии блока, накопленные аудитом (история текста)
@@ -86,6 +99,7 @@ switch ($cmd) {
         foreach (json_decode($argv[3], true) as $r) {
             q('INSERT INTO share_textblocks_translation (tb_id, lang_id, tb_content) VALUES (?, ?, ?)', [(int)$argv[2], $r['lang_id'], $r['tb_content']]);
         }
+        $reindex((int)scalar('SELECT smap_id FROM share_sitemap WHERE smap_id = ' . TEXT_PAGE));
         break;
     case 'mail-snap':
         echo json_encode(q('SELECT * FROM mail_templates_translation WHERE template_id = ? ORDER BY lang_id', [(int)$argv[2]])->fetchAll(), JSON_UNESCAPED_UNICODE);
@@ -126,11 +140,23 @@ switch ($cmd) {
         $content = scalar('SELECT smap_content FROM share_sitemap WHERE smap_id = ?', [(int)$argv[2]]);
         q('UPDATE share_sitemap SET smap_content_xml = ? WHERE smap_id = ?',
             [file_get_contents(WEB . '/templates/content/' . $content), (int)$argv[2]]);
+        $reindex((int)$argv[2]);
         break;
     case 'page-xml-restore':
         $r = json_decode($argv[3], true);
         q('UPDATE share_sitemap SET smap_content_xml = ?, smap_layout_xml = ? WHERE smap_id = ?',
             [$r['smap_content_xml'], $r['smap_layout_xml'], (int)$argv[2]]);
+        $reindex((int)$argv[2]);
+        break;
+    case 'index-fresh':
+        // строки индекса поиска, которые отличаются от построенных заново (SearchIndex::all — он же и чинит индекс)
+        $snap = fn() => array_column(q("SELECT CONCAT(smap_id, '-', lang_id) AS k, CONCAT_WS('|', title, body, title_stems, body_stems) AS v
+            FROM share_search_index")->fetchAll(), 'v', 'k');
+        $before = $snap();
+        (new SearchIndex(pdo(), WEB . '/templates/'))->all();
+        $after = $snap();
+        $stale = array_keys(array_diff_assoc($before, $after) + array_diff_assoc($after, $before));
+        echo json_encode(['stale' => count($stale), 'rows' => $stale]);
         break;
     default:
         fwrite(STDERR, "неизвестная команда\n");

@@ -1408,6 +1408,13 @@ const showTabOf = (page, selector) => page.evaluate((sel) => {
         await p.close();
     }
 
+    // индекс поиска: тексты и страницы аудит возвращает прямо в базе (снимки) — индекс витрины должен остаться таким,
+    // как построенный заново (иначе посетитель находит тексты аудита, а правленая страница пропадает из поиска)
+    {
+        const r = JSON.parse(db('index-fresh'));
+        check('индекс поиска после аудита — как построенный заново', r.stale === 0, JSON.stringify(r).slice(0, 400));
+    }
+
     await browser.close();
     console.log(`== editors failures: ${fail}`);
     process.exit(fail ? 1 : 0);

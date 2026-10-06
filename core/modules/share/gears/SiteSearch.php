@@ -7,10 +7,11 @@ namespace Energine\share\gears;
 
 /**
  * Поиск на языке посетителя. Слова запроса — основы (Stemmer): основа короче трёх букв не обязательна (FULLTEXT таких
- * слов не хранит), остальные обязательны все — страница находится, если в её названии или тексте каждой основой
- * начинается какое-то слово («услуг» — «услуги», «услугами»). Кандидаты — FULLTEXT (любая из основ, по убыванию
+ * слов не хранит), остальные обязательны все — страница находится, если в её названии или тексте каждой основе
+ * подходит какое-то слово (pattern: «услуг» — «услуги», «услугами»). Кандидаты — FULLTEXT (любая из основ, по убыванию
  * релевантности, не больше MAX_CANDIDATES); дальше здесь: все основы есть, страница в дереве посетителя (Sitemap:
- * включена на его языке, права не ниже чтения, предки тоже), вес — совпадения в названии ×TITLE_WEIGHT и в тексте.
+ * включена на его языке, права не ниже чтения, предки тоже). Порядок: сначала страницы, где слова запроса есть в
+ * названии (больше таких слов — выше), затем — где совпадений больше.
  * Отрывок — около SNIPPET знаков текста вокруг первого совпадения, найденные слова отмечены (mark). Журнал поиска (log) —
  * что искали и сколько нашлось: владельцу видно, каких страниц или слов не хватает.
  */
@@ -25,8 +26,6 @@ final class SiteSearch {
     const MAX_QUERY = 200;
     /** длина отрывка, знаков */
     const SNIPPET = 200;
-    /** вес совпадения в названии страницы (в тексте — 1) */
-    const TITLE_WEIGHT = 3;
     /** строк журнала поиска — не больше: при чистке остаются самые свежие */
     const LOG_ROWS = 10000;
 
@@ -87,10 +86,12 @@ final class SiteSearch {
                 if (!$this->visible((int)$row['smap_id'])) {
                     continue;
                 }
-                $found[] = ['row' => $row, 'weight' => self::TITLE_WEIGHT * array_sum($inTitle) + array_sum($inBody), 'order' => $i];
+                $found[] = ['row' => $row, 'title' => count(array_filter($inTitle)), 'hits' => array_sum($inTitle) + array_sum($inBody),
+                    'order' => $i, 'id' => (int)$row['smap_id']];
             }
-            // тяжелее — выше; при равенстве — порядок FULLTEXT
-            usort($found, fn(array $a, array $b) => [$b['weight'], $a['order']] <=> [$a['weight'], $b['order']]);
+            // слова запроса в названии — выше (больше слов — выше); затем больше совпадений; затем порядок FULLTEXT и номер
+            // страницы (листалка стабильна)
+            usort($found, fn(array $a, array $b) => [$b['title'], $b['hits'], $a['order'], $a['id']] <=> [$a['title'], $a['hits'], $b['order'], $b['id']]);
         }
         $total = count($found);
         $pages = (int)ceil($total / self::PER_PAGE);
@@ -183,11 +184,11 @@ final class SiteSearch {
         return $pieces;
     }
 
-    /** слово начинается с основы запроса (сравниваются основы: «услугами» — «услуг») */
+    /** слово подходит к основе запроса (pattern; сравниваются основы: «услугами» — «услуг») */
     private static function matches(string $word, array $terms): bool {
         $stem = Stemmer::stem($word);
         foreach ($terms as $t) {
-            if (str_starts_with($stem, $t)) {
+            if (preg_match(self::pattern($t), $stem)) {
                 return true;
             }
         }
@@ -195,7 +196,16 @@ final class SiteSearch {
     }
 
     /**
-     * Сколько основ строки индекса (через пробел) начинается с каждой основы запроса.
+     * Основа слова страницы подходит к основе запроса: начинается с неё; у короткой основы (до четырёх букв) — длиннее
+     * не больше чем на букву («цен» — «цена», «ценам», но не «центр»; «кот» — не «который»), у длинной — любое
+     * продолжение («калибр» — «калибровка»). Шаблон для строки основ через пробел и для одной основы.
+     */
+    private static function pattern(string $term): string {
+        return '~(?:^| )' . preg_quote($term, '~') . (mb_strlen($term) <= 4 ? '\S?(?= |$)' : '') . '~u';
+    }
+
+    /**
+     * Сколько основ строки индекса (через пробел) подходит к каждой основе запроса (pattern).
      *
      * @param string[] $terms
      * @return array<string, int>
@@ -203,7 +213,7 @@ final class SiteSearch {
     private static function hits(string $stems, array $terms): array {
         $hits = [];
         foreach ($terms as $t) {
-            $hits[$t] = (int)preg_match_all('~(?:^| )' . preg_quote($t, '~') . '~u', $stems);
+            $hits[$t] = (int)preg_match_all(self::pattern($t), $stems);
         }
         return $hits;
     }

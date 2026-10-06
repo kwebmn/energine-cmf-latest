@@ -343,8 +343,7 @@ final class Setup {
             }
         }
         // индекс поиска по сайту (sql/cut/stage20.sql): установка без него — поиск пуст до первой правки
-        $this->config = include $configFile;
-        $this->indexAfter('установка');
+        $this->indexAfter('установка', $pdo);
         $this->text('Готово: ', $address['scheme'], '://', $address['domain'], $address['root']);
     }
 
@@ -362,11 +361,13 @@ final class Setup {
         $this->text('В индексе поиска страниц (по языкам): ', $n);
     }
 
-    /** индекс после установки или демо: сбой — не отказ (сайт готов), а подсказка запустить setup reindex */
-    private function indexAfter(string $what): void {
+    /**
+     * Индекс после установки или демо — их подключением к базе (конфиг площадки они читают сами, $this->config у них
+     * нет): сбой — не отказ (сайт готов), а подсказка запустить setup reindex.
+     */
+    private function indexAfter(string $what, \PDO $pdo): void {
         try {
-            $this->checkDBConnection();
-            $n = (new \Energine\share\gears\SearchIndex($this->dbConnect))->all();
+            $n = (new \Energine\share\gears\SearchIndex($pdo))->all();
             $this->text('Индекс поиска: страниц (по языкам) ', $n);
         } catch (\Throwable $e) {
             $this->text($what, ' готова, но индекс поиска не построен: ', $e->getMessage(), PHP_EOL,
@@ -417,7 +418,7 @@ final class Setup {
             }
             $this->text('Файлы демо: ', $n, ' в ', HTDOCS_DIR, '/uploads');
         }
-        $this->indexAfter('демо');
+        $this->indexAfter('демо', $pdo);
     }
 
     /**

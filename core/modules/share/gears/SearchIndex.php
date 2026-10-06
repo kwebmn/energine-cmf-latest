@@ -7,8 +7,9 @@ namespace Energine\share\gears;
 
 /**
  * Строка индекса (share_search_index) — страница на языке: название (title) и текст для отрывка (body), их основы
- * (title_stems, body_stems — для FULLTEXT). Текст страницы — описание раздела и все её текстовые блоки (общие блоки без
- * страницы — нет). Не индексируются: служебные страницы (сегменты SYSTEM_SEGMENTS у корня и всё под ними: админка,
+ * (title_stems, body_stems — для FULLTEXT). Текст страницы — описание раздела и её текстовые блоки, которые она показывает
+ * (по макету и шаблону содержимого: блок прежнего шаблона, оставшийся в базе, — нет; общие блоки без страницы — нет).
+ * Не индексируются: служебные страницы (сегменты SYSTEM_SEGMENTS у корня и всё под ними: админка,
  * вход, карта …), страницы-ссылки, выключенные на языке — их строки удаляются. Видимость посетителю (права)
  * проверяет поиск по его дереву, а не индекс.
  */
@@ -22,8 +23,21 @@ final class SearchIndex {
      */
     const SYSTEM_SEGMENTS = ['admin', 'login', 'register', 'restore-password', 'profile', 'sitemap', 'google-sitemap', 'robots.txt', 'search'];
 
-    /** подключение — PDO, как у LinkChecker: индекс строят и сайт, и setup reindex (у него своё подключение) */
-    public function __construct(private \PDO $pdo) {
+    /**
+     * Номера блоков секций визитки — те же, что TextBlock::SECTIONS (tests/search.php сверяет; компонент, как и
+     * DivisionEditor, в setup не грузится).
+     */
+    const SECTIONS = ['hero' => 11, 'services' => 12, 'prices' => 13, 'reviews' => 14, 'gallery' => 15, 'faq' => 16,
+        'contacts' => 17, 'cta' => 18];
+
+    /**
+     * Подключение — PDO, как у LinkChecker: индекс строят и сайт, и setup reindex (у него своё подключение).
+     *
+     * @param string|null $templates каталог шаблонов площадки (web/templates/, по умолчанию — от HTDOCS_DIR): по макету и
+     *     шаблону содержимого страницы индексируются только блоки, которые она показывает; каталога нет — все её блоки
+     */
+    public function __construct(private \PDO $pdo, private ?string $templates = null) {
+        $this->templates ??= defined('HTDOCS_DIR') ? HTDOCS_DIR . '/templates/' : null;
     }
 
     private function q(string $sql, array $params = []): \PDOStatement {
@@ -38,13 +52,15 @@ final class SearchIndex {
 
     /**
      * HTML → текст: блочные теги — пробелы, строчные (<b>, <a>, <span>) — без пробела, script и style — прочь,
-     * сущности раскрыты, неразрывные пробелы — обычные, пробелы схлопнуты.
+     * сущности раскрыты, неразрывные пробелы — обычные, пробелы схлопнуты. Символы вне BMP (эмодзи из сущности
+     * &#128222;) — прочь: таблицы utf8mb3 их не хранят, запись строки индекса упала бы.
      */
     public static function text(?string $html): string {
         $text = preg_replace('~<(script|style)\b[^>]*>.*?</\1\s*>~is', ' ', (string)$html);
         $text = preg_replace('~</?(?:' . self::BLOCK . ')\b[^>]*>~i', ' ', (string)$text);
         $text = html_entity_decode(preg_replace('~<[^>]*>~', '', (string)$text), ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        return trim((string)preg_replace('~[\s\x{00A0}]+~u', ' ', $text));
+        $text = preg_replace('~[^\x{0}-\x{FFFF}]~u', '', mb_scrub($text, 'UTF-8'));
+        return trim((string)preg_replace('~[\s\x{00A0}]+~u', ' ', (string)$text));
     }
 
     /**
@@ -61,10 +77,13 @@ final class SearchIndex {
             FROM share_sitemap_translation WHERE smap_id = ?', [$smapId])->fetchAll(\PDO::FETCH_ASSOC) as $row) {
             $names[(int)$row['lang_id']] = $row;
         }
+        $shown = $this->shown($smapId);
         $blocks = [];
-        foreach ($this->q('SELECT tt.lang_id, tt.tb_content FROM share_textblocks t JOIN share_textblocks_translation tt
+        foreach ($this->q('SELECT tt.lang_id, tt.tb_content, t.tb_num FROM share_textblocks t JOIN share_textblocks_translation tt
             ON tt.tb_id = t.tb_id WHERE t.smap_id = ? ORDER BY t.tb_num', [$smapId])->fetchAll(\PDO::FETCH_ASSOC) as $row) {
-            $blocks[(int)$row['lang_id']][] = self::text($row['tb_content']);
+            if ($shown === null || in_array((string)$row['tb_num'], $shown, true)) {
+                $blocks[(int)$row['lang_id']][] = self::text($row['tb_content']);
+            }
         }
         foreach ($langs as $lang) {
             $t = $names[$lang] ?? null;
@@ -113,6 +132,58 @@ final class SearchIndex {
             $this->page((int)$id);
         }
         return (int)$this->q('SELECT COUNT(*) FROM ' . self::TABLE)->fetchColumn();
+    }
+
+    /**
+     * Номера блоков, которые страница показывает: текстовые блоки (TextBlock) её макета и шаблона содержимого (свой XML
+     * страницы — вместо файла, как у DocumentController) с номером страницы — num с числом (нечисловой — общий блок всех
+     * страниц), секция визитки — номер из SECTIONS, без num — 1. null — шаблон не прочитать (каталога шаблонов нет,
+     * файла нет, XML испорчен): тогда индексируются все блоки страницы.
+     *
+     * @return string[]|null
+     */
+    private function shown(int $smapId): ?array {
+        $page = $this->q('SELECT smap_layout, smap_content, smap_layout_xml, smap_content_xml FROM share_sitemap WHERE smap_id = ?',
+            [$smapId])->fetch(\PDO::FETCH_ASSOC);
+        if (!$page || $this->templates === null) {
+            return null;
+        }
+        $xml = '';
+        foreach (['layout', 'content'] as $type) {
+            $own = trim((string)$page['smap_' . $type . '_xml']);
+            if ($own === '') {
+                $file = $this->templates . $type . '/' . $page['smap_' . $type];
+                $own = is_file($file) ? (string)file_get_contents($file) : '';
+                if ($own === '') {
+                    return null;
+                }
+            }
+            $xml .= preg_replace('~<\?xml\s.+?\?>~s', '', $own);
+        }
+        $doc = @simplexml_load_string('<structure>' . $xml . '</structure>');
+        if (!$doc) {
+            return null;
+        }
+        $nums = [];
+        foreach ($doc->xpath('//component') as $component) {
+            if (!preg_match('~(?:^|\\\\)TextBlock$~', (string)$component['class'])) {
+                continue;
+            }
+            $num = '1';
+            foreach ($component->xpath('params/param') as $param) {
+                $value = trim((string)$param);
+                if ((string)$param['name'] === 'num') {
+                    $num = $value;
+                } elseif ((string)$param['name'] === 'section' && isset(self::SECTIONS[$value])) {
+                    $num = (string)self::SECTIONS[$value];
+                    break;
+                }
+            }
+            if (intval($num) !== 0) {
+                $nums[] = $num;
+            }
+        }
+        return $nums;
     }
 
     /** страница с текстом для посетителя: не служебная и не страница-ссылка */
