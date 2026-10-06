@@ -182,8 +182,10 @@ class DocumentController extends Primitive {
                     throw $e;
                 }
                 // старый адрес переименованной или перенесённой страницы — 301 на нынешний (PageAliases); setRedirect
-                // отдаёт ответ и завершает запрос
+                // отдаёт ответ и завершает запрос. no-cache: браузер не запоминает переадресацию навсегда — владелец
+                // может вернуть прежнее имя, и у гостя, уже открывавшего старый адрес, была бы петля
                 if ($e->getCode() == SystemException::ERR_404 && ($location = $this->oldAddress())) {
+                    E()->getResponse()->setHeader('Cache-Control', 'no-cache');
                     E()->getResponse()->setRedirect($location, 301);
                 }
                 /**

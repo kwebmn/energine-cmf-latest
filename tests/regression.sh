@@ -10,63 +10,64 @@ echo "log start line: $start"
 ORDER=$(mktemp)
 M "SELECT CONCAT('UPDATE share_sitemap SET smap_order_num=', smap_order_num, ' WHERE smap_id=', smap_id, ';') FROM share_sitemap" > "$ORDER"
 cd $S
-echo "### smoke-final (read-only, all pages)"; bash smoke-final.sh
-echo "### smoke-write"; bash smoke-write.sh
-echo "### smoke-roundtrip"; php8.5 smoke-roundtrip.php
-echo "### smoke-editing"; php8.5 smoke-editing.php
-echo "### smoke-upload"; php8.5 smoke-upload.php
-echo "### csrf"; php8.5 smoke-csrf.php
-echo "### smoke-profile"; php8.5 smoke-profile.php
-echo "### session-id"; php8.5 session-id.php
-echo "### site-address"; php8.5 site-address.php
-echo "### field-dates"; php8.5 field-dates.php
-echo "### site-settings"; php8.5 site-settings.php
-echo "### rights"; php8.5 smoke-rights.php
-echo "### errors"; php8.5 smoke-errors.php
-echo "### css"; bash css-build.sh
-echo "### menu"; php8.5 menu.php
-echo "### sections"; php8.5 sections.php
-echo "### escaping"; php8.5 xslt-escaping.php
-echo "### xslt-lint"; php8.5 xslt-lint.php
-echo "### new-site-doc"; bash new-site-doc.sh
-echo "### unused-constants"; php8.5 unused-constants.php
-echo "### config-template"; php8.5 config-template.php
-echo "### dbworker-call"; php8.5 dbworker-call.php
-echo "### component-states"; php8.5 component-states.php
-echo "### dev-tools"; php8.5 dev-tools.php
-echo "### untranslated"; php8.5 untranslated.php
-echo "### links"; php8.5 links.php
-echo "### config-extends"; php8.5 config-extends.php
-echo "### textblock-langs"; php8.5 textblock-langs.php
-echo "### pages-delete"; php8.5 pages-delete.php
-echo "### perimeter"; php8.5 perimeter.php
-echo "### delete-guards"; php8.5 delete-guards.php
-echo "### phpstan"; bash phpstan.sh
-echo "### js-dead"; php8.5 js-dead.php
-echo "### jscheck"; bash jscheck.sh
-echo "### wrappers-selftest"; bash wrappers-selftest.sh
-echo "### text-history"; php8.5 text-history.php
-echo "### lang-inactive"; php8.5 lang-inactive.php
-echo "### db"; php8.5 db.php
-echo "### queries"; php8.5 queries.php
-echo "### translator"; php8.5 translator.php
-echo "### schema-info"; php8.5 schema-info.php
-echo "### field-type"; php8.5 field-type.php
-echo "### json-builder"; php8.5 json-builder.php
-echo "### registry"; php8.5 registry.php
-echo "### urls"; php8.5 urls.php
-echo "### page-aliases"; php8.5 page-aliases.php
-echo "### resizer"; php8.5 resizer.php
+. ./suite-lib.sh
+suite "smoke-final (read-only, all pages)" bash smoke-final.sh
+suite smoke-write bash smoke-write.sh
+suite smoke-roundtrip php8.5 smoke-roundtrip.php
+suite smoke-editing php8.5 smoke-editing.php
+suite smoke-upload php8.5 smoke-upload.php
+suite csrf php8.5 smoke-csrf.php
+suite smoke-profile php8.5 smoke-profile.php
+suite session-id php8.5 session-id.php
+suite site-address php8.5 site-address.php
+suite field-dates php8.5 field-dates.php
+suite site-settings php8.5 site-settings.php
+suite rights php8.5 smoke-rights.php
+suite errors php8.5 smoke-errors.php
+suite css bash css-build.sh
+suite menu php8.5 menu.php
+suite sections php8.5 sections.php
+suite escaping php8.5 xslt-escaping.php
+suite xslt-lint php8.5 xslt-lint.php
+suite new-site-doc bash new-site-doc.sh
+suite unused-constants php8.5 unused-constants.php
+suite config-template php8.5 config-template.php
+suite dbworker-call php8.5 dbworker-call.php
+suite component-states php8.5 component-states.php
+suite dev-tools php8.5 dev-tools.php
+suite untranslated php8.5 untranslated.php
+suite links php8.5 links.php
+suite config-extends php8.5 config-extends.php
+suite textblock-langs php8.5 textblock-langs.php
+suite pages-delete php8.5 pages-delete.php
+suite perimeter php8.5 perimeter.php
+suite delete-guards php8.5 delete-guards.php
+suite phpstan bash phpstan.sh
+suite js-dead php8.5 js-dead.php
+suite jscheck bash jscheck.sh
+suite wrappers-selftest bash wrappers-selftest.sh
+suite regression-selftest bash regression-selftest.sh
+suite text-history php8.5 text-history.php
+suite lang-inactive php8.5 lang-inactive.php
+suite db php8.5 db.php
+suite queries php8.5 queries.php
+suite translator php8.5 translator.php
+suite schema-info php8.5 schema-info.php
+suite field-type php8.5 field-type.php
+suite json-builder php8.5 json-builder.php
+suite registry php8.5 registry.php
+suite urls php8.5 urls.php
+suite page-aliases php8.5 page-aliases.php
+suite resizer php8.5 resizer.php
 
-echo "### mail"
-php8.5 smoke-mail.php
-echo "### antispam"; php8.5 smoke-antispam.php
-echo "### smtp"; php8.5 smoke-smtp.php
+suite mail php8.5 smoke-mail.php
+suite antispam php8.5 smoke-antispam.php
+suite smtp php8.5 smoke-smtp.php
 echo "--- mailbox recipients:"; grep -h "^To: " "$MAILBOX_FILE" 2>/dev/null | sort | uniq -c
 echo "--- cleanup-mail"; php8.5 cleanup-mail.php mailbox
 
 # последним: набор запирает IP этой машины (и убирает за собой) — прочим наборам он не мешает
-echo "### login-limit"; php8.5 smoke-login-limit.php
+suite login-limit php8.5 smoke-login-limit.php
 
 sleep 1
 echo "### PHP log since line $start"; bash smoke-log.sh $start

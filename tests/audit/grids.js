@@ -1003,6 +1003,19 @@ const inspect = (page) => page.evaluate(() => {
             check('«Править предыдущий»: окно закрыто, открыта правка предыдущей записи', first.endsWith(`/${keys[1]}/edit/`)
                 && next.length === 1 && next[0].endsWith(`/${keys[0]}/edit/`), JSON.stringify({ keys, first, next }));
             check('«Править предыдущий»: шаблон без правки не изменился', mailAll() === was);
+            // надёжность, этап 5: знак «занято» формы в окне (Overlay) не остаётся на странице после сохранения и
+            // закрытия окон — иначе прозрачный слой перехватывал щелчки по странице
+            await p.evaluate(() => window.top.ModalBox.close());
+            await p.waitForTimeout(1200);
+            const page = await p.evaluate(() => {
+                const row = document.querySelector('.gridContainer tbody tr td');
+                const r = row && row.getBoundingClientRect();
+                const hit = r && document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+                return { dialogs: document.querySelectorAll('dialog.e-modalbox').length, overlays: document.querySelectorAll('.e-overlay').length,
+                    rowReachable: !!hit && !!hit.closest('.gridContainer tbody tr') };
+            });
+            check('после сохранения в окне и закрытия окон: слоя «занято» на странице нет, строка грида под мышью доступна',
+                page.dialogs === 0 && page.overlays === 0 && page.rowReachable, JSON.stringify(page));
             check('«Править предыдущий»: без ошибок JS и 404', !errors.list().length, errors.list().join(' | '));
             await p.close();
             await ctx.clearCookies({ name: 'after_add_default_action' });

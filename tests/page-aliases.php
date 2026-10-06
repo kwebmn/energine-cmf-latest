@@ -17,7 +17,7 @@ $base = rtrim(BASE, '/');
 $hasTable = (bool)scalar("SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'share_sitemap_aliases'");
 check('таблица share_sitemap_aliases есть', $hasTable);
 
-// запрос без переадресации: код и Location; гостем — без cookie, администратором — с банкой testlib
+// запрос без переадресации: код, Location и Cache-Control; гостем — без cookie, администратором — с банкой testlib
 function req(string $path, string $method = 'GET', array $headers = [], bool $asAdmin = false): array {
     $ch = curl_init(BASE . $path);
     $opts = [CURLOPT_RETURNTRANSFER => true, CURLOPT_HEADER => true, CURLOPT_CUSTOMREQUEST => $method,
@@ -26,7 +26,8 @@ function req(string $path, string $method = 'GET', array $headers = [], bool $as
     if ($asAdmin) $opts += [CURLOPT_COOKIEFILE => $GLOBALS['jar'], CURLOPT_COOKIEJAR => $GLOBALS['jar']];
     curl_setopt_array($ch, $opts);
     $raw = (string)curl_exec($ch);
-    return [curl_getinfo($ch, CURLINFO_HTTP_CODE), preg_match('~^Location:\s*(\S+)~mi', $raw, $m) ? $m[1] : ''];
+    return [curl_getinfo($ch, CURLINFO_HTTP_CODE), preg_match('~^Location:\s*(\S+)~mi', $raw, $m) ? $m[1] : '',
+        preg_match('~^Cache-Control:\s*([^\r\n]+)~mi', $raw, $m) ? $m[1] : ''];
 }
 function moved(string $label, string $from, string $to): void {
     [$code, $loc] = req($from);
@@ -80,6 +81,11 @@ try {
     $renamed = savePage($A, $ROOT, 'claude-pa2') === $A;
     check('переименование раздела сохранено', $renamed);
     moved('старый адрес → 301 на новый', '/claude-pa/', '/claude-pa2/');
+    // переадресацию со старого адреса браузер не запоминает навсегда: владелец может вернуть прежнее имя — иначе у
+    // гостя, уже открывавшего старый адрес, была бы петля (браузер уводит со старого, сервер — на старый)
+    [$code, , $cc] = req('/claude-pa/');
+    check('301 со старого адреса — с Cache-Control: no-cache (браузер спрашивает сервер каждый раз)', $code === 301
+        && str_contains(strtolower($cc), 'no-cache'), "$code Cache-Control: $cc");
     moved('старый адрес подраздела → 301 сразу на его новый адрес', '/claude-pa/claude-pa-child/', '/claude-pa2/claude-pa-child/');
     moved('строка запроса сохраняется', '/claude-pa/?x=1', '/claude-pa2/?x=1');
     moved('хвост пути (параметр компонента) переносится', '/claude-pa/page-2/', '/claude-pa2/page-2/');

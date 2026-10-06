@@ -24,7 +24,11 @@ export class Overlay {
     constructor(parentElement, options) {
         this.options = Object.assign({duration: 500, opacity: 0.5, indicator: true}, options);
         this.container = parentElement || window.top.document.body;
-        this.element = document.createElement('div');
+        // элемент и таймеры — документа и окна, которым принадлежит затемнение: затемнение, созданное в окне админки
+        // (iframe), снимается и после того, как окно вместе с iframe и его таймерами уже убрано
+        const doc = this.container.ownerDocument;
+        this.timers = doc.defaultView || window;
+        this.element = doc.createElement('div');
         this.element.className = 'e-overlay' + (this.options.indicator ? ' e-overlay-loading' : '');
         this.element.style.opacity = '0';
         this.element.style.transition = 'opacity ' + this.options.duration + 'ms ease-in-out';
@@ -32,8 +36,14 @@ export class Overlay {
     }
 
     show() {
-        clearTimeout(this.removal);
+        this.timers.clearTimeout(this.removal);
         this.removal = null;
+        const doc = this.container.ownerDocument;
+        // страница под открытым окном админки (<dialog>) уже затемнена его ::backdrop: второй слой туда не кладётся —
+        // он был бы под окном, а после закрытия окна остался бы прозрачной стеной поверх страницы
+        if (this.container === doc.body && doc.querySelector('dialog.e-modalbox[open]')) {
+            return;
+        }
         // у элемента одно затемнение: если оно уже есть, второе не добавляется
         if (![...this.container.children].some((child) => child.classList.contains('e-overlay'))) {
             this.container.appendChild(this.element);
@@ -46,8 +56,8 @@ export class Overlay {
     // затемнение исчезает и уходит со страницы; новое show() до конца исчезновения его оставляет
     hide() {
         this.element.style.opacity = '0';
-        clearTimeout(this.removal);
-        this.removal = setTimeout(() => {
+        this.timers.clearTimeout(this.removal);
+        this.removal = this.timers.setTimeout(() => {
             this.removal = null;
             this.element.remove();
         }, this.options.duration);

@@ -1,7 +1,4 @@
-  [ "$(curl -sS -o /dev/null -w '%{http_code}' $B/claude-test/)" = 404 ] && [ "$(q "SELECT COUNT(*) FROM share_sitemap_aliases WHERE smap_id=$ID")" = 0 ] \
-    && ok "deleted page: old address gone (404)" || bad "deleted page: old address"
-    && [ "$(curl -sS -o /dev/null -w '%{http_code} %{redirect_url}' $B/claude-test/)" = "301 $B/info/claude-test/" ] \
-    && ok "page move (old address → 301 to the new one)" || bad "page move"#!/bin/bash
+#!/bin/bash
 # Write-path smoke test: every created record is deleted again. Prints OK/FAIL per step.
 SCR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 envsh=$(php8.5 "$SCR/env.php" --shell) || exit 1; eval "$envsh"
