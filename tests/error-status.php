@@ -38,6 +38,9 @@ try {
     check('неизвестный адрес — по-прежнему 404', $code == 404, "HTTP $code");
     [$code] = http('/');
     check('главная — 200', $code == 200, "HTTP $code");
+    // ревью этапа: окно несуществующего компонента — «не найдено», а не сбой
+    [$code] = http('/single/claudeNope' . bin2hex(random_bytes(2)) . '/');
+    check('адрес окна несуществующего компонента (/single/…/) — 404, а не 500', $code == 404, "HTTP $code");
 } catch (RuntimeException $e) {
     echo "  ({$e->getMessage()})\n";
 } finally {

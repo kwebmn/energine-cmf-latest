@@ -1360,6 +1360,49 @@ const showTabOf = (page, selector) => page.evaluate((sel) => {
             const site = await p.evaluate((sel) => Object.values(Jodit.instances).find((e) => e.element === document.querySelector(sel)).value, descr);
             check('чистая вставка с сайта: без чужих стилей и классов; жирный и ссылка на месте', !/style=|class=/i.test(site)
                 && /<(b|strong)>Сайт<\/(b|strong)>/.test(site) && site.includes('href="https://example.com/claude-site"'), site.slice(0, 300));
+            // ревью этапа: свой текст при переносе (вырезать — вставить) сохраняет всё оформление, а таблица из Word —
+            // объединение ячеек
+            const own = '<p style="text-align: center;">По центру <i class="fa fa-phone"></i> '
+                + '<a href="https://example.com/claude-own" target="_blank">ссылка</a></p>'
+                + '<p><img src="/uploads/public/13662314846.png" alt="Картинка" width="40" height="30"></p>';
+            const moved = await p.evaluate(([sel, h]) => {
+                const ed = Object.values(Jodit.instances).find((e) => e.element === document.querySelector(sel));
+                ed.value = h;
+                ed.s.focus();
+                ed.s.select(ed.editor, true);
+                const out = new DataTransfer();
+                ed.editor.dispatchEvent(new ClipboardEvent('cut', { clipboardData: out, bubbles: true, cancelable: true }));
+                const copied = out.getData('text/html');
+                ed.value = '<p>claude-before</p>';
+                ed.s.focus();
+                ed.s.setCursorIn(ed.editor, false);
+                const back = new DataTransfer();
+                back.setData('text/html', copied);
+                back.setData('text/plain', 'x');
+                ed.editor.dispatchEvent(new ClipboardEvent('paste', { clipboardData: back, bubbles: true, cancelable: true }));
+                return copied;
+            }, [descr, own]);
+            await p.waitForTimeout(600);
+            const after = await p.evaluate((sel) => Object.values(Jodit.instances).find((e) => e.element === document.querySelector(sel)).value, descr);
+            check('перенос своего текста (вырезать — вставить): выравнивание, значок, target, alt и размеры картинки на месте',
+                moved !== '' && after.includes('text-align: center') && after.includes('class="fa fa-phone"') && after.includes('target="_blank"')
+                && after.includes('alt="Картинка"') && after.includes('width="40"'), after.slice(0, 400));
+            await p.evaluate(([sel, h]) => {
+                const ed = Object.values(Jodit.instances).find((e) => e.element === document.querySelector(sel));
+                ed.value = '<p>claude-before</p>';
+                ed.s.focus();
+                ed.s.setCursorIn(ed.editor, false);
+                const dt = new DataTransfer();
+                dt.setData('text/html', h);
+                dt.setData('text/plain', 'Прайс');
+                ed.editor.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
+            }, [descr, '<table class="MsoTableGrid" style="border-collapse:collapse;mso-yfti-tbllook:1184"><tr>'
+                + '<td colspan="2" style="width:200pt;mso-border-alt:solid"><p class="MsoNormal"><b>Прайс</b><o:p></o:p></p></td></tr>'
+                + '<tr><td><p class="MsoNormal">A<o:p></o:p></p></td><td><p class="MsoNormal">B<o:p></o:p></p></td></tr></table>']);
+            await p.waitForTimeout(600);
+            const table = await p.evaluate((sel) => Object.values(Jodit.instances).find((e) => e.element === document.querySelector(sel)).value, descr);
+            check('таблица из Word: объединение ячеек (colspan) на месте, без стилей, классов и <o:p>', /colspan="?2/.test(table)
+                && !/style=|class=|o:p|mso-/i.test(table) && table.includes('Прайс'), table.slice(0, 400));
         }
         check('чистая вставка: без ошибок JS и 404', !errors.length, errors.join(' | '));
         await p.close();

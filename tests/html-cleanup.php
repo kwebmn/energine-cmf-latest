@@ -25,13 +25,30 @@ if (check('класс HtmlCleaner есть', class_exists($cls))) {
     check('HTML владельца без признаков Office — байт в байт', $cls::clean($owner) === $owner, $cls::clean($owner));
     $out = $cls::clean($word);
     foreach (['mso-', 'Mso', '<o:', '<w:', '<v:', '<!--', '<style', '<meta', '<font', 'o:spid'] as $junk) {
-        check("Word: нет «$junk»", stripos($out, $junk) === false, $out);
+        check("Word: нет «{$junk}»", stripos($out, $junk) === false, $out);
     }
     foreach (['<b>', 'Жирный', 'текст', '<a href="https://example.com/doc">ссылка</a>', '<ul>', 'пункт', '<table', 'ячейка', 'шрифт', 'поле',
                  'фигура', 'lang="EN-US"', 'font-size:12pt', 'margin-bottom:0cm'] as $keep) {
-        check("Word: остаётся «$keep»", str_contains($out, $keep), $out);
+        check("Word: остаётся «{$keep}»", str_contains($out, $keep), $out);
     }
     check('Word: пустая строка (абзац с неразрывным пробелом) остаётся', (bool)preg_match('~<p>(&nbsp;|\x{00A0})</p>~u', $out), $out);
+    // ревью этапа: кодировка, разметка владельца рядом с мусором Word, маркеры списков Word
+    $out = $cls::clean('<meta charset="windows-1251"><p class="MsoNormal">Привет, мир</p>');
+    check('<meta charset> не UTF-8 — кириллица цела (без кракозябр)', str_contains($out, 'Привет, мир') && !str_contains($out, 'Р'), $out);
+    $owned = '<!--noindex--><p>Скрыто от Яндекса</p><!--/noindex-->'
+        . '<svg viewBox="0 0 10 10"><title>Иконка</title><use xlink:href="#i-phone"></use></svg>'
+        . '<button x-on:click="open = true" :class="{ on: open }">Меню</button><link rel="stylesheet" href="https://widget.example/w.css">';
+    check('разметка владельца без признаков Office (noindex, svg, атрибуты виджетов, link) — байт в байт', $cls::clean($owned) === $owned);
+    $out = $cls::clean('<p class="MsoNormal">из Word</p>' . $owned);
+    check('рядом с мусором Word: комментарий noindex, title и xlink:href в svg, x-on:click и :class, link виджета — на месте',
+        str_contains($out, '<!--noindex-->') && str_contains($out, '<!--/noindex-->') && str_contains($out, '<title>Иконка</title>')
+        && str_contains($out, 'xlink:href="#i-phone"') && str_contains($out, 'x-on:click="open = true"') && str_contains($out, ':class=')
+        && str_contains($out, 'href="https://widget.example/w.css"') && !str_contains($out, 'Mso'), $out);
+    $out = $cls::clean('<link rel="File-List" href="file:///C:/x/filelist.xml"><meta name="ProgId" content="Word.Document">'
+        . '<p class="MsoListParagraphCxSpFirst" style="text-indent:-18pt;mso-list:l0 level1 lfo1"><span style="font-family:Symbol;mso-list:Ignore">·'
+        . '<span style="font:7.0pt Times New Roman">&nbsp;&nbsp;&nbsp;</span></span>первый пункт</p>');
+    check('служебные link и meta Word убраны; маркер списка Word (mso-list:Ignore) убран целиком, текст пункта на месте',
+        !str_contains($out, 'File-List') && !str_contains($out, 'ProgId') && !str_contains($out, '·') && str_contains($out, 'первый пункт'), $out);
     $mixed = $cls::clean('<p class="MsoNormal">из Word</p>' . $owner);
     check('смешанный текст: iframe, script, значок и ссылка владельца целы', str_contains($mixed, '<iframe src="https://www.openstreetmap.org/export/embed.html" width="400"></iframe>')
         && str_contains($mixed, '<script>window.claudeX = 1;</script>') && str_contains($mixed, '<i class="fa fa-phone"></i>')

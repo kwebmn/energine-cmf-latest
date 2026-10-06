@@ -435,7 +435,8 @@ final class Document extends Primitive implements IDocument {
                     $structure,
                     $actionParams[1]))
                 ) {
-                    throw new SystemException('ERR_NO_SINGLE_COMPONENT', SystemException::ERR_CRITICAL,
+                    // окна такого компонента на странице нет — «не найдено» (404), а не сбой (500)
+                    throw new SystemException('ERR_NO_SINGLE_COMPONENT', SystemException::ERR_404,
                         $actionParams[1]);
                 }
                 if (E()->getController()->getViewMode() ==

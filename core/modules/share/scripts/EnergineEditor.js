@@ -82,12 +82,11 @@ export const EnergineEditor = {
             showXPathInStatusbar: false,
             askBeforePasteHTML: false,
             askBeforePasteFromWord: false,
-            // вставка из Word и с чужих сайтов — без их стилей и классов (как в порте xSight): разметка страницы не
-            // плывёт от чужого оформления; жирный, курсив, списки, ссылки остаются. У Jodit 4 очистка Word — действие
-            // insert_as_text (cleanFromWord, HTML остаётся); insert_clear_html вставку из Word не чистит, а для обычной
-            // вставки insert_as_text экранировал бы весь HTML
-            defaultActionOnPaste: 'insert_clear_html',
-            defaultActionOnPasteFromWord: 'insert_as_text',
+            // вставка: своё (перенос внутри редакторов страницы) — как есть, чужое (Word, сайты) — без стилей и классов,
+            // со смыслом (EnergineEditor.pasteHTML); Word идёт тем же путём, а не через cleanFromWord Jodit — тот
+            // снимает у ячеек объединение, у картинок alt и размеры
+            defaultActionOnPaste: 'energine_paste',
+            processPasteFromWord: false,
             disablePlugins: EnergineEditor.disabledPlugins,
             cleanHTML: EnergineEditor.cleanHTML,
             uploader: {insertImageAsBase64URI: false},
@@ -115,7 +114,91 @@ export const EnergineEditor = {
                 '|', 'undo', 'redo'
             ].concat(options.extraButtons || [])
         }, options.jodit || {});
-        return Jodit.make(/** @type {HTMLElement|string} */ (element), config);
+        var editor = Jodit.make(/** @type {HTMLElement|string} */ (element), config);
+        // своё копирование и вырезание (afterCopy) — ключ в общем для всех редакторов страницы месте
+        editor.e.on('afterCopy', function (html) {
+            EnergineEditor.ownClipboard = EnergineEditor.clipboardKey(html);
+        });
+        editor.e.on('onCustomPasteHTMLOption', function (action, html) {
+            return action === 'energine_paste' ? EnergineEditor.pasteHTML(html) : undefined;
+        });
+        return editor;
+    },
+
+    /** ключ последнего своего копирования (afterCopy любого редактора страницы) */
+    ownClipboard: '',
+
+    /**
+     * Ключ сравнения вставки со своим копированием: браузер добавляет <meta charset> и метки фрагмента, меняет пробелы.
+     *
+     * @param {string} html
+     * @returns {string}
+     */
+    clipboardKey: function (html) {
+        return String(html || '').replace(/<meta[^>]*>/gi, '').replace(/<!--(?:Start|End)Fragment-->/gi, '').replace(/\s+/g, ' ').trim();
+    },
+
+    /**
+     * HTML вставки: своё (перенос текста внутри редакторов страницы) — как есть, с выравниванием, значками, картинками;
+     * чужое — cleanPaste.
+     *
+     * @param {string} html
+     * @returns {string}
+     */
+    pasteHTML: function (html) {
+        var key = EnergineEditor.clipboardKey(html);
+        return key !== '' && key === EnergineEditor.ownClipboard ? String(html) : EnergineEditor.cleanPaste(html);
+    },
+
+    /**
+     * Чужая вставка (Word, сайты): прочь стили, классы, id, lang, разметка Office (o:p, условные комментарии, маркеры
+     * списков mso-list:Ignore), <font> и <span> (содержимое остаётся), <style>, <script>, <meta>, <link>, картинки с
+     * диска (file:); остаются теги и смысловые атрибуты: ссылка (href, target, title), картинка (src, alt, width,
+     * height), ячейка (colspan, rowspan), список (start, type, value), встроенное окно (src, width, height).
+     *
+     * @param {string} html
+     * @returns {string}
+     */
+    cleanPaste: function (html) {
+        var doc = new DOMParser().parseFromString(String(html), 'text/html'),
+            keep = {
+                a: ['href', 'target', 'title'], img: ['src', 'alt', 'width', 'height', 'title'],
+                td: ['colspan', 'rowspan'], th: ['colspan', 'rowspan'], ol: ['start', 'type'], li: ['value'],
+                iframe: ['src', 'width', 'height', 'allowfullscreen']
+            },
+            drop = ['style', 'script', 'meta', 'link', 'title', 'xml', 'noscript', 'template'];
+        var walk = function (parent) {
+            Array.prototype.slice.call(parent.childNodes).forEach(function (node) {
+                if (node.nodeType === 8) {
+                    parent.removeChild(node);
+                    return;
+                }
+                if (node.nodeType !== 1) {
+                    return;
+                }
+                var tag = String(node.localName).toLowerCase();
+                if (drop.indexOf(tag) !== -1 || /mso-list\s*:\s*ignore/i.test(node.getAttribute('style') || '')
+                    || (tag === 'img' && /^file:/i.test(node.getAttribute('src') || ''))) {
+                    parent.removeChild(node);
+                    return;
+                }
+                walk(node);
+                if (tag === 'font' || tag === 'span' || tag.indexOf(':') !== -1) {
+                    while (node.firstChild) {
+                        parent.insertBefore(node.firstChild, node);
+                    }
+                    parent.removeChild(node);
+                    return;
+                }
+                Array.prototype.slice.call(node.attributes).forEach(function (attr) {
+                    if ((keep[tag] || []).indexOf(String(attr.name).toLowerCase()) === -1) {
+                        node.removeAttribute(attr.name);
+                    }
+                });
+            });
+        };
+        walk(doc.body);
+        return doc.body.innerHTML;
     },
 
     /**
