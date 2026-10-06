@@ -16,6 +16,7 @@
     <xsl:include href="error.xslt"/>
     <xsl:include href="icons.xslt"/>
     <xsl:include href="links.xslt"/>
+    <xsl:include href="search_log.xslt"/>
     <!--<xsl:include href="error_page.xslt"/>-->
     
 </xsl:stylesheet>

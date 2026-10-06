@@ -217,7 +217,8 @@ const fieldError = (p, selector) => p.evaluate((sel) => {
     } finally {
         await browser.close();
         db('user-remove');
+        db('search-log-remove');
     }
     console.log(`== public failures: ${fail}`);
     process.exit(fail ? 1 : 0);
-})().catch((e) => { console.error('FAIL ' + e.message); try { db('user-remove'); } catch (x) { } process.exit(1); });
+})().catch((e) => { console.error('FAIL ' + e.message); try { db('user-remove'); db('search-log-remove'); } catch (x) { } process.exit(1); });

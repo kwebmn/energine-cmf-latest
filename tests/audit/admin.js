@@ -55,6 +55,7 @@ const SCREENS = [
     ['шаблоны-писем', 'admin/mail-templates/'],
     ['журнал', 'admin/action-log/'],
     ['битые-ссылки', 'admin/links/'],
+    ['поиск', 'admin/search/'],
     ['структура', 'admin/structure/'],
     ['настройки', 'admin/settings/'],
     ['форма-пользователя', 'admin/users/single/userEditor/add/'],

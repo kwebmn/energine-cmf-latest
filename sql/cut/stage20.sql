@@ -84,3 +84,58 @@ INSERT IGNORE INTO `share_lang_tags` (`ltag_name`) VALUES ('TXT_SEARCH_PAGES');
 INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`)
     SELECT t.`ltag_id`, l.`lang_id`, IF(l.`lang_abbr` = 'ua', 'Сторінки результатів', 'Страницы результатов')
       FROM `share_lang_tags` t JOIN `share_languages` l WHERE t.`ltag_name` = 'TXT_SEARCH_PAGES';
+
+-- 4. Страница админки «Поиск по сайту» (/admin/search/): журнал поиска (SearchLog) — только администраторам (права —
+--    как у журнала действий), последней в меню админки. Номер строки — как в файлах установки; занят — следующий.
+INSERT INTO `share_sitemap` (`smap_id`, `smap_layout`, `smap_content`, `smap_pid`, `smap_segment`, `smap_in_menu`, `smap_order_num`)
+    SELECT IF(EXISTS (SELECT 1 FROM `share_sitemap` x WHERE x.`smap_id` = 3733), NULL, 3733), 'default.layout.xml',
+           'search_log.content.xml', a.`smap_id`, 'search', 1,
+           (SELECT IFNULL(MAX(c.`smap_order_num`), 0) + 1 FROM `share_sitemap` c WHERE c.`smap_pid` = a.`smap_id`)
+      FROM `share_sitemap` a JOIN `share_sitemap` r ON r.`smap_id` = a.`smap_pid` AND r.`smap_pid` IS NULL
+     WHERE a.`smap_segment` = 'admin'
+       AND NOT EXISTS (SELECT 1 FROM `share_sitemap` x WHERE x.`smap_pid` = a.`smap_id` AND x.`smap_segment` = 'search');
+SET @searchlog = (SELECT s.`smap_id` FROM `share_sitemap` s JOIN `share_sitemap` a ON a.`smap_id` = s.`smap_pid` AND a.`smap_segment` = 'admin'
+                  JOIN `share_sitemap` r ON r.`smap_id` = a.`smap_pid` AND r.`smap_pid` IS NULL
+                   WHERE s.`smap_segment` = 'search' AND s.`smap_content` = 'search_log.content.xml');
+INSERT IGNORE INTO `share_sitemap_translation` (`smap_id`, `lang_id`, `smap_name`, `smap_is_disabled`)
+    SELECT @searchlog, l.`lang_id`, IF(l.`lang_abbr` = 'ua', 'Пошук по сайту', 'Поиск по сайту'), 0 FROM `share_languages` l
+     WHERE @searchlog IS NOT NULL;
+INSERT IGNORE INTO `share_access_level` (`smap_id`, `group_id`, `right_id`)
+    SELECT @searchlog, a.`group_id`, a.`right_id` FROM `share_access_level` a JOIN `share_sitemap` s USING (`smap_id`)
+     WHERE s.`smap_segment` = 'action-log' AND @searchlog IS NOT NULL;
+
+-- 5. Переводы журнала поиска.
+INSERT IGNORE INTO `share_lang_tags` (`ltag_name`) VALUES ('CONTENT_SEARCH_LOG');
+INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`)
+    SELECT t.`ltag_id`, l.`lang_id`, IF(l.`lang_abbr` = 'ua', 'Журнал пошуку', 'Журнал поиска')
+      FROM `share_lang_tags` t JOIN `share_languages` l WHERE t.`ltag_name` = 'CONTENT_SEARCH_LOG';
+INSERT IGNORE INTO `share_lang_tags` (`ltag_name`) VALUES ('TXT_SEARCH_LOG_HINT');
+INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`)
+    SELECT t.`ltag_id`, l.`lang_id`, IF(l.`lang_abbr` = 'ua',
+           'Що шукали відвідувачі. Спочатку — запити, за якими нічого не знайшлося: підказка, яких сторінок або слів бракує на сайті.',
+           'Что искали посетители. Сначала — запросы, по которым ничего не нашлось: подсказка, каких страниц или слов не хватает на сайте.')
+      FROM `share_lang_tags` t JOIN `share_languages` l WHERE t.`ltag_name` = 'TXT_SEARCH_LOG_HINT';
+INSERT IGNORE INTO `share_lang_tags` (`ltag_name`) VALUES ('TXT_SEARCH_LOG_NONE');
+INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`)
+    SELECT t.`ltag_id`, l.`lang_id`, IF(l.`lang_abbr` = 'ua', 'Пошуком ще не користувалися', 'Поиском ещё не пользовались')
+      FROM `share_lang_tags` t JOIN `share_languages` l WHERE t.`ltag_name` = 'TXT_SEARCH_LOG_NONE';
+INSERT IGNORE INTO `share_lang_tags` (`ltag_name`) VALUES ('TXT_SEARCH_LOG_QUERY');
+INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`)
+    SELECT t.`ltag_id`, l.`lang_id`, IF(l.`lang_abbr` = 'ua', 'Запит', 'Запрос')
+      FROM `share_lang_tags` t JOIN `share_languages` l WHERE t.`ltag_name` = 'TXT_SEARCH_LOG_QUERY';
+INSERT IGNORE INTO `share_lang_tags` (`ltag_name`) VALUES ('TXT_SEARCH_LOG_LANG');
+INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`)
+    SELECT t.`ltag_id`, l.`lang_id`, IF(l.`lang_abbr` = 'ua', 'Мова', 'Язык')
+      FROM `share_lang_tags` t JOIN `share_languages` l WHERE t.`ltag_name` = 'TXT_SEARCH_LOG_LANG';
+INSERT IGNORE INTO `share_lang_tags` (`ltag_name`) VALUES ('TXT_SEARCH_LOG_COUNT');
+INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`)
+    SELECT t.`ltag_id`, l.`lang_id`, IF(l.`lang_abbr` = 'ua', 'Скільки разів', 'Сколько раз')
+      FROM `share_lang_tags` t JOIN `share_languages` l WHERE t.`ltag_name` = 'TXT_SEARCH_LOG_COUNT';
+INSERT IGNORE INTO `share_lang_tags` (`ltag_name`) VALUES ('TXT_SEARCH_LOG_RESULTS');
+INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`)
+    SELECT t.`ltag_id`, l.`lang_id`, IF(l.`lang_abbr` = 'ua', 'Знайдено', 'Найдено')
+      FROM `share_lang_tags` t JOIN `share_languages` l WHERE t.`ltag_name` = 'TXT_SEARCH_LOG_RESULTS';
+INSERT IGNORE INTO `share_lang_tags` (`ltag_name`) VALUES ('TXT_SEARCH_LOG_LAST');
+INSERT IGNORE INTO `share_lang_tags_translation` (`ltag_id`, `lang_id`, `ltag_value_rtf`)
+    SELECT t.`ltag_id`, l.`lang_id`, IF(l.`lang_abbr` = 'ua', 'Останній раз', 'Последний раз')
+      FROM `share_lang_tags` t JOIN `share_languages` l WHERE t.`ltag_name` = 'TXT_SEARCH_LOG_LAST';

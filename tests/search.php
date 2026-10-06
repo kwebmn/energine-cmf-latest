@@ -1,6 +1,7 @@
 <?php
 // Поиск по сайту: основы слов (Stemmer), индекс страниц (SearchIndex, setup reindex), обновление индекса, страница
-// результатов, журнал поиска.
+// результатов (SiteSearch, SearchResults), журнал поиска (SiteSearch::log, SearchLog). Строки журнала от запросов теста
+// убираются в конце.
 // Стенд: страницы claude-sr (текст на двух языках) с подразделом claude-sr-child, claude-sr-link (страница-ссылка),
 // claude-sr-ruonly (выключена на втором языке) — в базе напрямую, без сдвига порядка; удаляются в конце (строки
 // индекса — каскадом).
@@ -8,6 +9,7 @@ require __DIR__ . '/testlib.php';
 require ROOT . '/vendor/autoload.php';
 
 use Energine\share\gears\SearchIndex;
+use Energine\share\gears\SiteSearch;
 use Energine\share\gears\Stemmer;
 
 $owner = posix_getpwuid(fileowner(WEB))['name'];
@@ -194,7 +196,17 @@ q('REPLACE INTO share_access_level (smap_id, group_id, right_id) VALUES (?, ?, 3
 foreach ($ss as $id) {
     (new SearchIndex(pdo()))->page($id);
 }
+// запросы теста — строки журнала поиска (SiteSearch::log) убираются в конце
+$searched = [];
+function unlog(): void {
+    $queries = array_values(array_unique($GLOBALS['searched']));
+    if ($queries) {
+        q('DELETE FROM share_search_log WHERE log_query IN (' . implode(', ', array_fill(0, count($queries), '?')) . ')', $queries);
+    }
+}
+register_shutdown_function('unlog');
 $find = function (string $q, string $lang = '', string $extra = ''): array {
+    $GLOBALS['searched'][] = mb_strtolower(SiteSearch::normalize($q));
     [$c, $b] = http('/' . $lang . 'search/?q=' . rawurlencode($q) . $extra);
     preg_match_all('~<li class="search-result[^"]*">\s*<a[^>]*href="[^"]*?/((?:ua/)?claude-sr[a-z0-9-]*)/"~', $b, $m);
     return [$c, $b, $m[1]];
@@ -249,6 +261,7 @@ check('очень длинный запрос — 200, в поле не длин
     && mb_strlen(html_entity_decode($m[1])) <= 200, "HTTP $c " . mb_strlen(html_entity_decode($m[1] ?? '')));
 [$c, , $links] = $find('флюгеры 😀 𝐀');
 check('символы вне BMP (эмодзи) — 200, ищутся остальные слова', $c == 200 && $has($links, 'claude-sr-title'), "HTTP $c");
+$searched[] = mb_strtolower(SiteSearch::normalize("\xFF\xFE"));
 [$c] = http('/search/?q=%FF%FE');
 [$c2] = http('/search/?q[]=x&page[]=2');
 [$c3] = http('/search/?q=' . rawurlencode('флюгеры') . '&page=abc');
@@ -278,5 +291,33 @@ if ($L2) {
 $searchId = (int)scalar("SELECT smap_id FROM share_sitemap WHERE smap_segment = 'search' AND smap_pid = ?", [$root]);
 check('страница search есть у корня, служебная (SYSTEM_SEGMENTS), не в индексе', $searchId && in_array('search', SearchIndex::SYSTEM_SEGMENTS, true)
     && !(int)scalar('SELECT COUNT(*) FROM share_search_index WHERE smap_id = ?', [$searchId]));
+
+// 6. журнал поиска: поиск гостя — строка (запрос в нижнем регистре, сколько раз, сколько нашлось в последний раз);
+//    листание выдачи — не новый поиск; страница админки «Поиск по сайту» — сначала запросы без результатов; гостю закрыта
+$logRow = fn(string $query) => q('SELECT log_count, log_results FROM share_search_log WHERE log_query = ? AND lang_id = ?', [$query, $L1])->fetch();
+q("DELETE FROM share_search_log WHERE log_query IN ('флюгеры', 'зюзюзюзяблик')");
+logout();
+$find('Флюгеры');
+$r1 = $logRow('флюгеры');
+$find('флюгеры');
+$find('флюгеры', '', '&page=2');
+$r2 = $logRow('флюгеры');
+check('журнал: поиск гостя — строка (запрос в нижнем регистре, найдено 13); повтор — +1; листание выдачи — не поиск',
+    $r1 && (int)$r1['log_count'] === 1 && (int)$r1['log_results'] === 13 && $r2 && (int)$r2['log_count'] === 2, json_encode([$r1, $r2]));
+$find('зюзюзюзяблик');
+$r3 = $logRow('зюзюзюзяблик');
+check('журнал: ничего не найдено — найдено 0', $r3 && (int)$r3['log_results'] === 0, json_encode($r3));
+[$gc, $gb] = http('/admin/search/');
+check('гостю /admin/search/ — закрыта', $gc == 404 || $gc == 403 || ($gc == 200 && !str_contains($gb, 'зюзюзюзяблик')), "HTTP $gc");
+login();
+[$ac, $ab] = http('/admin/search/');
+$missed = strpos($ab, '>зюзюзюзяблик<');
+$hit = strpos($ab, '>флюгеры<');
+check('администратору /admin/search/ — журнал: запросы, сначала без результатов', $ac == 200 && $missed !== false && $hit !== false && $missed < $hit,
+    "HTTP $ac " . var_export([$missed, $hit], true));
+logout();
+check('страница админки «Поиск по сайту» — под admin/ (служебная), не в индексе', !(int)scalar('SELECT COUNT(*) FROM share_search_index i
+    JOIN share_sitemap s USING (smap_id) JOIN share_sitemap a ON a.smap_id = s.smap_pid WHERE a.smap_segment = ? AND s.smap_segment = ?', ['admin', 'search'])
+    && (int)scalar("SELECT COUNT(*) FROM share_sitemap s JOIN share_sitemap a ON a.smap_id = s.smap_pid WHERE a.smap_segment = 'admin' AND s.smap_segment = 'search'") === 1);
 
 done('search');

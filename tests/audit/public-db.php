@@ -4,6 +4,7 @@
 //   php8.5 public-db.php user-add       — создать, вывести {"login": …, "password": …}
 //   php8.5 public-db.php user-remove    — удалить всех посетителей теста
 //   php8.5 public-db.php mtime NAME     — время изменения web/scripts/NAME.js
+//   php8.5 public-db.php search-log-remove — убрать из журнала поиска запрос теста («сайт»; его ищет и обход)
 require dirname(__DIR__) . '/testlib.php';
 
 [, $cmd] = $argv + [null, null];
@@ -22,6 +23,9 @@ switch ($cmd) {
         break;
     case 'user-remove':
         q("DELETE FROM user_users WHERE u_name LIKE 'claude-public+%'");
+        break;
+    case 'search-log-remove':
+        q("DELETE FROM share_search_log WHERE log_query = 'сайт'");
         break;
     default:
         fwrite(STDERR, "неизвестная команда\n");

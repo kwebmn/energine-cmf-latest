@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- «Поиск по сайту» в админке: что искали посетители, сначала запросы без результатов (SearchLog) -->
+<content>
+    <container name="searchLogContainer" block="alfa">
+        <component name="searchLog" class="SearchLog">
+            <params>
+                <param name="rights">3</param>
+            </params>
+        </component>
+    </container>
+</content>

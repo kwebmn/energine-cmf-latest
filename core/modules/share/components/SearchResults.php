@@ -11,7 +11,7 @@ use Energine\share\gears\SiteSearch;
  * Поиск по сайту (SiteSearch) для посетителя: запрос q, страница выдачи page. В XML компонента — элемент search
  * (query — запрос как его показать, q — он же для адреса листалки, total, page, pages) и в нём item (url, title) с
  * отрывком snippet: текст и найденные слова в mark — узлами DOM, а не разметкой, так что текст страницы и запрос
- * экранирует преобразование.
+ * экранирует преобразование. Поиск (первая страница выдачи) — строка журнала поиска (SiteSearch::log).
  */
 class SearchResults extends Component {
     public function build() {
@@ -23,7 +23,12 @@ class SearchResults extends Component {
         // параметры — строки (q[]=… или page=x — как их нет)
         $q = isset($_GET['q']) && is_string($_GET['q']) ? $_GET['q'] : '';
         $page = isset($_GET['page']) && is_string($_GET['page']) && ctype_digit($_GET['page']) ? (int)$_GET['page'] : 1;
-        $found = (new SiteSearch(E()->getDB()))->find($q, (int)$this->document->getLang(), $page);
+        $engine = new SiteSearch(E()->getDB());
+        $found = $engine->find($q, (int)$this->document->getLang(), $page);
+        // журнал поиска — поиск, а не листание его страниц
+        if ($found['query'] !== '' && $page === 1) {
+            $engine->log($found['query'], (int)$this->document->getLang(), $found['total']);
+        }
 
         $search = $this->doc->createElement('search');
         $search->setAttribute('query', $found['query']);

@@ -11,7 +11,8 @@ namespace Energine\share\gears;
  * начинается какое-то слово («услуг» — «услуги», «услугами»). Кандидаты — FULLTEXT (любая из основ, по убыванию
  * релевантности, не больше MAX_CANDIDATES); дальше здесь: все основы есть, страница в дереве посетителя (Sitemap:
  * включена на его языке, права не ниже чтения, предки тоже), вес — совпадения в названии ×TITLE_WEIGHT и в тексте.
- * Отрывок — около SNIPPET знаков текста вокруг первого совпадения, найденные слова отмечены (mark).
+ * Отрывок — около SNIPPET знаков текста вокруг первого совпадения, найденные слова отмечены (mark). Журнал поиска (log) —
+ * что искали и сколько нашлось: владельцу видно, каких страниц или слов не хватает.
  */
 final class SiteSearch {
     /** результатов на страницу выдачи */
@@ -26,6 +27,8 @@ final class SiteSearch {
     const SNIPPET = 200;
     /** вес совпадения в названии страницы (в тексте — 1) */
     const TITLE_WEIGHT = 3;
+    /** строк журнала поиска — не больше: при чистке остаются самые свежие */
+    const LOG_ROWS = 10000;
 
     public function __construct(private Db $db) {
     }
@@ -99,6 +102,29 @@ final class SiteSearch {
                 'snippet' => self::snippet((string)$f['row']['body'], $terms)];
         }
         return ['query' => $query, 'total' => $total, 'page' => $page, 'pages' => $pages, 'items' => $items];
+    }
+
+    /**
+     * Журнал поиска (share_search_log): запрос в нижнем регистре на языке — сколько раз искали, сколько нашлось в
+     * последний раз, когда. Сбой журнала поиску не мешает — в журнал ошибок. Изредка (1 раз из 100) — чистка: остаются
+     * LOG_ROWS самых свежих строк (журнал не растёт без конца от случайных запросов).
+     */
+    public function log(string $q, int $langId, int $total): void {
+        $query = mb_substr(mb_strtolower(self::normalize($q)), 0, self::MAX_QUERY);
+        if ($query === '') {
+            return;
+        }
+        try {
+            $this->db->exec('INSERT INTO share_search_log (log_query, lang_id, log_count, log_results, log_last) VALUES (?, ?, 1, ?, NOW())'
+                . ' ON DUPLICATE KEY UPDATE log_count = log_count + 1, log_results = VALUES(log_results), log_last = VALUES(log_last)',
+                [$query, $langId, $total]);
+            if (random_int(1, 100) === 1) {
+                $this->db->exec('DELETE FROM share_search_log WHERE log_last < (SELECT log_last FROM (SELECT log_last FROM share_search_log'
+                    . ' ORDER BY log_last DESC LIMIT 1 OFFSET ' . self::LOG_ROWS . ') edge)');
+            }
+        } catch (\Throwable $e) {
+            error_log('Energine: журнал поиска: ' . $e->getMessage());
+        }
     }
 
     /**
